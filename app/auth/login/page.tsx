@@ -1,17 +1,62 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
+import { signIn } from "next-auth/react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Facebook, Mail } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Facebook, Mail, AlertCircle, Loader2 } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get("callbackUrl") || "/"
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        setError("Invalid email or password")
+      } else {
+        router.push(callbackUrl)
+        router.refresh()
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSocialLogin = async (provider: string) => {
+    setIsLoading(true)
+    try {
+      await signIn(provider, { callbackUrl })
+    } catch (error) {
+      setError("An error occurred. Please try again.")
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -26,36 +71,34 @@ export default function LoginPage() {
           <CardDescription className="text-center">Sign in to your Archalley Forum account</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           {/* Social Login */}
           <div className="space-y-2">
-            <Button variant="outline" className="w-full" type="button">
+            <Button
+              variant="outline"
+              className="w-full"
+              type="button"
+              onClick={() => handleSocialLogin("google")}
+              disabled={isLoading}
+            >
               <Mail className="mr-2 h-4 w-4" />
               Continue with Google
             </Button>
-            <Button variant="outline" className="w-full" type="button">
+            <Button
+              variant="outline"
+              className="w-full"
+              type="button"
+              onClick={() => handleSocialLogin("facebook")}
+              disabled={isLoading}
+            >
               <Facebook className="mr-2 h-4 w-4" />
               Continue with Facebook
-            </Button>
-            <Button variant="outline" className="w-full" type="button">
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M23.5 12.3c0-.8-.1-1.6-.2-2.4H12v4.5h6.4c-.3 1.5-1.1 2.8-2.4 3.7v3.1h3.9c2.3-2.1 3.6-5.2 3.6-8.9z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3.1c-1.1.7-2.5 1.2-4.1 1.2-3.1 0-5.8-2.1-6.7-4.9H1.4v3.2C3.4 21.4 7.4 24 12 24z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M5.3 14.3c-.2-.7-.4-1.4-.4-2.3s.1-1.6.4-2.3V6.5H1.4C.5 8.3 0 10.1 0 12s.5 3.7 1.4 5.5l3.9-3.2z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 4.8c1.8 0 3.4.6 4.6 1.8l3.5-3.5C18 1.1 15.2 0 12 0 7.4 0 3.4 2.6 1.4 6.5l3.9 3.2c.9-2.8 3.6-4.9 6.7-4.9z"
-                />
-              </svg>
-              Continue with Microsoft
             </Button>
           </div>
 
@@ -69,7 +112,7 @@ export default function LoginPage() {
           </div>
 
           {/* Email Login */}
-          <form className="space-y-4">
+          <form onSubmit={handleEmailLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -79,6 +122,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -90,9 +134,11 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign In
             </Button>
           </form>
