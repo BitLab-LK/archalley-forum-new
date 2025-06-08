@@ -1,8 +1,6 @@
 "use client"
 
-import { useState } from "react"
-import Header from "@/components/header"
-import Footer from "@/components/footer"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,39 +12,126 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Edit, Camera, CheckCircle, MapPin, Calendar, LinkIcon } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { AuthGuard } from "@/components/auth-guard"
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState("")
+  const { user } = useAuth()
   const [profileData, setProfileData] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    company: "Archalley Design Studio",
-    profession: "Architect",
-    bio: "Passionate architect with 10+ years of experience in sustainable design and urban planning. Love creating spaces that inspire and connect communities.",
-    location: "San Francisco, CA",
-    website: "https://johndoe.com",
-    phone: "+1 (555) 123-4567",
+    name: "",
+    email: "",
+    company: "",
+    profession: "",
+    bio: "",
+    location: "",
+    website: "",
+    phone: "",
     profileVisibility: true,
     socialLinks: {
-      linkedin: "https://linkedin.com/in/johndoe",
-      twitter: "https://twitter.com/johndoe",
-      instagram: "https://instagram.com/johndoe",
+      linkedin: "",
+      twitter: "",
+      instagram: "",
     },
   })
 
-  const userStats = {
-    posts: 156,
-    upvotes: 1234,
-    comments: 567,
-    rank: "Community Expert",
-    joinDate: "January 2023",
-    isVerified: true,
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user?.id) return
+      
+      try {
+        const response = await fetch(`/api/users/${user.id}`)
+        if (!response.ok) {
+          throw new Error("Failed to fetch user profile")
+        }
+        
+        const data = await response.json()
+        setProfileData({
+          name: data.user.name || "",
+          email: data.user.email || "",
+          company: data.user.company || "",
+          profession: data.user.profession || "",
+          bio: data.user.bio || "",
+          location: data.user.location || "",
+          website: data.user.website || "",
+          phone: data.user.phone || "",
+          profileVisibility: data.user.profileVisibility ?? true,
+          socialLinks: {
+            linkedin: data.user.linkedinUrl || "",
+            twitter: data.user.twitterUrl || "",
+            instagram: data.user.instagramUrl || "",
+          },
+        })
+      } catch (err) {
+        setError("Failed to load profile data")
+        console.error("Profile fetch error:", err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchUserProfile()
+  }, [user?.id])
+
+  const handleSaveProfile = async () => {
+    if (!user?.id) return
+
+    try {
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: profileData.name,
+          company: profileData.company,
+          profession: profileData.profession,
+          bio: profileData.bio,
+          location: profileData.location,
+          website: profileData.website,
+          phone: profileData.phone,
+          profileVisibility: profileData.profileVisibility,
+          linkedinUrl: profileData.socialLinks.linkedin,
+          twitterUrl: profileData.socialLinks.twitter,
+          instagramUrl: profileData.socialLinks.instagram,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update profile")
+      }
+
+      setIsEditing(false)
+    } catch (err) {
+      setError("Failed to update profile")
+      console.error("Profile update error:", err)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6">
+            <div className="text-center text-red-500">{error}</div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header />
-
+    <AuthGuard>
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* Profile Header */}
@@ -55,47 +140,49 @@ export default function ProfilePage() {
               <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
                 <div className="relative">
                   <Avatar className="w-24 h-24">
-                    <AvatarImage src="/placeholder.svg?height=96&width=96" />
-                    <AvatarFallback className="text-2xl">JD</AvatarFallback>
+                    <AvatarImage src={user?.image || "/placeholder.svg"} alt={profileData.name} />
+                    <AvatarFallback className="text-2xl">{profileData.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <Button size="icon" variant="secondary" className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full">
-                    <Camera className="w-4 h-4" />
-                  </Button>
+                  {isEditing && (
+                    <Button size="icon" variant="secondary" className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full">
+                      <Camera className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
 
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
                     <h1 className="text-2xl font-bold">{profileData.name}</h1>
-                    {userStats.isVerified && <CheckCircle className="w-6 h-6 text-blue-500" />}
+                    {user?.isVerified && <CheckCircle className="w-6 h-6 text-blue-500" />}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
                     <Badge variant="secondary" className="text-sm">
-                      {userStats.rank}
+                      {user?.rank || "New Member"}
                     </Badge>
-                    <span className="flex items-center">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {profileData.location}
-                    </span>
+                    {profileData.location && (
+                      <span className="flex items-center">
+                        <MapPin className="w-4 h-4 mr-1" />
+                        {profileData.location}
+                      </span>
+                    )}
                     <span className="flex items-center">
                       <Calendar className="w-4 h-4 mr-1" />
-                      Joined {userStats.joinDate}
+                      Member since {new Date(user?.createdAt || "").toLocaleDateString()}
                     </span>
                   </div>
 
-                  <p className="text-gray-700 dark:text-gray-300 mb-4">{profileData.bio}</p>
+                  {profileData.bio && (
+                    <p className="text-gray-700 dark:text-gray-300 mb-4">{profileData.bio}</p>
+                  )}
 
                   <div className="flex flex-wrap gap-6 text-sm">
                     <div className="text-center">
-                      <div className="font-bold text-lg">{userStats.posts}</div>
+                      <div className="font-bold text-lg">{user?._count?.posts || 0}</div>
                       <div className="text-gray-500">Posts</div>
                     </div>
                     <div className="text-center">
-                      <div className="font-bold text-lg">{userStats.upvotes}</div>
-                      <div className="text-gray-500">Upvotes</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-bold text-lg">{userStats.comments}</div>
+                      <div className="font-bold text-lg">{user?._count?.comments || 0}</div>
                       <div className="text-gray-500">Comments</div>
                     </div>
                   </div>
@@ -133,7 +220,8 @@ export default function ProfilePage() {
                           <Input
                             id="email"
                             value={profileData.email}
-                            onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                            disabled
+                            className="bg-muted"
                           />
                         </div>
                         <div className="space-y-2">
@@ -159,20 +247,26 @@ export default function ProfilePage() {
                           <Label className="text-sm font-medium">Email</Label>
                           <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.email}</p>
                         </div>
-                        <div>
-                          <Label className="text-sm font-medium">Phone</Label>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.phone}</p>
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium">Website</Label>
-                          <a
-                            href={profileData.website}
-                            className="text-sm text-primary hover:underline flex items-center"
-                          >
-                            <LinkIcon className="w-4 h-4 mr-1" />
-                            {profileData.website}
-                          </a>
-                        </div>
+                        {profileData.phone && (
+                          <div>
+                            <Label className="text-sm font-medium">Phone</Label>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.phone}</p>
+                          </div>
+                        )}
+                        {profileData.website && (
+                          <div>
+                            <Label className="text-sm font-medium">Website</Label>
+                            <a
+                              href={profileData.website}
+                              className="text-sm text-primary hover:underline flex items-center"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <LinkIcon className="w-4 h-4 mr-1" />
+                              {profileData.website}
+                            </a>
+                          </div>
+                        )}
                       </>
                     )}
                   </CardContent>
@@ -201,13 +295,15 @@ export default function ProfilePage() {
                             onValueChange={(value) => setProfileData({ ...profileData, profession: value })}
                           >
                             <SelectTrigger>
-                              <SelectValue />
+                              <SelectValue placeholder="Select profession" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="architect">Architect</SelectItem>
                               <SelectItem value="interior-designer">Interior Designer</SelectItem>
                               <SelectItem value="urban-planner">Urban Planner</SelectItem>
                               <SelectItem value="construction-manager">Construction Manager</SelectItem>
+                              <SelectItem value="student">Student</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -223,18 +319,28 @@ export default function ProfilePage() {
                       </>
                     ) : (
                       <>
-                        <div>
-                          <Label className="text-sm font-medium">Company</Label>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.company}</p>
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium">Profession</Label>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.profession}</p>
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium">Bio</Label>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.bio}</p>
-                        </div>
+                        {profileData.company && (
+                          <div>
+                            <Label className="text-sm font-medium">Company</Label>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.company}</p>
+                          </div>
+                        )}
+                        {profileData.profession && (
+                          <div>
+                            <Label className="text-sm font-medium">Profession</Label>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {profileData.profession.split("-").map(word => 
+                                word.charAt(0).toUpperCase() + word.slice(1)
+                              ).join(" ")}
+                            </p>
+                          </div>
+                        )}
+                        {profileData.bio && (
+                          <div>
+                            <Label className="text-sm font-medium">Bio</Label>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.bio}</p>
+                          </div>
+                        )}
                       </>
                     )}
                   </CardContent>
@@ -246,7 +352,7 @@ export default function ProfilePage() {
                   <Button variant="outline" onClick={() => setIsEditing(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={() => setIsEditing(false)}>Save Changes</Button>
+                  <Button onClick={handleSaveProfile}>Save Changes</Button>
                 </div>
               )}
             </TabsContent>
@@ -278,6 +384,7 @@ export default function ProfilePage() {
                     <Switch
                       checked={profileData.profileVisibility}
                       onCheckedChange={(checked) => setProfileData({ ...profileData, profileVisibility: checked })}
+                      disabled={!isEditing}
                     />
                   </div>
                 </CardContent>
@@ -298,8 +405,6 @@ export default function ProfilePage() {
           </Tabs>
         </div>
       </main>
-
-      <Footer />
-    </div>
+    </AuthGuard>
   )
 }

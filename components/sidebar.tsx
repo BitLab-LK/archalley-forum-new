@@ -2,24 +2,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { TrendingUp, Users, Award } from "lucide-react"
+import { useEffect, useState } from "react"
 
-const categories = [
-  { name: "Business", count: 245, color: "bg-blue-500" },
-  { name: "Design", count: 189, color: "bg-purple-500" },
-  { name: "Career", count: 156, color: "bg-green-500" },
-  { name: "Construction", count: 134, color: "bg-yellow-500" },
-  { name: "Academic", count: 98, color: "bg-indigo-500" },
-  { name: "Informative", count: 87, color: "bg-cyan-500" },
-  { name: "Other", count: 76, color: "bg-gray-500" },
-]
+interface Category {
+  id: string
+  name: string
+  color: string
+  icon: string
+  slug: string
+  count: number
+}
 
-const featuredPosts = [
+interface FeaturedPost {
+  title: string
+  author: string
+  upvotes: number
+}
+
+interface TopContributor {
+  name: string
+  rank: string
+  posts: number
+  avatar: string
+}
+
+const featuredPosts: FeaturedPost[] = [
   { title: "Sustainable Architecture Trends 2024", author: "Sarah Chen", upvotes: 45 },
   { title: "Modern Office Design Principles", author: "Mike Johnson", upvotes: 38 },
   { title: "Construction Technology Innovations", author: "Alex Rivera", upvotes: 32 },
 ]
 
-const topContributors = [
+const topContributors: TopContributor[] = [
   { name: "Sarah Chen", rank: "Community Expert", posts: 156, avatar: "/placeholder.svg?height=32&width=32" },
   { name: "Mike Johnson", rank: "Top Contributor", posts: 134, avatar: "/placeholder.svg?height=32&width=32" },
   { name: "Alex Rivera", rank: "Visual Storyteller", posts: 98, avatar: "/placeholder.svg?height=32&width=32" },
@@ -27,6 +40,28 @@ const topContributors = [
 ]
 
 export default function Sidebar() {
+  const [categories, setCategories] = useState<Category[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/categories')
+        if (!response.ok) {
+          throw new Error('Failed to fetch categories')
+        }
+        const data = await response.json()
+        setCategories(data)
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
+
   return (
     <div className="space-y-6">
       {/* Categories */}
@@ -38,17 +73,30 @@ export default function Sidebar() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {categories.map((category) => (
-            <div key={category.name} className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full ${category.color}`} />
-                <span className="text-sm font-medium">{category.name}</span>
+          {isLoading ? (
+            // Loading skeleton
+            Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="flex items-center justify-between animate-pulse">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 rounded-full bg-gray-200" />
+                  <div className="h-4 bg-gray-200 rounded w-24" />
+                </div>
+                <div className="h-4 bg-gray-200 rounded w-8" />
               </div>
-              <Badge variant="secondary" className="text-xs">
-                {category.count}
-              </Badge>
-            </div>
-          ))}
+            ))
+          ) : (
+            categories.map((category) => (
+              <div key={category.id} className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className={`w-3 h-3 rounded-full ${category.color}`} />
+                  <span className="text-sm font-medium">{category.name}</span>
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {category.count}
+                </Badge>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 

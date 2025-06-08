@@ -79,6 +79,8 @@ model User {
   votes         Vote[]
   flags         Flag[]
   notifications Notification[]
+  updatedSettings Settings[] @relation("SettingsUpdatedBy")
+  pages         Page[]
   
   @@map("users")
 }
@@ -125,42 +127,35 @@ model Category {
 }
 
 model Post {
-  id          String   @id @default(cuid())
-  title       String?
-  content     String
-  isAnonymous Boolean  @default(false)
-  isPinned    Boolean  @default(false)
-  isLocked    Boolean  @default(false)
-  
-  // AI generated fields
-  aiCategory  String?
-  aiTags      String[]
-  
-  // Engagement
-  upvotes     Int      @default(0)
-  downvotes   Int      @default(0)
-  viewCount   Int      @default(0)
-  
-  // Relations
-  authorId    String
-  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
-  
-  comments    Comment[]
-  votes       Vote[]
-  flags       Flag[]
-  attachments Attachment[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@map("posts")
+  id              String       @id @default(cuid())
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  title           String?
+  content         String       @db.Text
+  isAnonymous     Boolean      @default(false)
+  isPinned        Boolean      @default(false)
+  isLocked        Boolean      @default(false)
+  aiCategory      String?
+  aiTags          String[]
+  originalLanguage String      @default("English")
+  translatedContent String?
+  viewCount       Int          @default(0)
+  shareCount      Int          @default(0)
+  author          User         @relation(fields: [authorId], references: [id])
+  authorId        String
+  category        Category     @relation(fields: [categoryId], references: [id])
+  categoryId      String
+  comments        Comment[]
+  attachments     Attachment[]
+  votes           Vote[]
+
+  @@index([authorId])
+  @@index([categoryId])
 }
 
 model Comment {
   id          String   @id @default(cuid())
-  content     String
+  content     String   @db.Text
   isAnonymous Boolean  @default(false)
   isBestAnswer Boolean @default(false)
   
@@ -271,12 +266,27 @@ enum NotificationType {
 }
 
 model Settings {
-  id    String @id @default(cuid())
-  key   String @unique
-  value String
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+  updatedBy   User     @relation("SettingsUpdatedBy", fields: [updatedById], references: [id])
+  updatedById String
+
   @@map("settings")
+}
+
+model Page {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String   @db.Text
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String
+
+  @@map("pages")
 }

@@ -12,21 +12,85 @@ const createCategorySchema = z.object({
   slug: z.string().min(1, "Slug is required"),
 })
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const categories = await prisma.category.findMany({
-      orderBy: { name: "asc" },
-      include: {
-        _count: {
-          select: { posts: true },
+    const { searchParams } = new URL(request.url)
+    const categoryName = searchParams.get("name")
+
+    if (categoryName) {
+      // Search for a specific category by name
+      const category = await prisma.category.findFirst({
+        where: {
+          name: {
+            equals: categoryName,
+            mode: 'insensitive' // Case-insensitive search
+          }
         },
+        select: {
+          id: true,
+          name: true,
+          color: true,
+          icon: true,
+          slug: true,
+          postCount: true,
+          _count: {
+            select: {
+              posts: true
+            }
+          }
+        }
+      })
+
+      if (!category) {
+        return NextResponse.json({ error: "Category not found" }, { status: 404 })
+      }
+
+      return NextResponse.json({
+        category: {
+          id: category.id,
+          name: category.name,
+          color: category.color,
+          icon: category.icon,
+          slug: category.slug,
+          count: category._count.posts
+        }
+      })
+    }
+
+    // If no name provided, return all categories
+    const categories = await prisma.category.findMany({
+      select: {
+        id: true,
+        name: true,
+        color: true,
+        icon: true,
+        slug: true,
+        postCount: true,
+        _count: {
+          select: {
+            posts: true
+          }
+        }
       },
+      orderBy: {
+        postCount: 'desc'
+      }
     })
 
-    return NextResponse.json({ categories })
+    // Format the response to include both stored postCount and actual count
+    const formattedCategories = categories.map(category => ({
+      id: category.id,
+      name: category.name,
+      color: category.color,
+      icon: category.icon,
+      slug: category.slug,
+      count: category._count.posts // Use actual post count
+    }))
+
+    return NextResponse.json(formattedCategories)
   } catch (error) {
-    console.error("Get categories error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("[CATEGORIES_GET]", error)
+    return new NextResponse("Internal Error", { status: 500 })
   }
 }
 

@@ -1,174 +1,223 @@
-import Header from "@/components/header"
+"use client"
+
+import { useEffect, useState } from "react"
 import PostCreator from "@/components/post-creator"
 import PostCard from "@/components/post-card"
 import Sidebar from "@/components/sidebar"
-import Footer from "@/components/footer"
+import { Button } from "@/components/ui/button"
+import { useSearchParams, useRouter } from "next/navigation"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useAuth } from "@/lib/auth-context"
+import { toast } from "sonner"
 
-// Mock data for posts
-const mockPosts = [
-  {
-    id: "1",
+interface Post {
+  id: string
     author: {
-      name: "Sarah Chen",
-      avatar: "/placeholder.svg?height=40&width=40",
-      isVerified: true,
-      rank: "Community Expert",
-      rankIcon: "🏆",
-    },
-    content:
-      "Just finished designing a sustainable office complex in downtown. The integration of green walls and natural lighting has been incredible. What are your thoughts on biophilic design in modern architecture?",
-    category: "Design",
-    isAnonymous: false,
-    isPinned: true,
-    upvotes: 45,
-    downvotes: 2,
-    comments: 12,
-    timeAgo: "2 hours ago",
-    images: ["/placeholder.svg?height=200&width=300"],
-    topComment: {
-      author: "Mike Johnson",
-      content:
-        "This is exactly what we need more of! The psychological benefits of biophilic design are well-documented.",
-      isBestAnswer: true,
-    },
-  },
-  {
-    id: "2",
-    author: {
-      name: "Anonymous",
-      avatar: "/placeholder.svg?height=40&width=40",
-      isVerified: false,
-      rank: "",
-      rankIcon: "",
-    },
-    content: "Need the service of a good architect for a proposed house in Mathugama",
-    category: "Business",
-    isAnonymous: true,
-    isPinned: false,
-    upvotes: 23,
-    downvotes: 1,
-    comments: 8,
-    timeAgo: "4 hours ago",
-    topComment: {
-      author: "Emma Davis",
-      content: "I can help you with that! I have experience with residential projects in that area.",
-      isBestAnswer: false,
-    },
-  },
-  {
-    id: "3",
-    author: {
-      name: "Mike Johnson",
-      avatar: "/placeholder.svg?height=40&width=40",
-      isVerified: true,
-      rank: "Top Contributor",
-      rankIcon: "⭐",
-    },
-    content: "Anyone know good suppliers for sustainable building materials?",
-    category: "Construction",
-    isAnonymous: false,
-    isPinned: false,
-    upvotes: 15,
-    downvotes: 0,
-    comments: 6,
-    timeAgo: "5 hours ago",
-  },
-  {
-    id: "4",
-    author: {
-      name: "Alex Rivera",
-      avatar: "/placeholder.svg?height=40&width=40",
-      isVerified: true,
-      rank: "Visual Storyteller",
-      rankIcon: "📸",
-    },
-    content:
-      "New construction technology is revolutionizing how we build. 3D printing concrete structures is no longer science fiction. Here's a project we completed last month using this technology. The precision and speed of construction were remarkable, and we were able to reduce material waste by 40%. The structural integrity tests have exceeded our expectations, and the cost savings were significant. This technology is definitely the future of construction, especially for complex geometric designs that would be difficult or expensive to achieve with traditional methods.",
-    category: "Construction",
-    isAnonymous: false,
-    isPinned: false,
-    upvotes: 67,
-    downvotes: 3,
-    comments: 15,
-    timeAgo: "6 hours ago",
-    images: ["/placeholder.svg?height=200&width=300", "/placeholder.svg?height=200&width=300"],
-  },
-  {
-    id: "5",
-    author: {
-      name: "Emma Davis",
-      avatar: "/placeholder.svg?height=40&width=40",
-      isVerified: false,
-      rank: "Rising Star",
-      rankIcon: "🌟",
-    },
-    content: "What's your favorite CAD software and why?",
-    category: "Design",
-    isAnonymous: false,
-    isPinned: false,
-    upvotes: 28,
-    downvotes: 1,
-    comments: 19,
-    timeAgo: "8 hours ago",
-  },
-  {
-    id: "6",
-    author: {
-      name: "David Wilson",
-      avatar: "/placeholder.svg?height=40&width=40",
-      isVerified: true,
-      rank: "Community Expert",
-      rankIcon: "🏆",
-    },
-    content:
-      "Looking for career advice on transitioning from civil engineering to architecture. Has anyone made this switch successfully?",
-    category: "Career",
-    isAnonymous: false,
-    isPinned: false,
-    upvotes: 34,
-    downvotes: 0,
-    comments: 11,
-    timeAgo: "10 hours ago",
-  },
-]
+    id: string
+    name: string
+    avatar: string
+    isVerified: boolean
+    rank: string
+    rankIcon: string
+  }
+  content: string
+  category: string
+  isAnonymous: boolean
+  isPinned: boolean
+  upvotes: number
+  downvotes: number
+  comments: number
+  timeAgo: string
+  images?: string[]
+}
+
+interface Pagination {
+  total: number
+  pages: number
+  currentPage: number
+  limit: number
+}
 
 export default function HomePage() {
+  const [posts, setPosts] = useState<Post[]>([])
+  const [pagination, setPagination] = useState<Pagination>({
+    total: 0,
+    pages: 1,
+    currentPage: 1,
+    limit: 10,
+  })
+  const [isLoading, setIsLoading] = useState(true)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const { user } = useAuth()
+
+  const fetchPosts = async (page: number = 1) => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/posts?page=${page}&limit=10`)
+      if (!response.ok) throw new Error("Failed to fetch posts")
+      
+      const data = await response.json()
+      setPosts(data.posts)
+      setPagination(data.pagination)
+    } catch (error) {
+      console.error("Error fetching posts:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    const page = parseInt(searchParams.get("page") || "1")
+    fetchPosts(page)
+  }, [searchParams])
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > pagination.pages) return
+    router.push(`/?page=${newPage}`)
+  }
+
+  const handleDeletePost = async (postId: string) => {
+    if (!confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to delete post")
+      }
+
+      // Remove the deleted post from the state
+      setPosts(posts.filter(post => post.id !== postId))
+      toast.success("Post deleted successfully")
+    } catch (error) {
+      console.error("Error deleting post:", error)
+      toast.error("Failed to delete post")
+    }
+  }
+
+  // Generate pagination range with ellipsis
+  const getPaginationRange = () => {
+    const range: (number | string)[] = []
+    const maxVisible = 5 // Maximum number of page buttons to show
+    
+    if (pagination.pages <= maxVisible) {
+      // Show all pages if total pages is less than maxVisible
+      return Array.from({ length: pagination.pages }, (_, i) => i + 1)
+    }
+
+    // Always show first page
+    range.push(1)
+
+    // Calculate start and end of visible range
+    let start = Math.max(2, pagination.currentPage - 1)
+    let end = Math.min(pagination.pages - 1, pagination.currentPage + 1)
+
+    // Add ellipsis if needed
+    if (start > 2) range.push("...")
+    
+    // Add middle pages
+    for (let i = start; i <= end; i++) {
+      range.push(i)
+    }
+
+    // Add ellipsis if needed
+    if (end < pagination.pages - 1) range.push("...")
+    
+    // Always show last page
+    if (pagination.pages > 1) range.push(pagination.pages)
+
+    return range
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header />
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <PostCreator />
+            <PostCreator onPostCreated={() => fetchPosts(pagination.currentPage)} />
 
+            {isLoading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <Skeleton className="h-12 w-12 rounded-full" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-[200px]" />
+                        <Skeleton className="h-3 w-[150px]" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-24 w-full mb-4" />
+                    <div className="flex justify-between">
+                      <Skeleton className="h-8 w-[100px]" />
+                      <Skeleton className="h-8 w-[100px]" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
             <div className="space-y-4">
-              {mockPosts.map((post) => (
-                <PostCard key={post.id} post={post} />
+                  {posts.map((post: Post) => (
+                    <PostCard 
+                      key={post.id} 
+                      post={post} 
+                      onDelete={
+                        user && user.id === post.author.id
+                          ? () => handleDeletePost(post.id) 
+                          : undefined
+                      }
+                    />
               ))}
             </div>
 
             {/* Pagination */}
+                {pagination.pages > 1 && (
             <div className="flex justify-center mt-8">
-              <nav className="flex space-x-2">
-                <button className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                    <nav className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.currentPage - 1)}
+                        disabled={pagination.currentPage === 1}
+                      >
                   Previous
-                </button>
-                <button className="px-3 py-2 text-sm font-medium text-white bg-primary border border-primary rounded-md">
-                  1
-                </button>
-                <button className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                  2
-                </button>
-                <button className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                  3
-                </button>
-                <button className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                      </Button>
+                      
+                      {getPaginationRange().map((page, i) => (
+                        page === "..." ? (
+                          <span key={`ellipsis-${i}`} className="px-2">...</span>
+                        ) : (
+                          <Button
+                            key={page}
+                            variant={pagination.currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(page as number)}
+                          >
+                            {page}
+                          </Button>
+                        )
+                      ))}
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.currentPage + 1)}
+                        disabled={pagination.currentPage === pagination.pages}
+                      >
                   Next
-                </button>
+                      </Button>
               </nav>
             </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -177,8 +226,6 @@ export default function HomePage() {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   )
 }

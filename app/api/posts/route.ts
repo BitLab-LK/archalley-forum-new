@@ -6,9 +6,17 @@ import { z } from "zod"
 
 const createPostSchema = z.object({
   content: z.string().min(1, "Content is required"),
-  categoryId: z.string(),
+  categoryId: z.string().min(1, "Category is required"),
   isAnonymous: z.boolean().default(false),
-  attachments: z.array(z.string()).optional(),
+  tags: z.string().transform((str) => {
+    try {
+      return JSON.parse(str) as string[]
+    } catch {
+      return []
+    }
+  }).default("[]"),
+  originalLanguage: z.string().optional(),
+  translatedContent: z.string().optional(),
 })
 
 const getPostsSchema = z.object({
@@ -18,156 +26,282 @@ const getPostsSchema = z.object({
   sort: z.enum(["latest", "popular", "oldest"]).optional().default("latest"),
 })
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { content, categoryId, isAnonymous, attachments } = createPostSchema.parse(body)
+    const formData = await request.formData()
+    const content = formData.get("content") as string
+    const categoryId = formData.get("categoryId") as string
+    const isAnonymous = formData.get("isAnonymous") === "true"
+    const tags = JSON.parse(formData.get("tags") as string) as string[]
+    const originalLanguage = formData.get("originalLanguage") as string
+    const translatedContent = formData.get("translatedContent") as string
+
+    // Validate content is not empty and is valid UTF-8
+    if (!content || !content.trim()) {
+      return NextResponse.json({ error: "Content is required" }, { status: 400 })
+    }
+
+    // Ensure content is valid UTF-8
+    try {
+      decodeURIComponent(escape(content))
+    } catch (e) {
+      return NextResponse.json({ error: "Invalid content encoding" }, { status: 400 })
+    }
+
+    // Validate input
+    const validationResult = createPostSchema.safeParse({
+      content,
+      categoryId,
+      isAnonymous,
+      tags,
+      originalLanguage,
+      translatedContent,
+    })
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: "Invalid input", details: validationResult.error.format() },
+        { status: 400 }
+      )
+    }
+
+    const { data } = validationResult
 
     // Check if category exists
     const category = await prisma.category.findUnique({
-      where: { id: categoryId },
+      where: { id: data.categoryId },
     })
 
     if (!category) {
-      return NextResponse.json({ error: "Category not found" }, { status: 404 })
+      return NextResponse.json(
+        { error: "Category not found" },
+        { status: 404 }
+      )
     }
 
-    // Create post
+    // Create post with AI tags and translation info
     const post = await prisma.post.create({
       data: {
-        content,
-        categoryId,
+        content: data.content,
         authorId: session.user.id,
-        isAnonymous,
-        attachments: attachments
-          ? {
-              create: attachments.map((url) => ({
-                url,
-                filename: url.split("/").pop() || "attachment",
-                size: 0,
-                mimeType: "image/jpeg",
-              })),
-            }
-          : undefined,
+        categoryId: data.categoryId,
+        isAnonymous: data.isAnonymous,
+        aiTags: data.tags,
+        originalLanguage: data.originalLanguage || "English",
+        translatedContent: data.translatedContent || data.content,
       },
       include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-            rank: true,
-            isVerified: true,
-          },
-        },
+        author: true,
         category: true,
-        attachments: true,
-        _count: {
-          select: {
-            comments: true,
-            votes: true,
-          },
-        },
       },
     })
 
     // Update category post count
     await prisma.category.update({
-      where: { id: categoryId },
-      data: { postCount: { increment: 1 } },
+      where: { id: data.categoryId },
+      data: {
+        postCount: {
+          increment: 1,
+        },
+      },
     })
 
-    return NextResponse.json({ post }, { status: 201 })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 })
+    // Handle image uploads if any
+    const imageFiles = Array.from(formData.entries())
+      .filter(([key]) => key.startsWith("image"))
+      .map(([_, file]) => file as File)
+
+    if (imageFiles.length > 0) {
+      // Process image uploads
+      const uploadPromises = imageFiles.map(async (file) => {
+        // Add your image upload logic here
+        // For now, we'll just create a placeholder URL
+        const url = `/uploads/${Date.now()}-${file.name}`
+        
+        return prisma.attachment.create({
+          data: {
+            url,
+            filename: file.name,
+            size: file.size,
+            mimeType: file.type,
+            postId: post.id,
+          },
+        })
+      })
+
+      await Promise.all(uploadPromises)
     }
 
-    console.error("Create post error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(post)
+  } catch (error) {
+    console.error("Error creating post:", error)
+    return NextResponse.json(
+      { error: "Failed to create post" },
+      { status: 500 }
+    )
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const { page, limit, category, sort } = getPostsSchema.parse({
-      page: searchParams.get("page") || "1",
-      limit: searchParams.get("limit") || "10",
-      category: searchParams.get("category") || undefined,
-      sort: searchParams.get("sort") || "latest",
-    })
+    const page = parseInt(searchParams.get("page") || "1")
+    const limit = parseInt(searchParams.get("limit") || "10")
+    const categoryId = searchParams.get("category")
+    const sortBy = searchParams.get("sortBy") || "createdAt"
+    const sortOrder = searchParams.get("sortOrder") || "desc"
 
-    const pageNum = Number.parseInt(page)
-    const limitNum = Number.parseInt(limit)
-    const skip = (pageNum - 1) * limitNum
+    console.log("Fetching posts with params:", { page, limit, categoryId, sortBy, sortOrder })
 
-    const where = category ? { categoryId: category } : {}
+    const skip = (page - 1) * limit
 
-    const orderBy = {
-      latest: { createdAt: "desc" as const },
-      popular: { upvotes: "desc" as const },
-      oldest: { createdAt: "asc" as const },
-    }[sort]
+    // Build the where clause
+    const where = categoryId ? { categoryId } : {}
 
-    const [posts, total] = await Promise.all([
-      prisma.post.findMany({
+    try {
+      // Get posts with related data
+      const posts = await prisma.post.findMany({
         where,
-        orderBy,
-        skip,
-        take: limitNum,
         include: {
           author: {
             select: {
-              id: true,
               name: true,
               image: true,
               rank: true,
-              isVerified: true,
             },
           },
           category: true,
           attachments: true,
-          comments: {
-            take: 1,
-            orderBy: { upvotes: "desc" },
-            include: {
-              author: {
-                select: {
-                  id: true,
-                  name: true,
-                  image: true,
+          _count: {
+            select: {
+              comments: true,
+              votes: {
+                where: {
+                  type: "UP",
                 },
               },
             },
           },
-          _count: {
-            select: {
-              comments: true,
-              votes: true,
-            },
-          },
         },
-      }),
-      prisma.post.count({ where }),
-    ])
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+        skip,
+        take: limit,
+      })
 
-    return NextResponse.json({
-      posts,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total,
-        pages: Math.ceil(total / limitNum),
-      },
-    })
+      console.log(`Found ${posts.length} posts`)
+
+      // Get total count for pagination
+      const total = await prisma.post.count({ where })
+      console.log(`Total posts: ${total}`)
+
+      // Get vote counts for each post
+      const voteCounts = await Promise.all(
+        posts.map(async (post) => {
+          const [upvotes, downvotes] = await Promise.all([
+            prisma.vote.count({
+              where: { postId: post.id, type: "UP" },
+            }),
+            prisma.vote.count({
+              where: { postId: post.id, type: "DOWN" },
+            }),
+          ])
+          return { postId: post.id, upvotes, downvotes }
+        })
+      )
+
+      // Transform the data to match the frontend format
+      const transformedPosts = posts.map((post) => {
+        const voteCount = voteCounts.find((v) => v.postId === post.id)
+        return {
+          id: post.id,
+          author: {
+            name: post.isAnonymous ? "Anonymous" : post.author.name,
+            avatar: post.author.image || "/placeholder.svg",
+            isVerified: post.author.rank === "COMMUNITY_EXPERT" || post.author.rank === "TOP_CONTRIBUTOR",
+            rank: post.author.rank,
+            rankIcon: getRankIcon(post.author.rank),
+          },
+          content: post.content,
+          category: post.category.name,
+          isAnonymous: post.isAnonymous,
+          isPinned: post.isPinned,
+          upvotes: voteCount?.upvotes || 0,
+          downvotes: voteCount?.downvotes || 0,
+          comments: post._count.comments,
+          timeAgo: getTimeAgo(post.createdAt),
+          images: post.attachments.map((attachment) => attachment.url),
+        }
+      })
+
+      return NextResponse.json({
+        posts: transformedPosts,
+        pagination: {
+          total,
+          pages: Math.ceil(total / limit),
+          currentPage: page,
+          limit,
+        },
+      })
+    } catch (dbError) {
+      console.error("Database error:", dbError)
+      throw dbError // Re-throw to be caught by outer try-catch
+    }
   } catch (error) {
-    console.error("Get posts error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error fetching posts:", error)
+    // Log the full error object for debugging
+    if (error instanceof Error) {
+      console.error("Error details:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      })
+    }
+    return NextResponse.json(
+      { error: "Failed to fetch posts", details: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 }
+    )
   }
+}
+
+// Helper function to get time ago string
+function getTimeAgo(date: Date): string {
+  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
+  
+  let interval = seconds / 31536000
+  if (interval > 1) return Math.floor(interval) + " years ago"
+  
+  interval = seconds / 2592000
+  if (interval > 1) return Math.floor(interval) + " months ago"
+  
+  interval = seconds / 86400
+  if (interval > 1) return Math.floor(interval) + " days ago"
+  
+  interval = seconds / 3600
+  if (interval > 1) return Math.floor(interval) + " hours ago"
+  
+  interval = seconds / 60
+  if (interval > 1) return Math.floor(interval) + " minutes ago"
+  
+  return Math.floor(seconds) + " seconds ago"
+}
+
+// Helper function to get rank icon
+function getRankIcon(rank: string): string {
+  const icons = {
+    COMMUNITY_EXPERT: "🏆",
+    TOP_CONTRIBUTOR: "⭐",
+    VISUAL_STORYTELLER: "📸",
+    VALUED_RESPONDER: "💬",
+    RISING_STAR: "🌟",
+    CONVERSATION_STARTER: "💡",
+    NEW_MEMBER: "👋",
+  }
+  return icons[rank as keyof typeof icons] || ""
 }
