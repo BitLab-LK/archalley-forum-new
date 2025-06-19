@@ -144,9 +144,9 @@ export default function ProfilePage() {
                     <AvatarFallback className="text-2xl">{profileData.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   {isEditing && (
-                    <Button size="icon" variant="secondary" className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full">
-                      <Camera className="w-4 h-4" />
-                    </Button>
+                  <Button size="icon" variant="secondary" className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full">
+                    <Camera className="w-4 h-4" />
+                  </Button>
                   )}
                 </div>
 
@@ -161,10 +161,10 @@ export default function ProfilePage() {
                       {user?.rank || "New Member"}
                     </Badge>
                     {profileData.location && (
-                      <span className="flex items-center">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        {profileData.location}
-                      </span>
+                    <span className="flex items-center">
+                      <MapPin className="w-4 h-4 mr-1" />
+                      {profileData.location}
+                    </span>
                     )}
                     <span className="flex items-center">
                       <Calendar className="w-4 h-4 mr-1" />
@@ -173,7 +173,7 @@ export default function ProfilePage() {
                   </div>
 
                   {profileData.bio && (
-                    <p className="text-gray-700 dark:text-gray-300 mb-4">{profileData.bio}</p>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4">{profileData.bio}</p>
                   )}
 
                   <div className="flex flex-wrap gap-6 text-sm">
@@ -248,24 +248,24 @@ export default function ProfilePage() {
                           <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.email}</p>
                         </div>
                         {profileData.phone && (
-                          <div>
-                            <Label className="text-sm font-medium">Phone</Label>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.phone}</p>
-                          </div>
+                        <div>
+                          <Label className="text-sm font-medium">Phone</Label>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.phone}</p>
+                        </div>
                         )}
                         {profileData.website && (
-                          <div>
-                            <Label className="text-sm font-medium">Website</Label>
-                            <a
-                              href={profileData.website}
-                              className="text-sm text-primary hover:underline flex items-center"
+                        <div>
+                          <Label className="text-sm font-medium">Website</Label>
+                          <a
+                            href={profileData.website}
+                            className="text-sm text-primary hover:underline flex items-center"
                               target="_blank"
                               rel="noopener noreferrer"
-                            >
-                              <LinkIcon className="w-4 h-4 mr-1" />
-                              {profileData.website}
-                            </a>
-                          </div>
+                          >
+                            <LinkIcon className="w-4 h-4 mr-1" />
+                            {profileData.website}
+                          </a>
+                        </div>
                         )}
                       </>
                     )}
@@ -320,26 +320,26 @@ export default function ProfilePage() {
                     ) : (
                       <>
                         {profileData.company && (
-                          <div>
-                            <Label className="text-sm font-medium">Company</Label>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.company}</p>
-                          </div>
+                        <div>
+                          <Label className="text-sm font-medium">Company</Label>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.company}</p>
+                        </div>
                         )}
                         {profileData.profession && (
-                          <div>
-                            <Label className="text-sm font-medium">Profession</Label>
+                        <div>
+                          <Label className="text-sm font-medium">Profession</Label>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
                               {profileData.profession.split("-").map(word => 
                                 word.charAt(0).toUpperCase() + word.slice(1)
                               ).join(" ")}
                             </p>
-                          </div>
+                        </div>
                         )}
                         {profileData.bio && (
-                          <div>
-                            <Label className="text-sm font-medium">Bio</Label>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.bio}</p>
-                          </div>
+                        <div>
+                          <Label className="text-sm font-medium">Bio</Label>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.bio}</p>
+                        </div>
                         )}
                       </>
                     )}

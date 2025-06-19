@@ -14,6 +14,7 @@ import Image from "next/image"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { cn } from "@/lib/utils"
 
 interface Category {
   id: string
@@ -52,19 +53,11 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [aiProgress, setAiProgress] = useState(0)
   const [aiStatus, setAiStatus] = useState<string | null>(null)
+  const [imageUploadProgress, setImageUploadProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleContentChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    const content = e.target.value
-    // Ensure content is valid UTF-8
-    try {
-      decodeURIComponent(escape(content))
-      setContent(content)
-    } catch (error) {
-      console.error("Invalid UTF-8 content:", error)
-      // Optionally show an error message to the user
-      toast.error("Invalid character detected. Please use standard characters.")
-    }
+    setContent(e.target.value)
   }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -76,16 +69,8 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       return
     }
 
-    if (!content.trim()) {
+    if (!content || !content.trim()) {
       setError("Please enter some content")
-      return
-    }
-
-    // Validate UTF-8 content
-    try {
-      decodeURIComponent(escape(content))
-    } catch (error) {
-      setError("Invalid content encoding. Please use standard characters.")
       return
     }
 
@@ -103,11 +88,12 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content: content.trim() }),
       })
 
       if (!classificationResponse.ok) {
-        throw new Error("Failed to analyze content")
+        const errorData = await classificationResponse.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || "Failed to analyze content")
       }
 
       const classification = await classificationResponse.json() as AIClassification
@@ -129,25 +115,42 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       // Get category ID from the classified category name
       const categoryResponse = await fetch(`/api/categories?name=${encodeURIComponent(classifiedCategory)}`)
       if (!categoryResponse.ok) {
-        throw new Error("Failed to get category ID")
+        const categoryError = await categoryResponse.json().catch(() => ({}))
+        throw new Error(categoryError.message || categoryError.error || "Failed to get category")
       }
+      
       const categoryData = await categoryResponse.json()
       if (!categoryData.category) {
-        throw new Error("Category not found")
+        throw new Error(`Category "${classifiedCategory}" not found`)
       }
 
       // Step 2: Create the post
       const formData = new FormData()
-      formData.append("content", content)
-      formData.append("categoryId", categoryData.category.id) // Use category ID
+      formData.append("content", content.trim())
+      formData.append("categoryId", categoryData.category.id)
       formData.append("isAnonymous", String(isAnonymous))
-      formData.append("tags", JSON.stringify(tags) as string)
+      formData.append("tags", JSON.stringify(selectedTags))
       formData.append("originalLanguage", originalLanguage)
       formData.append("translatedContent", translatedContent)
 
       // Add images if any
-      images.forEach((image: UploadedImage, index: number) => {
+      images.forEach((image, index) => {
+        // Only append the URL, as the file is already uploaded
         formData.append(`image${index}`, image.url)
+      })
+
+      // Log the form data for debugging
+      console.log("Creating post with data:", {
+          content: content.trim(),
+        categoryId: categoryData.category.id,
+          isAnonymous,
+        tags: selectedTags,
+        originalLanguage,
+        hasTranslatedContent: !!translatedContent,
+        images: images.map(img => ({
+          url: img.url,
+          name: img.name
+        }))
       })
 
       setAiProgress(90)
@@ -158,17 +161,39 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
         body: formData,
       })
 
+      const data = await response.json().catch(() => ({}))
+
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || "Failed to create post")
+        console.error("Post creation failed:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: data.error,
+          message: data.message,
+          details: data.details
+        })
+
+        // Handle validation errors
+        if (response.status === 400 && data.details) {
+          const validationErrors = Object.entries(data.details)
+            .filter(([key]) => key !== "_errors")
+            .map(([field, errors]: [string, any]) => {
+              const fieldErrors = errors._errors || []
+              return `${field}: ${fieldErrors.join(", ")}`
+            })
+            .join("\n")
+          
+          throw new Error(validationErrors || data.message || "Invalid input")
+        }
+
+        throw new Error(data.message || data.error || `Failed to create post (${response.status})`)
       }
 
       setAiProgress(100)
       setAiStatus("Post created successfully!")
 
       // Reset form
-      setContent("")
-      setIsAnonymous(false)
+        setContent("")
+        setIsAnonymous(false)
       setImages([])
       setSelectedTags([])
       setSuggestedTags([])
@@ -176,11 +201,16 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       // Notify parent component
       onPostCreated()
 
+      // Show success message
+      toast.success("Post created successfully!")
+
       // Refresh the page to show the new post
-      window.location.reload()
+        window.location.reload()
     } catch (error) {
       console.error("Error creating post:", error)
-      setError(error instanceof Error ? error.message : "Failed to create post")
+      const errorMessage = error instanceof Error ? error.message : "Failed to create post"
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
       // Reset AI progress after a delay
@@ -200,29 +230,66 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
     if (!files || files.length === 0) return
 
     setIsUploading(true)
+    setError(null)
+    setImageUploadProgress(0)
+
     try {
       const formData = new FormData()
       for (let i = 0; i < files.length; i++) {
         formData.append('images', files[i])
       }
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
+      // Use XMLHttpRequest for upload progress
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', '/api/upload')
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100)
+            setImageUploadProgress(percent)
+          }
+        }
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const data = JSON.parse(xhr.responseText)
+              if (!data.images || !Array.isArray(data.images)) {
+                throw new Error('Invalid response from server')
+              }
+              setImages(prev => [...prev, ...data.images])
+              toast.success(`Successfully uploaded ${data.images.length} image${data.images.length > 1 ? 's' : ''}`)
+              setImageUploadProgress(100)
+              resolve()
+            } catch (err) {
+              reject(err)
+            }
+          } else {
+            try {
+              const data = JSON.parse(xhr.responseText)
+              setError(data.message || data.error || 'Failed to upload images')
+              toast.error(data.message || data.error || 'Failed to upload images')
+            } catch {
+              setError('Failed to upload images')
+              toast.error('Failed to upload images')
+            }
+            reject(new Error('Failed to upload images'))
+          }
+        }
+        xhr.onerror = () => {
+          setError('Failed to upload images')
+          toast.error('Failed to upload images')
+          reject(new Error('Failed to upload images'))
+        }
+        xhr.send(formData)
       })
-
-      if (!response.ok) {
-        throw new Error('Failed to upload images')
-      }
-
-      const data = await response.json()
-      setImages(prev => [...prev, ...data.images])
     } catch (error) {
       console.error('Error uploading images:', error)
-      toast.error('Failed to upload images')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload images'
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsUploading(false)
-      // Reset file input
+      setTimeout(() => setImageUploadProgress(0), 1000)
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
@@ -231,7 +298,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
 
   return (
     <Card className="mb-6 shadow-sm border-0">
-      <CardContent className="p-4">
+        <CardContent className="p-4">
         {!user ? (
           <div className="text-center py-4">
             <p className="text-gray-500">Please sign in to create a post</p>
@@ -247,8 +314,13 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
             {/* Post Creator Header */}
             <div className="flex items-center space-x-3 pb-3 border-b">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={user.avatar || "/placeholder.svg"} />
-                <AvatarFallback>{user.name?.[0] || "U"}</AvatarFallback>
+                <AvatarImage 
+                  src={user.image || "/avatar_placeholder.webp"} 
+                  alt={user.name || "User avatar"}
+                />
+                <AvatarFallback>
+                  {user.name?.[0]?.toUpperCase() || "U"}
+                </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <Textarea
@@ -318,25 +390,36 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
 
             {/* Image Preview */}
             {images.length > 0 && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div className="grid grid-cols-4 gap-2">
                   {images.map((image, index) => (
-                    <div key={index} className="relative group aspect-square">
-                      <Image
-                        src={image.url}
-                        alt={`Uploaded image ${index + 1}`}
-                        fill
-                        className="rounded-lg object-cover"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
-                        onClick={() => removeImage(index)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
+                    <div
+                      key={index}
+                      className="relative overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
+                      style={{
+                        maxHeight: '200px',
+                        minHeight: '100px',
+                        aspectRatio: '1/1'
+                      }}
+                    >
+                      <div className="relative w-full h-full group">
+                        <Image
+                          src={image.url}
+                          alt={`Uploaded image ${index + 1}`}
+                          fill
+                          className="object-contain"
+                          sizes="25vw"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity rounded-full bg-black/50 hover:bg-black/70"
+                          onClick={() => removeImage(index)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -353,9 +436,17 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
                 <Progress value={aiProgress} className="h-1" />
               </div>
             )}
+
+            {/* Image Upload Progress Bar */}
+            {isUploading && (
+              <div className="mb-2">
+                <Progress value={imageUploadProgress} className="h-2" />
+                <div className="text-xs text-gray-500 mt-1">Uploading images... {imageUploadProgress}%</div>
+              </div>
+            )}
           </form>
         )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
   )
 }

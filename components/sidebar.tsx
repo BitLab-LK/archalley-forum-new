@@ -13,9 +13,13 @@ interface Category {
   count: number
 }
 
-interface FeaturedPost {
-  title: string
-  author: string
+interface TrendingPost {
+  id: string
+  content: string
+  author: {
+    name: string
+    avatar: string
+  }
   upvotes: number
 }
 
@@ -25,12 +29,6 @@ interface TopContributor {
   posts: number
   avatar: string
 }
-
-const featuredPosts: FeaturedPost[] = [
-  { title: "Sustainable Architecture Trends 2024", author: "Sarah Chen", upvotes: 45 },
-  { title: "Modern Office Design Principles", author: "Mike Johnson", upvotes: 38 },
-  { title: "Construction Technology Innovations", author: "Alex Rivera", upvotes: 32 },
-]
 
 const topContributors: TopContributor[] = [
   { name: "Sarah Chen", rank: "Community Expert", posts: 156, avatar: "/placeholder.svg?height=32&width=32" },
@@ -42,6 +40,8 @@ const topContributors: TopContributor[] = [
 export default function Sidebar() {
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [trendingPosts, setTrendingPosts] = useState<TrendingPost[]>([])
+  const [isTrendingLoading, setIsTrendingLoading] = useState(true)
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -60,6 +60,25 @@ export default function Sidebar() {
     }
 
     fetchCategories()
+  }, [])
+
+  useEffect(() => {
+    const fetchTrendingPosts = async () => {
+      setIsTrendingLoading(true)
+      try {
+        const response = await fetch('/api/posts?limit=5&sortBy=upvotes&sortOrder=desc')
+        if (!response.ok) {
+          throw new Error('Failed to fetch trending posts')
+        }
+        const data = await response.json()
+        setTrendingPosts(data.posts || [])
+      } catch (error) {
+        console.error('Error fetching trending posts:', error)
+      } finally {
+        setIsTrendingLoading(false)
+      }
+    }
+    fetchTrendingPosts()
   }, [])
 
   return (
@@ -100,24 +119,38 @@ export default function Sidebar() {
         </CardContent>
       </Card>
 
-      {/* Featured Posts */}
+      {/* Trending Posts */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Award className="w-5 h-5" />
-            <span>Featured Posts</span>
+            <span>Trending Posts</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {featuredPosts.map((post, index) => (
-            <div key={index} className="space-y-2">
-              <h4 className="text-sm font-medium line-clamp-2">{post.title}</h4>
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>by {post.author}</span>
-                <span>{post.upvotes} upvotes</span>
+          {isTrendingLoading ? (
+            Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="space-y-2 animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-32" />
+                <div className="flex items-center justify-between text-xs text-gray-300">
+                  <div className="h-3 bg-gray-200 rounded w-16" />
+                  <div className="h-3 bg-gray-200 rounded w-10" />
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : trendingPosts.length === 0 ? (
+            <div className="text-sm text-gray-500">No trending posts found.</div>
+          ) : (
+            trendingPosts.map((post, index) => (
+              <div key={post.id} className="space-y-2">
+                <h4 className="text-sm font-medium line-clamp-2">{post.content}</h4>
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>by {post.author.name}</span>
+                  <span>{post.upvotes} upvotes</span>
+                </div>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 

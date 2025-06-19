@@ -11,68 +11,67 @@ const createCommentSchema = z.object({
   isAnonymous: z.boolean().default(false),
 })
 
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const body = await request.json()
-    const { content, postId, parentId, isAnonymous } = createCommentSchema.parse(body)
-
-    // Check if post exists
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
-    })
-
-    if (!post) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 })
-    }
-
-    // Check if parent comment exists (if provided)
-    if (parentId) {
-      const parentComment = await prisma.comment.findUnique({
-        where: { id: parentId },
-      })
-
-      if (!parentComment) {
-        return NextResponse.json({ error: "Parent comment not found" }, { status: 404 })
+// GET /api/comments?postId=...
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const postId = searchParams.get("postId")
+  if (!postId) {
+    return NextResponse.json({ error: "Missing postId" }, { status: 400 })
+  }
+  // Fetch top-level comments (no parentId), latest first, with replies
+  const comments = await prisma.comment.findMany({
+    where: { postId, parentId: null },
+    orderBy: { createdAt: "desc" },
+    include: {
+      author: { select: { name: true, image: true } },
+      replies: {
+        orderBy: { createdAt: "asc" },
+        include: { author: { select: { name: true, image: true } } }
       }
     }
+  })
+  // Format for frontend
+  const formatted = comments.map(c => ({
+    id: c.id,
+    author: c.author.name,
+    authorImage: c.author.image,
+    content: c.content,
+    createdAt: c.createdAt,
+    replies: c.replies.map(r => ({
+      id: r.id,
+      author: r.author.name,
+      authorImage: r.author.image,
+      content: r.content,
+      createdAt: r.createdAt,
+      parentId: r.parentId
+    }))
+  }))
+  return NextResponse.json({ comments: formatted })
+}
 
-    // Create comment
-    const comment = await prisma.comment.create({
-      data: {
-        content,
-        postId,
-        parentId,
-        authorId: session.user.id,
-        isAnonymous,
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-            rank: true,
-            isVerified: true,
-          },
-        },
-        _count: {
-          select: { votes: true },
-        },
-      },
-    })
-
-    return NextResponse.json({ comment }, { status: 201 })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 })
-    }
-
-    console.error("Create comment error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+// POST /api/comments
+export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  const body = await request.json()
+  const { postId, content, parentId } = body
+  if (!postId || !content) {
+    return NextResponse.json({ error: "Missing postId or content" }, { status: 400 })
+  }
+  // Create comment or reply
+  const comment = await prisma.comment.create({
+    data: {
+      content,
+      postId,
+      authorId: session.user.id,
+      parentId: parentId || null
+    },
+    include: {
+      author: { select: { name: true, image: true } },
+      replies: true
+    }
+  })
+  return NextResponse.json({ comment })
 }

@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, MessageCircle, Share2, Flag, Pin, CheckCircle, Trash2, MoreHorizontal } from "lucide-react"
+import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Flag, Pin, CheckCircle, Trash2, MoreHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   DropdownMenu,
@@ -15,6 +15,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
 import Image from "next/image"
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import io from "socket.io-client"
+import type { Socket } from "socket.io-client"
 
 interface PostCardProps {
   post: {
@@ -71,22 +74,255 @@ const shouldUseColoredBackground = (content: string, hasImages: boolean) => {
   return !hasImages && content.length <= 300
 }
 
+// Lightbox scaffold
+function Lightbox({ images, initialIndex, onClose }: { images: string[]; initialIndex: number; onClose: () => void }) {
+  const [index, setIndex] = useState(initialIndex)
+  if (!images.length) return null
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90">
+      <button className="absolute top-4 right-4 text-white text-3xl" onClick={onClose}>&times;</button>
+      <button
+        className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-3xl"
+        onClick={() => setIndex((i) => (i > 0 ? i - 1 : images.length - 1))}
+        aria-label="Previous image"
+      >&#8592;</button>
+      <img
+        src={images[index]}
+        alt="Post image"
+        className="max-h-[80vh] max-w-[90vw] object-contain rounded-lg shadow-lg"
+        draggable={false}
+      />
+      <button
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-3xl"
+        onClick={() => setIndex((i) => (i < images.length - 1 ? i + 1 : 0))}
+        aria-label="Next image"
+      >&#8594;</button>
+    </div>
+  )
+}
+
+let socket: Socket | null = null
+
+// Extracted post header/content rendering for reuse
+function PostHeaderAndContent({ post, renderImages }: { post: PostCardProps["post"]; renderImages: (images: string[]) => JSX.Element }) {
+  return (
+    <>
+      {/* Post Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
+            <AvatarFallback>{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="font-semibold">{post.isAnonymous ? "Anonymous" : post.author.name}</span>
+              {!post.isAnonymous && post.author.isVerified && (
+                <CheckCircle className="w-4 h-4 text-blue-500" />
+              )}
+              {post.isPinned && <Pin className="w-4 h-4 text-primary" />}
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-gray-500">
+              {!post.isAnonymous && (
+                <Badge variant="secondary" className="text-xs">
+                  {post.author.rank}
+                </Badge>
+              )}
+              <span>{post.timeAgo}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Badge className={cn("text-xs", `category-${post.category.toLowerCase()}`)}>
+            {post.category}
+          </Badge>
+        </div>
+      </div>
+      {/* Post Content */}
+      <div className="mb-4">
+        {shouldUseColoredBackground(post.content, !!post.images?.length) ? (
+          <div
+            className={cn(
+              "rounded-lg p-6 text-white text-center font-semibold leading-relaxed",
+              getCategoryColorClass(post.category),
+              getTextSizeClass(post.content),
+            )}
+            dir="auto"
+          >
+            {post.content}
+          </div>
+        ) : (
+          <>
+            <p 
+              className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap text-base leading-relaxed mb-4"
+              dir="auto"
+            >
+              {post.content}
+            </p>
+            {/* Image Grid */}
+            {Array.isArray(post.images) && post.images.length > 0 && renderImages(post.images)}
+          </>
+        )}
+      </div>
+    </>
+  )
+}
+
 export default function PostCard({ post, onDelete }: PostCardProps) {
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
   const [userVote, setUserVote] = useState<"up" | "down" | null>(null)
   const [showComments, setShowComments] = useState(false)
   const isAuthor = user?.id === post.author.id
   const isAdmin = user?.role === "ADMIN"
+  const [modalOpen, setModalOpen] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [comments, setComments] = useState<any[]>([])
+  const [commentInput, setCommentInput] = useState("")
+  const [replyTo, setReplyTo] = useState<string | null>(null)
+  const [posting, setPosting] = useState(false)
+  const commentListRef = useRef<HTMLDivElement>(null)
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-40">
+        <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-2"></span>
+        Loading...
+      </div>
+    );
+  }
+
+  // Connect to Socket.IO and join post room on modal open
+  useEffect(() => {
+    if (!modalOpen) return
+    if (!socket) {
+      socket = io({ 
+        path: "/api/socketio",
+        auth: {
+          userId: user?.id
+        }
+      })
+    }
+    socket.emit("join-post", post.id)
+    // Listen for new comments
+    socket.on("new-comment", (comment: any) => {
+      const normalizedComment = {
+        ...comment,
+        upvotes: comment.upvotes ?? 0,
+        downvotes: comment.downvotes ?? 0,
+        userVote: comment.userVote ?? undefined,
+        replies: comment.replies?.map((r: any) => ({
+          ...r,
+          upvotes: r.upvotes ?? 0,
+          downvotes: r.downvotes ?? 0,
+          userVote: r.userVote ?? undefined,
+        })) ?? []
+      }
+      setComments((prev) => [normalizedComment, ...prev])
+    })
+    // Listen for new replies
+    socket.on("new-reply", (reply: any) => {
+      const normalizedReply = {
+        ...reply,
+        upvotes: reply.upvotes ?? 0,
+        downvotes: reply.downvotes ?? 0,
+        userVote: reply.userVote ?? undefined,
+      }
+      setComments((prev) => prev.map(c =>
+        c.id === reply.parentId
+          ? { ...c, replies: [...c.replies, normalizedReply] }
+          : c
+      ))
+    })
+    // Listen for vote updates
+    socket.on("vote-update", (data: { upvotes: number; downvotes: number; userVote: "UP" | "DOWN" | null }) => {
+      post.upvotes = data.upvotes
+      post.downvotes = data.downvotes
+      setUserVote(data.userVote?.toLowerCase() as "up" | "down" | null)
+    })
+    // Listen for comment vote updates
+    socket.on("comment-vote-update", (data: { commentId: string, upvotes: number, downvotes: number, userVote: "UP" | "DOWN" | null }) => {
+      setComments(prev => prev.map(c =>
+        c.id === data.commentId
+          ? { ...c, upvotes: data.upvotes, downvotes: data.downvotes, userVote: data.userVote?.toLowerCase() as "up" | "down" | undefined }
+          : {
+              ...c,
+              replies: c.replies?.map((r: any) =>
+                r.id === data.commentId
+                  ? { ...r, upvotes: data.upvotes, downvotes: data.downvotes, userVote: data.userVote?.toLowerCase() as "up" | "down" | undefined }
+                  : r
+              )
+            }
+      ))
+    })
+    return () => {
+      socket?.off("new-comment")
+      socket?.off("new-reply")
+      socket?.off("vote-update")
+      socket?.off("comment-vote-update")
+    }
+  }, [modalOpen, post.id, user?.id])
+
+  // Fetch comments from backend on modal open
+  useEffect(() => {
+    if (!modalOpen) return
+    fetch(`/api/comments?postId=${post.id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data.comments)) {
+          setComments(
+            data.comments.map((c: any) => ({
+              ...c,
+              upvotes: c.upvotes ?? 0,
+              downvotes: c.downvotes ?? 0,
+              replies: c.replies?.map((r: any) => ({
+                ...r,
+                upvotes: r.upvotes ?? 0,
+                downvotes: r.downvotes ?? 0,
+              })) ?? []
+            }))
+          )
+        }
+      })
+  }, [modalOpen, post.id])
 
   const handleVote = async (type: "up" | "down") => {
+    if (!user) {
+      alert("Please log in to vote on posts")
+      return
+    }
     try {
       const response = await fetch(`/api/posts/${post.id}/vote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type }),
+        body: JSON.stringify({ type: type.toUpperCase() }),
       })
+      const data = await response.json()
       if (response.ok) {
-        setUserVote(userVote === type ? null : type)
+        // Update UI immediately
+        if (userVote === type) {
+          // Remove vote
+          setUserVote(null)
+          if (type === "up") post.upvotes--
+          else post.downvotes--
+        } else if (userVote) {
+          // Change vote
+          if (type === "up") {
+            post.upvotes++
+            post.downvotes--
+          } else {
+            post.upvotes--
+            post.downvotes++
+          }
+          setUserVote(type)
+        } else {
+          // New vote
+          setUserVote(type)
+          if (type === "up") post.upvotes++
+          else post.downvotes++
+        }
+        // Emit vote update via socket
+        socket?.emit("vote", { postId: post.id, type: type.toUpperCase() })
       }
     } catch (error) {
       console.error("Error voting:", error)
@@ -114,172 +350,563 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     }
   }
 
-  return (
-    <Card className="mb-4 shadow-sm border-0">
-      <CardContent className="p-4">
-        {/* Post Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
-              <AvatarFallback>{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-semibold">{post.isAnonymous ? "Anonymous" : post.author.name}</span>
-                {!post.isAnonymous && post.author.isVerified && (
-                  <CheckCircle className="w-4 h-4 text-blue-500" />
-                )}
-                {post.isPinned && <Pin className="w-4 h-4 text-primary" />}
-              </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                {!post.isAnonymous && (
-                  <Badge variant="secondary" className="text-xs">
-                    {post.author.rank}
-                  </Badge>
-                )}
-                <span>{post.timeAgo}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Badge className={cn("text-xs", `category-${post.category.toLowerCase()}`)}>
-              {post.category}
-            </Badge>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {(isAuthor || isAdmin) && (
-                  <DropdownMenuItem
-                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                    onClick={handleDelete}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    {isAdmin && !isAuthor ? "Delete Post (Admin)" : "Delete Post"}
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem>
-                  <Flag className="w-4 h-4 mr-2" />
-                  Report Post
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+  // Facebook-style image grid logic
+  const renderImages = (images: string[]) => {
+    const count = images.length
+    if (count === 1) {
+      return (
+        <div className="w-full flex justify-center items-center cursor-pointer" onClick={() => { setLightboxIndex(0); setLightboxOpen(true) }}>
+          <div className="relative w-full" style={{ maxHeight: 500 }}>
+            <Image
+              src={images[0]}
+              alt="Post image"
+              className="object-contain rounded-lg w-full h-auto max-h-[500px]"
+              fill
+              sizes="100vw"
+              priority
+            />
           </div>
         </div>
-
-        {/* Post Content */}
-        <div className="mb-4">
-          {shouldUseColoredBackground(post.content, !!post.images?.length) ? (
-            <div
-              className={cn(
-                "rounded-lg p-6 text-white text-center font-semibold leading-relaxed",
-                getCategoryColorClass(post.category),
-                getTextSizeClass(post.content),
-              )}
-              dir="auto"
-            >
-              {post.content}
+      )
+    }
+    if (count === 2) {
+      return (
+        <div className="flex gap-2 mt-2">
+          {images.map((img, i) => (
+            <div key={i} className="relative w-1/2 aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center cursor-pointer" style={{ maxHeight: 350 }} onClick={() => { setLightboxIndex(i); setLightboxOpen(true) }}>
+              <Image
+                src={img}
+                alt={`Post image ${i + 1}`}
+                className="object-cover w-full h-full"
+                fill
+                sizes="50vw"
+              />
             </div>
-          ) : (
-            <>
-              <p 
-                className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap text-base leading-relaxed"
+          ))}
+        </div>
+      )
+    }
+    if (count === 3) {
+      return (
+        <div className="grid grid-cols-3 gap-2 mt-2" style={{ height: 350 }}>
+          <div className="relative col-span-2 row-span-2 h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => { setLightboxIndex(0); setLightboxOpen(true) }}>
+            <Image
+              src={images[0]}
+              alt="Post image 1"
+              className="object-cover w-full h-full"
+              fill
+              sizes="66vw"
+            />
+          </div>
+          <div className="flex flex-col gap-2 h-full">
+            <div className="relative flex-1 rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => { setLightboxIndex(1); setLightboxOpen(true) }}>
+              <Image
+                src={images[1]}
+                alt="Post image 2"
+                className="object-cover w-full h-full"
+                fill
+                sizes="33vw"
+              />
+            </div>
+            <div className="relative flex-1 rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => { setLightboxIndex(2); setLightboxOpen(true) }}>
+              <Image
+                src={images[2]}
+                alt="Post image 3"
+                className="object-cover w-full h-full"
+                fill
+                sizes="33vw"
+              />
+            </div>
+          </div>
+        </div>
+      )
+    }
+    if (count === 4) {
+      return (
+        <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-2" style={{ height: 350 }}>
+          {images.map((img, i) => (
+            <div key={i} className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => { setLightboxIndex(i); setLightboxOpen(true) }}>
+              <Image
+                src={img}
+                alt={`Post image ${i + 1}`}
+                className="object-cover w-full h-full"
+                fill
+                sizes="50vw"
+              />
+            </div>
+          ))}
+        </div>
+      )
+    }
+    // More than 4 images
+    return (
+      <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-2" style={{ height: 350 }}>
+        {images.slice(0, 3).map((img, i) => (
+          <div key={i} className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => { setLightboxIndex(i); setLightboxOpen(true) }}>
+            <Image
+              src={img}
+              alt={`Post image ${i + 1}`}
+              className="object-cover w-full h-full"
+              fill
+              sizes="50vw"
+            />
+          </div>
+        ))}
+        {/* Last image with overlay */}
+        <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => { setLightboxIndex(3); setLightboxOpen(true) }}>
+          <Image
+            src={images[3]}
+            alt={`Post image 4`}
+            className="object-cover w-full h-full"
+            fill
+            sizes="50vw"
+          />
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+            <span className="text-white text-2xl font-bold">+{count - 4}</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Add comment or reply (API + real-time)
+  const handleAddComment = async () => {
+    if (!commentInput.trim()) return
+    setPosting(true)
+    try {
+      const res = await fetch("/api/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: post.id,
+          content: commentInput,
+          parentId: replyTo || undefined
+        })
+      })
+      const data = await res.json()
+      if (res.ok && data.comment) {
+        // Normalize the comment object for real-time update
+        const normalizedComment = {
+          ...data.comment,
+          upvotes: 0,
+          downvotes: 0,
+          userVote: undefined,
+          replies: data.comment.replies?.map((r: any) => ({
+            ...r,
+            upvotes: 0,
+            downvotes: 0,
+            userVote: undefined,
+          })) ?? []
+        }
+        // Emit via socket for real-time update
+        if (replyTo) {
+          socket?.emit("new-reply", { postId: post.id, reply: { ...normalizedComment, parentId: replyTo } })
+        } else {
+          socket?.emit("new-comment", { postId: post.id, comment: normalizedComment })
+          post.comments += 1
+        }
+        setCommentInput("")
+        setReplyTo(null)
+        setTimeout(() => {
+          if (commentListRef.current) commentListRef.current.scrollTop = 0
+        }, 100)
+      }
+    } finally {
+      setPosting(false)
+    }
+  }
+
+  // Add the handleCommentVote function in the component, similar to handleVote for posts
+  const handleCommentVote = async (commentId: string, type: "up" | "down") => {
+    if (!user) return;
+    setComments(prev => prev.map(c => {
+      if (c.id === commentId) {
+        let upvotes = c.upvotes ?? 0;
+        let downvotes = c.downvotes ?? 0;
+        let newUserVote: "up" | "down" | undefined = c.userVote;
+        if (c.userVote === type) {
+          // Remove vote
+          newUserVote = undefined;
+          if (type === "up") upvotes--;
+          else downvotes--;
+        } else if (c.userVote) {
+          // Switch vote
+          if (type === "up") {
+            upvotes++;
+            downvotes--;
+          } else {
+            upvotes--;
+            downvotes++;
+          }
+          newUserVote = type;
+        } else {
+          // New vote
+          newUserVote = type;
+          if (type === "up") upvotes++;
+          else downvotes++;
+        }
+        return { ...c, upvotes, downvotes, userVote: newUserVote };
+      }
+      return {
+        ...c,
+        replies: c.replies?.map((r: any) => {
+          if (r.id === commentId) {
+            let upvotes = r.upvotes ?? 0;
+            let downvotes = r.downvotes ?? 0;
+            let newUserVote: "up" | "down" | undefined = r.userVote;
+            if (r.userVote === type) {
+              newUserVote = undefined;
+              if (type === "up") upvotes--;
+              else downvotes--;
+            } else if (r.userVote) {
+              if (type === "up") {
+                upvotes++;
+                downvotes--;
+              } else {
+                upvotes--;
+                downvotes++;
+              }
+              newUserVote = type;
+            } else {
+              newUserVote = type;
+              if (type === "up") upvotes++;
+              else downvotes++;
+            }
+            return { ...r, upvotes, downvotes, userVote: newUserVote };
+          }
+          return r;
+        })
+      };
+    }));
+    try {
+      await fetch(`/api/comments/${commentId}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voteType: type })
+      });
+      socket?.emit("comment-vote", { commentId, postId: post.id, type: type.toUpperCase() });
+    } catch (error) {
+      console.error("Error voting:", error);
+    }
+  };
+
+  return (
+    <>
+      <Card className="mb-4 shadow-sm border-0">
+        <CardContent className="p-4">
+          {/* Post Header */}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
+                <AvatarFallback>{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="font-semibold">{post.isAnonymous ? "Anonymous" : post.author.name}</span>
+                  {!post.isAnonymous && post.author.isVerified && (
+                    <CheckCircle className="w-4 h-4 text-blue-500" />
+                  )}
+                  {post.isPinned && <Pin className="w-4 h-4 text-primary" />}
+                </div>
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  {!post.isAnonymous && (
+                    <Badge variant="secondary" className="text-xs">
+                      {post.author.rank}
+                    </Badge>
+                  )}
+                  <span>{post.timeAgo}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Badge className={cn("text-xs", `category-${post.category.toLowerCase()}`)}>
+                {post.category}
+              </Badge>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {(isAuthor || isAdmin) && (
+                    <DropdownMenuItem
+                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                      onClick={handleDelete}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      {isAdmin && !isAuthor ? "Delete Post (Admin)" : "Delete Post"}
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem>
+                    <Flag className="w-4 h-4 mr-2" />
+                    Report Post
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {/* Post Content */}
+          <div className="mb-4">
+            {shouldUseColoredBackground(post.content, !!post.images?.length) ? (
+              <div
+                className={cn(
+                  "rounded-lg p-6 text-white text-center font-semibold leading-relaxed",
+                  getCategoryColorClass(post.category),
+                  getTextSizeClass(post.content),
+                )}
                 dir="auto"
               >
                 {post.content}
-              </p>
-              {post.images && post.images.length > 0 && (
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  {post.images.map((image, index) => (
-                    <div key={index} className="relative aspect-square">
-                      <Image
-                        src={image || "/placeholder.svg"}
-                        alt={`Post image ${index + 1}`}
-                        fill
-                        className="rounded-lg object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+              </div>
+            ) : (
+              <>
+                <p 
+                  className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap text-base leading-relaxed mb-4"
+                  dir="auto"
+                >
+                  {post.content}
+                </p>
 
-        {/* Post Actions */}
-        <div className="flex items-center justify-between pt-3 border-t">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleVote("up")}
-              className={cn(
-                "text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3",
-                userVote === "up" && "text-primary"
-              )}
-            >
-              <ChevronUp className="w-4 h-4 mr-1" />
-              {post.upvotes}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleVote("down")}
-              className={cn(
-                "text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-3",
-                userVote === "down" && "text-red-500"
-              )}
-            >
-              <ChevronDown className="w-4 h-4 mr-1" />
-              {post.downvotes}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowComments(!showComments)}
-              className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3"
-            >
-              <MessageCircle className="w-4 h-4 mr-1" />
-              {post.comments} Comments
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3"
-            >
-              <Share2 className="w-4 h-4 mr-1" />
-              Share
-            </Button>
+                {/* Image Grid */}
+                {Array.isArray(post.images) && post.images.length > 0 && renderImages(post.images)}
+              </>
+            )}
           </div>
-        </div>
 
-        {/* Top Comment */}
-        {post.topComment && (
-          <div className="mt-4 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <span className="font-medium text-sm">{post.topComment.author}</span>
-              {post.topComment.isBestAnswer && (
-                <Badge variant="default" className="text-xs bg-green-500">
-                  Best Answer
-                </Badge>
-              )}
+          {/* Post Actions */}
+          <div className="flex items-center justify-between pt-3 border-t">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleVote("up")}
+                  className={cn(
+                    "text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3",
+                    userVote === "up" && "text-primary"
+                  )}
+                >
+                  <ThumbsUp className="w-4 h-4 mr-1" />
+                  <span>{post.upvotes}</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleVote("down")}
+                  className={cn(
+                    "text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-3",
+                    userVote === "down" && "text-red-500"
+                  )}
+                >
+                  <ThumbsDown className="w-4 h-4 mr-1" />
+                  <span>{post.downvotes}</span>
+                </Button>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setModalOpen(true)}
+                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3"
+              >
+                <MessageCircle className="w-4 h-4 mr-1" />
+                {post.comments} Comments
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3"
+              >
+                <Share2 className="w-4 h-4 mr-1" />
+                Share
+              </Button>
             </div>
-            <p 
-              className="text-sm text-gray-700 dark:text-gray-300"
-              dir="auto"
-            >
-              {post.topComment.content}
-            </p>
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          {/* Top Comment */}
+          {post.topComment && (
+            <div className="mt-4 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <span className="font-medium text-sm">{post.topComment.author}</span>
+                {post.topComment.isBestAnswer && (
+                  <Badge variant="default" className="text-xs bg-green-500">
+                    Best Answer
+                  </Badge>
+                )}
+              </div>
+              <p 
+                className="text-sm text-gray-700 dark:text-gray-300"
+                dir="auto"
+              >
+                {post.topComment.content}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      {/* Modal for post popup */}
+      {console.log('modalOpen:', modalOpen)}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen} modal={false}>
+        <DialogContent className="max-w-2xl w-full p-0 overflow-hidden relative z-[9999]">
+          <DialogTitle className="sr-only">Post details and comments</DialogTitle>
+          <DialogDescription className="sr-only">Post details and comments modal.</DialogDescription>
+          <div className="flex flex-col h-[80vh] relative">
+            {/* Post header/content/images */}
+            <div className="p-6 border-b">
+              <PostHeaderAndContent post={post} renderImages={renderImages} />
+            </div>
+            {/* Comments section */}
+            <div className="flex-1 flex flex-col relative overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-6 py-4 pb-32" ref={commentListRef} style={{ background: "#fafbfc" }}>
+                {comments.length === 0 && <div className="text-gray-500 text-sm">No comments yet.</div>}
+                {comments.map((comment) => (
+                  <div key={comment.id} className="mb-4">
+                    <div className="flex items-start gap-2">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={comment.authorImage || "/placeholder.svg"} />
+                        <AvatarFallback>{comment.author?.[0]?.toUpperCase() || "?"}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm">{comment.author}</span>
+                          <span className="text-xs text-gray-400 ml-2">{typeof comment.createdAt === 'string' ? new Date(comment.createdAt).toLocaleTimeString() : comment.createdAt.toLocaleTimeString()}</span>
+                        </div>
+                        <div className="ml-1 text-sm mt-1">{comment.content}</div>
+                        <div className="flex items-center space-x-2 mt-1 ml-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCommentVote(comment.id, "up")}
+                            className={cn("text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3 h-7", comment.userVote === "up" && "text-primary")}
+                          >
+                            <ChevronUp className="w-4 h-4 mr-1" />
+                            {comment.upvotes}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCommentVote(comment.id, "down")}
+                            className={cn("text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-3 h-7", comment.userVote === "down" && "text-red-500")}
+                          >
+                            <ChevronDown className="w-4 h-4 mr-1" />
+                            {comment.downvotes}
+                          </Button>
+                          <button className="text-xs text-blue-600 hover:underline ml-2" onClick={() => setReplyTo(comment.id)}>Reply</button>
+                        </div>
+                        {/* Replies */}
+                        {comment.replies && comment.replies.length > 0 && (
+                          <div className="ml-6 mt-2 border-l pl-2 border-gray-200">
+                            {comment.replies.map((reply: any) => (
+                              <div key={reply.id} className="mb-2 flex items-start gap-2">
+                                <Avatar className="w-7 h-7">
+                                  <AvatarImage src={reply.authorImage || "/placeholder.svg"} />
+                                  <AvatarFallback>{reply.author?.[0]?.toUpperCase() || "?"}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <span className="font-semibold text-xs">{reply.author}</span>
+                                  <span className="text-xs text-gray-400 ml-2">{typeof reply.createdAt === 'string' ? new Date(reply.createdAt).toLocaleTimeString() : reply.createdAt.toLocaleTimeString()}</span>
+                                  <div className="ml-1 text-xs mt-1">{reply.content}</div>
+                                  <div className="flex items-center space-x-2 mt-1 ml-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleCommentVote(reply.id, "up")}
+                                      className={cn("text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3 h-7", reply.userVote === "up" && "text-primary")}
+                                    >
+                                      <ChevronUp className="w-4 h-4 mr-1" />
+                                      {reply.upvotes}
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleCommentVote(reply.id, "down")}
+                                      className={cn("text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-3 h-7", reply.userVote === "down" && "text-red-500")}
+                                    >
+                                      <ChevronDown className="w-4 h-4 mr-1" />
+                                      {reply.downvotes}
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {/* Reply input */}
+                        {replyTo === comment.id && (
+                          <div className="mt-2">
+                            {user ? (
+                              <div className="flex items-start gap-2">
+                                <Avatar className="w-7 h-7">
+                                  <AvatarImage src={user.image || "/placeholder.svg"} />
+                                  <AvatarFallback>{user.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+                                </Avatar>
+                                <textarea
+                                  className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring min-h-[40px]"
+                                  placeholder="Write a reply..."
+                                  value={commentInput}
+                                  onChange={e => setCommentInput(e.target.value)}
+                                  disabled={posting}
+                                  rows={2}
+                                />
+                                <Button size="sm" onClick={handleAddComment} disabled={!commentInput.trim() || posting}>
+                                  {posting ? "Posting..." : "Reply"}
+                                </Button>
+                                <button className="ml-2 text-xs text-gray-500 hover:underline" onClick={() => setReplyTo(null)}>Cancel</button>
+                              </div>
+                            ) : (
+                              <div className="text-xs text-gray-500">Please log in to reply.</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Comment input always at bottom, absolute */}
+              <div className="absolute left-0 right-0 bottom-0 border-t p-4 bg-white flex items-start gap-2 z-10">
+                {user ? (
+                  <>
+                    <Avatar className="w-8 h-8 mt-1">
+                      <AvatarImage src={user.image || "/placeholder.svg"} />
+                      <AvatarFallback>{user.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+                    </Avatar>
+                    <textarea
+                      className="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring min-h-[40px]"
+                      placeholder={replyTo ? "Write a reply..." : "Write a comment..."}
+                      value={commentInput}
+                      onChange={e => setCommentInput(e.target.value)}
+                      disabled={posting}
+                      rows={2}
+                    />
+                    <Button size="sm" onClick={handleAddComment} disabled={!commentInput.trim() || posting}>
+                      {posting ? "Posting..." : replyTo ? "Reply" : "Post"}
+                    </Button>
+                    {replyTo && (
+                      <button className="ml-2 text-xs text-gray-500 hover:underline" onClick={() => setReplyTo(null)}>Cancel</button>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex-1 text-center text-gray-500 text-sm py-2">Please log in to comment.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Lightbox for images */}
+      {lightboxOpen && (
+        <Lightbox
+          images={post.images || []}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
+    </>
   )
 }

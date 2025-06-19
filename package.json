@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx scripts/ensure-upload-dir.ts && next dev",
     "build": "tsx scripts/ensure-upload-dir.ts && next build",
-    "start": "next start",
+    "start": "node server.js",
     "lint": "next lint",
     "seed": "ts-node --esm prisma/seed.ts"
   },
@@ -67,6 +67,7 @@
     "recharts": "2.15.0",
     "resend": "latest",
     "socket.io": "latest",
+    "socket.io-client": "^4.8.1",
     "sonner": "^1.7.1",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",

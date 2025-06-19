@@ -1,30 +1,111 @@
-# New Project
+# Archalley Forum
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+A dedicated space for architects, designers, and construction professionals to connect, share ideas, and discuss all things architecture, design, and construction.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/team-chavindu/v0-new-project-cjuwlzcnh44)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/cjuWlZcnh44)
+---
+
+## Table of Contents
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Data Model](#data-model)
+- [API & Functionality](#api--functionality)
+- [Categories](#categories)
+- [User Roles & Ranks](#user-roles--ranks)
+
+---
 
 ## Overview
+Archalley Forum is a modern, full-featured community platform tailored for the architecture, design, and construction industries. It enables professionals and enthusiasts to:
+- Share projects, ideas, and questions
+- Connect and network with peers
+- Discuss industry trends, techniques, and research
+- Showcase portfolios and professional profiles
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+---
 
-## Deployment
+## Features
+- **User Registration & Authentication**: Email/password and social login (Google, Facebook)
+- **User Profiles**: Customizable profiles with profession, company, bio, social links, and privacy controls
+- **Forum Posts**: Create, edit, delete, and vote on posts; support for images and file uploads
+- **Categories**: Organized discussions by topic (Business, Design, Career, Construction, Academic, Informative, Other)
+- **Comments & Replies**: Threaded discussions, upvotes/downvotes, best answer marking
+- **Trending Posts & Top Contributors**: Sidebar highlights for community engagement
+- **Member Directory**: Search, filter, and sort members by profession, activity, or join date
+- **Notifications**: Real-time and email notifications for mentions, replies, and system events
+- **Admin Dashboard**: Manage users, categories, settings, appearance, and custom pages
+- **Custom Pages**: Admins can create and manage static pages (e.g., About, Guidelines)
+- **AI-Powered Features**: Automatic post categorization and tag suggestion using Google Gemini
+- **File Uploads**: Secure image uploads with automatic resizing and format conversion
+- **Accessibility & Responsive Design**: Mobile-friendly, dark mode, and accessible UI
 
-Your project is live at:
+---
 
-**[https://vercel.com/team-chavindu/v0-new-project-cjuwlzcnh44](https://vercel.com/team-chavindu/v0-new-project-cjuwlzcnh44)**
+## Tech Stack
+- **Frontend**: React 19, Next.js 15 (App Router, Server Components)
+- **Styling**: Tailwind CSS, Shadcn UI, Lucide Icons
+- **Backend**: Next.js API routes, Prisma ORM, PostgreSQL
+- **Authentication**: NextAuth.js, @auth/prisma-adapter
+- **AI Integration**: Google Gemini (Generative AI)
+- **Real-Time**: Socket.IO for live comments, votes, and notifications
+- **Email**: Resend, Nodemailer
+- **Validation**: Zod
+- **Other**: Sharp (image processing), bcryptjs (password hashing)
 
-## Build your app
+---
 
-Continue building your app on:
+## Data Model (Prisma)
+- **User**: Profile, social links, role, rank, status, timestamps
+- **Category**: Name, description, color, icon, slug, post count
+- **Post**: Content, author, category, AI tags, language, attachments, votes, view/share count
+- **Comment**: Threaded, parent/child, author, post, content
+- **Vote**: Up/down, user, post/comment
+- **Flag**: Moderation, status, user, post/comment
+- **Attachment**: File uploads for posts
+- **Notification**: Type, message, user, read status
+- **Settings**: Key-value pairs for site configuration
+- **Page**: Custom static pages (admin-managed)
 
-**[https://v0.dev/chat/projects/cjuWlZcnh44](https://v0.dev/chat/projects/cjuWlZcnh44)**
+---
 
-## How It Works
+## API & Functionality
+- **/api/auth/**: Registration, login, social auth, session management
+- **/api/posts/**: CRUD for posts, voting, AI categorization, image attachments
+- **/api/comments/**: CRUD for comments and replies, voting
+- **/api/categories/**: List and manage discussion categories
+- **/api/users/**: Profile view and update, privacy controls
+- **/api/notifications/**: Fetch and mark notifications as read
+- **/api/upload/**: Secure file/image uploads with validation and processing
+- **/api/admin/**: Admin dashboard endpoints for settings, users, pages, and stats
+- **/api/websocket/**: Real-time features (Socket.IO integration)
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+---
+
+## Categories
+- **Business**: Strategies, entrepreneurship, industry trends
+- **Design**: Architectural designs, concepts, inspiration
+- **Career**: Advice, jobs, professional development
+- **Construction**: Techniques, materials, project management, innovations
+- **Academic**: Research, theories, educational resources
+- **Informative**: News, updates, tutorials
+- **Other**: General topics not covered above
+
+---
+
+## User Roles & Ranks
+- **Roles**: Admin, Moderator, Member
+- **Ranks**: New Member, Conversation Starter, Rising Star, Visual Storyteller, Valued Responder, Community Expert, Top Contributor
+
+---
+
+## Getting Started
+1. Clone the repository
+2. Install dependencies (`npm install` or `pnpm install`)
+3. Set up your `.env` file (see `.env.example`)
+4. Run database migrations (`npx prisma migrate dev`)
+5. Start the development server (`npm run dev`)
+
+---
+
+## License
+MIT

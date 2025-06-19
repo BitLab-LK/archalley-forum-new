@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { join } from "path"
+import { stat } from "fs/promises"
 
 const createPostSchema = z.object({
   content: z.string().min(1, "Content is required"),
@@ -34,24 +36,26 @@ export async function POST(request: Request) {
     }
 
     const formData = await request.formData()
+    
+    // Log the received form data for debugging
+    console.log("Received form data:", {
+      content: formData.get("content"),
+      categoryId: formData.get("categoryId"),
+      isAnonymous: formData.get("isAnonymous"),
+      tags: formData.get("tags"),
+      originalLanguage: formData.get("originalLanguage"),
+      translatedContent: formData.get("translatedContent"),
+      images: Array.from(formData.entries())
+        .filter(([key]) => key.startsWith("image"))
+        .map(([_, value]) => value)
+    })
+
     const content = formData.get("content") as string
     const categoryId = formData.get("categoryId") as string
     const isAnonymous = formData.get("isAnonymous") === "true"
-    const tags = JSON.parse(formData.get("tags") as string) as string[]
+    const tags = formData.get("tags") as string
     const originalLanguage = formData.get("originalLanguage") as string
     const translatedContent = formData.get("translatedContent") as string
-
-    // Validate content is not empty and is valid UTF-8
-    if (!content || !content.trim()) {
-      return NextResponse.json({ error: "Content is required" }, { status: 400 })
-    }
-
-    // Ensure content is valid UTF-8
-    try {
-      decodeURIComponent(escape(content))
-    } catch (e) {
-      return NextResponse.json({ error: "Invalid content encoding" }, { status: 400 })
-    }
 
     // Validate input
     const validationResult = createPostSchema.safeParse({
@@ -64,8 +68,13 @@ export async function POST(request: Request) {
     })
 
     if (!validationResult.success) {
+      console.error("Validation error:", validationResult.error.format())
       return NextResponse.json(
-        { error: "Invalid input", details: validationResult.error.format() },
+        { 
+          error: "Invalid input", 
+          details: validationResult.error.format(),
+          message: "Please check your input and try again"
+        },
         { status: 400 }
       )
     }
@@ -79,7 +88,7 @@ export async function POST(request: Request) {
 
     if (!category) {
       return NextResponse.json(
-        { error: "Category not found" },
+        { error: "Category not found", message: "The selected category does not exist" },
         { status: 404 }
       )
     }
@@ -112,39 +121,75 @@ export async function POST(request: Request) {
     })
 
     // Handle image uploads if any
-    const imageFiles = Array.from(formData.entries())
+    const imageEntries = Array.from(formData.entries())
       .filter(([key]) => key.startsWith("image"))
-      .map(([_, file]) => file as File)
+      .map(([_, value]) => value as string)
 
-    if (imageFiles.length > 0) {
-      // Process image uploads
-      const uploadPromises = imageFiles.map(async (file) => {
-        // Add your image upload logic here
-        // For now, we'll just create a placeholder URL
-        const url = `/uploads/${Date.now()}-${file.name}`
-        
-        return prisma.attachment.create({
-          data: {
-            url,
-            filename: file.name,
-            size: file.size,
-            mimeType: file.type,
-            postId: post.id,
-          },
+    if (imageEntries.length > 0) {
+      try {
+        // Process image uploads
+        const uploadPromises = imageEntries.map(async (imageUrl) => {
+          // Extract filename from URL
+          const filename = imageUrl.split('/').pop() || 'unknown'
+          
+          // Get file info from the uploads directory
+          const filePath = join(process.cwd(), "public", imageUrl)
+          const stats = await stat(filePath).catch(() => null)
+          
+          if (!stats) {
+            console.error(`File not found: ${filePath}`)
+            return null
+          }
+
+          return prisma.attachment.create({
+            data: {
+              url: imageUrl,
+              filename: filename,
+              size: stats.size,
+              mimeType: getMimeType(filename),
+              postId: post.id,
+            },
+          })
         })
-      })
 
-      await Promise.all(uploadPromises)
+        const attachments = await Promise.all(uploadPromises)
+        // Filter out any failed attachments
+        const validAttachments = attachments.filter((a): a is NonNullable<typeof a> => a !== null)
+        
+        if (validAttachments.length !== imageEntries.length) {
+          console.warn(`Some attachments failed to create. Expected ${imageEntries.length}, got ${validAttachments.length}`)
+        }
+  } catch (error) {
+        console.error("Error creating attachments:", error)
+        // Don't fail the post creation if attachments fail
+      }
     }
 
     return NextResponse.json(post)
   } catch (error) {
     console.error("Error creating post:", error)
     return NextResponse.json(
-      { error: "Failed to create post" },
+      { 
+        error: "Failed to create post",
+        message: error instanceof Error ? error.message : "An unexpected error occurred",
+        details: error instanceof Error ? error.stack : undefined
+      },
       { status: 500 }
     )
   }
+}
+
+// Helper function to get MIME type from filename
+function getMimeType(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  const mimeTypes: Record<string, string> = {
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp'
+  }
+  return mimeTypes[ext || ''] || 'application/octet-stream'
 }
 
 export async function GET(request: NextRequest) {
@@ -188,14 +233,11 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        orderBy: {
-          [sortBy]: sortOrder,
-        },
-        skip,
-        take: limit,
+        // Only use orderBy if not sorting by upvotes
+        ...(sortBy !== "upvotes" && { orderBy: { [sortBy]: sortOrder } }),
+        skip: sortBy !== "upvotes" ? skip : 0, // We'll handle skip/limit after sorting by upvotes
+        take: sortBy !== "upvotes" ? limit : undefined,
       })
-
-      console.log(`Found ${posts.length} posts`)
 
       // Get total count for pagination
       const total = await prisma.post.count({ where })
@@ -217,7 +259,7 @@ export async function GET(request: NextRequest) {
       )
 
       // Transform the data to match the frontend format
-      const transformedPosts = posts.map((post) => {
+      let transformedPosts = posts.map((post) => {
         const voteCount = voteCounts.find((v) => v.postId === post.id)
         return {
           id: post.id,
@@ -240,15 +282,27 @@ export async function GET(request: NextRequest) {
         }
       })
 
-      return NextResponse.json({
+      // If sorting by upvotes, sort in JS and apply skip/limit
+      if (sortBy === "upvotes") {
+        transformedPosts = transformedPosts.sort((a, b) => {
+          if (sortOrder === "asc") {
+            return a.upvotes - b.upvotes
+          } else {
+            return b.upvotes - a.upvotes
+          }
+        })
+        .slice(skip, skip + limit)
+      }
+
+    return NextResponse.json({
         posts: transformedPosts,
-        pagination: {
-          total,
+      pagination: {
+        total,
           pages: Math.ceil(total / limit),
           currentPage: page,
           limit,
-        },
-      })
+      },
+    })
     } catch (dbError) {
       console.error("Database error:", dbError)
       throw dbError // Re-throw to be caught by outer try-catch

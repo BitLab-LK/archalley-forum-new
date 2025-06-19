@@ -154,42 +154,29 @@ model Post {
 }
 
 model Comment {
-  id          String   @id @default(cuid())
-  content     String   @db.Text
-  isAnonymous Boolean  @default(false)
-  isBestAnswer Boolean @default(false)
-  
-  // Relations
-  authorId    String
-  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  postId      String
-  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  parentId    String?
-  parent      Comment? @relation("CommentReplies", fields: [parentId], references: [id])
-  replies     Comment[] @relation("CommentReplies")
-  
-  votes       Vote[]
-  flags       Flag[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@map("comments")
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  parentId  String?
+  replies   Comment[] @relation("CommentReplies")
 }
 
 model Vote {
   id        String   @id @default(cuid())
   type      VoteType
-  
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   postId    String?
   post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
   commentId String?
   comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  
   createdAt DateTime @default(now())
-  
   @@unique([userId, postId])
   @@unique([userId, commentId])
   @@map("votes")
@@ -204,17 +191,14 @@ model Flag {
   id        String   @id @default(cuid())
   reason    String
   status    FlagStatus @default(PENDING)
-  
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   postId    String?
   post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
   commentId String?
   comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
   @@map("flags")
 }
 

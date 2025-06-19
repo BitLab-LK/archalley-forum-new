@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { AuthGuard } from "@/components/auth-guard"
 import { useAuth } from "@/lib/auth-context"
 import { ArrowUp, ArrowDown, Reply, Flag, Award } from "lucide-react"
+import io from "socket.io-client"
 
 interface Comment {
   id: string
@@ -35,11 +36,41 @@ interface CommentSectionProps {
   canMarkBestAnswer?: boolean
 }
 
-export default function CommentSection({ postId, comments, canMarkBestAnswer }: CommentSectionProps) {
+export default function CommentSection({ postId, comments: initialComments, canMarkBestAnswer }: CommentSectionProps) {
   const [newComment, setNewComment] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const { user } = useAuth()
+  const [comments, setComments] = useState<Comment[]>(initialComments)
+  const [socket, setSocket] = useState<any>(null)
+
+  useEffect(() => {
+    if (!socket && user) {
+      const s = io({
+        path: "/api/socketio",
+        auth: { userId: user.id }
+      })
+      setSocket(s)
+      s.emit("join-post", postId)
+      s.on("comment-vote-update", (data: { commentId: string, upvotes: number, downvotes: number, userVote: "UP" | "DOWN" | null }) => {
+        setComments(prev => prev.map(c =>
+          c.id === data.commentId
+            ? { ...c, votes: data.upvotes - data.downvotes, userVote: data.userVote?.toLowerCase() as "up" | "down" | undefined }
+            : {
+                ...c,
+                replies: c.replies?.map(r =>
+                  r.id === data.commentId
+                    ? { ...r, votes: data.upvotes - data.downvotes, userVote: data.userVote?.toLowerCase() as "up" | "down" | undefined }
+                    : r
+                )
+              }
+        ))
+      })
+      return () => {
+        s.disconnect()
+      }
+    }
+  }, [user, postId])
 
   const handleSubmit = async (e: React.FormEvent, parentId?: string) => {
     e.preventDefault()
@@ -73,15 +104,48 @@ export default function CommentSection({ postId, comments, canMarkBestAnswer }: 
   }
 
   const handleVote = async (commentId: string, voteType: "up" | "down") => {
+    // Optimistic UI update
+    setComments(prev => prev.map(c => {
+      if (c.id === commentId) {
+        let newVote: "up" | "down" | undefined = voteType
+        let newVotes = c.votes
+        if (c.userVote === voteType) {
+          newVote = undefined
+          newVotes += voteType === "up" ? -1 : 1
+        } else if (c.userVote) {
+          newVotes += voteType === "up" ? 2 : -2
+        } else {
+          newVotes += voteType === "up" ? 1 : -1
+        }
+        return { ...c, votes: newVotes, userVote: newVote }
+      }
+      return {
+        ...c,
+        replies: c.replies?.map(r => {
+          if (r.id === commentId) {
+            let newVote: "up" | "down" | undefined = voteType
+            let newVotes = r.votes
+            if (r.userVote === voteType) {
+              newVote = undefined
+              newVotes += voteType === "up" ? -1 : 1
+            } else if (r.userVote) {
+              newVotes += voteType === "up" ? 2 : -2
+            } else {
+              newVotes += voteType === "up" ? 1 : -1
+            }
+            return { ...r, votes: newVotes, userVote: newVote }
+          }
+          return r
+        })
+      }
+    }))
     try {
       await fetch(`/api/comments/${commentId}/vote`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ voteType }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voteType })
       })
-      // Refresh or update vote count
+      socket?.emit("comment-vote", { commentId, postId, type: voteType.toUpperCase() })
     } catch (error) {
       console.error("Error voting:", error)
     }
