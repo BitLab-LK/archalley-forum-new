@@ -1,15 +1,21 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
+// Check if API key is available at startup
+const API_KEY = process.env.GOOGLE_GEMINI_API_KEY
+if (!API_KEY) {
+  console.warn("⚠️ GOOGLE_GEMINI_API_KEY is not set. AI features will be disabled.")
+}
+
 // Initialize the Google Generative AI client
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!)
-const model = genAI.getGenerativeModel({ 
-  model: "gemini-1.5-pro",
+const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null
+const model = genAI ? genAI.getGenerativeModel({ 
+  model: "gemini-2.5-flash",
   generationConfig: {
     temperature: 0.7,
     topP: 0.8,
     topK: 40,
   }
-})
+}) : null
 
 // Available categories for classification
 const AVAILABLE_CATEGORIES = [
@@ -37,21 +43,27 @@ interface AIClassification {
 
 // Helper function to extract JSON from markdown-formatted text
 function extractJsonFromMarkdown(text: string): any {
-  // Remove markdown code block syntax if present
-  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, text]
-  const jsonStr = jsonMatch[1].trim()
-  
   try {
-    return JSON.parse(jsonStr)
-  } catch (error) {
-    console.error("Failed to parse JSON:", jsonStr)
-    throw new Error("Invalid JSON response from AI")
+    // First, try to parse as direct JSON
+    return JSON.parse(text.trim())
+  } catch {
+    // If that fails, try to extract from markdown code blocks
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, text]
+    const jsonStr = jsonMatch[1].trim()
+    
+    try {
+      return JSON.parse(jsonStr)
+    } catch (error) {
+      console.error("Failed to parse JSON from AI response:", jsonStr)
+      console.error("Original text:", text)
+      throw new Error("Invalid JSON response from AI")
+    }
   }
 }
 
 async function detectAndTranslate(text: string): Promise<TranslationResult> {
-  // Check if API key is available
-  if (!process.env.GOOGLE_GEMINI_API_KEY) {
+  // Check if API key and model are available
+  if (!API_KEY || !model) {
     console.warn("Google Gemini API key not configured, skipping translation")
     return {
       translatedText: text,
@@ -70,9 +82,14 @@ Return the response in this exact JSON format:
 }`
 
   try {
+    console.log("🤖 Calling Gemini API for translation...")
     const result = await model.generateContent(prompt)
     const response = await result.response
-    const data = extractJsonFromMarkdown(response.text())
+    const responseText = response.text()
+    
+    console.log("📝 Raw AI response:", responseText)
+    
+    const data = extractJsonFromMarkdown(responseText)
 
     if (!data.translatedText || !data.detectedLanguage) {
       console.warn("Translation response missing required fields:", data)
@@ -82,12 +99,18 @@ Return the response in this exact JSON format:
       }
     }
 
+    console.log("✅ Translation successful:", {
+      original: text.substring(0, 100) + "...",
+      translated: data.translatedText.substring(0, 100) + "...",
+      detectedLanguage: data.detectedLanguage
+    })
+
     return {
       translatedText: data.translatedText,
       detectedLanguage: data.detectedLanguage
     }
   } catch (error) {
-    console.error("Translation error:", {
+    console.error("❌ Translation error:", {
       error,
       message: error instanceof Error ? error.message : "Unknown error",
       details: error instanceof Error ? error.stack : undefined
@@ -102,8 +125,8 @@ Return the response in this exact JSON format:
 
 export async function classifyPost(content: string): Promise<AIClassification> {
   try {
-    // Check if API key is available
-    if (!process.env.GOOGLE_GEMINI_API_KEY) {
+    // Check if API key and model are available
+    if (!API_KEY || !model) {
       console.warn("Google Gemini API key not configured, using default classification")
       return {
         category: "Other",
@@ -113,6 +136,8 @@ export async function classifyPost(content: string): Promise<AIClassification> {
         translatedContent: content
       }
     }
+
+    console.log("🚀 Starting AI classification for content:", content.substring(0, 100) + "...")
 
     // Step 1: Detect language and translate if needed
     const { translatedText, detectedLanguage } = await detectAndTranslate(content)
@@ -139,9 +164,12 @@ Return the response in this exact JSON format:
   "confidence": 0.95
 }`
 
+    console.log("🤖 Calling Gemini API for classification...")
     const result = await model.generateContent(prompt)
     const response = await result.response
     const responseText = response.text()
+
+    console.log("📝 Raw classification response:", responseText)
 
     // Parse the JSON response
     const classification = extractJsonFromMarkdown(responseText) as AIClassification
@@ -172,9 +200,16 @@ Return the response in this exact JSON format:
     classification.originalLanguage = originalLanguage
     classification.translatedContent = translatedText
 
+    console.log("✅ Classification successful:", {
+      category: classification.category,
+      tags: classification.tags,
+      confidence: classification.confidence,
+      originalLanguage
+    })
+
     return classification
   } catch (error) {
-    console.error("AI classification error:", {
+    console.error("❌ AI classification error:", {
       error,
       message: error instanceof Error ? error.message : "Unknown error",
       details: error instanceof Error ? error.stack : undefined
@@ -187,5 +222,29 @@ Return the response in this exact JSON format:
       originalLanguage: "English",
       translatedContent: content
     }
+  }
+}
+
+// Test function to verify AI service is working
+export async function testAIService(): Promise<boolean> {
+  try {
+    if (!API_KEY || !model) {
+      console.log("❌ AI service not available - no API key")
+      return false
+    }
+
+    console.log("🧪 Testing AI service...")
+    const testResult = await classifyPost("This is a test post about architecture and design.")
+    
+    if (testResult.category && testResult.tags.length > 0) {
+      console.log("✅ AI service test successful:", testResult)
+      return true
+    } else {
+      console.log("❌ AI service test failed - invalid response")
+      return false
+    }
+  } catch (error) {
+    console.error("❌ AI service test failed:", error)
+    return false
   }
 } 
