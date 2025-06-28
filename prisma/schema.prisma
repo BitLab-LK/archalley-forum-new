@@ -148,6 +148,7 @@ model Post {
   comments        Comment[]
   attachments     Attachment[]
   votes           Vote[]
+  flags           Flag[]
 
   @@index([authorId])
   @@index([categoryId])
@@ -165,6 +166,8 @@ model Comment {
   parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id])
   parentId  String?
   replies   Comment[] @relation("CommentReplies")
+  votes     Vote[]
+  flags     Flag[]
 }
 
 model Vote {

@@ -35,6 +35,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Test database connection first
+    try {
+      await prisma.$connect()
+    } catch (dbError) {
+      console.error("Database connection failed:", dbError)
+      return NextResponse.json(
+        { 
+          error: "Database connection failed", 
+          message: "The application is currently unable to connect to the database. Please try again later.",
+          details: "Database service is unavailable"
+        },
+        { status: 503 }
+      )
+    }
+
     const formData = await request.formData()
     
     // Log the received form data for debugging
@@ -168,6 +183,23 @@ export async function POST(request: Request) {
     return NextResponse.json(post)
   } catch (error) {
     console.error("Error creating post:", error)
+    
+    // Check if it's a database connection error
+    if (error instanceof Error && (
+      error.message.includes('database') || 
+      error.message.includes('connection') ||
+      error.message.includes('P1001')
+    )) {
+      return NextResponse.json(
+        { 
+          error: "Database connection failed",
+          message: "The application is currently unable to connect to the database. Please try again later.",
+          details: "Database service is unavailable"
+        },
+        { status: 503 }
+      )
+    }
+    
     return NextResponse.json(
       { 
         error: "Failed to create post",

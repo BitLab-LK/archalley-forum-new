@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 // Initialize the Google Generative AI client
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!)
 const model = genAI.getGenerativeModel({ 
-  model: "gemini-1.5-flash-001",
+  model: "gemini-1.5-pro",
   generationConfig: {
     temperature: 0.7,
     topP: 0.8,
@@ -50,6 +50,15 @@ function extractJsonFromMarkdown(text: string): any {
 }
 
 async function detectAndTranslate(text: string): Promise<TranslationResult> {
+  // Check if API key is available
+  if (!process.env.GOOGLE_GEMINI_API_KEY) {
+    console.warn("Google Gemini API key not configured, skipping translation")
+    return {
+      translatedText: text,
+      detectedLanguage: "English"
+    }
+  }
+
   const prompt = `Detect the language of the following text and translate it to English if it's not already in English. Return the result as a JSON object with 'translatedText' and 'detectedLanguage' fields. If the text is already in English, return the original text.
 
 Text: "${text}"
@@ -93,6 +102,18 @@ Return the response in this exact JSON format:
 
 export async function classifyPost(content: string): Promise<AIClassification> {
   try {
+    // Check if API key is available
+    if (!process.env.GOOGLE_GEMINI_API_KEY) {
+      console.warn("Google Gemini API key not configured, using default classification")
+      return {
+        category: "Other",
+        tags: [],
+        confidence: 0,
+        originalLanguage: "English",
+        translatedContent: content
+      }
+    }
+
     // Step 1: Detect language and translate if needed
     const { translatedText, detectedLanguage } = await detectAndTranslate(content)
     const originalLanguage = detectedLanguage

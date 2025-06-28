@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import PostCreator from "@/components/post-creator"
 import PostCard from "@/components/post-card"
 import Sidebar from "@/components/sidebar"
@@ -38,7 +38,8 @@ interface Pagination {
   limit: number
 }
 
-export default function HomePage() {
+// Separate component that uses useSearchParams
+function HomePageContent() {
   const [posts, setPosts] = useState<Post[]>([])
   const [pagination, setPagination] = useState<Pagination>({
     total: 0,
@@ -227,5 +228,49 @@ export default function HomePage() {
         </div>
       </main>
     </div>
+  )
+}
+
+// Loading fallback component
+function HomePageLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-[200px]" />
+                      <Skeleton className="h-3 w-[150px]" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-24 w-full mb-4" />
+                  <div className="flex justify-between">
+                    <Skeleton className="h-8 w-[100px]" />
+                    <Skeleton className="h-8 w-[100px]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="lg:col-span-1">
+            <Sidebar />
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// Main page component with Suspense boundary
+export default function HomePage() {
+  return (
+    <Suspense fallback={<HomePageLoading />}>
+      <HomePageContent />
+    </Suspense>
   )
 }
