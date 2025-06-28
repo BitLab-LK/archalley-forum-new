@@ -3,27 +3,28 @@ import { NextResponse } from "next/server"
 
 export default withAuth(
   function middleware(req) {
-    // Log request details for debugging
-    console.log("Middleware request:", {
-      path: req.nextUrl.pathname,
-      method: req.method,
-      hasToken: !!req.nextauth.token,
-      tokenRole: req.nextauth.token?.role,
-    })
-
-    // Add any additional middleware logic here
+    // Add security headers
+    const response = NextResponse.next()
+    
+    // Security headers
+    response.headers.set('X-Frame-Options', 'DENY')
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+    
+    // Add CSP header in production
+    if (process.env.NODE_ENV === 'production') {
+      response.headers.set(
+        'Content-Security-Policy',
+        "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none';"
+      )
+    }
+    
+    return response
   },
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // Log authorization check
-        console.log("Authorization check:", {
-          path: req.nextUrl.pathname,
-          method: req.method,
-          hasToken: !!token,
-          tokenRole: token?.role,
-        })
-
         // Protect admin routes
         if (req.nextUrl.pathname.startsWith("/admin")) {
           return token?.role === "ADMIN"
@@ -31,9 +32,7 @@ export default withAuth(
 
         // Protect API routes that require authentication
         if (req.nextUrl.pathname.startsWith("/api/posts") && req.method !== "GET") {
-          const isAuthorized = !!token
-          console.log("Posts API authorization:", { isAuthorized, path: req.nextUrl.pathname })
-          return isAuthorized
+          return !!token
         }
 
         if (req.nextUrl.pathname.startsWith("/api/comments")) {
@@ -41,6 +40,18 @@ export default withAuth(
         }
 
         if (req.nextUrl.pathname.startsWith("/api/users") && req.method !== "GET") {
+          return !!token
+        }
+
+        if (req.nextUrl.pathname.startsWith("/api/upload")) {
+          return !!token
+        }
+
+        if (req.nextUrl.pathname.startsWith("/api/notifications")) {
+          return !!token
+        }
+
+        if (req.nextUrl.pathname.startsWith("/api/ai")) {
           return !!token
         }
 
@@ -58,5 +69,6 @@ export const config = {
     "/api/users/:path*",
     "/api/upload/:path*",
     "/api/notifications/:path*",
+    "/api/ai/:path*",
   ],
 }

@@ -8,7 +8,13 @@ const voteSchema = z.object({
   voteType: z.enum(["up", "down"])
 })
 
-export async function POST(request: NextRequest, { params }: { params: { commentId: string } }) {
+interface RouteParams {
+  params: {
+    commentId: string
+  }
+}
+
+export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
@@ -56,7 +62,7 @@ export async function POST(request: NextRequest, { params }: { params: { comment
   }
 }
 
-export async function GET(request: NextRequest, { params }: { params: { commentId: string } }) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession(authOptions)
     const commentId = params.commentId
