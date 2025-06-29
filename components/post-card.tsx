@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Flag, Pin, CheckCircle, Trash2, MoreHorizontal } from "lucide-react"
+import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Flag, Pin, CheckCircle, Trash2, MoreHorizontal, ChevronLeft, ChevronRight, Globe } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   DropdownMenu,
@@ -18,6 +18,7 @@ import Image from "next/image"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import io from "socket.io-client"
 import type { Socket } from "socket.io-client"
+import PostModal from "./post-modal"
 
 interface PostCardProps {
   post: {
@@ -175,8 +176,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   const isAuthor = user?.id === post.author.id
   const isAdmin = user?.role === "ADMIN"
   const [modalOpen, setModalOpen] = useState(false)
-  const [lightboxOpen, setLightboxOpen] = useState(false)
-  const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [modalImageIndex, setModalImageIndex] = useState(0)
   const [comments, setComments] = useState<any[]>([])
   const [commentInput, setCommentInput] = useState("")
   const [replyTo, setReplyTo] = useState<string | null>(null)
@@ -355,7 +355,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     const count = images.length
     if (count === 1) {
       return (
-        <div className="w-full flex justify-center items-center cursor-pointer" onClick={() => { setLightboxIndex(0); setLightboxOpen(true) }}>
+        <div className="w-full flex justify-center items-center cursor-pointer" onClick={() => openModal(0)}>
           <div className="relative w-full" style={{ maxHeight: 500 }}>
             <Image
               src={images[0]}
@@ -373,7 +373,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       return (
         <div className="flex gap-2 mt-2">
           {images.map((img, i) => (
-            <div key={i} className="relative w-1/2 aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center cursor-pointer" style={{ maxHeight: 350 }} onClick={() => { setLightboxIndex(i); setLightboxOpen(true) }}>
+            <div key={i} className="relative w-1/2 aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center cursor-pointer" style={{ maxHeight: 350 }} onClick={() => openModal(i)}>
               <Image
                 src={img}
                 alt={`Post image ${i + 1}`}
@@ -389,7 +389,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     if (count === 3) {
       return (
         <div className="grid grid-cols-3 gap-2 mt-2" style={{ height: 350 }}>
-          <div className="relative col-span-2 row-span-2 h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => { setLightboxIndex(0); setLightboxOpen(true) }}>
+          <div className="relative col-span-2 row-span-2 h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(0)}>
             <Image
               src={images[0]}
               alt="Post image 1"
@@ -399,7 +399,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
             />
           </div>
           <div className="flex flex-col gap-2 h-full">
-            <div className="relative flex-1 rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => { setLightboxIndex(1); setLightboxOpen(true) }}>
+            <div className="relative flex-1 rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(1)}>
               <Image
                 src={images[1]}
                 alt="Post image 2"
@@ -408,7 +408,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
                 sizes="33vw"
               />
             </div>
-            <div className="relative flex-1 rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => { setLightboxIndex(2); setLightboxOpen(true) }}>
+            <div className="relative flex-1 rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(2)}>
               <Image
                 src={images[2]}
                 alt="Post image 3"
@@ -425,7 +425,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       return (
         <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-2" style={{ height: 350 }}>
           {images.map((img, i) => (
-            <div key={i} className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => { setLightboxIndex(i); setLightboxOpen(true) }}>
+            <div key={i} className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(i)}>
               <Image
                 src={img}
                 alt={`Post image ${i + 1}`}
@@ -442,7 +442,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     return (
       <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-2" style={{ height: 350 }}>
         {images.slice(0, 3).map((img, i) => (
-          <div key={i} className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => { setLightboxIndex(i); setLightboxOpen(true) }}>
+          <div key={i} className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(i)}>
             <Image
               src={img}
               alt={`Post image ${i + 1}`}
@@ -453,7 +453,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
           </div>
         ))}
         {/* Last image with overlay */}
-        <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => { setLightboxIndex(3); setLightboxOpen(true) }}>
+        <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(3)}>
           <Image
             src={images[3]}
             alt={`Post image 4`}
@@ -590,6 +590,11 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     }
   };
 
+  const openModal = (imgIdx = 0) => {
+    setModalImageIndex(imgIdx)
+    setModalOpen(true)
+  }
+
   return (
     <>
       <Card className="mb-4 shadow-sm border-0">
@@ -710,7 +715,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setModalOpen(true)}
+                onClick={() => openModal(0)}
                 className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3"
               >
                 <MessageCircle className="w-4 h-4 mr-1" />
@@ -749,164 +754,8 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
           )}
         </CardContent>
       </Card>
-      {/* Modal for post popup */}
-      {console.log('modalOpen:', modalOpen)}
-      <Dialog open={modalOpen} onOpenChange={setModalOpen} modal={false}>
-        <DialogContent className="max-w-2xl w-full p-0 overflow-hidden relative z-[9999]">
-          <DialogTitle className="sr-only">Post details and comments</DialogTitle>
-          <DialogDescription className="sr-only">Post details and comments modal.</DialogDescription>
-          <div className="flex flex-col h-[80vh] relative">
-            {/* Post header/content/images */}
-            <div className="p-6 border-b">
-              <PostHeaderAndContent post={post} renderImages={renderImages} />
-            </div>
-            {/* Comments section */}
-            <div className="flex-1 flex flex-col relative overflow-hidden">
-              <div className="flex-1 overflow-y-auto px-6 py-4 pb-32" ref={commentListRef} style={{ background: "#fafbfc" }}>
-                {comments.length === 0 && <div className="text-gray-500 text-sm">No comments yet.</div>}
-                {comments.map((comment) => (
-                  <div key={comment.id} className="mb-4">
-                    <div className="flex items-start gap-2">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={comment.authorImage || "/placeholder.svg"} />
-                        <AvatarFallback>{comment.author?.[0]?.toUpperCase() || "?"}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm">{comment.author}</span>
-                          <span className="text-xs text-gray-400 ml-2">{typeof comment.createdAt === 'string' ? new Date(comment.createdAt).toLocaleTimeString() : comment.createdAt.toLocaleTimeString()}</span>
-                        </div>
-                        <div className="ml-1 text-sm mt-1">{comment.content}</div>
-                        <div className="flex items-center space-x-2 mt-1 ml-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCommentVote(comment.id, "up")}
-                            className={cn("text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3 h-7", comment.userVote === "up" && "text-primary")}
-                          >
-                            <ChevronUp className="w-4 h-4 mr-1" />
-                            {comment.upvotes}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCommentVote(comment.id, "down")}
-                            className={cn("text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-3 h-7", comment.userVote === "down" && "text-red-500")}
-                          >
-                            <ChevronDown className="w-4 h-4 mr-1" />
-                            {comment.downvotes}
-                          </Button>
-                          <button className="text-xs text-blue-600 hover:underline ml-2" onClick={() => setReplyTo(comment.id)}>Reply</button>
-                        </div>
-                        {/* Replies */}
-                        {comment.replies && comment.replies.length > 0 && (
-                          <div className="ml-6 mt-2 border-l pl-2 border-gray-200">
-                            {comment.replies.map((reply: any) => (
-                              <div key={reply.id} className="mb-2 flex items-start gap-2">
-                                <Avatar className="w-7 h-7">
-                                  <AvatarImage src={reply.authorImage || "/placeholder.svg"} />
-                                  <AvatarFallback>{reply.author?.[0]?.toUpperCase() || "?"}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <span className="font-semibold text-xs">{reply.author}</span>
-                                  <span className="text-xs text-gray-400 ml-2">{typeof reply.createdAt === 'string' ? new Date(reply.createdAt).toLocaleTimeString() : reply.createdAt.toLocaleTimeString()}</span>
-                                  <div className="ml-1 text-xs mt-1">{reply.content}</div>
-                                  <div className="flex items-center space-x-2 mt-1 ml-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleCommentVote(reply.id, "up")}
-                                      className={cn("text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3 h-7", reply.userVote === "up" && "text-primary")}
-                                    >
-                                      <ChevronUp className="w-4 h-4 mr-1" />
-                                      {reply.upvotes}
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleCommentVote(reply.id, "down")}
-                                      className={cn("text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-3 h-7", reply.userVote === "down" && "text-red-500")}
-                                    >
-                                      <ChevronDown className="w-4 h-4 mr-1" />
-                                      {reply.downvotes}
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {/* Reply input */}
-                        {replyTo === comment.id && (
-                          <div className="mt-2">
-                            {user ? (
-                              <div className="flex items-start gap-2">
-                                <Avatar className="w-7 h-7">
-                                  <AvatarImage src={user.image || "/placeholder.svg"} />
-                                  <AvatarFallback>{user.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
-                                </Avatar>
-                                <textarea
-                                  className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring min-h-[40px]"
-                                  placeholder="Write a reply..."
-                                  value={commentInput}
-                                  onChange={e => setCommentInput(e.target.value)}
-                                  disabled={posting}
-                                  rows={2}
-                                />
-                                <Button size="sm" onClick={handleAddComment} disabled={!commentInput.trim() || posting}>
-                                  {posting ? "Posting..." : "Reply"}
-                                </Button>
-                                <button className="ml-2 text-xs text-gray-500 hover:underline" onClick={() => setReplyTo(null)}>Cancel</button>
-                              </div>
-                            ) : (
-                              <div className="text-xs text-gray-500">Please log in to reply.</div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* Comment input always at bottom, absolute */}
-              <div className="absolute left-0 right-0 bottom-0 border-t p-4 bg-white flex items-start gap-2 z-10">
-                {user ? (
-                  <>
-                    <Avatar className="w-8 h-8 mt-1">
-                      <AvatarImage src={user.image || "/placeholder.svg"} />
-                      <AvatarFallback>{user.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
-                    </Avatar>
-                    <textarea
-                      className="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring min-h-[40px]"
-                      placeholder={replyTo ? "Write a reply..." : "Write a comment..."}
-                      value={commentInput}
-                      onChange={e => setCommentInput(e.target.value)}
-                      disabled={posting}
-                      rows={2}
-                    />
-                    <Button size="sm" onClick={handleAddComment} disabled={!commentInput.trim() || posting}>
-                      {posting ? "Posting..." : replyTo ? "Reply" : "Post"}
-                    </Button>
-                    {replyTo && (
-                      <button className="ml-2 text-xs text-gray-500 hover:underline" onClick={() => setReplyTo(null)}>Cancel</button>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex-1 text-center text-gray-500 text-sm py-2">Please log in to comment.</div>
-                )}
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-      {/* Lightbox for images */}
-      {lightboxOpen && (
-        <Lightbox
-          images={post.images || []}
-          initialIndex={lightboxIndex}
-          onClose={() => setLightboxOpen(false)}
-        />
-      )}
+      {/* Facebook-style Post Popup Modal */}
+      <PostModal open={modalOpen} onClose={() => setModalOpen(false)} post={post} initialImage={modalImageIndex} />
     </>
   )
 }
