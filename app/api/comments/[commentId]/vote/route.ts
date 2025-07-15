@@ -32,7 +32,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user has already voted
-    const existingVote = await prisma.vote.findFirst({
+    const existingVote = await prisma.votes.findFirst({
       where: { commentId, userId }
     })
 
@@ -41,17 +41,24 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (existingVote) {
       if (existingVote.type === type) {
         // Remove vote
-        await prisma.vote.delete({ where: { id: existingVote.id } })
+        await prisma.votes.delete({ where: { id: existingVote.id } })
         return NextResponse.json({ message: "Vote removed" })
       } else {
         // Update vote
-        await prisma.vote.update({ where: { id: existingVote.id }, data: { type } })
+        await prisma.votes.update({ where: { id: existingVote.id }, data: { type } })
         return NextResponse.json({ message: "Vote updated" })
       }
     }
 
     // Create new vote
-    await prisma.vote.create({ data: { type, commentId, userId } })
+    await prisma.votes.create({ 
+      data: { 
+        id: `vote-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type, 
+        commentId, 
+        userId 
+      } 
+    })
     return NextResponse.json({ message: "Vote recorded" })
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -62,19 +69,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession(authOptions)
     const commentId = params.commentId
     // Get vote counts
     const [upvotes, downvotes] = await Promise.all([
-      prisma.vote.count({ where: { commentId, type: "UP" } }),
-      prisma.vote.count({ where: { commentId, type: "DOWN" } })
+      prisma.votes.count({ where: { commentId, type: "UP" } }),
+      prisma.votes.count({ where: { commentId, type: "DOWN" } })
     ])
     // Get user's vote if authenticated
     let userVote = null
     if (session?.user) {
-      const vote = await prisma.vote.findFirst({ where: { commentId, userId: session.user.id } })
+      const vote = await prisma.votes.findFirst({ where: { commentId, userId: session.user.id } })
       if (vote) userVote = vote.type
     }
     return NextResponse.json({ upvotes, downvotes, userVote })

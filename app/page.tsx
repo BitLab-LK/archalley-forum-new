@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/lib/auth-context"
-import { toast } from "sonner"
+// import { toast } from "sonner"
+
+// Temporary workaround - use console instead
+const toast = {
+  success: (message: string) => console.log("✅ SUCCESS:", message),
+  error: (message: string) => console.error("❌ ERROR:", message),
+}
 
 interface Post {
   id: string
@@ -101,6 +107,16 @@ function HomePageContent() {
     }
   }
 
+  const handleCommentCountChange = (postId: string, newCount: number) => {
+    setPosts(prevPosts => 
+      prevPosts.map(post => 
+        post.id === postId 
+          ? { ...post, comments: newCount }
+          : post
+      )
+    )
+  }
+
   // Generate pagination range with ellipsis
   const getPaginationRange = () => {
     const range: (number | string)[] = []
@@ -174,6 +190,7 @@ function HomePageContent() {
                           ? () => handleDeletePost(post.id) 
                           : undefined
                       }
+                      onCommentCountChange={handleCommentCountChange}
                     />
               ))}
             </div>

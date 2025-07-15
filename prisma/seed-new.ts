@@ -36,26 +36,26 @@ async function main() {
     prisma.users.create({
       data: {
         id: "user-2",
-        name: "Mike Johnson",
-        email: "mike@example.com",
-        role: UserRole.MODERATOR,
+        name: "Marcus Johnson",
+        email: "marcus@example.com",
+        role: UserRole.MEMBER,
         rank: UserRank.TOP_CONTRIBUTOR,
-        isVerified: true,
-        company: "Johnson Interiors",
-        bio: "Interior designer specializing in modern commercial spaces.",
+        isVerified: false,
+        company: "Creative Solutions Ltd",
+        bio: "UI/UX designer focused on creating intuitive digital experiences.",
         updatedAt: new Date(),
       },
     }),
     prisma.users.create({
       data: {
         id: "user-3",
-        name: "Emma Davis",
+        name: "Emma Rodriguez",
         email: "emma@example.com",
         role: UserRole.MEMBER,
         rank: UserRank.RISING_STAR,
         isVerified: false,
-        company: "Davis Engineering",
-        bio: "Structural engineer passionate about sustainable construction.",
+        company: "BuildRight Construction",
+        bio: "Civil engineer specializing in infrastructure development.",
         updatedAt: new Date(),
       },
     }),
@@ -113,46 +113,45 @@ async function main() {
   const posts = await Promise.all([
     prisma.post.create({
       data: {
-        id: "post1",
-        content:
-          "Just finished designing a sustainable office complex in downtown. The integration of green walls and natural lighting has been incredible. What are your thoughts on biophilic design in modern architecture?",
+        id: "post-1",
+        content: "What are the latest trends in sustainable architecture? I'm looking for innovative solutions for my upcoming project.",
         authorId: users[0].id,
         categoryId: categories[0].id,
-        aiTags: ["sustainable", "biophilic", "office"],
+        isAnonymous: false,
+        aiTags: ["architecture", "sustainability", "innovation"],
         updatedAt: new Date(),
       },
     }),
     prisma.post.create({
       data: {
-        id: "post2",
-        content: "Need the service of a good architect for a proposed house in Mathugama. Looking for someone experienced in residential projects with modern design aesthetics.",
+        id: "post-2",
+        content: "How can small businesses leverage digital marketing effectively? Share your success stories and strategies.",
         authorId: users[1].id,
         categoryId: categories[1].id,
-        aiTags: ["residential", "modern", "mathugama"],
-        isAnonymous: true,
+        isAnonymous: false,
+        aiTags: ["digital marketing", "small business", "strategy"],
         updatedAt: new Date(),
       },
     }),
     prisma.post.create({
       data: {
-        id: "post3",
-        title: "Career Transition: From Student to Professional",
-        content: "Recently graduated and starting my career in architecture. Any advice for new graduates entering the field? What should I focus on in my first year?",
+        id: "post-3",
+        content: "Career transition tips for moving from engineering to project management? What skills should I focus on?",
         authorId: users[2].id,
         categoryId: categories[2].id,
-        aiTags: ["career", "advice", "graduate"],
+        isAnonymous: true,
+        aiTags: ["career change", "project management", "engineering"],
         updatedAt: new Date(),
       },
     }),
     prisma.post.create({
       data: {
-        id: "post4",
-        title: "Latest Construction Technologies",
-        content: "Has anyone worked with 3D printing in construction? I'm curious about its practical applications and limitations in Sri Lankan context.",
+        id: "post-4",
+        content: "Best practices for concrete quality control in high-rise construction projects. Looking for industry standards.",
         authorId: adminUser.id,
         categoryId: categories[3].id,
-        aiTags: ["3d-printing", "technology", "innovation"],
-        isPinned: true,
+        isAnonymous: false,
+        aiTags: ["construction", "quality control", "concrete"],
         updatedAt: new Date(),
       },
     }),
@@ -162,19 +161,19 @@ async function main() {
   await Promise.all([
     prisma.comment.create({
       data: {
-        id: "comment1",
-        content: "Great question! Biophilic design has shown amazing results in employee productivity. We've implemented similar concepts in our recent projects.",
-        authorId: users[1].id,
+        id: "comment-1",
+        content: "Great question! I've been experimenting with cross-laminated timber (CLT) in my recent projects.",
         postId: posts[0].id,
+        authorId: users[1].id,
         updatedAt: new Date(),
       },
     }),
     prisma.comment.create({
       data: {
-        id: "comment2",
-        content: "I'd recommend focusing on building strong relationships with senior architects and learning project management skills early on.",
-        authorId: users[0].id,
-        postId: posts[2].id,
+        id: "comment-2",
+        content: "Social media marketing has been a game-changer for our agency. Focus on building authentic relationships.",
+        postId: posts[1].id,
+        authorId: users[2].id,
         updatedAt: new Date(),
       },
     }),
@@ -186,15 +185,15 @@ async function main() {
       data: {
         id: "vote-1",
         type: "UP",
-        userId: users[1].id,
-        postId: posts[0].id,
+        userId: users[0].id,
+        postId: posts[1].id,
       },
     }),
     prisma.votes.create({
       data: {
         id: "vote-2",
         type: "UP",
-        userId: users[2].id,
+        userId: users[1].id,
         postId: posts[0].id,
       },
     }),
@@ -202,23 +201,19 @@ async function main() {
       data: {
         id: "vote-3",
         type: "UP",
-        userId: adminUser.id,
-        postId: posts[2].id,
+        userId: users[2].id,
+        postId: posts[0].id,
       },
     }),
   ])
 
-  console.log("Database seeded successfully!")
-  console.log(`Created admin user: ${adminUser.email}`)
-  console.log(`Created ${users.length} sample users`)
-  console.log(`Created ${categories.length} categories`)
-  console.log(`Created ${posts.length} posts`)
-  console.log("✅ All sample data has been added to the database")
+  console.log("✅ Database seeded successfully!")
+  console.log(`📊 Created: ${users.length + 1} users, ${categories.length} categories, ${posts.length} posts, 2 comments, 3 votes`)
 }
 
 main()
   .catch((e) => {
-    console.error(e)
+    console.error("❌ Error seeding database:", e)
     process.exit(1)
   })
   .finally(async () => {

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,78 +8,68 @@ datasource db {
 }
 
 model Account {
-  id                String  @id @default(cuid())
+  id                String  @id
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  users             users   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
 
+model Comment {
+  id            String    @id
+  content       String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  postId        String
+  authorId      String
+  parentId      String?
+  users         users     @relation(fields: [authorId], references: [id])
+  Comment       Comment?  @relation("CommentToComment", fields: [parentId], references: [id])
+  other_Comment Comment[] @relation("CommentToComment")
+  Post          Post      @relation(fields: [postId], references: [id])
+}
+
+model Post {
+  id                String     @id
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime
+  title             String?
+  content           String
+  isAnonymous       Boolean    @default(false)
+  isPinned          Boolean    @default(false)
+  isLocked          Boolean    @default(false)
+  aiCategory        String?
+  aiTags            String[]
+  originalLanguage  String     @default("English")
+  translatedContent String?
+  viewCount         Int        @default(0)
+  shareCount        Int        @default(0)
+  authorId          String
+  categoryId        String
+  Comment           Comment[]
+  users             users      @relation(fields: [authorId], references: [id])
+  categories        categories @relation(fields: [categoryId], references: [id])
+
+  @@index([authorId])
+  @@index([categoryId])
+}
+
 model Session {
-  id           String   @id @default(cuid())
+  id           String   @id
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  
-  // Profile fields
-  company       String?
-  profession    String?
-  bio           String?
-  location      String?
-  website       String?
-  phone         String?
-  profileVisibility Boolean @default(true)
-  
-  // Social links
-  linkedinUrl   String?
-  twitterUrl    String?
-  instagramUrl  String?
-  
-  // User status
-  role          UserRole @default(MEMBER)
-  rank          UserRank @default(NEW_MEMBER)
-  isVerified    Boolean  @default(false)
-  isSuspended   Boolean  @default(false)
-  suspendedUntil DateTime?
-  
-  // Timestamps
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  lastActiveAt  DateTime @default(now())
-  
-  // Relations
-  accounts      Account[]
-  sessions      Session[]
-  posts         Post[]
-  comments      Comment[]
-  votes         Vote[]
-  flags         Flag[]
-  notifications Notification[]
-  updatedSettings Settings[] @relation("SettingsUpdatedBy")
-  pages         Page[]
-  
-  @@map("users")
+  users        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -93,10 +80,138 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-enum UserRole {
-  ADMIN
-  MODERATOR
-  MEMBER
+model attachments {
+  id        String   @id
+  filename  String
+  url       String
+  size      Int
+  mimeType  String
+  postId    String
+  createdAt DateTime @default(now())
+}
+
+model categories {
+  id          String   @id
+  name        String   @unique
+  description String
+  color       String
+  icon        String
+  slug        String   @unique
+  postCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  Post        Post[]
+}
+
+model flags {
+  id        String     @id
+  reason    String
+  status    FlagStatus @default(PENDING)
+  userId    String
+  postId    String?
+  commentId String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime
+  users     users      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model notifications {
+  id        String           @id
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  data      Json?
+  userId    String
+  createdAt DateTime         @default(now())
+  users     users            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model pages {
+  id          String   @id
+  title       String
+  slug        String   @unique
+  content     String
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  authorId    String
+  users       users    @relation(fields: [authorId], references: [id])
+}
+
+model settings {
+  id          String   @id
+  key         String   @unique
+  value       String
+  updatedAt   DateTime
+  description String?
+  updatedById String
+  users       users    @relation(fields: [updatedById], references: [id])
+}
+
+model users {
+  id                String          @id
+  name              String?
+  email             String          @unique
+  emailVerified     DateTime?
+  image             String?
+  password          String?
+  company           String?
+  profession        String?
+  bio               String?
+  location          String?
+  website           String?
+  phone             String?
+  profileVisibility Boolean         @default(true)
+  linkedinUrl       String?
+  twitterUrl        String?
+  instagramUrl      String?
+  role              UserRole        @default(MEMBER)
+  rank              UserRank        @default(NEW_MEMBER)
+  isVerified        Boolean         @default(false)
+  isSuspended       Boolean         @default(false)
+  suspendedUntil    DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime
+  lastActiveAt      DateTime        @default(now())
+  Account           Account[]
+  Comment           Comment[]
+  Post              Post[]
+  Session           Session[]
+  flags             flags[]
+  notifications     notifications[]
+  pages             pages[]
+  settings          settings[]
+  votes             votes[]
+}
+
+model votes {
+  id        String   @id
+  type      VoteType
+  userId    String
+  postId    String?
+  commentId String?
+  createdAt DateTime @default(now())
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@unique([userId, postId])
+}
+
+enum FlagStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+enum NotificationType {
+  POST_LIKE
+  POST_COMMENT
+  COMMENT_REPLY
+  MENTION
+  BEST_ANSWER
+  SYSTEM
 }
 
 enum UserRank {
@@ -109,171 +224,13 @@ enum UserRank {
   TOP_CONTRIBUTOR
 }
 
-model Category {
-  id          String @id @default(cuid())
-  name        String @unique
-  description String
-  color       String
-  icon        String
-  slug        String @unique
-  postCount   Int    @default(0)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  posts       Post[]
-  
-  @@map("categories")
-}
-
-model Post {
-  id              String       @id @default(cuid())
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  title           String?
-  content         String       @db.Text
-  isAnonymous     Boolean      @default(false)
-  isPinned        Boolean      @default(false)
-  isLocked        Boolean      @default(false)
-  aiCategory      String?
-  aiTags          String[]
-  originalLanguage String      @default("English")
-  translatedContent String?
-  viewCount       Int          @default(0)
-  shareCount      Int          @default(0)
-  author          User         @relation(fields: [authorId], references: [id])
-  authorId        String
-  category        Category     @relation(fields: [categoryId], references: [id])
-  categoryId      String
-  comments        Comment[]
-  attachments     Attachment[]
-  votes           Vote[]
-  flags           Flag[]
-
-  @@index([authorId])
-  @@index([categoryId])
-}
-
-model Comment {
-  id        String   @id @default(cuid())
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  post      Post     @relation(fields: [postId], references: [id])
-  postId    String
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  String
-  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id])
-  parentId  String?
-  replies   Comment[] @relation("CommentReplies")
-  votes     Vote[]
-  flags     Flag[]
-}
-
-model Vote {
-  id        String   @id @default(cuid())
-  type      VoteType
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  postId    String?
-  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  commentId String?
-  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  @@unique([userId, postId])
-  @@unique([userId, commentId])
-  @@map("votes")
+enum UserRole {
+  ADMIN
+  MODERATOR
+  MEMBER
 }
 
 enum VoteType {
   UP
   DOWN
-}
-
-model Flag {
-  id        String   @id @default(cuid())
-  reason    String
-  status    FlagStatus @default(PENDING)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  postId    String?
-  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  commentId String?
-  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  @@map("flags")
-}
-
-enum FlagStatus {
-  PENDING
-  REVIEWED
-  RESOLVED
-  DISMISSED
-}
-
-model Attachment {
-  id       String @id @default(cuid())
-  filename String
-  url      String
-  size     Int
-  mimeType String
-  
-  postId   String
-  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  createdAt DateTime @default(now())
-  
-  @@map("attachments")
-}
-
-model Notification {
-  id        String           @id @default(cuid())
-  type      NotificationType
-  title     String
-  message   String
-  isRead    Boolean          @default(false)
-  data      Json?
-  
-  userId    String
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  createdAt DateTime         @default(now())
-  
-  @@map("notifications")
-}
-
-enum NotificationType {
-  POST_LIKE
-  POST_COMMENT
-  COMMENT_REPLY
-  MENTION
-  BEST_ANSWER
-  SYSTEM
-}
-
-model Settings {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  value       String
-  description String?
-  updatedAt   DateTime @updatedAt
-  updatedBy   User     @relation("SettingsUpdatedBy", fields: [updatedById], references: [id])
-  updatedById String
-
-  @@map("settings")
-}
-
-model Page {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  content     String   @db.Text
-  isPublished Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  author      User     @relation(fields: [authorId], references: [id])
-  authorId    String
-
-  @@map("pages")
 }

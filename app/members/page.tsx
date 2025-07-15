@@ -1,5 +1,4 @@
-import Header from "@/components/header"
-import Footer from "@/components/footer"
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -92,7 +91,7 @@ const members = [
 export default function MembersPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header />
+      
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
@@ -200,7 +199,7 @@ export default function MembersPage() {
         </div>
       </main>
 
-      <Footer />
+      
     </div>
   )
 }
