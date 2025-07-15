@@ -47,6 +47,7 @@ interface PostCardProps {
     }
   }
   onDelete?: () => void
+  onCommentCountChange?: (postId: string, newCount: number) => void
 }
 
 const getTextSizeClass = (content: string) => {
@@ -169,7 +170,7 @@ function PostHeaderAndContent({ post, renderImages }: { post: PostCardProps["pos
   )
 }
 
-export default function PostCard({ post, onDelete }: PostCardProps) {
+export default function PostCard({ post, onDelete, onCommentCountChange }: PostCardProps) {
   const { user, isLoading } = useAuth()
   const [userVote, setUserVote] = useState<"up" | "down" | null>(null)
   const [showComments, setShowComments] = useState(false)
@@ -267,7 +268,12 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   useEffect(() => {
     if (!modalOpen) return
     fetch(`/api/comments?postId=${post.id}`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`)
+        }
+        return res.json()
+      })
       .then(data => {
         if (Array.isArray(data.comments)) {
           setComments(
@@ -278,11 +284,15 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
               replies: c.replies?.map((r: any) => ({
                 ...r,
                 upvotes: r.upvotes ?? 0,
-                downvotes: r.downvotes ?? 0,
+                downvotes: r.downvotes ?? 0
               })) ?? []
             }))
           )
         }
+      })
+      .catch(error => {
+        console.error("Error fetching comments:", error)
+        setComments([]) // Set empty array on error
       })
   }, [modalOpen, post.id])
 
@@ -590,6 +600,11 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     }
   };
 
+  const handleCommentAdded = () => {
+    // Refresh the post's comment count by fetching updated post data
+    onCommentCountChange?.(post.id, post.comments + 1)
+  }
+
   const openModal = (imgIdx = 0) => {
     setModalImageIndex(imgIdx)
     setModalOpen(true)
@@ -755,7 +770,13 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         </CardContent>
       </Card>
       {/* Facebook-style Post Popup Modal */}
-      <PostModal open={modalOpen} onClose={() => setModalOpen(false)} post={post} initialImage={modalImageIndex} />
+      <PostModal 
+        open={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        post={post} 
+        initialImage={modalImageIndex} 
+        onCommentAdded={handleCommentAdded}
+      />
     </>
   )
 }

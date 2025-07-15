@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     if (categoryName) {
       // Search for a specific category by name
-      const category = await prisma.category.findFirst({
+      const category = await prisma.categories.findFirst({
         where: {
           name: {
             equals: categoryName,
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
           postCount: true,
           _count: {
             select: {
-              posts: true
+              Post: true
             }
           }
         }
@@ -84,13 +84,13 @@ export async function GET(request: NextRequest) {
           color: category.color,
           icon: category.icon,
           slug: category.slug,
-          count: category._count.posts
+          count: category._count.Post
         }
       })
     }
 
     // If no name provided, return all categories
-    const categories = await prisma.category.findMany({
+    const categories = await prisma.categories.findMany({
       select: {
         id: true,
         name: true,
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
         postCount: true,
         _count: {
           select: {
-            posts: true
+            Post: true
           }
         }
       },
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     const { name, description, color, icon, slug } = createCategorySchema.parse(body)
 
     // Check if category with same name or slug exists
-    const existingCategory = await prisma.category.findFirst({
+    const existingCategory = await prisma.categories.findFirst({
       where: {
         OR: [{ name }, { slug }],
       },
@@ -154,13 +154,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Category with this name or slug already exists" }, { status: 400 })
     }
 
-    const category = await prisma.category.create({
+    const category = await prisma.categories.create({
       data: {
+        id: `cat-${Date.now()}`,
         name,
         description,
         color,
         icon,
         slug,
+        updatedAt: new Date(),
       },
     })
 

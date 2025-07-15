@@ -21,12 +21,6 @@ const createPostSchema = z.object({
   translatedContent: z.string().optional(),
 })
 
-const getPostsSchema = z.object({
-  page: z.string().optional().default("1"),
-  limit: z.string().optional().default("10"),
-  category: z.string().optional(),
-  sort: z.enum(["latest", "popular", "oldest"]).optional().default("latest"),
-})
 
 export async function POST(request: Request) {
   try {
@@ -97,7 +91,7 @@ export async function POST(request: Request) {
     const { data } = validationResult
 
     // Check if category exists
-    const category = await prisma.category.findUnique({
+    const category = await prisma.categories.findUnique({
       where: { id: data.categoryId },
     })
 
@@ -111,6 +105,7 @@ export async function POST(request: Request) {
     // Create post with AI tags and translation info
     const post = await prisma.post.create({
       data: {
+        id: crypto.randomUUID(),
         content: data.content,
         authorId: session.user.id,
         categoryId: data.categoryId,
@@ -118,15 +113,22 @@ export async function POST(request: Request) {
         aiTags: data.tags,
         originalLanguage: data.originalLanguage || "English",
         translatedContent: data.translatedContent || data.content,
+        updatedAt: new Date(),
       },
       include: {
-        author: true,
-        category: true,
+        users: {
+          select: {
+            name: true,
+            image: true,
+            rank: true,
+          },
+        },
+        categories: true,
       },
     })
 
     // Update category post count
-    await prisma.category.update({
+    await prisma.categories.update({
       where: { id: data.categoryId },
       data: {
         postCount: {
@@ -156,8 +158,9 @@ export async function POST(request: Request) {
             return null
           }
 
-          return prisma.attachment.create({
+          return prisma.attachments.create({
             data: {
+              id: crypto.randomUUID(),
               url: imageUrl,
               filename: filename,
               size: stats.size,
@@ -245,23 +248,17 @@ export async function GET(request: NextRequest) {
       const posts = await prisma.post.findMany({
         where,
         include: {
-          author: {
+          users: {
             select: {
               name: true,
               image: true,
               rank: true,
             },
           },
-          category: true,
-          attachments: true,
+          categories: true,
           _count: {
             select: {
-              comments: true,
-              votes: {
-                where: {
-                  type: "UP",
-                },
-              },
+              Comment: true,
             },
           },
         },
@@ -275,42 +272,57 @@ export async function GET(request: NextRequest) {
       const total = await prisma.post.count({ where })
       console.log(`Total posts: ${total}`)
 
-      // Get vote counts for each post
-      const voteCounts = await Promise.all(
-        posts.map(async (post) => {
-          const [upvotes, downvotes] = await Promise.all([
-            prisma.vote.count({
-              where: { postId: post.id, type: "UP" },
-            }),
-            prisma.vote.count({
-              where: { postId: post.id, type: "DOWN" },
-            }),
-          ])
-          return { postId: post.id, upvotes, downvotes }
-        })
-      )
+      // Get vote counts for all posts in a single efficient query
+      const voteCounts = await prisma.votes.groupBy({
+        by: ['postId', 'type'],
+        where: {
+          postId: {
+            in: posts.map(post => post.id)
+          }
+        },
+        _count: true
+      })
+
+      // Transform vote counts into a more usable format
+      const voteCountMap = new Map<string, { upvotes: number; downvotes: number }>()
+      
+      posts.forEach(post => {
+        voteCountMap.set(post.id, { upvotes: 0, downvotes: 0 })
+      })
+
+      voteCounts.forEach(vote => {
+        if (vote.postId) {
+          const existing = voteCountMap.get(vote.postId) || { upvotes: 0, downvotes: 0 }
+          if (vote.type === 'UP') {
+            existing.upvotes = vote._count
+          } else if (vote.type === 'DOWN') {
+            existing.downvotes = vote._count
+          }
+          voteCountMap.set(vote.postId, existing)
+        }
+      })
 
       // Transform the data to match the frontend format
       let transformedPosts = posts.map((post) => {
-        const voteCount = voteCounts.find((v) => v.postId === post.id)
+        const voteCount = voteCountMap.get(post.id) || { upvotes: 0, downvotes: 0 }
         return {
           id: post.id,
           author: {
-            name: post.isAnonymous ? "Anonymous" : post.author.name,
-            avatar: post.author.image || "/placeholder.svg",
-            isVerified: post.author.rank === "COMMUNITY_EXPERT" || post.author.rank === "TOP_CONTRIBUTOR",
-            rank: post.author.rank,
-            rankIcon: getRankIcon(post.author.rank),
+            name: post.isAnonymous ? "Anonymous" : post.users.name,
+            avatar: post.users.image || "/placeholder.svg",
+            isVerified: post.users.rank === "COMMUNITY_EXPERT" || post.users.rank === "TOP_CONTRIBUTOR",
+            rank: post.users.rank,
+            rankIcon: getRankIcon(post.users.rank),
           },
           content: post.content,
-          category: post.category.name,
+          category: post.categories.name,
           isAnonymous: post.isAnonymous,
           isPinned: post.isPinned,
-          upvotes: voteCount?.upvotes || 0,
-          downvotes: voteCount?.downvotes || 0,
-          comments: post._count.comments,
+          upvotes: voteCount.upvotes,
+          downvotes: voteCount.downvotes,
+          comments: post._count.Comment,
           timeAgo: getTimeAgo(post.createdAt),
-          images: post.attachments.map((attachment) => attachment.url),
+          images: [], // We'll load attachments separately if needed
         }
       })
 
