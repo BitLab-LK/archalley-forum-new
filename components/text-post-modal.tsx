@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useSession } from "next-auth/react"
 
 interface TextPostModalProps {
   open: boolean
@@ -43,14 +44,40 @@ interface TextPostModalProps {
   }
 }
 
+interface Comment {
+  id: string
+  content: string
+  createdAt: string
+  parentId: string | null
+  author: {
+    id: string
+    name: string
+    image: string
+    rank?: string
+  }
+  upvotes: number
+  downvotes: number
+  userVote?: "up" | "down" | null
+  replies: Comment[]
+}
+
 export default function TextPostModal({ open, onClose, onCommentAdded, post }: TextPostModalProps) {
-  const [comments, setComments] = useState<any[]>([])
+  const [comments, setComments] = useState<Comment[]>([])
   const [commentInput, setCommentInput] = useState("")
   const [replyInput, setReplyInput] = useState("")
   const [replyTo, setReplyTo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
+  
+  // Post voting state
+  const [postVotes, setPostVotes] = useState({
+    upvotes: post?.upvotes || 0,
+    downvotes: post?.downvotes || 0,
+    userVote: null as "UP" | "DOWN" | null
+  })
+  
   const { user } = useAuth()
+  const { data: session } = useSession()
 
   useEffect(() => {
     if (!open) return
@@ -65,36 +92,77 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
   useEffect(() => {
     if (!open) return
     setLoading(true)
-    fetch(`/api/comments?postId=${post.id}`)
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
-        return res.json()
-      })
-      .then(data => {
-        if (Array.isArray(data.comments)) {
-          setComments(data.comments)
-          
-          // Auto-expand comments that have replies
-          const commentsWithReplies = new Set<string>()
-          const findCommentsWithReplies = (comments: any[]) => {
-            comments.forEach(comment => {
-              if (comment.replies && comment.replies.length > 0) {
-                commentsWithReplies.add(comment.id)
-                // Also recursively check nested replies
-                findCommentsWithReplies(comment.replies)
-              }
-            })
+    
+    // Fetch both comments and post votes
+    const fetchData = async () => {
+      try {
+        const [commentsRes, votesRes] = await Promise.all([
+          fetch(`/api/comments?postId=${post.id}`),
+          fetch(`/api/posts/${post.id}/vote`)
+        ]);
+        
+        // Handle comments response
+        if (commentsRes.ok) {
+          const commentsData = await commentsRes.json();
+          if (Array.isArray(commentsData.comments)) {
+            setComments(commentsData.comments);
+            
+            // Keep all replies collapsed by default (empty Set)
+            setExpandedReplies(new Set<string>());
           }
-          findCommentsWithReplies(data.comments)
-          setExpandedReplies(commentsWithReplies)
         }
-      })
-      .catch(error => {
-        console.error("Error fetching comments:", error)
-        setComments([])
-      })
-      .finally(() => setLoading(false))
+        
+        // Handle votes response
+        if (votesRes.ok) {
+          const votesData = await votesRes.json();
+          setPostVotes({
+            upvotes: votesData.upvotes,
+            downvotes: votesData.downvotes,
+            userVote: votesData.userVote
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setComments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
   }, [open, post.id])
+
+  // Handle post voting
+  const handlePostVote = async (voteType: "UP" | "DOWN") => {
+    if (!session?.user?.id || !post?.id) return;
+
+    try {
+      const response = await fetch(`/api/posts/${post.id}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type: voteType }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to vote');
+      }
+
+      // Refresh post votes to get updated counts
+      const votesRes = await fetch(`/api/posts/${post.id}/vote`);
+      if (votesRes.ok) {
+        const votesData = await votesRes.json();
+        setPostVotes({
+          upvotes: votesData.upvotes,
+          downvotes: votesData.downvotes,
+          userVote: votesData.userVote
+        });
+      }
+    } catch (error) {
+      console.error('Error voting on post:', error);
+    }
+  };
 
   const handleSubmitComment = async () => {
     if (!commentInput.trim()) return
@@ -269,6 +337,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
           author: data.comment.users.name,
           authorId: data.comment.authorId,
           authorImage: data.comment.users.image,
+          authorRank: data.comment.users.rank,
           content: data.comment.content,
           createdAt: data.comment.createdAt,
           parentId: data.comment.parentId,
@@ -280,8 +349,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
         
         setComments(prev => addReplyToComment(prev, currentReplyTo, newReply))
         
-        // Auto-expand replies to show the new reply
-        setExpandedReplies(prev => new Set(prev).add(currentReplyTo))
+        // Don't auto-expand - let user manually expand to see replies
         
         onCommentAdded?.()
       }
@@ -303,6 +371,25 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
     return `${Math.floor(diffInSeconds / 86400)}d`
   }
 
+  // Format rank for display
+  const formatRank = (rank: string) => {
+    return rank.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Get rank color based on rank level
+  const getRankColor = (rank: string) => {
+    const rankColors = {
+      'NEW_MEMBER': 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+      'CONVERSATION_STARTER': 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+      'RISING_STAR': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+      'VISUAL_STORYTELLER': 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+      'VALUED_RESPONDER': 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+      'COMMUNITY_EXPERT': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
+      'TOP_CONTRIBUTOR': 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+    };
+    return rankColors[rank as keyof typeof rankColors] || rankColors.NEW_MEMBER;
+  };
+
   const renderComment = (comment: any, depth: number = 0) => {
     const hasReplies = comment.replies && comment.replies.length > 0
     const isExpanded = expandedReplies.has(comment.id)
@@ -310,16 +397,16 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
     const isAuthor = comment.authorId === post.author.id
     
     return (
-      <div key={comment.id} className={cn("relative", isNested && "ml-8")}>
+      <div key={comment.id} className={cn("relative", isNested && "ml-6")}>
         {/* Vertical connecting line for nested replies - positioned correctly */}
         {isNested && depth === 1 && (
-          <div className="absolute -left-8 top-0 bottom-0 w-px bg-gray-300 dark:bg-gray-600" />
+          <div className="absolute -left-6 top-0 bottom-0 w-px bg-gray-300 dark:bg-gray-600" />
         )}
         
         <div className="flex items-start gap-2">
           {/* Horizontal connector for nested replies */}
           {isNested && depth === 1 && (
-            <div className="absolute -left-8 top-4 w-6 h-px bg-gray-300 dark:bg-gray-600" />
+            <div className="absolute -left-6 top-4 w-4 h-px bg-gray-300 dark:bg-gray-600" />
           )}
           
           <Avatar className={cn("flex-shrink-0", isNested ? "h-6 w-6" : "h-8 w-8")}>
@@ -330,9 +417,9 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
           </Avatar>
           
           <div className="flex-1 min-w-0">
-            {/* Comment bubble with proper background hierarchy */}
+            {/* Comment bubble with proper background hierarchy and flexible width */}
             <div className={cn(
-              "rounded-2xl px-3 py-2 relative",
+              "rounded-2xl px-3 py-2 relative inline-block max-w-fit",
               depth === 0 && "bg-gray-100 dark:bg-gray-800",
               depth === 1 && "bg-gray-50 dark:bg-gray-750", 
               depth >= 2 && "bg-gray-25 dark:bg-gray-700"
@@ -346,33 +433,47 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
                     )}>
                       {comment.author || "Anonymous"}
                     </span>
+                    {comment.authorRank && (
+                      <span className={cn(
+                        "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium",
+                        getRankColor(comment.authorRank),
+                        isNested ? "text-xs" : "text-xs"
+                      )}>
+                        {formatRank(comment.authorRank)}
+                      </span>
+                    )}
                     {isAuthor && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                         Author
                       </span>
                     )}
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {formatTimeAgo(comment.createdAt)}
-                    </span>
                   </div>
                   <p className={cn(
-                    "text-gray-800 dark:text-gray-200 leading-relaxed",
+                    "text-gray-800 dark:text-gray-200 leading-relaxed break-words",
                     isNested ? "text-sm" : "text-sm"
                   )}>
                     {comment.content}
                   </p>
                 </div>
+                {/* Debug: Show if user can delete */}
                 {(user?.id === comment.authorId || user?.role === "ADMIN") && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <div className="h-6 w-6 p-1 text-gray-400 hover:text-gray-600 cursor-pointer rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center">
+                      <button 
+                        className="h-6 w-6 p-1 text-gray-400 hover:text-gray-600 cursor-pointer rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center"
+                        aria-label="More options"
+                        title={`Delete available - User: ${user?.id}, Comment Author: ${comment.authorId}, User Role: ${user?.role}`}
+                      >
                         <MoreHorizontal className="w-4 h-4" />
-                      </div>
+                      </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="w-32 z-[1001] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                       <DropdownMenuItem 
-                        onClick={() => handleDeleteComment(comment.id)} 
-                        className="text-red-600 focus:text-red-600 cursor-pointer"
+                        onClick={() => {
+                          console.log('Delete clicked for comment:', comment.id);
+                          handleDeleteComment(comment.id);
+                        }} 
+                        className="text-red-600 hover:text-red-700 focus:text-red-700 cursor-pointer flex items-center hover:bg-red-50 dark:hover:bg-red-900/20"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete
@@ -383,7 +484,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
               </div>
             </div>
             
-            {/* Action buttons - Facebook style */}
+            {/* Action buttons - Facebook style with timestamp */}
             <div className="flex items-center gap-4 mt-1 text-xs">
               <button 
                 onClick={() => handleCommentVote(comment.id, "up")}
@@ -395,31 +496,64 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
                 Like
               </button>
               <button 
+                onClick={() => handleCommentVote(comment.id, "down")}
+                className={cn(
+                  "font-semibold transition-colors hover:underline",
+                  comment.userVote === "down" ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"
+                )}
+              >
+                Dislike
+              </button>
+              <button 
                 onClick={() => handleReply(comment.id)}
                 className="font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:underline transition-colors"
               >
                 Reply
               </button>
+              <span className="text-gray-400 text-xs">
+                {formatTimeAgo(comment.createdAt)}
+              </span>
               {hasReplies && (
                 <button 
                   onClick={() => toggleReplies(comment.id)}
-                  className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline transition-colors"
+                  className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline transition-colors flex items-center gap-1"
                 >
-                  {isExpanded ? "Hide replies" : `${comment.replies.length} ${comment.replies.length === 1 ? 'reply' : 'replies'}`}
+                  {isExpanded ? (
+                    <>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                      Hide replies
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                      View {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
+                    </>
+                  )}
                 </button>
               )}
-              <span className="text-gray-400">
-                {formatTimeAgo(comment.createdAt)}
-              </span>
               {/* Reaction count inline */}
-              {comment.upvotes > 0 && (
-                <div className="flex items-center ml-auto">
-                  <div className="flex items-center -space-x-0.5">
-                    <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">👍</div>
-                    {comment.upvotes > 5 && <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">❤️</div>}
-                    {comment.upvotes > 10 && <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs">😂</div>}
-                  </div>
-                  <span className="ml-1 text-xs text-gray-600 dark:text-gray-400">{comment.upvotes}</span>
+              {(comment.upvotes > 0 || comment.downvotes > 0) && (
+                <div className="flex items-center ml-auto gap-3">
+                  {comment.upvotes > 0 && (
+                    <div className="flex items-center">
+                      <div className="flex items-center -space-x-0.5">
+                        <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">👍</div>
+                        {comment.upvotes > 5 && <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">❤️</div>}
+                        {comment.upvotes > 10 && <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs">😂</div>}
+                      </div>
+                      <span className="ml-1 text-xs text-gray-600 dark:text-gray-400">{comment.upvotes}</span>
+                    </div>
+                  )}
+                  {comment.downvotes > 0 && (
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 bg-gray-500 rounded-full flex items-center justify-center text-white text-xs">👎</div>
+                      <span className="ml-1 text-xs text-gray-600 dark:text-gray-400">{comment.downvotes}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -452,8 +586,10 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
 
             {/* Nested Replies - Compact Facebook style */}
             {hasReplies && isExpanded && (
-              <div className="mt-2 space-y-2">
-                {comment.replies.map((reply: any) => renderComment(reply, depth + 1))}
+              <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+                <div className="space-y-2">
+                  {comment.replies.map((reply: any) => renderComment(reply, depth + 1))}
+                </div>
               </div>
             )}
           </div>
@@ -466,7 +602,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 p-4">
-      <div className="relative w-full max-w-[500px] bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden flex flex-col h-[80vh] min-h-[500px] max-h-[700px]">
+      <div className="relative w-full max-w-[520px] bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden flex flex-col h-[80vh] min-h-[500px] max-h-[700px]">
         {/* Facebook-style Header - Fixed */}
         <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
@@ -485,6 +621,14 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
+                )}
+                {!post.isAnonymous && post.author.rank && (
+                  <span className={cn(
+                    "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
+                    getRankColor(post.author.rank)
+                  )}>
+                    {formatRank(post.author.rank)}
+                  </span>
                 )}
               </div>
               <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
@@ -524,19 +668,19 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
             {/* Stats */}
             <div className="flex items-center justify-between mt-3 pt-2 text-sm text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-4">
-                {(post.upvotes > 0 || post.downvotes > 0) && (
+                {(postVotes.upvotes > 0 || postVotes.downvotes > 0) && (
                   <span className="flex items-center gap-1">
                     <div className="flex items-center">
                       <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                         <ThumbsUp className="w-3 h-3 text-white" />
                       </div>
-                      {post.downvotes > 0 && (
+                      {postVotes.downvotes > 0 && (
                         <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center -ml-1">
                           <ThumbsDown className="w-3 h-3 text-white" />
                         </div>
                       )}
                     </div>
-                    <span>{post.upvotes + post.downvotes}</span>
+                    <span>{postVotes.upvotes + postVotes.downvotes}</span>
                   </span>
                 )}
               </div>
@@ -549,9 +693,31 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
           {/* Action Buttons - Sticky */}
           <div className="sticky top-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 py-1 z-10">
             <div className="flex">
-              <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+              <button 
+                onClick={() => handlePostVote("UP")}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium",
+                  postVotes.userVote === "UP" 
+                    ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950" 
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                )}
+              >
                 <ThumbsUp className="w-5 h-5" />
-                <span className="font-medium">Like</span>
+                <span>Like</span>
+                {postVotes.upvotes > 0 && <span className="text-sm">({postVotes.upvotes})</span>}
+              </button>
+              <button 
+                onClick={() => handlePostVote("DOWN")}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium",
+                  postVotes.userVote === "DOWN" 
+                    ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950" 
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                )}
+              >
+                <ThumbsDown className="w-5 h-5" />
+                <span>Dislike</span>
+                {postVotes.downvotes > 0 && <span className="text-sm">({postVotes.downvotes})</span>}
               </button>
               <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
                 <MessageCircle className="w-5 h-5" />

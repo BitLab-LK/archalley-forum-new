@@ -33,7 +33,7 @@ export async function POST(
     }
 
     // Check if user has already voted
-    const existingVote = await prisma.vote.findFirst({
+    const existingVote = await prisma.votes.findFirst({
       where: {
         postId,
         userId
@@ -43,13 +43,13 @@ export async function POST(
     if (existingVote) {
       if (existingVote.type === type) {
         // If same vote type, remove the vote
-        await prisma.vote.delete({
+        await prisma.votes.delete({
           where: { id: existingVote.id }
         })
         return NextResponse.json({ message: "Vote removed" })
       } else {
         // If different vote type, update the vote
-        await prisma.vote.update({
+        await prisma.votes.update({
           where: { id: existingVote.id },
           data: { type }
         })
@@ -58,8 +58,9 @@ export async function POST(
     }
 
     // Create new vote
-    await prisma.vote.create({
+    await prisma.votes.create({
       data: {
+        id: `vote-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type,
         postId,
         userId
@@ -79,7 +80,7 @@ export async function POST(
 
 // Get vote counts for a post
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { postId: string } }
 ) {
   try {
@@ -88,10 +89,10 @@ export async function GET(
 
     // Get vote counts
     const [upvotes, downvotes] = await Promise.all([
-      prisma.vote.count({
+      prisma.votes.count({
         where: { postId, type: "UP" }
       }),
-      prisma.vote.count({
+      prisma.votes.count({
         where: { postId, type: "DOWN" }
       })
     ])
@@ -99,7 +100,7 @@ export async function GET(
     // Get user's vote if authenticated
     let userVote = null
     if (session?.user) {
-      const vote = await prisma.vote.findFirst({
+      const vote = await prisma.votes.findFirst({
         where: {
           postId,
           userId: session.user.id
