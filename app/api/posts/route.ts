@@ -283,6 +283,29 @@ export async function GET(request: NextRequest) {
         _count: true
       })
 
+      // Get attachments for all posts
+      const attachments = await prisma.attachments.findMany({
+        where: {
+          postId: {
+            in: posts.map(post => post.id)
+          }
+        },
+        select: {
+          postId: true,
+          url: true,
+          filename: true,
+          mimeType: true,
+        },
+      })
+
+      // Group attachments by postId
+      const attachmentMap = new Map<string, string[]>()
+      attachments.forEach(attachment => {
+        const existing = attachmentMap.get(attachment.postId) || []
+        existing.push(attachment.url)
+        attachmentMap.set(attachment.postId, existing)
+      })
+
       // Transform vote counts into a more usable format
       const voteCountMap = new Map<string, { upvotes: number; downvotes: number }>()
       
@@ -305,6 +328,7 @@ export async function GET(request: NextRequest) {
       // Transform the data to match the frontend format
       let transformedPosts = posts.map((post) => {
         const voteCount = voteCountMap.get(post.id) || { upvotes: 0, downvotes: 0 }
+        const images = attachmentMap.get(post.id) || []
         return {
           id: post.id,
           author: {
@@ -322,7 +346,7 @@ export async function GET(request: NextRequest) {
           downvotes: voteCount.downvotes,
           comments: post._count.Comment,
           timeAgo: getTimeAgo(post.createdAt),
-          images: [], // We'll load attachments separately if needed
+          images: images,
         }
       })
 
