@@ -229,6 +229,9 @@ function getMimeType(filename: string): string {
 
 export async function GET(request: NextRequest) {
   try {
+    // Get session for user vote information
+    const session = await getServerSession(authOptions)
+    
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "10")
@@ -250,6 +253,7 @@ export async function GET(request: NextRequest) {
         include: {
           users: {
             select: {
+              id: true,
               name: true,
               image: true,
               rank: true,
@@ -325,13 +329,38 @@ export async function GET(request: NextRequest) {
         }
       })
 
+      // Get user votes if authenticated
+      const userVoteMap = new Map<string, string>()
+      if (session?.user?.id) {
+        const userVotes = await prisma.votes.findMany({
+          where: {
+            userId: session.user.id,
+            postId: {
+              in: posts.map(post => post.id)
+            }
+          },
+          select: {
+            postId: true,
+            type: true
+          }
+        })
+        
+        userVotes.forEach(vote => {
+          if (vote.postId) {
+            userVoteMap.set(vote.postId, vote.type)
+          }
+        })
+      }
+
       // Transform the data to match the frontend format
       let transformedPosts = posts.map((post) => {
         const voteCount = voteCountMap.get(post.id) || { upvotes: 0, downvotes: 0 }
+        // const userVote = userVoteMap.get(post.id) || null // Can be used later if needed
         const images = attachmentMap.get(post.id) || []
         return {
           id: post.id,
           author: {
+            id: post.users.id,
             name: post.isAnonymous ? "Anonymous" : post.users.name,
             avatar: post.users.image || "/placeholder.svg",
             isVerified: post.users.rank === "COMMUNITY_EXPERT" || post.users.rank === "TOP_CONTRIBUTOR",
@@ -347,6 +376,7 @@ export async function GET(request: NextRequest) {
           comments: post._count.Comment,
           timeAgo: getTimeAgo(post.createdAt),
           images: images,
+          // userVote: userVote // Can be added later if needed in interface
         }
       })
 

@@ -20,7 +20,7 @@ const updateUserSchema = z.object({
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: params.id },
       select: {
         id: true,
@@ -44,8 +44,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         lastActiveAt: true,
         _count: {
           select: {
-            posts: true,
-            comments: true,
+            Post: true,
+            Comment: true,
           },
         },
       },
@@ -83,7 +83,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const body = await request.json()
     const updateData = updateUserSchema.parse(body)
 
-    const user = await prisma.user.update({
+    const user = await prisma.users.update({
       where: { id: params.id },
       data: updateData,
       select: {

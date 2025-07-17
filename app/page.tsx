@@ -18,7 +18,7 @@ const toast = {
 
 interface Post {
   id: string
-    author: {
+  author: {
     id: string
     name: string
     avatar: string

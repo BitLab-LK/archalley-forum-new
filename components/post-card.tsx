@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Flag, Pin, CheckCircle, Trash2, MoreHorizontal, ChevronLeft, ChevronRight, Globe } from "lucide-react"
+import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Flag, Pin, CheckCircle, Trash2, MoreHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { usePostVote } from "@/hooks/use-post-vote"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,9 +16,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
 import Image from "next/image"
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import io from "socket.io-client"
-import type { Socket } from "socket.io-client"
 import PostModal from "./post-modal"
 
 interface PostCardProps {
@@ -76,113 +74,26 @@ const shouldUseColoredBackground = (content: string, hasImages: boolean) => {
   return !hasImages && content.length <= 300
 }
 
-// Lightbox scaffold
-function Lightbox({ images, initialIndex, onClose }: { images: string[]; initialIndex: number; onClose: () => void }) {
-  const [index, setIndex] = useState(initialIndex)
-  if (!images.length) return null
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90">
-      <button className="absolute top-4 right-4 text-white text-3xl" onClick={onClose}>&times;</button>
-      <button
-        className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-3xl"
-        onClick={() => setIndex((i) => (i > 0 ? i - 1 : images.length - 1))}
-        aria-label="Previous image"
-      >&#8592;</button>
-      <img
-        src={images[index]}
-        alt="Post image"
-        className="max-h-[80vh] max-w-[90vw] object-contain rounded-lg shadow-lg"
-        draggable={false}
-      />
-      <button
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-3xl"
-        onClick={() => setIndex((i) => (i < images.length - 1 ? i + 1 : 0))}
-        aria-label="Next image"
-      >&#8594;</button>
-    </div>
-  )
-}
-
-let socket: Socket | null = null
-
-// Extracted post header/content rendering for reuse
-function PostHeaderAndContent({ post, renderImages }: { post: PostCardProps["post"]; renderImages: (images: string[]) => JSX.Element }) {
-  return (
-    <>
-      {/* Post Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
-            <AvatarFallback>{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="font-semibold">{post.isAnonymous ? "Anonymous" : post.author.name}</span>
-              {!post.isAnonymous && post.author.isVerified && (
-                <CheckCircle className="w-4 h-4 text-blue-500" />
-              )}
-              {post.isPinned && <Pin className="w-4 h-4 text-primary" />}
-            </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              {!post.isAnonymous && (
-                <Badge variant="secondary" className="text-xs">
-                  {post.author.rank}
-                </Badge>
-              )}
-              <span>{post.timeAgo}</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Badge className={cn("text-xs", `category-${post.category.toLowerCase()}`)}>
-            {post.category}
-          </Badge>
-        </div>
-      </div>
-      {/* Post Content */}
-      <div className="mb-4">
-        {shouldUseColoredBackground(post.content, !!post.images?.length) ? (
-          <div
-            className={cn(
-              "rounded-lg p-6 text-white text-center font-semibold leading-relaxed",
-              getCategoryColorClass(post.category),
-              getTextSizeClass(post.content),
-            )}
-            dir="auto"
-          >
-            {post.content}
-          </div>
-        ) : (
-          <>
-            <p 
-              className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap text-base leading-relaxed mb-4"
-              dir="auto"
-            >
-              {post.content}
-            </p>
-            {/* Image Grid */}
-            {Array.isArray(post.images) && post.images.length > 0 && renderImages(post.images)}
-          </>
-        )}
-      </div>
-    </>
-  )
-}
-
 export default function PostCard({ post, onDelete, onCommentCountChange }: PostCardProps) {
   const { user, isLoading } = useAuth()
-  const [userVote, setUserVote] = useState<"up" | "down" | null>(null)
-  const [showComments, setShowComments] = useState(false)
+  
+  // Use the same voting hook as the modals
+  const { userVote, upvotes, downvotes, handleVote } = usePostVote(post.id, null, post.upvotes, post.downvotes)
+  
   const isAuthor = user?.id === post.author.id
   const isAdmin = user?.role === "ADMIN"
   const [modalOpen, setModalOpen] = useState(false)
   const [modalImageIndex, setModalImageIndex] = useState(0)
-  const [comments, setComments] = useState<any[]>([])
-  const [commentInput, setCommentInput] = useState("")
-  const [replyTo, setReplyTo] = useState<string | null>(null)
-  const [posting, setPosting] = useState(false)
-  const commentListRef = useRef<HTMLDivElement>(null)
+
+  // State to track modal vote updates for better synchronization
+  const [modalUpvotes, setModalUpvotes] = useState(upvotes)
+  const [modalDownvotes, setModalDownvotes] = useState(downvotes)
+
+  // Update modal vote state when post card votes change
+  useEffect(() => {
+    setModalUpvotes(upvotes)
+    setModalDownvotes(downvotes)
+  }, [upvotes, downvotes, userVote])
 
   if (isLoading) {
     return (
@@ -191,152 +102,6 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
         Loading...
       </div>
     );
-  }
-
-  // Connect to Socket.IO and join post room on modal open
-  useEffect(() => {
-    if (!modalOpen) return
-    if (!socket) {
-      socket = io({ 
-        path: "/api/socketio",
-        auth: {
-          userId: user?.id
-        }
-      })
-    }
-    socket.emit("join-post", post.id)
-    // Listen for new comments
-    socket.on("new-comment", (comment: any) => {
-      const normalizedComment = {
-        ...comment,
-        upvotes: comment.upvotes ?? 0,
-        downvotes: comment.downvotes ?? 0,
-        userVote: comment.userVote ?? undefined,
-        replies: comment.replies?.map((r: any) => ({
-          ...r,
-          upvotes: r.upvotes ?? 0,
-          downvotes: r.downvotes ?? 0,
-          userVote: r.userVote ?? undefined,
-        })) ?? []
-      }
-      setComments((prev) => [normalizedComment, ...prev])
-    })
-    // Listen for new replies
-    socket.on("new-reply", (reply: any) => {
-      const normalizedReply = {
-        ...reply,
-        upvotes: reply.upvotes ?? 0,
-        downvotes: reply.downvotes ?? 0,
-        userVote: reply.userVote ?? undefined,
-      }
-      setComments((prev) => prev.map(c =>
-        c.id === reply.parentId
-          ? { ...c, replies: [...c.replies, normalizedReply] }
-          : c
-      ))
-    })
-    // Listen for vote updates
-    socket.on("vote-update", (data: { upvotes: number; downvotes: number; userVote: "UP" | "DOWN" | null }) => {
-      post.upvotes = data.upvotes
-      post.downvotes = data.downvotes
-      setUserVote(data.userVote?.toLowerCase() as "up" | "down" | null)
-    })
-    // Listen for comment vote updates
-    socket.on("comment-vote-update", (data: { commentId: string, upvotes: number, downvotes: number, userVote: "UP" | "DOWN" | null }) => {
-      setComments(prev => prev.map(c =>
-        c.id === data.commentId
-          ? { ...c, upvotes: data.upvotes, downvotes: data.downvotes, userVote: data.userVote?.toLowerCase() as "up" | "down" | undefined }
-          : {
-              ...c,
-              replies: c.replies?.map((r: any) =>
-                r.id === data.commentId
-                  ? { ...r, upvotes: data.upvotes, downvotes: data.downvotes, userVote: data.userVote?.toLowerCase() as "up" | "down" | undefined }
-                  : r
-              )
-            }
-      ))
-    })
-    return () => {
-      socket?.off("new-comment")
-      socket?.off("new-reply")
-      socket?.off("vote-update")
-      socket?.off("comment-vote-update")
-    }
-  }, [modalOpen, post.id, user?.id])
-
-  // Fetch comments from backend on modal open
-  useEffect(() => {
-    if (!modalOpen) return
-    fetch(`/api/comments?postId=${post.id}`)
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`)
-        }
-        return res.json()
-      })
-      .then(data => {
-        if (Array.isArray(data.comments)) {
-          setComments(
-            data.comments.map((c: any) => ({
-              ...c,
-              upvotes: c.upvotes ?? 0,
-              downvotes: c.downvotes ?? 0,
-              replies: c.replies?.map((r: any) => ({
-                ...r,
-                upvotes: r.upvotes ?? 0,
-                downvotes: r.downvotes ?? 0
-              })) ?? []
-            }))
-          )
-        }
-      })
-      .catch(error => {
-        console.error("Error fetching comments:", error)
-        setComments([]) // Set empty array on error
-      })
-  }, [modalOpen, post.id])
-
-  const handleVote = async (type: "up" | "down") => {
-    if (!user) {
-      alert("Please log in to vote on posts")
-      return
-    }
-    try {
-      const response = await fetch(`/api/posts/${post.id}/vote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: type.toUpperCase() }),
-      })
-      const data = await response.json()
-      if (response.ok) {
-        // Update UI immediately
-        if (userVote === type) {
-          // Remove vote
-          setUserVote(null)
-          if (type === "up") post.upvotes--
-          else post.downvotes--
-        } else if (userVote) {
-          // Change vote
-          if (type === "up") {
-            post.upvotes++
-            post.downvotes--
-          } else {
-            post.upvotes--
-            post.downvotes++
-          }
-          setUserVote(type)
-        } else {
-          // New vote
-          setUserVote(type)
-          if (type === "up") post.upvotes++
-          else post.downvotes++
-        }
-        // Emit vote update via socket
-        socket?.emit("vote", { postId: post.id, type: type.toUpperCase() })
-      }
-    } catch (error) {
-      console.error("Error voting:", error)
-    }
   }
 
   const handleDelete = async () => {
@@ -479,127 +244,6 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
     )
   }
 
-  // Add comment or reply (API + real-time)
-  const handleAddComment = async () => {
-    if (!commentInput.trim()) return
-    setPosting(true)
-    try {
-      const res = await fetch("/api/comments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          postId: post.id,
-          content: commentInput,
-          parentId: replyTo || undefined
-        })
-      })
-      const data = await res.json()
-      if (res.ok && data.comment) {
-        // Normalize the comment object for real-time update
-        const normalizedComment = {
-          ...data.comment,
-          upvotes: 0,
-          downvotes: 0,
-          userVote: undefined,
-          replies: data.comment.replies?.map((r: any) => ({
-            ...r,
-            upvotes: 0,
-            downvotes: 0,
-            userVote: undefined,
-          })) ?? []
-        }
-        // Emit via socket for real-time update
-        if (replyTo) {
-          socket?.emit("new-reply", { postId: post.id, reply: { ...normalizedComment, parentId: replyTo } })
-        } else {
-          socket?.emit("new-comment", { postId: post.id, comment: normalizedComment })
-          post.comments += 1
-        }
-        setCommentInput("")
-        setReplyTo(null)
-        setTimeout(() => {
-          if (commentListRef.current) commentListRef.current.scrollTop = 0
-        }, 100)
-      }
-    } finally {
-      setPosting(false)
-    }
-  }
-
-  // Add the handleCommentVote function in the component, similar to handleVote for posts
-  const handleCommentVote = async (commentId: string, type: "up" | "down") => {
-    if (!user) return;
-    setComments(prev => prev.map(c => {
-      if (c.id === commentId) {
-        let upvotes = c.upvotes ?? 0;
-        let downvotes = c.downvotes ?? 0;
-        let newUserVote: "up" | "down" | undefined = c.userVote;
-        if (c.userVote === type) {
-          // Remove vote
-          newUserVote = undefined;
-          if (type === "up") upvotes--;
-          else downvotes--;
-        } else if (c.userVote) {
-          // Switch vote
-          if (type === "up") {
-            upvotes++;
-            downvotes--;
-          } else {
-            upvotes--;
-            downvotes++;
-          }
-          newUserVote = type;
-        } else {
-          // New vote
-          newUserVote = type;
-          if (type === "up") upvotes++;
-          else downvotes++;
-        }
-        return { ...c, upvotes, downvotes, userVote: newUserVote };
-      }
-      return {
-        ...c,
-        replies: c.replies?.map((r: any) => {
-          if (r.id === commentId) {
-            let upvotes = r.upvotes ?? 0;
-            let downvotes = r.downvotes ?? 0;
-            let newUserVote: "up" | "down" | undefined = r.userVote;
-            if (r.userVote === type) {
-              newUserVote = undefined;
-              if (type === "up") upvotes--;
-              else downvotes--;
-            } else if (r.userVote) {
-              if (type === "up") {
-                upvotes++;
-                downvotes--;
-              } else {
-                upvotes--;
-                downvotes++;
-              }
-              newUserVote = type;
-            } else {
-              newUserVote = type;
-              if (type === "up") upvotes++;
-              else downvotes++;
-            }
-            return { ...r, upvotes, downvotes, userVote: newUserVote };
-          }
-          return r;
-        })
-      };
-    }));
-    try {
-      await fetch(`/api/comments/${commentId}/vote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ voteType: type })
-      });
-      socket?.emit("comment-vote", { commentId, postId: post.id, type: type.toUpperCase() });
-    } catch (error) {
-      console.error("Error voting:", error);
-    }
-  };
-
   const handleCommentAdded = () => {
     // Refresh the post's comment count by fetching updated post data
     onCommentCountChange?.(post.id, post.comments + 1)
@@ -711,7 +355,7 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
                   )}
                 >
                   <ThumbsUp className="w-4 h-4 mr-1" />
-                  <span>{post.upvotes}</span>
+                  <span>{upvotes}</span>
                 </Button>
                 <Button
                   variant="ghost"
@@ -723,7 +367,7 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
                   )}
                 >
                   <ThumbsDown className="w-4 h-4 mr-1" />
-                  <span>{post.downvotes}</span>
+                  <span>{downvotes}</span>
                 </Button>
               </div>
 
@@ -773,9 +417,27 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
       <PostModal 
         open={modalOpen} 
         onClose={() => setModalOpen(false)} 
-        post={post} 
+        post={{
+          ...post,
+          upvotes: modalUpvotes,
+          downvotes: modalDownvotes
+        }} 
         initialImage={modalImageIndex} 
         onCommentAdded={handleCommentAdded}
+        onVoteUpdate={(newUpvotes, newDownvotes, newUserVote) => {
+          // Update modal vote state when voting happens in the modal
+          setModalUpvotes(newUpvotes)
+          setModalDownvotes(newDownvotes)
+          
+          // The Socket.IO synchronization should handle updating the main post card
+          // but we can add a small delay to ensure the socket event has time to propagate
+          setTimeout(() => {
+            console.log("Modal vote update - ensuring sync:", {
+              modalVotes: { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote },
+              cardVotes: { upvotes, downvotes, userVote }
+            })
+          }, 100)
+        }}
       />
     </>
   )

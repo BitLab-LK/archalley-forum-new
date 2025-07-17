@@ -152,16 +152,16 @@ app.prepare().then(() => {
       try {
         // Get updated vote counts
         const [upvotes, downvotes] = await Promise.all([
-          prisma.vote.count({
+          prisma.votes.count({
             where: { postId, type: "UP" }
           }),
-          prisma.vote.count({
+          prisma.votes.count({
             where: { postId, type: "DOWN" }
           })
         ]);
         
         // Get user's vote
-        const userVote = await prisma.vote.findFirst({
+        const userVote = await prisma.votes.findFirst({
           where: {
             postId,
             userId: socket.userId
@@ -198,12 +198,12 @@ app.prepare().then(() => {
       try {
         // Get updated vote counts for the comment
         const [upvotes, downvotes] = await Promise.all([
-          prisma.vote.count({ where: { commentId, type: "UP" } }),
-          prisma.vote.count({ where: { commentId, type: "DOWN" } })
+          prisma.votes.count({ where: { commentId, type: "UP" } }),
+          prisma.votes.count({ where: { commentId, type: "DOWN" } })
         ]);
         
         // Get user's vote for the comment
-        const userVote = await prisma.vote.findFirst({
+        const userVote = await prisma.votes.findFirst({
           where: {
             commentId,
             userId: socket.userId

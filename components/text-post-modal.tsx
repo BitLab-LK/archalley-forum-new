@@ -5,18 +5,19 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Globe, Trash2, MoreHorizontal } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { cn } from "@/lib/utils"
+import { usePostVote } from "@/hooks/use-post-vote"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useSession } from "next-auth/react"
 
 interface TextPostModalProps {
   open: boolean
   onClose: () => void
   onCommentAdded?: () => void
+  onVoteUpdate?: (upvotes: number, downvotes: number, userVote: "up" | "down" | null) => void
   post: {
     id: string
     author: {
@@ -61,7 +62,7 @@ interface Comment {
   replies: Comment[]
 }
 
-export default function TextPostModal({ open, onClose, onCommentAdded, post }: TextPostModalProps) {
+export default function TextPostModal({ open, onClose, onCommentAdded, onVoteUpdate, post }: TextPostModalProps) {
   const [comments, setComments] = useState<Comment[]>([])
   const [commentInput, setCommentInput] = useState("")
   const [replyInput, setReplyInput] = useState("")
@@ -69,15 +70,15 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   
-  // Post voting state
-  const [postVotes, setPostVotes] = useState({
-    upvotes: post?.upvotes || 0,
-    downvotes: post?.downvotes || 0,
-    userVote: null as "UP" | "DOWN" | null
-  })
-  
   const { user } = useAuth()
-  const { data: session } = useSession()
+  const { userVote, upvotes, downvotes, handleVote } = usePostVote(post.id, null, post.upvotes, post.downvotes)
+  
+  // Sync vote changes with parent component
+  useEffect(() => {
+    if (onVoteUpdate) {
+      onVoteUpdate(upvotes, downvotes, userVote)
+    }
+  }, [upvotes, downvotes, userVote, onVoteUpdate])
 
   // Check if this is an image post
   const hasImages = post.images && post.images.length > 0
@@ -111,10 +112,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
     // Fetch both comments and post votes
     const fetchData = async () => {
       try {
-        const [commentsRes, votesRes] = await Promise.all([
-          fetch(`/api/comments?postId=${post.id}`),
-          fetch(`/api/posts/${post.id}/vote`)
-        ]);
+        const commentsRes = await fetch(`/api/comments?postId=${post.id}`);
         
         // Handle comments response
         if (commentsRes.ok) {
@@ -126,16 +124,6 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
             setExpandedReplies(new Set<string>());
           }
         }
-        
-        // Handle votes response
-        if (votesRes.ok) {
-          const votesData = await votesRes.json();
-          setPostVotes({
-            upvotes: votesData.upvotes,
-            downvotes: votesData.downvotes,
-            userVote: votesData.userVote
-          });
-        }
       } catch (error) {
         console.error("Error fetching data:", error);
         setComments([]);
@@ -144,75 +132,6 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
     
     fetchData();
   }, [open, post.id])
-
-  // Handle post voting
-  const handlePostVote = async (voteType: "UP" | "DOWN") => {
-    if (!session?.user?.id || !post?.id) return;
-
-    // Optimistic update FIRST for instant response
-    const currentVote = postVotes.userVote
-    let newUpvotes = postVotes.upvotes
-    let newDownvotes = postVotes.downvotes
-    let newUserVote = postVotes.userVote
-
-    if (currentVote === voteType) {
-      // Remove vote
-      if (voteType === "UP") newUpvotes--
-      else newDownvotes--
-      newUserVote = null
-    } else if (currentVote) {
-      // Switch vote
-      if (voteType === "UP") {
-        newUpvotes++
-        newDownvotes--
-      } else {
-        newUpvotes--
-        newDownvotes++
-      }
-      newUserVote = voteType
-    } else {
-      // New vote
-      if (voteType === "UP") newUpvotes++
-      else newDownvotes++
-      newUserVote = voteType
-    }
-
-    // Update UI immediately
-    setPostVotes({
-      upvotes: newUpvotes,
-      downvotes: newDownvotes,
-      userVote: newUserVote
-    })
-
-    // Send request in background
-    try {
-      const response = await fetch(`/api/posts/${post.id}/vote`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ type: voteType }),
-      });
-
-      if (!response.ok) {
-        // Revert on error
-        setPostVotes({
-          upvotes: postVotes.upvotes,
-          downvotes: postVotes.downvotes,
-          userVote: postVotes.userVote
-        })
-        console.error('Failed to vote, reverted')
-      }
-    } catch (error) {
-      // Revert on error
-      setPostVotes({
-        upvotes: postVotes.upvotes,
-        downvotes: postVotes.downvotes,
-        userVote: postVotes.userVote
-      })
-      console.error('Error voting on post, reverted:', error);
-    }
-  };
 
   const handleSubmitComment = async () => {
     if (!commentInput.trim()) return
@@ -270,6 +189,9 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
   const handleCommentVote = async (commentId: string, voteType: "up" | "down") => {
     if (!user) return
     
+    // Store original comments state for potential revert
+    const originalComments = [...comments]
+    
     // Optimistic update FIRST for instant UI response
     const updateVoteRecursively = (comments: any[]): any[] => {
       return comments.map(comment => {
@@ -325,13 +247,15 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
       })
       
       if (!response.ok) {
-        // Revert on error
-        setComments(prev => updateVoteRecursively(prev))
-        console.error("Error voting on comment, reverted")
+        // Revert to original state on error
+        setComments(originalComments)
+        const errorText = await response.text()
+        console.error(`Failed to vote on comment: ${response.status} ${response.statusText}`, errorText)
+        throw new Error(`Failed to vote on comment: ${response.status} ${response.statusText}`)
       }
     } catch (error) {
-      // Revert on error
-      setComments(prev => updateVoteRecursively(prev))
+      // Revert to original state on error
+      setComments(originalComments)
       console.error("Error voting on comment, reverted:", error)
     }
   }
@@ -596,31 +520,36 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
                     {comment.content}
                   </p>
                 </div>
-                {/* Debug: Show if user can delete */}
+                {/* Delete button for comment author or admin */}
                 {(user?.id === comment.authorId || user?.role === "ADMIN") && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button 
-                        className="h-6 w-6 p-1 text-gray-400 hover:text-gray-600 cursor-pointer rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center"
-                        aria-label="More options"
-                        title={`Delete available - User: ${user?.id}, Comment Author: ${comment.authorId}, User Role: ${user?.role}`}
+                  <div className="relative">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button 
+                          className="h-6 w-6 p-1 text-gray-400 hover:text-gray-600 cursor-pointer rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center relative z-[1005]"
+                          aria-label="More options"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent 
+                        align="end" 
+                        className="w-32 z-[1010] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg"
+                        side="bottom"
+                        sideOffset={5}
                       >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-32 z-[1001] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                      <DropdownMenuItem 
-                        onClick={() => {
-                          console.log('Delete clicked for comment:', comment.id);
-                          handleDeleteComment(comment.id);
-                        }} 
-                        className="text-red-600 hover:text-red-700 focus:text-red-700 cursor-pointer flex items-center hover:bg-red-50 dark:hover:bg-red-900/20"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            handleDeleteComment(comment.id);
+                          }} 
+                          className="text-red-600 hover:text-red-700 focus:text-red-700 cursor-pointer flex items-center hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 )}
               </div>
             </div>
@@ -634,7 +563,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
                   comment.userVote === "up" ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
                 )}
               >
-                Like
+                {comment.userVote === "up" ? "Unlike" : "Like"}
               </button>
               <button 
                 onClick={() => handleCommentVote(comment.id, "down")}
@@ -643,7 +572,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
                   comment.userVote === "down" ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"
                 )}
               >
-                Dislike
+                {comment.userVote === "down" ? "Remove Dislike" : "Dislike"}
               </button>
               <button 
                 onClick={() => handleReply(comment.id)}
@@ -797,7 +726,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
             </div>
 
             {/* Right side - Content and Comments */}
-            <div className="w-[400px] flex flex-col bg-white dark:bg-gray-900">
+            <div className="w-[400px] flex flex-col bg-white dark:bg-gray-900 relative z-[1001]">
               {/* Header */}
               <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
@@ -850,28 +779,32 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
                       </span>
                     </div>
                   )}
-                  
-                  {/* Stats */}
-                  <div className="flex items-center justify-between mt-3 pt-2 text-sm text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center gap-4">
-                      {(postVotes.upvotes > 0 || postVotes.downvotes > 0) && (
-                        <span className="flex items-center gap-1">
-                          <div className="flex items-center">
+                      {/* Stats */}
+                <div className="flex items-center justify-between mt-3 pt-2 text-sm text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-4">
+                    {((upvotes && upvotes > 0) || (downvotes && downvotes > 0)) && (
+                      <span className="flex items-center gap-1">
+                        <div className="flex items-center">
+                          {(upvotes && upvotes > 0) && (
                             <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                               <ThumbsUp className="w-3 h-3 text-white" />
                             </div>
-                            {postVotes.downvotes > 0 && (
-                              <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center -ml-1">
-                                <ThumbsDown className="w-3 h-3 text-white" />
-                              </div>
-                            )}
-                          </div>
-                          <span>{postVotes.upvotes + postVotes.downvotes}</span>
-                        </span>
-                      )}
+                          )}
+                          {(downvotes && downvotes > 0) && (
+                            <div className={cn(
+                              "w-5 h-5 bg-red-500 rounded-full flex items-center justify-center",
+                              (upvotes && upvotes > 0) && "-ml-1"
+                            )}>
+                              <ThumbsDown className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <span>{upvotes || 0}</span>
+                      </span>
+                    )}
                     </div>
-                    {post.comments > 0 && (
-                      <span>{post.comments} comments</span>
+                    {comments.length > 0 && (
+                      <span>{comments.length} comments</span>
                     )}
                   </div>
                 </div>
@@ -881,36 +814,36 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
               <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-2 py-1">
                 <div className="flex">
                   <button 
-                    onClick={() => handlePostVote("UP")}
+                    onClick={() => handleVote("up")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium",
-                      postVotes.userVote === "UP" 
+                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium active:scale-95",
+                      userVote === "up" 
                         ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950" 
                         : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     )}
                   >
                     <ThumbsUp className="w-5 h-5" />
-                    <span>Like</span>
-                    {postVotes.upvotes > 0 && <span className="text-sm">({postVotes.upvotes})</span>}
+                    <span>{userVote === "up" ? "Unlike" : "Like"}</span>
+                    {upvotes > 0 && <span className="text-sm">({upvotes})</span>}
                   </button>
                   <button 
-                    onClick={() => handlePostVote("DOWN")}
+                    onClick={() => handleVote("down")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium",
-                      postVotes.userVote === "DOWN" 
+                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium active:scale-95",
+                      userVote === "down" 
                         ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950" 
                         : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     )}
                   >
                     <ThumbsDown className="w-5 h-5" />
-                    <span>Dislike</span>
-                    {postVotes.downvotes > 0 && <span className="text-sm">({postVotes.downvotes})</span>}
+                    <span>{userVote === "down" ? "Remove Dislike" : "Dislike"}</span>
+                    {downvotes > 0 && <span className="text-sm">({downvotes})</span>}
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                  <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95">
                     <MessageCircle className="w-5 h-5" />
                     <span className="font-medium">Comment</span>
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                  <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95">
                     <Share2 className="w-5 h-5" />
                     <span className="font-medium">Share</span>
                   </button>
@@ -918,7 +851,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
               </div>
               
               {/* Comments Section */}
-              <div className="flex-1 overflow-y-auto min-h-0 px-4 py-3 space-y-6">
+              <div className="flex-1 overflow-y-auto overflow-x-visible min-h-0 px-4 py-3 space-y-6">
                 {comments.length > 0 ? (
                   comments.map((comment) => renderComment(comment, 0))
                 ) : (
@@ -1029,19 +962,24 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
                 {/* Stats */}
                 <div className="flex items-center justify-between mt-3 pt-2 text-sm text-gray-500 dark:text-gray-400">
                   <div className="flex items-center gap-4">
-                    {(postVotes.upvotes > 0 || postVotes.downvotes > 0) && (
+                    {((upvotes && upvotes > 0) || (downvotes && downvotes > 0)) && (
                       <span className="flex items-center gap-1">
                         <div className="flex items-center">
-                          <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                            <ThumbsUp className="w-3 h-3 text-white" />
-                          </div>
-                          {postVotes.downvotes > 0 && (
-                            <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center -ml-1">
+                          {(upvotes && upvotes > 0) && (
+                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                              <ThumbsUp className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                          {(downvotes && downvotes > 0) && (
+                            <div className={cn(
+                              "w-5 h-5 bg-red-500 rounded-full flex items-center justify-center",
+                              (upvotes && upvotes > 0) && "-ml-1"
+                            )}>
                               <ThumbsDown className="w-3 h-3 text-white" />
                             </div>
                           )}
                         </div>
-                        <span>{postVotes.upvotes + postVotes.downvotes}</span>
+                        <span>{upvotes || 0}</span>
                       </span>
                     )}
                   </div>
@@ -1055,32 +993,32 @@ export default function TextPostModal({ open, onClose, onCommentAdded, post }: T
               <div className="sticky top-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 py-1 z-10">
                 <div className="flex">
                   <button 
-                    onClick={() => handlePostVote("UP")}
+                    onClick={() => handleVote("up")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 font-medium",
-                      postVotes.userVote === "UP" 
+                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 font-medium active:scale-95",
+                      userVote === "up" 
                         ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950" 
                         : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     )}
                   >
                     <ThumbsUp className="w-5 h-5" />
-                    <span>Like</span>
-                    {postVotes.upvotes > 0 && <span className="text-sm">({postVotes.upvotes})</span>}
+                    <span>{userVote === "up" ? "Unlike" : "Like"}</span>
+                    {upvotes > 0 && <span className="text-sm">({upvotes})</span>}
                   </button>
                   <button 
-                    onClick={() => handlePostVote("DOWN")}
+                    onClick={() => handleVote("down")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 font-medium",
-                      postVotes.userVote === "DOWN" 
+                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 font-medium active:scale-95",
+                      userVote === "down" 
                         ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950" 
                         : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     )}
                   >
                     <ThumbsDown className="w-5 h-5" />
-                    <span>Dislike</span>
-                    {postVotes.downvotes > 0 && <span className="text-sm">({postVotes.downvotes})</span>}
+                    <span>{userVote === "down" ? "Remove Dislike" : "Dislike"}</span>
+                    {downvotes > 0 && <span className="text-sm">({downvotes})</span>}
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                  <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95">
                     <MessageCircle className="w-5 h-5" />
                     <span className="font-medium">Comment</span>
                   </button>

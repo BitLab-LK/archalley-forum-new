@@ -15,8 +15,8 @@ interface RouteParams {
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
+  const session = await getServerSession(authOptions)
   try {
-    const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -25,46 +25,59 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const commentId = params.commentId
     const userId = session.user.id
 
+    // Validate inputs
+    if (!commentId || !userId) {
+      return NextResponse.json({ error: "Missing required parameters" }, { status: 400 })
+    }
+
     // Check if comment exists
-    const comment = await prisma.comment.findUnique({ where: { id: commentId } })
+    const comment = await prisma.comment.findUnique({ 
+      where: { id: commentId } 
+    })
     if (!comment) {
       return NextResponse.json({ error: "Comment not found" }, { status: 404 })
     }
 
-    // Check if user has already voted
-    const existingVote = await prisma.votes.findFirst({
-      where: { commentId, userId }
-    })
+    // Check if user has already voted - use transaction for consistency
+    const result = await prisma.$transaction(async (tx) => {
+      const existingVote = await tx.votes.findFirst({
+        where: { commentId, userId }
+      })
 
-    const type = voteType.toUpperCase() === "UP" ? "UP" : "DOWN"
+      const type = voteType.toUpperCase() === "UP" ? "UP" : "DOWN"
 
-    if (existingVote) {
-      if (existingVote.type === type) {
-        // Remove vote
-        await prisma.votes.delete({ where: { id: existingVote.id } })
-        return NextResponse.json({ message: "Vote removed" })
-      } else {
-        // Update vote
-        await prisma.votes.update({ where: { id: existingVote.id }, data: { type } })
-        return NextResponse.json({ message: "Vote updated" })
+      if (existingVote) {
+        if (existingVote.type === type) {
+          // Remove vote
+          await tx.votes.delete({ where: { id: existingVote.id } })
+          return { action: "removed" }
+        } else {
+          // Update vote
+          await tx.votes.update({ where: { id: existingVote.id }, data: { type } })
+          return { action: "updated" }
+        }
       }
-    }
 
-    // Create new vote
-    await prisma.votes.create({ 
-      data: { 
-        id: `vote-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type, 
-        commentId, 
-        userId 
-      } 
+      // Create new vote
+      await tx.votes.create({ 
+        data: { 
+          id: `vote-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type, 
+          commentId, 
+          userId 
+        } 
+      })
+      return { action: "created" }
     })
-    return NextResponse.json({ message: "Vote recorded" })
+
+    return NextResponse.json({ message: `Vote ${result.action}` })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 })
     }
     console.error("Comment vote error:", error)
+    console.error("Comment ID:", params.commentId)
+    console.error("User ID:", session?.user?.id)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

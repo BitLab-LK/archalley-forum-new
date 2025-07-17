@@ -1,23 +1,50 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ThumbsUp, ThumbsDown, MessageCircle, Share2, ChevronLeft, ChevronRight, Globe, Trash2, MoreHorizontal } from "lucide-react"
-import { cn } from "@/lib/utils"
 import Image from "next/image"
-import { usePostVote } from "@/hooks/use-post-vote"
-import { useAuth } from "@/lib/auth-context"
+import { 
+  ThumbsUp, 
+  ThumbsDown, 
+  MessageCircle, 
+  Share2, 
+  ChevronLeft, 
+  ChevronRight, 
+  Trash2, 
+  MoreHorizontal,
+  Globe
+} from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { cn } from "@/lib/utils"
+import { usePostVote } from "@/hooks/use-post-vote"
+import { useAuth } from "@/lib/auth-context"
+
+// Types
+interface Comment {
+  id: string
+  author: string
+  authorId: string
+  authorImage: string
+  authorRank?: string
+  content: string
+  createdAt: string
+  upvotes: number
+  downvotes: number
+  userVote?: "up" | "down"
+  replies?: Comment[]
+  parentId?: string
+}
 
 interface ImagePostModalProps {
   open: boolean
   onClose: () => void
   onCommentAdded?: () => void
+  onVoteUpdate?: (upvotes: number, downvotes: number, userVote: "up" | "down" | null) => void
   post: {
     id: string
     author: {
@@ -46,25 +73,53 @@ interface ImagePostModalProps {
   initialImage?: number
 }
 
-export default function ImagePostModal({ open, onClose, onCommentAdded, post, initialImage = 0 }: ImagePostModalProps) {
+export default function ImagePostModal({ 
+  open, 
+  onClose, 
+  onCommentAdded, 
+  onVoteUpdate, 
+  post, 
+  initialImage = 0 
+}: ImagePostModalProps) {
+  // State management
   const [carouselIndex, setCarouselIndex] = useState(initialImage)
-  const [comments, setComments] = useState<any[]>([])
+  const [comments, setComments] = useState<Comment[]>([])
   const [commentInput, setCommentInput] = useState("")
   const [replyInput, setReplyInput] = useState("")
   const [replyTo, setReplyTo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
-  const images = post.images || []
-  const hasImages = images.length > 0
-  const { userVote, upvotes, downvotes, handleVote } = usePostVote(post.id, null, post.upvotes, post.downvotes)
+  
+  // Refs and hooks
   const commentInputRef = useRef<HTMLInputElement>(null)
   const { user } = useAuth()
+  const { userVote, upvotes, downvotes, handleVote } = usePostVote(
+    post.id, 
+    null, 
+    post.upvotes, 
+    post.downvotes
+  )
+  
+  // Computed values
+  const images = post.images || []
+  const hasImages = images.length > 0
 
-  useEffect(() => { setCarouselIndex(initialImage) }, [initialImage, open])
+  // Effects
+  useEffect(() => {
+    setCarouselIndex(initialImage)
+  }, [initialImage, open])
+
+  // Sync vote changes with parent component
+  useEffect(() => {
+    if (onVoteUpdate) {
+      onVoteUpdate(upvotes, downvotes, userVote)
+    }
+  }, [upvotes, downvotes, userVote, onVoteUpdate])
 
   // Fetch comments when modal opens
   useEffect(() => {
     if (!open) return
+    
     setLoading(true)
     fetch(`/api/comments?postId=${post.id}`)
       .then(res => {
@@ -83,6 +138,7 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
       .finally(() => setLoading(false))
   }, [open, post.id])
 
+  // Event handlers
   const handleCommentClick = () => {
     commentInputRef.current?.focus()
     commentInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
@@ -100,31 +156,57 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
   const handleSubmitComment = async () => {
     if (!commentInput.trim()) return
     
-    setLoading(true)
+    const tempComment = {
+      id: `temp-${Date.now()}`,
+      author: user?.name || "Anonymous",
+      authorId: user?.id || "",
+      authorImage: user?.image || "/placeholder-user.jpg",
+      authorRank: user?.rank || "NEW_MEMBER",
+      content: commentInput.trim(),
+      createdAt: new Date().toISOString(),
+      upvotes: 0,
+      downvotes: 0,
+      userVote: undefined,
+      replies: []
+    }
+    
+    // Add optimistic comment immediately
+    setComments(prev => [tempComment, ...prev])
+    setCommentInput("")
+    
     try {
       const response = await fetch('/api/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content: commentInput.trim(),
+          content: tempComment.content,
           postId: post.id
         })
       })
       
       if (response.ok) {
-        setCommentInput("")
-        // Refresh comments
-        const data = await fetch(`/api/comments?postId=${post.id}`).then(res => res.json())
-        if (Array.isArray(data.comments)) {
-          setComments(data.comments)
-        }
-        // Notify parent component about new comment
+        const data = await response.json()
+        // Replace temp comment with real comment
+        setComments(prev => prev.map(comment => 
+          comment.id === tempComment.id 
+            ? {
+                ...data.comment,
+                author: data.comment.users?.name || "Anonymous",
+                authorImage: data.comment.users?.image || "/placeholder-user.jpg",
+                authorRank: data.comment.users?.rank || "NEW_MEMBER"
+              }
+            : comment
+        ))
         onCommentAdded?.()
+      } else {
+        // Remove temp comment on error
+        setComments(prev => prev.filter(comment => comment.id !== tempComment.id))
+        console.error("Failed to post comment")
       }
     } catch (error) {
+      // Remove temp comment on error
+      setComments(prev => prev.filter(comment => comment.id !== tempComment.id))
       console.error("Error posting comment:", error)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -144,7 +226,7 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
     })
   }
 
-  const addReplyToComment = (comments: any[], parentId: string, newReply: any): any[] => {
+  const addReplyToComment = (comments: Comment[], parentId: string, newReply: Comment): Comment[] => {
     return comments.map(comment => {
       if (comment.id === parentId) {
         return { ...comment, replies: [...(comment.replies || []), newReply] }
@@ -158,13 +240,35 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
   const handleSubmitReply = async () => {
     if (!replyInput.trim() || !replyTo) return
     
-    setLoading(true)
+    const tempReply = {
+      id: `temp-reply-${Date.now()}`,
+      author: user?.name || "Anonymous",
+      authorId: user?.id || "",
+      authorImage: user?.image || "/placeholder-user.jpg",
+      authorRank: user?.rank || "NEW_MEMBER",
+      content: replyInput.trim(),
+      createdAt: new Date().toISOString(),
+      parentId: replyTo,
+      upvotes: 0,
+      downvotes: 0,
+      userVote: undefined
+    }
+    
+    // Add optimistic reply immediately
+    setComments(prev => prev.map(comment => 
+      comment.id === replyTo 
+        ? { ...comment, replies: [...(comment.replies || []), tempReply] }
+        : comment
+    ))
+    setReplyInput("")
+    setReplyTo(null)
+    
     try {
       const response = await fetch('/api/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content: replyInput.trim(),
+          content: tempReply.content,
           postId: post.id,
           parentId: replyTo
         })
@@ -172,35 +276,42 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
       
       if (response.ok) {
         const data = await response.json()
-        setReplyInput("")
-        setReplyTo(null)
-        
-        // Add reply to local state
-        const newReply = {
-          id: data.comment.id,
-          author: data.comment.users.name,
-          authorId: data.comment.authorId,
-          authorImage: data.comment.users.image,
-          content: data.comment.content,
-          createdAt: data.comment.createdAt,
-          parentId: data.comment.parentId,
-          upvotes: 0,
-          downvotes: 0,
-          userVote: undefined
-        }
-        
+        // Replace temp reply with real reply
         setComments(prev => prev.map(comment => 
           comment.id === replyTo 
-            ? { ...comment, replies: [...(comment.replies || []), newReply] }
+            ? {
+                ...comment,
+                replies: comment.replies?.map((reply: Comment) => 
+                  reply.id === tempReply.id 
+                    ? {
+                        ...data.comment,
+                        author: data.comment.users?.name || "Anonymous",
+                        authorImage: data.comment.users?.image || "/placeholder-user.jpg",
+                        authorRank: data.comment.users?.rank || "NEW_MEMBER"
+                      } as Comment
+                    : reply
+                ) || []
+              }
             : comment
         ))
-        
         onCommentAdded?.()
+      } else {
+        // Remove temp reply on error
+        setComments(prev => prev.map(comment => 
+          comment.id === replyTo 
+            ? { ...comment, replies: comment.replies?.filter((reply: Comment) => reply.id !== tempReply.id) || [] }
+            : comment
+        ))
+        console.error("Failed to post reply")
       }
     } catch (error) {
+      // Remove temp reply on error
+      setComments(prev => prev.map(comment => 
+        comment.id === replyTo 
+          ? { ...comment, replies: comment.replies?.filter((reply: Comment) => reply.id !== tempReply.id) || [] }
+          : comment
+      ))
       console.error("Error posting reply:", error)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -213,6 +324,236 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`
     return `${Math.floor(diffInSeconds / 86400)}d`
+  }
+
+  // Format rank for display
+  const formatRank = (rank: string) => {
+    return rank.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Get rank color based on rank level
+  const getRankColor = (rank: string) => {
+    const rankColors = {
+      'NEW_MEMBER': 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+      'CONVERSATION_STARTER': 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+      'RISING_STAR': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+      'VISUAL_STORYTELLER': 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+      'VALUED_RESPONDER': 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+      'COMMUNITY_EXPERT': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
+      'TOP_CONTRIBUTOR': 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+    };
+    return rankColors[rank as keyof typeof rankColors] || rankColors.NEW_MEMBER;
+  };
+
+  // Render comment function like text post modal
+  const renderComment = (comment: Comment, depth: number = 0) => {
+    const hasReplies = comment.replies && comment.replies.length > 0
+    const isExpanded = expandedReplies.has(comment.id)
+    const isNested = depth > 0
+    const isAuthor = comment.authorId === post.author.id
+    
+    return (
+      <div key={comment.id} className={cn("relative", isNested && "ml-6")}>
+        {/* Vertical connecting line for nested replies */}
+        {isNested && depth === 1 && (
+          <div className="absolute -left-6 top-0 bottom-0 w-px bg-gray-300 dark:bg-gray-600" />
+        )}
+        
+        <div className="flex items-start gap-2">
+          {/* Horizontal connector for nested replies */}
+          {isNested && depth === 1 && (
+            <div className="absolute -left-6 top-4 w-4 h-px bg-gray-300 dark:bg-gray-600" />
+          )}
+          
+          <Avatar className={cn("flex-shrink-0", isNested ? "h-6 w-6" : "h-8 w-8")}>
+            <AvatarImage src={comment.authorImage || "/placeholder-user.jpg"} />
+            <AvatarFallback className="bg-blue-500 text-white text-xs">
+              {comment.author ? comment.author[0].toUpperCase() : "U"}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1 min-w-0">
+            {/* Comment bubble with proper background hierarchy */}
+            <div className={cn(
+              "rounded-2xl px-3 py-2 relative inline-block max-w-fit",
+              depth === 0 && "bg-gray-100 dark:bg-gray-800",
+              depth === 1 && "bg-gray-50 dark:bg-gray-750", 
+              depth >= 2 && "bg-gray-25 dark:bg-gray-700"
+            )}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className={cn(
+                      "font-semibold text-gray-900 dark:text-white",
+                      isNested ? "text-sm" : "text-sm"
+                    )}>
+                      {comment.author || "Anonymous"}
+                    </span>
+                    {comment.authorRank && (
+                      <span className={cn(
+                        "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium",
+                        getRankColor(comment.authorRank),
+                        isNested ? "text-xs" : "text-xs"
+                      )}>
+                        {formatRank(comment.authorRank)}
+                      </span>
+                    )}
+                    {isAuthor && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                        Author
+                      </span>
+                    )}
+                  </div>
+                  <p className={cn(
+                    "text-gray-800 dark:text-gray-200 leading-relaxed break-words",
+                    isNested ? "text-sm" : "text-sm"
+                  )}>
+                    {comment.content}
+                  </p>
+                </div>
+                
+                {/* Delete button for comment author or admin */}
+                {(user?.id === comment.authorId || user?.role === "ADMIN") && (
+                  <div className="relative">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button 
+                          className="h-6 w-6 p-1 text-gray-400 hover:text-gray-600 cursor-pointer rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center relative z-[1005]"
+                          aria-label="More options"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent 
+                        align="end" 
+                        className="w-32 z-[1010] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg"
+                        side="bottom"
+                        sideOffset={5}
+                      >
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteComment(comment.id)} 
+                          className="text-red-600 hover:text-red-700 focus:text-red-700 cursor-pointer flex items-center hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-4 mt-1 text-xs">
+              <button 
+                onClick={() => handleCommentVote(comment.id, "up")}
+                className={cn(
+                  "font-semibold transition-all duration-100 hover:underline active:scale-95",
+                  comment.userVote === "up" ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
+                )}
+              >
+                {comment.userVote === "up" ? "Unlike" : "Like"}
+              </button>
+              <button 
+                onClick={() => handleCommentVote(comment.id, "down")}
+                className={cn(
+                  "font-semibold transition-all duration-100 hover:underline active:scale-95",
+                  comment.userVote === "down" ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"
+                )}
+              >
+                {comment.userVote === "down" ? "Remove Dislike" : "Dislike"}
+              </button>
+              <button 
+                onClick={() => handleReply(comment.id)}
+                className="font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:underline transition-all duration-100 active:scale-95"
+              >
+                Reply
+              </button>
+              <span className="text-gray-400 text-xs">
+                {formatTimeAgo(comment.createdAt)}
+              </span>
+              {hasReplies && (
+                <button 
+                  onClick={() => toggleReplies(comment.id)}
+                  className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline transition-colors duration-75 flex items-center gap-1"
+                >
+                  {isExpanded ? (
+                    <>
+                      <svg className="w-3 h-3 transition-transform duration-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                      Hide replies
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3 h-3 transition-transform duration-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                      View {comment.replies?.length || 0} {(comment.replies?.length || 0) === 1 ? 'reply' : 'replies'}
+                    </>
+                  )}
+                </button>
+              )}
+              {/* Reaction count inline */}
+              {(comment.upvotes > 0 || comment.downvotes > 0) && (
+                <div className="flex items-center ml-auto gap-3">
+                  {comment.upvotes > 0 && (
+                    <div className="flex items-center">
+                      <div className="flex items-center -space-x-0.5">
+                        <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">👍</div>
+                        {comment.upvotes > 5 && <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">❤️</div>}
+                        {comment.upvotes > 10 && <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs">😂</div>}
+                      </div>
+                      <span className="ml-1 text-xs text-gray-600 dark:text-gray-400">{comment.upvotes}</span>
+                    </div>
+                  )}
+                  {comment.downvotes > 0 && (
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 bg-gray-500 rounded-full flex items-center justify-center text-white text-xs">👎</div>
+                      <span className="ml-1 text-xs text-gray-600 dark:text-gray-400">{comment.downvotes}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Reply Input */}
+            {replyTo === comment.id && (
+              <div className="mt-2">
+                <div className="flex items-start gap-2">
+                  <Avatar className="h-6 w-6 flex-shrink-0">
+                    <AvatarImage src={user?.image || "/placeholder-user.jpg"} />
+                    <AvatarFallback className="bg-blue-500 text-white text-xs">
+                      {user?.name?.[0]?.toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full">                  <input 
+                    type="text"
+                    placeholder="Write a reply..."
+                    value={replyInput}
+                    onChange={(e) => setReplyInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSubmitReply()}
+                    autoFocus
+                    className="w-full bg-transparent rounded-full px-4 py-2 text-sm border-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-150"
+                  />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Nested Replies */}
+            {hasReplies && isExpanded && (
+              <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-800 animate-in slide-in-from-top-2 duration-200 ease-out">
+                <div className="space-y-2">
+                  {comment.replies?.map((reply: Comment) => renderComment(reply, depth + 1))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Keyboard navigation
@@ -230,29 +571,57 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
   const handleCommentVote = async (commentId: string, voteType: "up" | "down") => {
     if (!user) return
     
-    try {
-      const response = await fetch(`/api/comments/${commentId}/vote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ voteType })
-      })
+    // Store previous state for rollback
+    const previousComments = comments
+    
+    // Update local state immediately (optimistic update)
+    setComments(prev => prev.map(comment => {
+      if (comment.id === commentId) {
+        const currentVote = comment.userVote
+        let newUpvotes = comment.upvotes || 0
+        let newDownvotes = comment.downvotes || 0
+        let newUserVote = comment.userVote
+        
+        if (currentVote === voteType) {
+          // Remove vote
+          if (voteType === "up") newUpvotes--
+          else newDownvotes--
+          newUserVote = undefined
+        } else if (currentVote) {
+          // Switch vote
+          if (voteType === "up") {
+            newUpvotes++
+            newDownvotes--
+          } else {
+            newUpvotes--
+            newDownvotes++
+          }
+          newUserVote = voteType
+        } else {
+          // New vote
+          if (voteType === "up") newUpvotes++
+          else newDownvotes++
+          newUserVote = voteType
+        }
+        
+        return { ...comment, upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
+      }
       
-      if (response.ok) {
-        // Update local state optimistically
-        setComments(prev => prev.map(comment => {
-          if (comment.id === commentId) {
-            const currentVote = comment.userVote
-            let newUpvotes = comment.upvotes || 0
-            let newDownvotes = comment.downvotes || 0
-            let newUserVote = comment.userVote
+      // Check replies
+      return {
+        ...comment,
+        replies: comment.replies?.map((reply: Comment) => {
+          if (reply.id === commentId) {
+            const currentVote = reply.userVote
+            let newUpvotes = reply.upvotes || 0
+            let newDownvotes = reply.downvotes || 0
+            let newUserVote = reply.userVote
             
             if (currentVote === voteType) {
-              // Remove vote
               if (voteType === "up") newUpvotes--
               else newDownvotes--
               newUserVote = undefined
             } else if (currentVote) {
-              // Switch vote
               if (voteType === "up") {
                 newUpvotes++
                 newDownvotes--
@@ -262,52 +631,34 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
               }
               newUserVote = voteType
             } else {
-              // New vote
               if (voteType === "up") newUpvotes++
               else newDownvotes++
               newUserVote = voteType
             }
             
-            return { ...comment, upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
+            return { ...reply, upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
           }
-          
-          // Check replies
-          return {
-            ...comment,
-            replies: comment.replies?.map((reply: any) => {
-              if (reply.id === commentId) {
-                const currentVote = reply.userVote
-                let newUpvotes = reply.upvotes || 0
-                let newDownvotes = reply.downvotes || 0
-                let newUserVote = reply.userVote
-                
-                if (currentVote === voteType) {
-                  if (voteType === "up") newUpvotes--
-                  else newDownvotes--
-                  newUserVote = undefined
-                } else if (currentVote) {
-                  if (voteType === "up") {
-                    newUpvotes++
-                    newDownvotes--
-                  } else {
-                    newUpvotes--
-                    newDownvotes++
-                  }
-                  newUserVote = voteType
-                } else {
-                  if (voteType === "up") newUpvotes++
-                  else newDownvotes++
-                  newUserVote = voteType
-                }
-                
-                return { ...reply, upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
-              }
-              return reply
-            })
-          }
-        }))
+          return reply
+        })
+      }
+    }))
+    
+    // Send request to server
+    try {
+      const response = await fetch(`/api/comments/${commentId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voteType })
+      })
+      
+      if (!response.ok) {
+        // Rollback on error
+        setComments(previousComments)
+        console.error("Failed to vote on comment")
       }
     } catch (error) {
+      // Rollback on error
+      setComments(previousComments)
       console.error("Error voting on comment:", error)
     }
   }
@@ -321,18 +672,22 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
       })
       
       if (response.ok) {
-        // Remove comment from local state
-        setComments(prev => prev.filter(comment => {
-          // Remove top-level comment
-          if (comment.id === commentId) return false
+        setComments(prev => prev.map(comment => {
+          if (comment.id === commentId) return null
           
-          // Remove from replies
-          comment.replies = comment.replies?.filter((reply: any) => reply.id !== commentId) || []
-          return true
-        }))
+          if (comment.replies && comment.replies.length > 0) {
+            comment.replies = comment.replies.filter((reply: Comment) => reply.id !== commentId)
+          }
+          
+          return comment
+        }).filter(Boolean) as Comment[])
+      } else {
+        console.error("Failed to delete comment:", response.status)
+        alert("Failed to delete comment. Please try again.")
       }
     } catch (error) {
       console.error("Error deleting comment:", error)
+      alert("An error occurred while deleting the comment. Please try again.")
     }
   }
 
@@ -340,7 +695,7 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 p-4">
-      <div className="relative h-[80vh] min-h-[500px] max-h-[700px] w-full max-w-6xl flex flex-col md:flex-row bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden">
+      <div className="relative h-[85vh] min-h-[600px] max-h-[800px] w-full max-w-7xl flex flex-col md:flex-row bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden">
         {/* Left: Image Carousel */}
         <div className="flex-1 flex items-center justify-center bg-black relative min-h-[400px]">
           {hasImages && (
@@ -350,7 +705,7 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
                   <Image
                     src={images[carouselIndex]}
                     alt={`Post image ${carouselIndex + 1}`}
-                    className="object-contain max-h-[80vh] max-w-full"
+                    className="object-contain w-full h-full"
                     width={800}
                     height={1200}
                     priority
@@ -360,13 +715,13 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
                 {images.length > 1 && (
                   <>
                     <button
-                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all duration-150 active:scale-95"
                       onClick={() => setCarouselIndex(i => (i > 0 ? i - 1 : images.length - 1))}
                     >
                       <ChevronLeft className="w-6 h-6" />
                     </button>
                     <button
-                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all duration-150 active:scale-95"
                       onClick={() => setCarouselIndex(i => (i < images.length - 1 ? i + 1 : 0))}
                     >
                       <ChevronRight className="w-6 h-6" />
@@ -385,7 +740,7 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
         </div>
 
         {/* Right: Facebook-style Post Content */}
-        <div className="w-full md:w-[400px] flex flex-col bg-white dark:bg-gray-900 h-full max-h-[700px]">
+        <div className="w-full md:w-[450px] lg:w-[550px] xl:w-[550px] flex flex-col bg-white dark:bg-gray-900 h-full max-h-[800px]">
           {/* Header - Fixed */}
           <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3">
@@ -405,6 +760,14 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
                       </svg>
                     </div>
                   )}
+                  {!post.isAnonymous && post.author.rank && (
+                    <span className={cn(
+                      "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
+                      getRankColor(post.author.rank)
+                    )}>
+                      {formatRank(post.author.rank)}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
                   <span>{post.timeAgo}</span>
@@ -415,7 +778,7 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
             </div>
             <button 
               onClick={onClose} 
-              className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-100 active:scale-95"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -426,41 +789,46 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
           {/* Scrollable Content Area */}
           <div className="flex-1 overflow-y-auto min-h-0">
             {/* Post Content */}
-            <div className="p-4">
-              <p className="text-gray-900 dark:text-white text-[15px] leading-relaxed whitespace-pre-line">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+              <p className="text-gray-900 dark:text-white text-[16px] leading-relaxed whitespace-pre-line break-words mb-4">
                 {post.content}
               </p>
               
               {/* Category Tag (subtle) */}
               {post.category && (
-                <div className="mt-3">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                <div className="mb-4">
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                     #{post.category}
                   </span>
                 </div>
               )}
               
               {/* Stats */}
-              <div className="flex items-center justify-between mt-3 pt-2 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center justify-between pt-3 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-4">
-                  {(upvotes > 0 || downvotes > 0) && (
+                  {((upvotes && upvotes > 0) || (downvotes && downvotes > 0)) && (
                     <span className="flex items-center gap-1">
                       <div className="flex items-center">
-                        <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                          <ThumbsUp className="w-3 h-3 text-white" />
-                        </div>
-                        {downvotes > 0 && (
-                          <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center -ml-1">
+                        {(upvotes && upvotes > 0) && (
+                          <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                            <ThumbsUp className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                        {(downvotes && downvotes > 0) && (
+                          <div className={cn(
+                            "w-5 h-5 bg-red-500 rounded-full flex items-center justify-center",
+                            (upvotes && upvotes > 0) && "-ml-1"
+                          )}>
                             <ThumbsDown className="w-3 h-3 text-white" />
                           </div>
                         )}
                       </div>
-                      <span>{upvotes + downvotes}</span>
+                      <span>{upvotes || 0}</span>
                     </span>
                   )}
                 </div>
-                {post.comments > 0 && (
-                  <span>{post.comments} comments</span>
+                {comments.length > 0 && (
+                  <span>{comments.length} comments</span>
                 )}
               </div>
             </div>
@@ -471,23 +839,39 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
                 <button 
                   onClick={() => handleVote("up")} 
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium",
-                    userVote === "up" ? "text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 font-medium active:scale-95",
+                    userVote === "up" 
+                      ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950" 
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   )}
                 >
                   <ThumbsUp className="w-5 h-5" />
-                  <span>Like</span>
+                  <span>{userVote === "up" ? "Unlike" : "Like"}</span>
+                  {upvotes > 0 && <span className="text-sm">({upvotes})</span>}
+                </button>
+                <button 
+                  onClick={() => handleVote("down")} 
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 font-medium active:scale-95",
+                    userVote === "down" 
+                      ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950" 
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  )}
+                >
+                  <ThumbsDown className="w-5 h-5" />
+                  <span>{userVote === "down" ? "Remove Dislike" : "Dislike"}</span>
+                  {downvotes > 0 && <span className="text-sm">({downvotes})</span>}
                 </button>
                 <button 
                   onClick={handleCommentClick} 
-                  className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
+                  className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95"
                 >
                   <MessageCircle className="w-5 h-5" />
                   <span>Comment</span>
                 </button>
                 <button 
                   onClick={handleShare} 
-                  className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
+                  className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95"
                 >
                   <Share2 className="w-5 h-5" />
                   <span>Share</span>
@@ -502,184 +886,9 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                 </div>
               ) : comments.length > 0 ? (
-                comments.map((comment) => (
-                  <div key={comment.id} className="flex items-start gap-3">
-                    <Avatar className="h-8 w-8 flex-shrink-0">
-                      <AvatarImage src={comment.authorImage || "/placeholder-user.jpg"} />
-                      <AvatarFallback className="bg-blue-500 text-white text-xs">
-                        {comment.author ? comment.author[0].toUpperCase() : "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-2xl px-3 py-2">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm text-gray-900 dark:text-white">
-                            {comment.author || "Anonymous"}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatTimeAgo(comment.createdAt)}
-                          </span>
-                        </div>
-                        {(user?.id === comment.authorId || user?.role === "ADMIN") && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <div className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 cursor-pointer rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </div>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteComment(comment.id)} 
-                                className="text-red-600 focus:text-red-600 cursor-pointer"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-800 dark:text-gray-200">{comment.content}</p>
-                      <div className="flex items-center gap-4 mt-2">
-                        <button 
-                          onClick={() => handleCommentVote(comment.id, "up")} 
-                          className={`flex items-center gap-1 text-xs font-semibold transition-colors ${
-                            comment.userVote === "up" 
-                              ? "text-blue-600 dark:text-blue-400" 
-                              : "text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-                          }`}
-                        >
-                          <ThumbsUp className="w-3 h-3" />
-                          {comment.upvotes > 0 && <span>{comment.upvotes}</span>}
-                          Like
-                        </button>
-                        <button 
-                          onClick={() => handleReply(comment.id)} 
-                          className="text-xs font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
-                        >
-                          Reply
-                        </button>
-                        {comment.upvotes > 0 && (
-                          <span className="text-xs text-gray-500">
-                            {comment.upvotes} {comment.upvotes === 1 ? 'like' : 'likes'}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Replies Section - Nested Comments */}
-                      {comment.replies && comment.replies.length > 0 && (
-                        <div className="mt-3 border-t border-gray-200 dark:border-gray-700 pt-2">
-                          {comment.replies.map((reply: any) => (
-                            <div key={reply.id} className="flex items-start gap-3 mt-2">
-                              <Avatar className="h-7 w-7 flex-shrink-0">
-                                <AvatarImage src={reply.authorImage || "/placeholder-user.jpg"} />
-                                <AvatarFallback className="bg-blue-500 text-white text-xs">
-                                  {reply.author ? reply.author[0].toUpperCase() : "U"}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 bg-gray-50 dark:bg-gray-800 rounded-2xl px-3 py-2">
-                                <div className="flex items-center justify-between gap-2 mb-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-sm text-gray-900 dark:text-white">
-                                      {reply.author || "Anonymous"}
-                                    </span>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                      {formatTimeAgo(reply.createdAt)}
-                                    </span>
-                                  </div>
-                                  {(user?.id === reply.authorId || user?.role === "ADMIN") && (
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <div className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 cursor-pointer rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center">
-                                          <MoreHorizontal className="w-4 h-4" />
-                                        </div>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                        <DropdownMenuItem 
-                                          onClick={() => handleDeleteComment(reply.id)} 
-                                          className="text-red-600 focus:text-red-600 cursor-pointer"
-                                        >
-                                          <Trash2 className="w-4 h-4 mr-2" />
-                                          Delete
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  )}
-                                </div>
-                                <p className="text-sm text-gray-800 dark:text-gray-200">{reply.content}</p>
-                                <div className="flex items-center gap-4 mt-2">
-                                  <button 
-                                    onClick={() => handleCommentVote(reply.id, "up")} 
-                                    className={`flex items-center gap-1 text-xs font-semibold transition-colors ${
-                                      reply.userVote === "up" 
-                                        ? "text-blue-600 dark:text-blue-400" 
-                                        : "text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-                                    }`}
-                                  >
-                                    <ThumbsUp className="w-3 h-3" />
-                                    {reply.upvotes > 0 && <span>{reply.upvotes}</span>}
-                                    Like
-                                  </button>
-                                  <button 
-                                    onClick={() => handleReply(comment.id)} 
-                                    className="text-xs font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
-                                  >
-                                    Reply
-                                  </button>
-                                  {reply.upvotes > 0 && (
-                                    <span className="text-xs text-gray-500">
-                                      {reply.upvotes} {reply.upvotes === 1 ? 'like' : 'likes'}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Reply Input - Conditional rendering */}
-                      {replyTo === comment.id && (
-                        <div className="mt-3">
-                          <div className="flex items-start gap-3">
-                            <Avatar className="h-8 w-8 flex-shrink-0">
-                              <AvatarImage src="/placeholder-user.jpg" />
-                              <AvatarFallback className="bg-blue-500 text-white text-xs">U</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <textarea 
-                                placeholder="Write a reply..." 
-                                value={replyInput}
-                                onChange={(e) => setReplyInput(e.target.value)}
-                                disabled={loading}
-                                autoFocus
-                                className="w-full bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2 text-sm border-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 resize-none min-h-[60px]"
-                              />
-                              <div className="flex gap-2 mt-2">
-                                <button 
-                                  onClick={handleSubmitReply}
-                                  disabled={!replyInput.trim() || loading}
-                                  className="px-3 py-1 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  {loading ? "Posting..." : "Reply"}
-                                </button>
-                                <button 
-                                  onClick={() => {
-                                    setReplyTo(null)
-                                    setReplyInput("")
-                                  }}
-                                  className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
+                <div className="space-y-3">
+                  {comments.map((comment) => renderComment(comment, 0))}
+                </div>
               ) : (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -704,22 +913,20 @@ export default function ImagePostModal({ open, onClose, onCommentAdded, post, in
                   value={commentInput}
                   onChange={(e) => setCommentInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSubmitComment()}
-                  disabled={loading}
-                  className="w-full bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 pr-10 text-sm border-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50"
+                  className="w-full bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 pr-10 text-sm border-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-150"
                 />
                 <button 
                   onClick={handleSubmitComment}
-                  disabled={!commentInput.trim() || loading}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!commentInput.trim()}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-100 active:scale-95"
                 >
-                  {loading ? (
-                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle cx={12} cy={12} r={10} stroke="currentColor" strokeWidth={4} strokeLinecap="round" className="opacity-25" />
-                      <path d="M4 12a8 8 0 018-8v8H4z" fill="currentColor" />
-                    </svg>
-                  ) : (
+                  {commentInput.trim() ? (
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                     </svg>
                   )}
                 </button>
