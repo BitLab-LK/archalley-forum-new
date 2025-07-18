@@ -84,6 +84,7 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
   const isAdmin = user?.role === "ADMIN"
   const [modalOpen, setModalOpen] = useState(false)
   const [modalImageIndex, setModalImageIndex] = useState(0)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // State to track modal vote updates for better synchronization
   const [modalUpvotes, setModalUpvotes] = useState(upvotes)
@@ -106,23 +107,43 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
   }
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this post?")) return
+    // Start delete animation immediately
+    setIsDeleting(true)
     
+    // Use the onDelete prop if provided (which includes proper session handling and confirmation)
+    if (onDelete) {
+      onDelete()
+      return
+    }
+    
+    // Fallback confirmation dialog only if no onDelete prop
+    if (!confirm("Are you sure you want to delete this post?")) {
+      setIsDeleting(false) // Reset animation if user cancels
+      return
+    }
+    
+    // Fallback to direct API call (with proper credentials)
     try {
       const response = await fetch(`/api/posts/${post.id}`, {
         method: "DELETE",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          isAdmin: isAdmin
-        }),
       })
-      if (response.ok && onDelete) {
-        onDelete()
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+        setIsDeleting(false) // Reset animation on error
+        throw new Error(errorData.error || "Failed to delete post")
       }
+      
+      // Optionally, you could emit an event or refresh the page
+      // For now, we'll just log success
+      console.log("Post deleted successfully")
     } catch (error) {
       console.error("Error deleting post:", error)
+      setIsDeleting(false) // Reset animation on error
     }
   }
 
@@ -265,8 +286,14 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
 
   return (
     <>
-      <Card className="mb-4 shadow-sm border-0">
-        <CardContent className="p-4">
+      <div className={cn(
+        "transition-all duration-700 ease-in-out overflow-hidden",
+        isDeleting 
+          ? "max-h-0 opacity-0 -mb-4 transform scale-95" 
+          : "max-h-[2000px] opacity-100 mb-4 transform scale-100"
+      )}>
+        <Card className="shadow-sm border-0">
+          <CardContent className="p-4">
           {/* Post Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-3">
@@ -422,6 +449,8 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
           )}
         </CardContent>
       </Card>
+      </div>
+      
       {/* Facebook-style Post Popup Modal */}
       <PostModal 
         open={modalOpen} 

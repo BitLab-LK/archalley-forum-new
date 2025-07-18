@@ -4,10 +4,18 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { NextRequest } from "next/server"
 
-export async function DELETE(request: NextRequest, { params }: { params: { postId: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ postId: string }> | { postId: string } }) {
   try {
+    // Await params if it's a Promise (Next.js 15+ compatibility)
+    const resolvedParams = await Promise.resolve(params)
+    const postId = resolvedParams.postId
+    
     console.log("=== DELETE POST REQUEST ===")
-    console.log("Post ID:", params.postId)
+    console.log("Raw params:", params)
+    console.log("Resolved params:", resolvedParams)
+    console.log("Post ID:", postId)
+    console.log("Post ID type:", typeof postId)
+    console.log("Post ID length:", postId?.length)
     
     const session = await getServerSession(authOptions)
     console.log("Session user:", {
@@ -21,18 +29,24 @@ export async function DELETE(request: NextRequest, { params }: { params: { postI
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const postId = params.postId
-
     // Get the post to check ownership
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      select: { authorId: true }
+      select: { authorId: true, id: true }
     })
 
-    console.log("Post found:", { postId, authorId: post?.authorId })
+    console.log("Post found:", { postId, post })
 
     if (!post) {
-      console.log("❌ Post not found")
+      console.log("❌ Post not found in database")
+      
+      // Let's also check if any posts exist with similar IDs
+      const allPosts = await prisma.post.findMany({
+        select: { id: true, authorId: true },
+        take: 5
+      })
+      console.log("Sample posts in database:", allPosts)
+      
       return NextResponse.json({ error: "Post not found" }, { status: 404 })
     }
 
@@ -44,7 +58,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { postI
       isAuthor, 
       isAdmin, 
       sessionUserId: session.user.id,
-      postAuthorId: post.authorId 
+      postAuthorId: post.authorId,
+      userIdType: typeof session.user.id,
+      authorIdType: typeof post.authorId
     })
     
     if (!isAuthor && !isAdmin) {

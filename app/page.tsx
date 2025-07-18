@@ -79,16 +79,23 @@ function HomePageContent() {
     fetchPosts(page)
   }, [searchParams])
 
+  useEffect(() => {
+    if (user) {
+      console.log("Current user loaded:", {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name
+      })
+    }
+  }, [user])
+
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > pagination.pages) return
     router.push(`/?page=${newPage}`)
   }
 
   const handleDeletePost = async (postId: string) => {
-    if (!confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
-      return
-    }
-
     try {
       console.log("=== FRONTEND DELETE REQUEST ===")
       console.log("Current user:", {
@@ -98,6 +105,10 @@ function HomePageContent() {
         name: user?.name
       })
       console.log("Deleting post ID:", postId)
+      
+      // Start optimistic update - remove post immediately for smooth UX
+      const originalPosts = posts
+      setPosts(posts.filter(post => post.id !== postId))
       
       const response = await fetch(`/api/posts/${postId}`, {
         method: "DELETE",
@@ -114,6 +125,9 @@ function HomePageContent() {
       console.log("Response body:", responseBody)
 
       if (!response.ok) {
+        // Restore posts if deletion failed
+        setPosts(originalPosts)
+        
         let errorData
         try {
           errorData = JSON.parse(responseBody)
@@ -124,8 +138,6 @@ function HomePageContent() {
         throw new Error(`Failed to delete post: ${response.status} - ${errorData?.error || responseBody}`)
       }
 
-      // Remove the deleted post from the state
-      setPosts(posts.filter(post => post.id !== postId))
       toast.success("Post deleted successfully")
     } catch (error) {
       console.error("Error deleting post:", error)
@@ -212,8 +224,14 @@ function HomePageContent() {
                       key={post.id} 
                       post={post} 
                       onDelete={
-                        user && user.id === post.author.id
-                          ? () => handleDeletePost(post.id) 
+                        user && (user.id === post.author.id || user.role === "ADMIN")
+                          ? () => {
+                              // Create a delete function that includes animation trigger
+                              if (!confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
+                                return
+                              }
+                              handleDeletePost(post.id)
+                            }
                           : undefined
                       }
                       onCommentCountChange={handleCommentCountChange}
