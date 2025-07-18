@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo, memo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -48,45 +48,53 @@ interface PostCardProps {
   onCommentCountChange?: (postId: string, newCount: number) => void
 }
 
-const getTextSizeClass = (content: string) => {
+// Constants
+const TEXT_SIZE_CONFIG = [
+  { max: 50, class: "text-3xl" },
+  { max: 100, class: "text-2xl" },
+  { max: 200, class: "text-xl" },
+  { max: 300, class: "text-lg" },
+] as const
+
+const CATEGORY_COLORS = {
+  business: "bg-blue-500",
+  design: "bg-purple-500",
+  career: "bg-green-500",
+  construction: "bg-yellow-500",
+  academic: "bg-indigo-500",
+  informative: "bg-cyan-500",
+  other: "bg-gray-500",
+} as const
+
+// Utility functions
+const getTextSizeClass = (content: string): string => {
   const length = content.length
-  if (length <= 50) return "text-3xl"
-  if (length <= 100) return "text-2xl"
-  if (length <= 200) return "text-xl"
-  if (length <= 300) return "text-lg"
-  return "text-base"
+  return TEXT_SIZE_CONFIG.find(config => length <= config.max)?.class ?? "text-base"
 }
 
-const getCategoryColorClass = (category: string) => {
-  const colorMap: Record<string, string> = {
-    business: "bg-blue-500",
-    design: "bg-purple-500",
-    career: "bg-green-500",
-    construction: "bg-yellow-500",
-    academic: "bg-indigo-500",
-    informative: "bg-cyan-500",
-    other: "bg-gray-500",
-  }
-  return colorMap[category.toLowerCase()] || "bg-gray-500"
+const getCategoryColorClass = (category: string): string => {
+  return CATEGORY_COLORS[category.toLowerCase() as keyof typeof CATEGORY_COLORS] ?? "bg-gray-500"
 }
 
-const shouldUseColoredBackground = (content: string, hasImages: boolean) => {
+const shouldUseColoredBackground = (content: string, hasImages: boolean): boolean => {
   return !hasImages && content.length <= 300
 }
 
-export default function PostCard({ post, onDelete, onCommentCountChange }: PostCardProps) {
+const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }: PostCardProps) {
   const { user, isLoading } = useAuth()
+  
+  // Memoized computed values
+  const isAuthor = useMemo(() => user?.id === post.author.id, [user?.id, post.author.id])
+  const isAdmin = useMemo(() => user?.role === "ADMIN", [user?.role])
+  const canDelete = useMemo(() => isAuthor || isAdmin, [isAuthor, isAdmin])
   
   // Use the same voting hook as the modals
   const { userVote, upvotes, downvotes, handleVote } = usePostVote(post.id, null, post.upvotes, post.downvotes)
   
-  const isAuthor = user?.id === post.author.id
-  const isAdmin = user?.role === "ADMIN"
+  // Local state
   const [modalOpen, setModalOpen] = useState(false)
   const [modalImageIndex, setModalImageIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
-
-  // State to track modal vote updates for better synchronization
   const [modalUpvotes, setModalUpvotes] = useState(upvotes)
   const [modalDownvotes, setModalDownvotes] = useState(downvotes)
   const [commentCount, setCommentCount] = useState(post.comments)
@@ -95,65 +103,88 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
   useEffect(() => {
     setModalUpvotes(upvotes)
     setModalDownvotes(downvotes)
+  }, [upvotes, downvotes])
+
+  // Memoized callbacks
+  const handleDelete = useCallback(async () => {
+    setIsDeleting(true)
+    
+    if (onDelete) {
+      onDelete()
+      return
+    }
+    
+    if (!confirm("Are you sure you want to delete this post?")) {
+      setIsDeleting(false)
+      return
+    }
+    
+    try {
+      const response = await fetch(`/api/posts/${post.id}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+        setIsDeleting(false)
+        throw new Error(errorData.error || "Failed to delete post")
+      }
+      
+      console.log("Post deleted successfully")
+    } catch (error) {
+      console.error("Error deleting post:", error)
+      setIsDeleting(false)
+    }
+  }, [onDelete, post.id])
+
+  const handleCommentAdded = useCallback(() => {
+    const newCount = commentCount + 1
+    setCommentCount(newCount)
+    onCommentCountChange?.(post.id, newCount)
+  }, [commentCount, onCommentCountChange, post.id])
+
+  const handleCommentCountUpdate = useCallback((newCount: number) => {
+    setCommentCount(newCount)
+    onCommentCountChange?.(post.id, newCount)
+  }, [onCommentCountChange, post.id])
+
+  const openModal = useCallback((imgIdx: number = 0) => {
+    setModalImageIndex(imgIdx)
+    setModalOpen(true)
+  }, [])
+
+  const handleModalVoteUpdate = useCallback((newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => {
+    setModalUpvotes(newUpvotes)
+    setModalDownvotes(newDownvotes)
+    
+    setTimeout(() => {
+      console.log("Modal vote update - ensuring sync:", {
+        modalVotes: { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote },
+        cardVotes: { upvotes, downvotes, userVote }
+      })
+    }, 100)
   }, [upvotes, downvotes, userVote])
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-40">
         <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-2"></span>
         Loading...
       </div>
-    );
+    )
   }
 
-  const handleDelete = async () => {
-    // Start delete animation immediately
-    setIsDeleting(true)
-    
-    // Use the onDelete prop if provided (which includes proper session handling and confirmation)
-    if (onDelete) {
-      onDelete()
-      return
-    }
-    
-    // Fallback confirmation dialog only if no onDelete prop
-    if (!confirm("Are you sure you want to delete this post?")) {
-      setIsDeleting(false) // Reset animation if user cancels
-      return
-    }
-    
-    // Fallback to direct API call (with proper credentials)
-    try {
-      const response = await fetch(`/api/posts/${post.id}`, {
-        method: "DELETE",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
-        setIsDeleting(false) // Reset animation on error
-        throw new Error(errorData.error || "Failed to delete post")
-      }
-      
-      // Optionally, you could emit an event or refresh the page
-      // For now, we'll just log success
-      console.log("Post deleted successfully")
-    } catch (error) {
-      console.error("Error deleting post:", error)
-      setIsDeleting(false) // Reset animation on error
-    }
-  }
-
-  // Facebook-style image grid logic
-  const renderImages = (images: string[]) => {
+  // Memoized image renderer for better performance
+  const renderImages = useCallback((images: string[]) => {
     const count = images.length
+    
     if (count === 1) {
       return (
         <div className="w-full flex justify-center items-center cursor-pointer" onClick={() => openModal(0)}>
-          <div className="relative w-full" style={{ maxHeight: 500 }}>
+          <div className="relative w-full max-h-[500px]">
             <Image
               src={images[0]}
               alt="Post image"
@@ -166,11 +197,16 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
         </div>
       )
     }
+    
     if (count === 2) {
       return (
         <div className="flex gap-2 mt-2">
           {images.map((img, i) => (
-            <div key={i} className="relative w-1/2 aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center cursor-pointer" style={{ maxHeight: 350 }} onClick={() => openModal(i)}>
+            <div 
+              key={i} 
+              className="relative w-1/2 aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden cursor-pointer max-h-[350px]" 
+              onClick={() => openModal(i)}
+            >
               <Image
                 src={img}
                 alt={`Post image ${i + 1}`}
@@ -183,106 +219,53 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
         </div>
       )
     }
+    
     if (count === 3) {
       return (
-        <div className="grid grid-cols-3 gap-2 mt-2" style={{ height: 350 }}>
+        <div className="grid grid-cols-3 gap-2 mt-2 h-[350px]">
           <div className="relative col-span-2 row-span-2 h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(0)}>
-            <Image
-              src={images[0]}
-              alt="Post image 1"
-              className="object-cover w-full h-full"
-              fill
-              sizes="66vw"
-            />
+            <Image src={images[0]} alt="Post image 1" className="object-cover w-full h-full" fill sizes="66vw" />
           </div>
           <div className="flex flex-col gap-2 h-full">
-            <div className="relative flex-1 rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(1)}>
-              <Image
-                src={images[1]}
-                alt="Post image 2"
-                className="object-cover w-full h-full"
-                fill
-                sizes="33vw"
-              />
-            </div>
-            <div className="relative flex-1 rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(2)}>
-              <Image
-                src={images[2]}
-                alt="Post image 3"
-                className="object-cover w-full h-full"
-                fill
-                sizes="33vw"
-              />
-            </div>
+            {[1, 2].map(i => (
+              <div key={i} className="relative flex-1 rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(i)}>
+                <Image src={images[i]} alt={`Post image ${i + 1}`} className="object-cover w-full h-full" fill sizes="33vw" />
+              </div>
+            ))}
           </div>
         </div>
       )
     }
+    
     if (count === 4) {
       return (
-        <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-2" style={{ height: 350 }}>
+        <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-2 h-[350px]">
           {images.map((img, i) => (
             <div key={i} className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(i)}>
-              <Image
-                src={img}
-                alt={`Post image ${i + 1}`}
-                className="object-cover w-full h-full"
-                fill
-                sizes="50vw"
-              />
+              <Image src={img} alt={`Post image ${i + 1}`} className="object-cover w-full h-full" fill sizes="50vw" />
             </div>
           ))}
         </div>
       )
     }
+    
     // More than 4 images
     return (
-      <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-2" style={{ height: 350 }}>
+      <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-2 h-[350px]">
         {images.slice(0, 3).map((img, i) => (
           <div key={i} className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(i)}>
-            <Image
-              src={img}
-              alt={`Post image ${i + 1}`}
-              className="object-cover w-full h-full"
-              fill
-              sizes="50vw"
-            />
+            <Image src={img} alt={`Post image ${i + 1}`} className="object-cover w-full h-full" fill sizes="50vw" />
           </div>
         ))}
-        {/* Last image with overlay */}
         <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(3)}>
-          <Image
-            src={images[3]}
-            alt={`Post image 4`}
-            className="object-cover w-full h-full"
-            fill
-            sizes="50vw"
-          />
+          <Image src={images[3]} alt="Post image 4" className="object-cover w-full h-full" fill sizes="50vw" />
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
             <span className="text-white text-2xl font-bold">+{count - 4}</span>
           </div>
         </div>
       </div>
     )
-  }
-
-  const handleCommentAdded = () => {
-    // Update local comment count immediately
-    setCommentCount(prev => prev + 1)
-    // Also notify parent if callback exists
-    onCommentCountChange?.(post.id, commentCount + 1)
-  }
-
-  const handleCommentCountUpdate = (newCount: number) => {
-    // Update comment count from modal
-    setCommentCount(newCount)
-    onCommentCountChange?.(post.id, newCount)
-  }
-
-  const openModal = (imgIdx = 0) => {
-    setModalImageIndex(imgIdx)
-    setModalOpen(true)
-  }
+  }, [openModal])
 
   return (
     <>
@@ -331,7 +314,7 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {(isAuthor || isAdmin) && (
+                  {canDelete && (
                     <DropdownMenuItem
                       className="text-red-600 focus:text-red-600 focus:bg-red-50"
                       onClick={handleDelete}
@@ -464,21 +447,10 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
         initialImage={modalImageIndex} 
         onCommentAdded={handleCommentAdded}
         onCommentCountUpdate={handleCommentCountUpdate}
-        onVoteUpdate={(newUpvotes, newDownvotes, newUserVote) => {
-          // Update modal vote state when voting happens in the modal
-          setModalUpvotes(newUpvotes)
-          setModalDownvotes(newDownvotes)
-          
-          // The Socket.IO synchronization should handle updating the main post card
-          // but we can add a small delay to ensure the socket event has time to propagate
-          setTimeout(() => {
-            console.log("Modal vote update - ensuring sync:", {
-              modalVotes: { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote },
-              cardVotes: { upvotes, downvotes, userVote }
-            })
-          }, 100)
-        }}
+        onVoteUpdate={handleModalVoteUpdate}
       />
     </>
   )
-}
+})
+
+export default PostCard
