@@ -852,24 +852,31 @@ export default function ImagePostModal({
               {/* Stats */}
               <div className="flex items-center justify-between pt-3 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-4">
-                  {((upvotes && upvotes > 0) || (downvotes && downvotes > 0)) && (
+                  {(upvotes > 0 || downvotes > 0) && (
                     <span className="flex items-center gap-1">
                       <div className="flex items-center">
-                        {(upvotes && upvotes > 0) && (
+                        {upvotes > 0 && (
                           <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                             <ThumbsUp className="w-3 h-3 text-white" />
                           </div>
                         )}
-                        {(downvotes && downvotes > 0) && (
+                        {downvotes > 0 && (
                           <div className={cn(
                             "w-5 h-5 bg-red-500 rounded-full flex items-center justify-center",
-                            (upvotes && upvotes > 0) && "-ml-1"
+                            upvotes > 0 && "-ml-1"
                           )}>
                             <ThumbsDown className="w-3 h-3 text-white" />
                           </div>
                         )}
                       </div>
-                      <span>{upvotes || 0}</span>
+                      <span>
+                        {upvotes > 0 && downvotes > 0 
+                          ? `${upvotes} • ${downvotes}` 
+                          : upvotes > 0 
+                            ? upvotes 
+                            : downvotes
+                        }
+                      </span>
                     </span>
                   )}
                 </div>
