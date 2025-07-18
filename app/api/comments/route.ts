@@ -12,73 +12,54 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing postId" }, { status: 400 })
   }
   
-  // Fetch top-level comments (no parentId), latest first, with replies
-  const comments = await prisma.comment.findMany({
-    where: { postId, parentId: null },
-    orderBy: { createdAt: "desc" },
+  // Fetch ALL comments for this post (both top-level and nested)
+  const allComments = await prisma.comment.findMany({
+    where: { postId },
+    orderBy: { createdAt: "asc" },
     include: {
-      users: { select: { name: true, image: true, id: true } },
-      other_Comment: {
-        orderBy: { createdAt: "asc" },
-        include: { 
-          users: { select: { name: true, image: true, id: true } }
-        }
-      }
+      users: { select: { name: true, image: true, id: true, rank: true } }
     }
   })
   
-  // Get vote counts and user votes for all comments at once
-  const allCommentIds = [
-    ...comments.map(c => c.id),
-    ...comments.flatMap(c => c.other_Comment.map(r => r.id))
-  ]
-  
+  // Get vote counts for all comments at once
+  const allCommentIds = allComments.map(c => c.id)
   const allVotes = await prisma.votes.findMany({
     where: { commentId: { in: allCommentIds } }
   })
   
-  // Format for frontend with vote counts
-  const formatted = comments.map(c => {
-    const commentVotes = allVotes.filter(v => v.commentId === c.id)
-    const upvotes = commentVotes.filter(v => v.type === "UP").length
-    const downvotes = commentVotes.filter(v => v.type === "DOWN").length
-    const userVote = session?.user ? commentVotes.find(v => v.userId === session.user.id)?.type?.toLowerCase() : undefined
-    
-    const replies = c.other_Comment.map(r => {
-      const replyVotes = allVotes.filter(v => v.commentId === r.id)
-      const replyUpvotes = replyVotes.filter(v => v.type === "UP").length
-      const replyDownvotes = replyVotes.filter(v => v.type === "DOWN").length
-      const replyUserVote = session?.user ? replyVotes.find(v => v.userId === session.user.id)?.type?.toLowerCase() : undefined
-      
-      return {
-        id: r.id,
-        author: r.users.name,
-        authorId: r.users.id,
-        authorImage: r.users.image,
-        content: r.content,
-        createdAt: r.createdAt,
-        parentId: r.parentId,
-        upvotes: replyUpvotes,
-        downvotes: replyDownvotes,
-        userVote: replyUserVote
-      }
-    })
-    
-    return {
-      id: c.id,
-      author: c.users.name,
-      authorId: c.users.id,
-      authorImage: c.users.image,
-      content: c.content,
-      createdAt: c.createdAt,
-      upvotes,
-      downvotes,
-      userVote,
-      replies
-    }
-  })
+  // Helper function to build nested comment structure recursively
+  const buildCommentTree = (parentId: string | null): any[] => {
+    return allComments
+      .filter(c => c.parentId === parentId)
+      .map(c => {
+        const commentVotes = allVotes.filter(v => v.commentId === c.id)
+        const upvotes = commentVotes.filter(v => v.type === "UP").length
+        const downvotes = commentVotes.filter(v => v.type === "DOWN").length
+        const userVote = session?.user ? commentVotes.find(v => v.userId === session.user.id)?.type?.toLowerCase() : undefined
+        
+        return {
+          id: c.id,
+          author: c.users.name,
+          authorId: c.users.id,
+          authorImage: c.users.image,
+          authorRank: c.users.rank,
+          content: c.content,
+          createdAt: c.createdAt,
+          parentId: c.parentId,
+          upvotes,
+          downvotes,
+          userVote,
+          replies: buildCommentTree(c.id) // Recursively get all nested replies
+        }
+      })
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  }
   
-  return NextResponse.json({ comments: formatted })
+  // Build the complete nested structure starting from top-level comments
+  const nestedComments = buildCommentTree(null)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // Latest top-level first
+  
+  return NextResponse.json({ comments: nestedComments })
 }
 
 // POST /api/comments
@@ -103,7 +84,7 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date()
     },
     include: {
-      users: { select: { name: true, image: true } }
+      users: { select: { name: true, image: true, rank: true } }
     }
   })
   return NextResponse.json({ comment })

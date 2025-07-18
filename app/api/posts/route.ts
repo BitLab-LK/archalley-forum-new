@@ -229,6 +229,9 @@ function getMimeType(filename: string): string {
 
 export async function GET(request: NextRequest) {
   try {
+    // Get session for user vote information
+    const session = await getServerSession(authOptions)
+    
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "10")
@@ -250,6 +253,7 @@ export async function GET(request: NextRequest) {
         include: {
           users: {
             select: {
+              id: true,
               name: true,
               image: true,
               rank: true,
@@ -283,6 +287,29 @@ export async function GET(request: NextRequest) {
         _count: true
       })
 
+      // Get attachments for all posts
+      const attachments = await prisma.attachments.findMany({
+        where: {
+          postId: {
+            in: posts.map(post => post.id)
+          }
+        },
+        select: {
+          postId: true,
+          url: true,
+          filename: true,
+          mimeType: true,
+        },
+      })
+
+      // Group attachments by postId
+      const attachmentMap = new Map<string, string[]>()
+      attachments.forEach(attachment => {
+        const existing = attachmentMap.get(attachment.postId) || []
+        existing.push(attachment.url)
+        attachmentMap.set(attachment.postId, existing)
+      })
+
       // Transform vote counts into a more usable format
       const voteCountMap = new Map<string, { upvotes: number; downvotes: number }>()
       
@@ -302,12 +329,38 @@ export async function GET(request: NextRequest) {
         }
       })
 
+      // Get user votes if authenticated
+      const userVoteMap = new Map<string, string>()
+      if (session?.user?.id) {
+        const userVotes = await prisma.votes.findMany({
+          where: {
+            userId: session.user.id,
+            postId: {
+              in: posts.map(post => post.id)
+            }
+          },
+          select: {
+            postId: true,
+            type: true
+          }
+        })
+        
+        userVotes.forEach(vote => {
+          if (vote.postId) {
+            userVoteMap.set(vote.postId, vote.type)
+          }
+        })
+      }
+
       // Transform the data to match the frontend format
       let transformedPosts = posts.map((post) => {
         const voteCount = voteCountMap.get(post.id) || { upvotes: 0, downvotes: 0 }
+        // const userVote = userVoteMap.get(post.id) || null // Can be used later if needed
+        const images = attachmentMap.get(post.id) || []
         return {
           id: post.id,
           author: {
+            id: post.users.id,
             name: post.isAnonymous ? "Anonymous" : post.users.name,
             avatar: post.users.image || "/placeholder.svg",
             isVerified: post.users.rank === "COMMUNITY_EXPERT" || post.users.rank === "TOP_CONTRIBUTOR",
@@ -322,7 +375,8 @@ export async function GET(request: NextRequest) {
           downvotes: voteCount.downvotes,
           comments: post._count.Comment,
           timeAgo: getTimeAgo(post.createdAt),
-          images: [], // We'll load attachments separately if needed
+          images: images,
+          // userVote: userVote // Can be added later if needed in interface
         }
       })
 
