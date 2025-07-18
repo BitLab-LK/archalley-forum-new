@@ -57,12 +57,22 @@ export function usePostVote(postId: string, initialVote: "up" | "down" | null, i
       }
     }
     
+    // Handle comment count synchronization
+    const commentCountSyncHandler = (data: { postId: string; commentCount: number }) => {
+      if (data.postId === postId) {
+        console.log(`💬 Comment count sync for post ${postId}:`, data)
+        // Note: This hook doesn't manage comment count, but we listen for other components
+      }
+    }
+    
     socket.on("vote-update", voteUpdateHandler)
     socket.on("vote-sync", voteSyncHandler)
+    socket.on("comment-count-sync", commentCountSyncHandler)
     
     return () => {
       socket?.off("vote-update", voteUpdateHandler)
       socket?.off("vote-sync", voteSyncHandler)
+      socket?.off("comment-count-sync", commentCountSyncHandler)
     }
   }, [postId, user?.id])
 

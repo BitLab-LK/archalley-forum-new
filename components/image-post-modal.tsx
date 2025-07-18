@@ -95,10 +95,11 @@ export default function ImagePostModal({
   // Refs and hooks
   const commentInputRef = useRef<HTMLInputElement>(null)
   const { user } = useAuth()
-  const { userVote, upvotes, downvotes, handleVote } = usePostSync(
+  const { userVote, upvotes, downvotes, handleVote, commentCount, syncCommentCount } = usePostSync(
     post.id,
     post.upvotes, 
-    post.downvotes
+    post.downvotes,
+    post.comments
   )  // Computed values
   const images = post.images || []
   const hasImages = images.length > 0
@@ -192,20 +193,26 @@ export default function ImagePostModal({
       if (response.ok) {
         const data = await response.json()
         // Replace temp comment with real comment
-        setComments(prev => prev.map(comment => 
-          comment.id === tempComment.id 
-            ? {
-                ...data.comment,
-                author: data.comment.users?.name || "Anonymous",
-                authorImage: data.comment.users?.image || "/placeholder-user.jpg",
-                authorRank: data.comment.users?.rank || "NEW_MEMBER"
-              }
-            : comment
-        ))
+        setComments(prev => {
+          const updatedComments = prev.map(comment => 
+            comment.id === tempComment.id 
+              ? {
+                  ...data.comment,
+                  author: data.comment.users?.name || "Anonymous",
+                  authorImage: data.comment.users?.image || "/placeholder-user.jpg",
+                  authorRank: data.comment.users?.rank || "NEW_MEMBER"
+                }
+              : comment
+          )
+          // Sync comment count with the updated length
+          syncCommentCount(updatedComments.length)
+          return updatedComments
+        })
+        
         onCommentAdded?.()
         
         // Update comment count in parent - new comment added
-        onCommentCountUpdate?.(comments.length)
+        onCommentCountUpdate?.(comments.length + 1)
       } else {
         // Remove temp comment on error
         setComments(prev => prev.filter(comment => comment.id !== tempComment.id))
@@ -285,30 +292,43 @@ export default function ImagePostModal({
       if (response.ok) {
         const data = await response.json()
         // Replace temp reply with real reply
-        setComments(prev => prev.map(comment => 
-          comment.id === replyTo 
-            ? {
-                ...comment,
-                replies: comment.replies?.map((reply: Comment) => 
-                  reply.id === tempReply.id 
-                    ? {
-                        ...data.comment,
-                        author: data.comment.users?.name || "Anonymous",
-                        authorImage: data.comment.users?.image || "/placeholder-user.jpg",
-                        authorRank: data.comment.users?.rank || "NEW_MEMBER"
-                      } as Comment
-                    : reply
-                ) || []
-              }
-            : comment
-        ))
+        setComments(prev => {
+          const updatedComments = prev.map(comment => 
+            comment.id === replyTo 
+              ? {
+                  ...comment,
+                  replies: comment.replies?.map((reply: Comment) => 
+                    reply.id === tempReply.id 
+                      ? {
+                          ...data.comment,
+                          author: data.comment.users?.name || "Anonymous",
+                          authorImage: data.comment.users?.image || "/placeholder-user.jpg",
+                          authorRank: data.comment.users?.rank || "NEW_MEMBER"
+                        } as Comment
+                      : reply
+                  ) || []
+                }
+              : comment
+          )
+          
+          // Calculate total comments including replies after adding the new reply
+          const totalComments = updatedComments.reduce((total, comment) => {
+            return total + 1 + (comment.replies?.length || 0)
+          }, 0)
+          
+          // Instantly sync the new comment count
+          syncCommentCount(totalComments)
+          
+          return updatedComments
+        })
+        
         onCommentAdded?.()
         
         // Update comment count in parent - new reply added
         const totalComments = comments.reduce((total, comment) => {
           return total + 1 + (comment.replies?.length || 0)
         }, 0)
-        onCommentCountUpdate?.(totalComments)
+        onCommentCountUpdate?.(totalComments + 1) // +1 for the new reply
       } else {
         // Remove temp reply on error
         setComments(prev => prev.map(comment => 
@@ -686,15 +706,27 @@ export default function ImagePostModal({
       })
       
       if (response.ok) {
-        setComments(prev => prev.map(comment => {
-          if (comment.id === commentId) return null
+        setComments(prev => {
+          const updatedComments = prev.map(comment => {
+            if (comment.id === commentId) return null
+            
+            if (comment.replies && comment.replies.length > 0) {
+              comment.replies = comment.replies.filter((reply: Comment) => reply.id !== commentId)
+            }
+            
+            return comment
+          }).filter(Boolean) as Comment[]
           
-          if (comment.replies && comment.replies.length > 0) {
-            comment.replies = comment.replies.filter((reply: Comment) => reply.id !== commentId)
-          }
+          // Calculate total comments including replies
+          const totalComments = updatedComments.reduce((total, comment) => {
+            return total + 1 + (comment.replies?.length || 0)
+          }, 0)
           
-          return comment
-        }).filter(Boolean) as Comment[])
+          // Instantly sync the new comment count after deletion
+          syncCommentCount(totalComments)
+          
+          return updatedComments
+        })
       } else {
         console.error("Failed to delete comment:", response.status)
         alert("Failed to delete comment. Please try again.")
@@ -841,8 +873,8 @@ export default function ImagePostModal({
                     </span>
                   )}
                 </div>
-                {comments.length > 0 && (
-                  <span>{comments.length} comments</span>
+                {commentCount > 0 && (
+                  <span>{commentCount} comments</span>
                 )}
               </div>
             </div>

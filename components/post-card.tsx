@@ -89,15 +89,14 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }
   const canDelete = useMemo(() => isAuthor || isAdmin, [isAuthor, isAdmin])
   
   // Use the new synchronized voting hook for instant updates
-  const { userVote, upvotes, downvotes, handleVote, syncState } = usePostSync(post.id, post.upvotes, post.downvotes)
+  const { userVote, upvotes, downvotes, handleVote, syncState, commentCount, syncCommentCount } = usePostSync(post.id, post.upvotes, post.downvotes, post.comments)
   
   // Local state
   const [modalOpen, setModalOpen] = useState(false)
   const [modalImageIndex, setModalImageIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [commentCount, setCommentCount] = useState(post.comments)
 
-  // No need for separate modal vote states - everything syncs instantly now!
+  // Everything syncs instantly now - votes AND comments!
 
   // Memoized callbacks
   const handleDelete = useCallback(async () => {
@@ -135,14 +134,14 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }
 
   const handleCommentAdded = useCallback(() => {
     const newCount = commentCount + 1
-    setCommentCount(newCount)
+    syncCommentCount(newCount)
     onCommentCountChange?.(post.id, newCount)
-  }, [commentCount, onCommentCountChange, post.id])
+  }, [commentCount, syncCommentCount, onCommentCountChange, post.id])
 
   const handleCommentCountUpdate = useCallback((newCount: number) => {
-    setCommentCount(newCount)
+    syncCommentCount(newCount)
     onCommentCountChange?.(post.id, newCount)
-  }, [onCommentCountChange, post.id])
+  }, [syncCommentCount, onCommentCountChange, post.id])
 
   const openModal = useCallback((imgIdx: number = 0) => {
     setModalImageIndex(imgIdx)

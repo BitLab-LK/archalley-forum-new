@@ -72,7 +72,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   
   const { user } = useAuth()
-  const { userVote, upvotes, downvotes, handleVote } = usePostSync(post.id, post.upvotes, post.downvotes)
+  const { userVote, upvotes, downvotes, handleVote, commentCount, syncCommentCount } = usePostSync(post.id, post.upvotes, post.downvotes, post.comments)
   
   // Sync vote changes with parent component
   useEffect(() => {
@@ -172,6 +172,8 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
         const data = await fetch(`/api/comments?postId=${post.id}`).then(res => res.json())
         if (Array.isArray(data.comments)) {
           setComments(data.comments)
+          // Sync the new comment count
+          syncCommentCount(data.comments.length)
         }
         onCommentAdded?.()
       } else {
@@ -281,7 +283,19 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
           })
         }
         
-        setComments(prev => removeCommentRecursively(prev))
+        setComments(prev => {
+          const updatedComments = removeCommentRecursively(prev)
+          
+          // Calculate total comments including replies after deletion
+          const totalComments = updatedComments.reduce((total, comment) => {
+            return total + 1 + (comment.replies?.length || 0)
+          }, 0)
+          
+          // Instantly sync the new comment count
+          syncCommentCount(totalComments)
+          
+          return updatedComments
+        })
       }
     } catch (error) {
       console.error("Error deleting comment:", error)
@@ -389,7 +403,19 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
           })
         }
         
-        setComments(prev => removeOptimisticAndAddReal(prev))
+        setComments(prev => {
+          const updatedComments = removeOptimisticAndAddReal(prev)
+          
+          // Calculate total comments including replies after adding the new reply
+          const totalComments = updatedComments.reduce((total, comment) => {
+            return total + 1 + (comment.replies?.length || 0)
+          }, 0)
+          
+          // Instantly sync the new comment count
+          syncCommentCount(totalComments)
+          
+          return updatedComments
+        })
         onCommentAdded?.()
       } else {
         // Remove optimistic reply on error and restore input
@@ -984,8 +1010,8 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                       </span>
                     )}
                   </div>
-                  {post.comments > 0 && (
-                    <span>{post.comments} comments</span>
+                  {commentCount > 0 && (
+                    <span>{commentCount} comments</span>
                   )}
                 </div>
               </div>
