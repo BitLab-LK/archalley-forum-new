@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo, memo } from "react"
+import { useState, useCallback, useMemo, memo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Flag, Pin, CheckCircle, Trash2, MoreHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { usePostVote } from "@/hooks/use-post-vote"
+import { usePostSync } from "@/hooks/use-post-sync"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,22 +88,16 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }
   const isAdmin = useMemo(() => user?.role === "ADMIN", [user?.role])
   const canDelete = useMemo(() => isAuthor || isAdmin, [isAuthor, isAdmin])
   
-  // Use the same voting hook as the modals
-  const { userVote, upvotes, downvotes, handleVote } = usePostVote(post.id, null, post.upvotes, post.downvotes)
+  // Use the new synchronized voting hook for instant updates
+  const { userVote, upvotes, downvotes, handleVote, syncState } = usePostSync(post.id, post.upvotes, post.downvotes)
   
   // Local state
   const [modalOpen, setModalOpen] = useState(false)
   const [modalImageIndex, setModalImageIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [modalUpvotes, setModalUpvotes] = useState(upvotes)
-  const [modalDownvotes, setModalDownvotes] = useState(downvotes)
   const [commentCount, setCommentCount] = useState(post.comments)
 
-  // Update modal vote state when post card votes change
-  useEffect(() => {
-    setModalUpvotes(upvotes)
-    setModalDownvotes(downvotes)
-  }, [upvotes, downvotes])
+  // No need for separate modal vote states - everything syncs instantly now!
 
   // Memoized callbacks
   const handleDelete = useCallback(async () => {
@@ -156,18 +150,18 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }
   }, [])
 
   const handleModalVoteUpdate = useCallback((newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => {
-    setModalUpvotes(newUpvotes)
-    setModalDownvotes(newDownvotes)
+    // Use the instant sync function for immediate updates across all instances
+    syncState(newUpvotes, newDownvotes, newUserVote)
     
-    setTimeout(() => {
-      console.log("Modal vote update - ensuring sync:", {
-        modalVotes: { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote },
-        cardVotes: { upvotes, downvotes, userVote }
-      })
-    }, 100)
-  }, [upvotes, downvotes, userVote])
+    console.log("Modal vote update - instant sync:", {
+      newVotes: { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
+    })
+  }, [syncState])
 
-  // Loading state
+  // Enhanced vote handler that syncs with modals
+  const handleCardVote = useCallback(async (type: "up" | "down") => {
+    await handleVote(type)
+  }, [handleVote])
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-40">
@@ -367,7 +361,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleVote("up")}
+                  onClick={() => handleCardVote("up")}
                   className={cn(
                     "text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3",
                     userVote === "up" && "text-primary"
@@ -379,7 +373,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleVote("down")}
+                  onClick={() => handleCardVote("down")}
                   className={cn(
                     "text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-3",
                     userVote === "down" && "text-red-500"
@@ -440,8 +434,8 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }
         onClose={() => setModalOpen(false)} 
         post={{
           ...post,
-          upvotes: modalUpvotes,
-          downvotes: modalDownvotes,
+          upvotes: upvotes,
+          downvotes: downvotes,
           comments: commentCount
         }} 
         initialImage={modalImageIndex} 

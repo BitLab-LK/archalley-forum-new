@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import { usePostVote } from "@/hooks/use-post-vote"
+import { usePostSync } from "@/hooks/use-post-sync"
 import { useAuth } from "@/lib/auth-context"
 
 // Types
@@ -95,14 +95,11 @@ export default function ImagePostModal({
   // Refs and hooks
   const commentInputRef = useRef<HTMLInputElement>(null)
   const { user } = useAuth()
-  const { userVote, upvotes, downvotes, handleVote } = usePostVote(
-    post.id, 
-    null, 
+  const { userVote, upvotes, downvotes, handleVote } = usePostSync(
+    post.id,
     post.upvotes, 
     post.downvotes
-  )
-  
-  // Computed values
+  )  // Computed values
   const images = post.images || []
   const hasImages = images.length > 0
 

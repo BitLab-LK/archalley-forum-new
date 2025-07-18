@@ -47,10 +47,22 @@ export function usePostVote(postId: string, initialVote: "up" | "down" | null, i
       setUserVote(data.userVote?.toLowerCase() as "up" | "down" | null)
     }
     
+    // Handle vote synchronization between card and modal
+    const voteSyncHandler = (data: { postId: string; upvotes: number; downvotes: number; userVote: "up" | "down" | null }) => {
+      if (data.postId === postId) {
+        console.log(`🔄 Vote sync for post ${postId}:`, data)
+        setUpvotes(data.upvotes)
+        setDownvotes(data.downvotes)
+        setUserVote(data.userVote)
+      }
+    }
+    
     socket.on("vote-update", voteUpdateHandler)
+    socket.on("vote-sync", voteSyncHandler)
     
     return () => {
       socket?.off("vote-update", voteUpdateHandler)
+      socket?.off("vote-sync", voteSyncHandler)
     }
   }, [postId, user?.id])
 
@@ -120,5 +132,5 @@ export function usePostVote(postId: string, initialVote: "up" | "down" | null, i
     }
   }
 
-  return { userVote, upvotes, downvotes, handleVote }
+  return { userVote, upvotes, downvotes, handleVote, socket }
 } 

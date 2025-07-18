@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Globe, Trash2, MoreHorizontal } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { cn } from "@/lib/utils"
-import { usePostVote } from "@/hooks/use-post-vote"
+import { usePostSync } from "@/hooks/use-post-sync"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,7 +72,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   
   const { user } = useAuth()
-  const { userVote, upvotes, downvotes, handleVote } = usePostVote(post.id, null, post.upvotes, post.downvotes)
+  const { userVote, upvotes, downvotes, handleVote } = usePostSync(post.id, post.upvotes, post.downvotes)
   
   // Sync vote changes with parent component
   useEffect(() => {
