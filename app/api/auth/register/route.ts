@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import crypto from "crypto"
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
     const { name, email, password, company, profession, bio } = registerSchema.parse(body)
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.users.findUnique({
       where: { email },
     })
 
@@ -30,14 +31,16 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 12)
 
     // Create user
-    const user = await prisma.user.create({
+    const user = await prisma.users.create({
       data: {
+        id: crypto.randomUUID(),
         name,
         email,
         password: hashedPassword,
         company,
         profession,
         bio,
+        updatedAt: new Date(),
       },
     })
 

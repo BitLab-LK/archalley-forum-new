@@ -12,7 +12,7 @@ export async function GET() {
     }
 
     // Get recent users with their roles and join dates
-    const users = await prisma.user.findMany({
+    const users = await prisma.users.findMany({
       select: {
         id: true,
         name: true,
@@ -20,11 +20,11 @@ export async function GET() {
         role: true,
         image: true,
         createdAt: true,
-        lastLoginAt: true,
+        lastActiveAt: true,
         _count: {
           select: {
-            posts: true,
-            comments: true
+            Post: true,
+            Comment: true
           }
         }
       },
@@ -42,9 +42,9 @@ export async function GET() {
       role: user.role,
       image: user.image,
       joinDate: user.createdAt.toISOString().split("T")[0],
-      lastLogin: user.lastLoginAt?.toISOString().split("T")[0] || "Never",
-      postCount: user._count.posts,
-      commentCount: user._count.comments
+      lastLogin: user.lastActiveAt?.toISOString().split("T")[0] || "Never",
+      postCount: user._count.Post,
+      commentCount: user._count.Comment
     }))
 
     return NextResponse.json({ users: formattedUsers })
@@ -71,12 +71,12 @@ export async function PATCH(req: Request) {
     }
 
     // Validate role
-    if (!["USER", "MODERATOR", "ADMIN"].includes(role)) {
+    if (!["MEMBER", "MODERATOR", "ADMIN"].includes(role)) {
       return new NextResponse("Invalid role", { status: 400 })
     }
 
     // Update user role
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await prisma.users.update({
       where: { id: userId },
       data: { role },
       select: {
@@ -116,7 +116,7 @@ export async function DELETE(req: Request) {
     await prisma.$transaction([
       prisma.comment.deleteMany({ where: { authorId: userId } }),
       prisma.post.deleteMany({ where: { authorId: userId } }),
-      prisma.user.delete({ where: { id: userId } })
+      prisma.users.delete({ where: { id: userId } })
     ])
 
     return new NextResponse(null, { status: 204 })
@@ -124,4 +124,4 @@ export async function DELETE(req: Request) {
     console.error("[ADMIN_USERS_DELETE]", error)
     return new NextResponse("Internal Error", { status: 500 })
   }
-} 
+}

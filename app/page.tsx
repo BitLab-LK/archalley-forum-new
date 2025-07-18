@@ -90,12 +90,38 @@ function HomePageContent() {
     }
 
     try {
+      console.log("=== FRONTEND DELETE REQUEST ===")
+      console.log("Current user:", {
+        id: user?.id,
+        email: user?.email,
+        role: user?.role,
+        name: user?.name
+      })
+      console.log("Deleting post ID:", postId)
+      
       const response = await fetch(`/api/posts/${postId}`, {
         method: "DELETE",
+        credentials: "include", // Ensure cookies/session are sent
+        headers: {
+          "Content-Type": "application/json",
+        },
       })
 
+      console.log("Response status:", response.status)
+      console.log("Response ok:", response.ok)
+      
+      const responseBody = await response.text()
+      console.log("Response body:", responseBody)
+
       if (!response.ok) {
-        throw new Error("Failed to delete post")
+        let errorData
+        try {
+          errorData = JSON.parse(responseBody)
+          console.log("Parsed error data:", errorData)
+        } catch (e) {
+          console.log("Could not parse response as JSON")
+        }
+        throw new Error(`Failed to delete post: ${response.status} - ${errorData?.error || responseBody}`)
       }
 
       // Remove the deleted post from the state

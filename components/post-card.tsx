@@ -88,6 +88,7 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
   // State to track modal vote updates for better synchronization
   const [modalUpvotes, setModalUpvotes] = useState(upvotes)
   const [modalDownvotes, setModalDownvotes] = useState(downvotes)
+  const [commentCount, setCommentCount] = useState(post.comments)
 
   // Update modal vote state when post card votes change
   useEffect(() => {
@@ -245,8 +246,16 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
   }
 
   const handleCommentAdded = () => {
-    // Refresh the post's comment count by fetching updated post data
-    onCommentCountChange?.(post.id, post.comments + 1)
+    // Update local comment count immediately
+    setCommentCount(prev => prev + 1)
+    // Also notify parent if callback exists
+    onCommentCountChange?.(post.id, commentCount + 1)
+  }
+
+  const handleCommentCountUpdate = (newCount: number) => {
+    // Update comment count from modal
+    setCommentCount(newCount)
+    onCommentCountChange?.(post.id, newCount)
   }
 
   const openModal = (imgIdx = 0) => {
@@ -378,7 +387,7 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
                 className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3"
               >
                 <MessageCircle className="w-4 h-4 mr-1" />
-                {post.comments} Comments
+                {commentCount} Comments
               </Button>
 
               <Button
@@ -420,10 +429,12 @@ export default function PostCard({ post, onDelete, onCommentCountChange }: PostC
         post={{
           ...post,
           upvotes: modalUpvotes,
-          downvotes: modalDownvotes
+          downvotes: modalDownvotes,
+          comments: commentCount
         }} 
         initialImage={modalImageIndex} 
         onCommentAdded={handleCommentAdded}
+        onCommentCountUpdate={handleCommentCountUpdate}
         onVoteUpdate={(newUpvotes, newDownvotes, newUserVote) => {
           // Update modal vote state when voting happens in the modal
           setModalUpvotes(newUpvotes)

@@ -12,7 +12,7 @@ export async function GET() {
     }
 
     // Get total users
-    const totalUsers = await prisma.user.count()
+    const totalUsers = await prisma.users.count()
 
     // Get total posts
     const totalPosts = await prisma.post.count()
@@ -21,9 +21,9 @@ export async function GET() {
     const totalComments = await prisma.comment.count()
 
     // Get active users (users who have logged in within the last 24 hours)
-    const activeUsers = await prisma.user.count({
+    const activeUsers = await prisma.users.count({
       where: {
-        lastLoginAt: {
+        lastActiveAt: {
           gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
         }
       }

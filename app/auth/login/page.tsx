@@ -51,10 +51,25 @@ function LoginPageContent() {
 
   const handleSocialLogin = async (provider: string) => {
     setIsLoading(true)
+    setError("")
+    
     try {
-      await signIn(provider, { callbackUrl })
+      const result = await signIn(provider, { 
+        callbackUrl,
+        redirect: false 
+      })
+      
+      if (result?.error) {
+        setError(`Failed to sign in with ${provider}. Please try again.`)
+        console.error('Social login error:', result.error)
+      } else if (result?.url) {
+        // Successful login, redirect
+        window.location.href = result.url
+      }
     } catch (error) {
-      setError("An error occurred. Please try again.")
+      console.error('Social login error:', error)
+      setError("An error occurred during sign in. Please try again.")
+    } finally {
       setIsLoading(false)
     }
   }

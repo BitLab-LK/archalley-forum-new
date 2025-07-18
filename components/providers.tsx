@@ -6,7 +6,12 @@ import { SessionProvider } from "next-auth/react"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider>
+    <SessionProvider 
+      // Refetch session every 5 minutes
+      refetchInterval={5 * 60}
+      // Re-fetch session if window is focused
+      refetchOnWindowFocus={true}
+    >
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <AuthProvider>
           {children}
@@ -14,4 +19,4 @@ export function Providers({ children }: { children: React.ReactNode }) {
       </ThemeProvider>
     </SessionProvider>
   )
-} 
+}

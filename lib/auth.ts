@@ -1,13 +1,14 @@
 import type { NextAuthOptions } from "next-auth"
-import { PrismaAdapter } from "@auth/prisma-adapter"
 import GoogleProvider from "next-auth/providers/google"
 import FacebookProvider from "next-auth/providers/facebook"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import crypto from "crypto"
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
+  // Removed PrismaAdapter to avoid conflicts with custom signIn callback
+  // adapter: PrismaAdapter(prisma) as any,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -28,7 +29,7 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const user = await prisma.user.findUnique({
+        const user = await prisma.users.findUnique({
           where: {
             email: credentials.email,
           },
@@ -67,7 +68,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        const dbUser = await prisma.user.findUnique({
+        const dbUser = await prisma.users.findUnique({
           where: { email: user.email! },
         })
 
@@ -75,22 +76,77 @@ export const authOptions: NextAuthOptions = {
           token.role = dbUser.role
           token.rank = dbUser.rank
           token.isVerified = dbUser.isVerified
+          token.id = dbUser.id
         }
       }
       return token
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.sub!
+        session.user.id = token.id as string || token.sub!
         session.user.role = token.role as any
         session.user.rank = token.rank as any
         session.user.isVerified = token.isVerified as boolean
       }
       return session
     },
+    async signIn({ user, account }) {
+      console.log("=== SIGNIN CALLBACK ===")
+      console.log("User:", user?.email, "Provider:", account?.provider)
+      
+      if (account?.provider === "google" || account?.provider === "facebook") {
+        try {
+          // Check if user exists
+          const existingUser = await prisma.users.findUnique({
+            where: { email: user.email! },
+          })
+
+          if (!existingUser) {
+            console.log("Creating new social user:", user.email)
+            // Create new user for social login with all required fields
+            const newUser = await prisma.users.create({
+              data: {
+                id: crypto.randomUUID(),
+                email: user.email!,
+                name: user.name || '',
+                image: user.image || null,
+                role: 'MEMBER',
+                rank: 'NEW_MEMBER',
+                isVerified: true,
+                updatedAt: new Date(),
+              },
+            })
+            console.log("Successfully created new social user:", newUser.email)
+          } else {
+            console.log("Existing social user signing in:", existingUser.email)
+          }
+          
+          console.log("Sign-in successful, returning true")
+          return true
+        } catch (error) {
+          console.error("=== SIGNIN ERROR ===")
+          console.error("Error during social sign in:", error)
+          console.error("Error details:", error instanceof Error ? error.message : error)
+          console.error("==================")
+          return false
+        }
+      }
+      
+      console.log("Non-social sign-in, returning true")
+      return true
+    },
   },
   pages: {
     signIn: "/auth/login",
+    error: "/auth/error", // Error code passed in query string as ?error=
+  },
+  events: {
+    async signIn({ user, account, isNewUser }) {
+      console.log('SignIn event:', { user: user.email, provider: account?.provider, isNewUser })
+    },
+    async signOut({ session, token }) {
+      console.log('SignOut event:', { userEmail: session?.user?.email || token?.email })
+    },
   },
   // Security configurations
   secret: process.env.NEXTAUTH_SECRET,

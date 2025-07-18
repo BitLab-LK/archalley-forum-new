@@ -44,6 +44,7 @@ interface ImagePostModalProps {
   open: boolean
   onClose: () => void
   onCommentAdded?: () => void
+  onCommentCountUpdate?: (newCount: number) => void
   onVoteUpdate?: (upvotes: number, downvotes: number, userVote: "up" | "down" | null) => void
   post: {
     id: string
@@ -77,6 +78,7 @@ export default function ImagePostModal({
   open, 
   onClose, 
   onCommentAdded, 
+  onCommentCountUpdate,
   onVoteUpdate, 
   post, 
   initialImage = 0 
@@ -129,6 +131,12 @@ export default function ImagePostModal({
       .then(data => {
         if (Array.isArray(data.comments)) {
           setComments(data.comments)
+          
+          // Calculate and sync the actual comment count with parent
+          const totalComments = data.comments.reduce((total: number, comment: any) => {
+            return total + 1 + (comment.replies?.length || 0)
+          }, 0)
+          onCommentCountUpdate?.(totalComments)
         }
       })
       .catch(error => {
@@ -198,6 +206,9 @@ export default function ImagePostModal({
             : comment
         ))
         onCommentAdded?.()
+        
+        // Update comment count in parent - new comment added
+        onCommentCountUpdate?.(comments.length)
       } else {
         // Remove temp comment on error
         setComments(prev => prev.filter(comment => comment.id !== tempComment.id))
@@ -295,6 +306,12 @@ export default function ImagePostModal({
             : comment
         ))
         onCommentAdded?.()
+        
+        // Update comment count in parent - new reply added
+        const totalComments = comments.reduce((total, comment) => {
+          return total + 1 + (comment.replies?.length || 0)
+        }, 0)
+        onCommentCountUpdate?.(totalComments)
       } else {
         // Remove temp reply on error
         setComments(prev => prev.map(comment => 

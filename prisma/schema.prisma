@@ -20,7 +20,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-  users             users   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              users   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -69,7 +69,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  users        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {

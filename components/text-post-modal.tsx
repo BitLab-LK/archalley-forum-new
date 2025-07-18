@@ -17,6 +17,7 @@ interface TextPostModalProps {
   open: boolean
   onClose: () => void
   onCommentAdded?: () => void
+  onCommentCountUpdate?: (newCount: number) => void
   onVoteUpdate?: (upvotes: number, downvotes: number, userVote: "up" | "down" | null) => void
   post: {
     id: string
@@ -62,7 +63,7 @@ interface Comment {
   replies: Comment[]
 }
 
-export default function TextPostModal({ open, onClose, onCommentAdded, onVoteUpdate, post }: TextPostModalProps) {
+export default function TextPostModal({ open, onClose, onCommentAdded, onCommentCountUpdate, onVoteUpdate, post }: TextPostModalProps) {
   const [comments, setComments] = useState<Comment[]>([])
   const [commentInput, setCommentInput] = useState("")
   const [replyInput, setReplyInput] = useState("")
