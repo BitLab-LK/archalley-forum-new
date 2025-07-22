@@ -63,7 +63,7 @@ interface Comment {
   replies: Comment[]
 }
 
-export default function TextPostModal({ open, onClose, onCommentAdded, onCommentCountUpdate, onVoteUpdate, post }: TextPostModalProps) {
+export default function TextPostModal({ open, onClose, onCommentAdded, onCommentCountUpdate: _onCommentCountUpdate, onVoteUpdate, post }: TextPostModalProps) {
   const [comments, setComments] = useState<Comment[]>([])
   const [commentInput, setCommentInput] = useState("")
   const [replyInput, setReplyInput] = useState("")

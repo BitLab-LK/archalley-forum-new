@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { NextRequest } from "next/server"
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ postId: string }> | { postId: string } }) {
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ postId: string }> | { postId: string } }) {
   try {
     // Await params if it's a Promise (Next.js 15+ compatibility)
     const resolvedParams = await Promise.resolve(params)

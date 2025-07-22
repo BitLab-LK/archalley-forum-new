@@ -4,10 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "tsx scripts/ensure-upload-dir.ts && next dev",
-    "build": "tsx scripts/ensure-upload-dir.ts && next build",
+    "build": "tsx scripts/ensure-upload-dir.ts && prisma generate && next build",
     "start": "node server.js",
     "lint": "next lint",
-    "seed": "ts-node --esm prisma/seed.ts"
+    "seed": "ts-node --esm prisma/seed.ts",
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "prisma db seed"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.9.1",

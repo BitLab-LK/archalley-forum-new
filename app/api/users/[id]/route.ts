@@ -18,10 +18,11 @@ const updateUserSchema = z.object({
   instagramUrl: z.string().optional(),
 })
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const user = await prisma.users.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         name: true,

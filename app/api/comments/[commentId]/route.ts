@@ -5,14 +5,14 @@ import { prisma } from "@/lib/prisma"
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { commentId: string } }
+  { params }: { params: Promise<{ commentId: string }> }
 ) {
   const session = await getServerSession(authOptions)
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { commentId } = params
+  const { commentId } = await params
 
   try {
     // Find the comment

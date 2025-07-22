@@ -1,5 +1,5 @@
 // Quick test to verify the new sync system
-import { usePostSync } from '../hooks/use-post-sync'
+// import { usePostSync } from '../hooks/use-post-sync'
 
 // Test the sync functionality
 console.log("Testing instant vote synchronization...")

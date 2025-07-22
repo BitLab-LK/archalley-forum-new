@@ -9,9 +9,9 @@ const voteSchema = z.object({
 })
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     commentId: string
-  }
+  }>
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
     const body = await request.json()
     const { voteType } = voteSchema.parse(body)
-    const commentId = params.commentId
+    const { commentId } = await params
     const userId = session.user.id
 
     // Validate inputs
@@ -76,7 +76,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 })
     }
     console.error("Comment vote error:", error)
-    console.error("Comment ID:", params.commentId)
+    const { commentId } = await params
+    console.error("Comment ID:", commentId)
     console.error("User ID:", session?.user?.id)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession(authOptions)
-    const commentId = params.commentId
+    const { commentId } = await params
     // Get vote counts
     const [upvotes, downvotes] = await Promise.all([
       prisma.votes.count({ where: { commentId, type: "UP" } }),

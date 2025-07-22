@@ -5,22 +5,21 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    const postId = params.postId
+    const { postId } = await params
 
     // Check if post exists
     const post = await prisma.post.findUnique({
       where: { id: postId },
       include: {
-        author: {
+        users: {
           select: {
             name: true
           }
         },
-        category: {
+        categories: {
           select: {
             name: true
           }
@@ -46,7 +45,7 @@ export async function POST(
     const shareUrl = `${request.headers.get("origin")}/posts/${postId}`
 
     // Generate share text
-    const shareText = `${post.author.name} posted in ${post.category.name}: ${post.content.substring(0, 100)}${post.content.length > 100 ? "..." : ""}`
+    const shareText = `${post.users.name} posted in ${post.categories.name}: ${post.content.substring(0, 100)}${post.content.length > 100 ? "..." : ""}`
 
     return NextResponse.json({
       shareUrl,
@@ -61,11 +60,11 @@ export async function POST(
 
 // Get share count for a post
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { postId: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
-    const postId = params.postId
+    const { postId } = await params
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
