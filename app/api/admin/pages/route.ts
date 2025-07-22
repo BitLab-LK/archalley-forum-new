@@ -50,6 +50,7 @@ export async function POST(req: Request) {
     if (existingPage) {
       return new NextResponse("Page with this slug already exists", { status: 400 })
     }
+    
 
     const page = await prisma.pages.create({
       data: {

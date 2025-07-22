@@ -72,7 +72,6 @@ export async function POST(request: NextRequest) {
       }
 
       let buffer = Buffer.from(await file.arrayBuffer()) as Buffer
-      let outputExt = "webp"
       let outputMime = "image/webp"
       let sanitizedFilename = sanitizeFilename(file.name)
       let filenameBase = `${Date.now()}-${sanitizedFilename}`.replace(/\.[^.]+$/, "")
@@ -131,7 +130,6 @@ export async function POST(request: NextRequest) {
             
             if (jpgBuffer.length <= maxSize) {
               buffer = jpgBuffer as Buffer
-              outputExt = "jpg"
               outputMime = "image/jpeg"
               filename = `${filenameBase}.jpg`
               outputPath = join(process.cwd(), "public/uploads", filename)
@@ -178,7 +176,6 @@ export async function POST(request: NextRequest) {
           
           if (compressedBuffer.length <= maxSize) {
             buffer = compressedBuffer as Buffer
-            outputExt = "jpg"
             outputMime = "image/jpeg"
             filename = `${filenameBase}.jpg`
             outputPath = join(process.cwd(), "public/uploads", filename)
