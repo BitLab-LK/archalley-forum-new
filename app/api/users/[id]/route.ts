@@ -69,15 +69,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { id } = await params
     // Check if user can update this profile
-    if (session.user.id !== params.id && session.user.role !== "ADMIN") {
+    if (session.user.id !== id && session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -85,7 +86,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const updateData = updateUserSchema.parse(body)
 
     const user = await prisma.users.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       select: {
         id: true,

@@ -10,7 +10,7 @@ const voteSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -20,7 +20,7 @@ export async function POST(
 
     const body = await request.json()
     const { type } = voteSchema.parse(body)
-    const postId = params.postId
+    const { postId } = await params
     const userId = session.user.id
 
     // Check if post exists
@@ -81,11 +81,11 @@ export async function POST(
 // Get vote counts for a post
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
-    const postId = params.postId
+    const { postId } = await params
 
     // Get vote counts
     const [upvotes, downvotes] = await Promise.all([
