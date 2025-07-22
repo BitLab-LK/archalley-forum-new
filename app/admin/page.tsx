@@ -14,7 +14,6 @@ import { Users, MessageSquare, TrendingUp, Eye, Edit, Trash2, Save } from "lucid
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface DashboardStats {
   totalUsers: number
