@@ -16,13 +16,13 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     const [notifications, total] = await Promise.all([
-      prisma.notification.findMany({
+      prisma.notifications.findMany({
         where: { userId: session.user.id },
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
       }),
-      prisma.notification.count({
+      prisma.notifications.count({
         where: { userId: session.user.id },
       }),
     ])
@@ -52,7 +52,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { notificationIds, markAsRead } = body
 
-    await prisma.notification.updateMany({
+    await prisma.notifications.updateMany({
       where: {
         id: { in: notificationIds },
         userId: session.user.id,
