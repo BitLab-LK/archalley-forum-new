@@ -61,7 +61,7 @@ export class WebSocketManager {
 
       // Validate token and get user info
       // This is a simplified version - in production, use proper JWT validation
-      const user = await prisma.user.findFirst({
+      const user = await prisma.users.findFirst({
         where: { id: token },
         select: { id: true, role: true }
       })

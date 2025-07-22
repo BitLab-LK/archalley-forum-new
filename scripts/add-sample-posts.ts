@@ -8,12 +8,12 @@ async function addSamplePosts() {
 
     // Get a category and user for the posts
     const [designCategory, businessCategory, careerCategory] = await Promise.all([
-      prisma.category.findFirst({ where: { slug: 'design' } }),
-      prisma.category.findFirst({ where: { slug: 'business' } }),
-      prisma.category.findFirst({ where: { slug: 'career' } }),
+      prisma.categories.findFirst({ where: { slug: 'design' } }),
+      prisma.categories.findFirst({ where: { slug: 'business' } }),
+      prisma.categories.findFirst({ where: { slug: 'career' } }),
     ])
 
-    const adminUser = await prisma.user.findFirst({ where: { email: 'admin@archalley.com' } })
+    const adminUser = await prisma.users.findFirst({ where: { email: 'admin@archalley.com' } })
 
     if (!designCategory || !businessCategory || !careerCategory || !adminUser) {
       throw new Error('Required category or user not found')
@@ -74,18 +74,29 @@ async function addSamplePosts() {
       const { attachments, ...postContent } = postData
       const post = await prisma.post.create({
         data: {
+          id: crypto.randomUUID(),
+          updatedAt: new Date(),
           ...postContent,
-          attachments: attachments
-            ? {
-                create: attachments,
-              }
-            : undefined,
         },
       })
       console.log(`Created post: ${post.id}`)
 
+      // Create attachments if any
+      if (attachments && attachments.length > 0) {
+        for (const attachment of attachments) {
+          await prisma.attachments.create({
+            data: {
+              id: crypto.randomUUID(),
+              createdAt: new Date(),
+              ...attachment,
+              postId: post.id,
+            },
+          })
+        }
+      }
+
       // Update category post count
-      await prisma.category.update({
+      await prisma.categories.update({
         where: { id: postData.categoryId },
         data: { postCount: { increment: 1 } },
       })

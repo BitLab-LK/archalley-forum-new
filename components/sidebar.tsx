@@ -141,7 +141,7 @@ export default function Sidebar() {
           ) : trendingPosts.length === 0 ? (
             <div className="text-sm text-gray-500">No trending posts found.</div>
           ) : (
-            trendingPosts.map((post, index) => (
+            trendingPosts.map((post) => (
               <div key={post.id} className="space-y-2">
                 <h4 className="text-sm font-medium line-clamp-2">{post.content}</h4>
                 <div className="flex items-center justify-between text-xs text-gray-500">
@@ -163,8 +163,8 @@ export default function Sidebar() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {topContributors.map((contributor, index) => (
-            <div key={index} className="flex items-center space-x-3">
+          {topContributors.map((contributor) => (
+            <div key={contributor.name} className="flex items-center space-x-3">
               <Avatar className="w-8 h-8">
                 <AvatarImage src={contributor.avatar || "/placeholder.svg"} />
                 <AvatarFallback>{contributor.name[0]}</AvatarFallback>

@@ -1,28 +1,20 @@
 "use client"
 
-import React, { useState, useRef, useEffect, ReactNode, FormEvent, ChangeEvent } from "react"
+import React, { useState, useRef, FormEvent, ChangeEvent } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/lib/auth-context"
-import { Image as ImageIcon, Send, X, Loader2 } from "lucide-react"
+import { Image as ImageIcon, X, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { cn } from "@/lib/utils"
 
-interface Category {
-  id: string
-  name: string
-  color: string
-  icon: string
-  slug: string
-}
+
 
 interface PostCreatorProps {
   onPostCreated: () => void
@@ -49,7 +41,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [suggestedTags, setSuggestedTags] = useState<string[]>([])
+  const [, setSuggestedTags] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [aiProgress, setAiProgress] = useState(0)
   const [aiStatus, setAiStatus] = useState<string | null>(null)
@@ -97,7 +89,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       }
 
       const classification = await classificationResponse.json() as AIClassification
-      const { category: classifiedCategory, tags, confidence, originalLanguage, translatedContent } = classification
+      const { category: classifiedCategory, tags, originalLanguage, translatedContent } = classification
       
       setAiProgress(60)
       setAiStatus(originalLanguage !== "English" 
