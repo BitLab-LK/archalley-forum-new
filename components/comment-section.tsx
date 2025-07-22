@@ -70,6 +70,7 @@ export default function CommentSection({ postId, comments: initialComments, canM
         s.disconnect()
       }
     }
+    return undefined
   }, [user, postId])
 
   const handleSubmit = async (e: React.FormEvent, parentId?: string) => {
