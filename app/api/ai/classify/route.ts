@@ -71,7 +71,7 @@ export async function POST(req: Request) {
 }
 
 // Test endpoint to verify AI service is working
-export async function GET(req: Request) {
+export async function GET() {
   try {
     console.log("🧪 AI service test request received")
     
