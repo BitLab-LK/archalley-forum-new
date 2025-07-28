@@ -172,19 +172,27 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }
 
   // Memoized image renderer for better performance
   const renderImages = useCallback((images: string[]) => {
+    console.log('🖼️ Rendering images for post:', post.id, 'Images:', images)
+    
     const count = images.length
     
     if (count === 1) {
       return (
         <div className="w-full flex justify-center items-center cursor-pointer" onClick={() => openModal(0)}>
-          <div className="relative w-full max-h-[500px]">
+          <div className="relative w-full h-[400px]">
             <Image
               src={images[0]}
               alt="Post image"
-              className="object-contain rounded-lg w-full h-auto max-h-[500px]"
+              className="object-contain rounded-lg"
               fill
               sizes="100vw"
               priority
+              onError={(e) => {
+                console.error('❌ Image failed to load:', images[0], e)
+              }}
+              onLoad={() => {
+                console.log('✅ Image loaded successfully:', images[0])
+              }}
             />
           </div>
         </div>

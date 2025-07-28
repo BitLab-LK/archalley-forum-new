@@ -29,9 +29,27 @@ const nextConfig = {
   
   // Image optimization
   images: {
-    domains: ['localhost'],
+    domains: [
+      'localhost',
+    ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.blob.vercel-storage.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'vdatlalr25kbvq64.public.blob.vercel-storage.com',
+        port: '',
+        pathname: '/**',
+      }
+    ],
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60,
+    dangerouslyAllowSVG: false,
+    unoptimized: false,
   },
   
   // Experimental features

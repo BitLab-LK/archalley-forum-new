@@ -59,6 +59,7 @@ model Post {
   Comment           Comment[]
   users             users      @relation(fields: [authorId], references: [id])
   categories        categories @relation(fields: [categoryId], references: [id])
+  attachments       attachments[]
 
   @@index([authorId])
   @@index([categoryId])
@@ -88,6 +89,9 @@ model attachments {
   mimeType  String
   postId    String
   createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
 }
 
 model categories {
