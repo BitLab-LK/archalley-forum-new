@@ -30,45 +30,31 @@ export default withAuth(
           return token?.role === "ADMIN"
         }
 
-        // Protect API routes that require authentication
-        if (req.nextUrl.pathname.startsWith("/api/posts") && req.method !== "GET") {
-          return !!token
-        }
-
-        if (req.nextUrl.pathname.startsWith("/api/comments")) {
-          return !!token
-        }
-
-        if (req.nextUrl.pathname.startsWith("/api/users") && req.method !== "GET") {
-          return !!token
-        }
-
-        if (req.nextUrl.pathname.startsWith("/api/upload")) {
-          return !!token
-        }
-
-        if (req.nextUrl.pathname.startsWith("/api/notifications")) {
-          return !!token
-        }
-
-        if (req.nextUrl.pathname.startsWith("/api/ai")) {
+        // For API routes, require authentication except for GET requests to public endpoints
+        if (req.nextUrl.pathname.startsWith("/api/")) {
+          // Allow GET requests to posts (public)
+          if (req.nextUrl.pathname.startsWith("/api/posts") && req.method === "GET") {
+            return true
+          }
+          
+          // Allow GET requests to categories (public)
+          if (req.nextUrl.pathname.startsWith("/api/categories") && req.method === "GET") {
+            return true
+          }
+          
+          // Require authentication for all other API routes
           return !!token
         }
 
         return true
       },
     },
-  },
+  }
 )
 
 export const config = {
   matcher: [
     "/admin/:path*",
-    "/api/posts/:path*",
-    "/api/comments/:path*",
-    "/api/users/:path*",
-    "/api/upload/:path*",
-    "/api/notifications/:path*",
-    "/api/ai/:path*",
+    "/api/:path*",
   ],
 }
