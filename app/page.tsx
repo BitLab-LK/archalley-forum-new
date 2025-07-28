@@ -8,13 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/lib/auth-context"
-// import { toast } from "sonner"
-
-// Temporary workaround - use console instead
-const toast = {
-  success: (message: string) => console.log("✅ SUCCESS:", message),
-  error: (message: string) => console.error("❌ ERROR:", message),
-}
+import { toast } from "sonner"
 
 interface Post {
   id: string
@@ -62,13 +56,17 @@ function HomePageContent() {
     setIsLoading(true)
     try {
       const response = await fetch(`/api/posts?page=${page}&limit=10`)
-      if (!response.ok) throw new Error("Failed to fetch posts")
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch posts: ${response.status}`)
+      }
       
       const data = await response.json()
+      
       setPosts(data.posts)
       setPagination(data.pagination)
     } catch (error) {
-      console.error("Error fetching posts:", error)
+      toast.error("Failed to load posts")
     } finally {
       setIsLoading(false)
     }
@@ -80,14 +78,7 @@ function HomePageContent() {
   }, [searchParams])
 
   useEffect(() => {
-    if (user) {
-      console.log("Current user loaded:", {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        name: user.name
-      })
-    }
+    // User loaded effect
   }, [user])
 
   const handlePageChange = (newPage: number) => {
@@ -97,15 +88,6 @@ function HomePageContent() {
 
   const handleDeletePost = async (postId: string) => {
     try {
-      console.log("=== FRONTEND DELETE REQUEST ===")
-      console.log("Current user:", {
-        id: user?.id,
-        email: user?.email,
-        role: user?.role,
-        name: user?.name
-      })
-      console.log("Deleting post ID:", postId)
-      
       // Start optimistic update - remove post immediately for smooth UX
       const originalPosts = posts
       setPosts(posts.filter(post => post.id !== postId))
@@ -118,11 +100,7 @@ function HomePageContent() {
         },
       })
 
-      console.log("Response status:", response.status)
-      console.log("Response ok:", response.ok)
-      
       const responseBody = await response.text()
-      console.log("Response body:", responseBody)
 
       if (!response.ok) {
         // Restore posts if deletion failed
@@ -131,16 +109,14 @@ function HomePageContent() {
         let errorData
         try {
           errorData = JSON.parse(responseBody)
-          console.log("Parsed error data:", errorData)
         } catch (e) {
-          console.log("Could not parse response as JSON")
+          // Could not parse response as JSON
         }
         throw new Error(`Failed to delete post: ${response.status} - ${errorData?.error || responseBody}`)
       }
 
       toast.success("Post deleted successfully")
     } catch (error) {
-      console.error("Error deleting post:", error)
       toast.error("Failed to delete post")
     }
   }
@@ -195,7 +171,13 @@ function HomePageContent() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <PostCreator onPostCreated={() => fetchPosts(pagination.currentPage)} />
+            <PostCreator onPostCreated={async () => {
+              try {
+                await fetchPosts(1) // Always go to first page for new posts
+              } catch (error) {
+                // Error handling for post refresh
+              }
+            }} />
 
             {isLoading ? (
               <div className="space-y-4">

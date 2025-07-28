@@ -78,11 +78,13 @@ export async function POST(request: Request) {
 
     if (!validationResult.success) {
       console.error("Validation error:", validationResult.error.format())
+      console.error("Received data:", { content, categoryId, isAnonymous, tags, originalLanguage, translatedContent })
       return NextResponse.json(
         { 
           error: "Invalid input", 
           details: validationResult.error.format(),
-          message: "Please check your input and try again"
+          message: "Please check your input and try again",
+          received: { content: !!content, categoryId: !!categoryId, isAnonymous, tags: !!tags }
         },
         { status: 400 }
       )
@@ -96,8 +98,18 @@ export async function POST(request: Request) {
     })
 
     if (!category) {
+      console.error(`❌ Category not found: ${data.categoryId}`)
+      const availableCategories = await prisma.categories.findMany({
+        select: { id: true, name: true }
+      })
+      console.log('📋 Available categories:', availableCategories)
+      
       return NextResponse.json(
-        { error: "Category not found", message: "The selected category does not exist" },
+        { 
+          error: "Category not found", 
+          message: `The selected category "${data.categoryId}" does not exist`,
+          availableCategories
+        },
         { status: 404 }
       )
     }
@@ -139,23 +151,40 @@ export async function POST(request: Request) {
 
     // Handle image uploads if any
     const imageEntries = Array.from(formData.entries())
-      .filter(([key]) => key.startsWith("image"))
+      .filter(([key]) => key.startsWith("image") && key.endsWith("_url"))
       .map(([_, value]) => value as string)
 
     if (imageEntries.length > 0) {
       try {
         // Process image uploads
-        const uploadPromises = imageEntries.map(async (imageUrl) => {
-          // Extract filename from URL
-          const filename = imageUrl.split('/').pop() || 'unknown'
+        const uploadPromises = imageEntries.map(async (imageUrl, index) => {
+          // Extract filename from URL or get it from form data
+          const nameKey = `image_${index}_name`
+          const filename = formData.get(nameKey) as string || imageUrl.split('/').pop() || 'unknown'
           
-          // Get file info from the uploads directory
-          const filePath = join(process.cwd(), "public", imageUrl)
-          const stats = await stat(filePath).catch(() => null)
+          // Check if this is a Vercel Blob URL
+          const isBlobUrl = imageUrl.includes('blob.vercel-storage.com')
           
-          if (!stats) {
-            console.error(`File not found: ${filePath}`)
-            return null
+          let fileSize = 0
+          let mimeType = 'image/jpeg' // default
+          
+          if (isBlobUrl) {
+            // For Vercel Blob URLs, we don't have direct access to file stats
+            // We'll estimate or use default values
+            mimeType = getMimeType(filename)
+            fileSize = 0 // We could fetch this via HEAD request if needed
+          } else {
+            // Original logic for local files
+            const filePath = join(process.cwd(), "public", imageUrl)
+            const stats = await stat(filePath).catch(() => null)
+            
+            if (!stats) {
+              console.error(`File not found: ${filePath}`)
+              return null
+            }
+            
+            fileSize = stats.size
+            mimeType = getMimeType(filename)
           }
 
           return prisma.attachments.create({
@@ -163,8 +192,8 @@ export async function POST(request: Request) {
               id: crypto.randomUUID(),
               url: imageUrl,
               filename: filename,
-              size: stats.size,
-              mimeType: getMimeType(filename),
+              size: fileSize,
+              mimeType: mimeType,
               postId: post.id,
             },
           })
@@ -177,7 +206,7 @@ export async function POST(request: Request) {
         if (validAttachments.length !== imageEntries.length) {
           console.warn(`Some attachments failed to create. Expected ${imageEntries.length}, got ${validAttachments.length}`)
         }
-  } catch (error) {
+      } catch (error) {
         console.error("Error creating attachments:", error)
         // Don't fail the post creation if attachments fail
       }
@@ -185,7 +214,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json(post)
   } catch (error) {
-    console.error("Error creating post:", error)
+    console.error("❌ Error creating post:", error)
+    console.error("❌ Error details:", {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    })
     
     // Check if it's a database connection error
     if (error instanceof Error && (
@@ -302,11 +336,16 @@ export async function GET(request: NextRequest) {
         },
       })
 
-      // Group attachments by postId
+      // Group attachments by postId and clean blob URLs
       const attachmentMap = new Map<string, string[]>()
       attachments.forEach(attachment => {
         const existing = attachmentMap.get(attachment.postId) || []
-        existing.push(attachment.url)
+        // Clean blob URLs by removing download parameter
+        let cleanUrl = attachment.url
+        if (cleanUrl.includes('blob.vercel-storage.com') && cleanUrl.includes('?download=1')) {
+          cleanUrl = cleanUrl.replace('?download=1', '')
+        }
+        existing.push(cleanUrl)
         attachmentMap.set(attachment.postId, existing)
       })
 
@@ -357,6 +396,7 @@ export async function GET(request: NextRequest) {
         const voteCount = voteCountMap.get(post.id) || { upvotes: 0, downvotes: 0 }
         // const userVote = userVoteMap.get(post.id) || null // Can be used later if needed
         const images = attachmentMap.get(post.id) || []
+        
         return {
           id: post.id,
           author: {
