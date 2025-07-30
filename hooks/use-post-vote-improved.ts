@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
 
 // Global state for vote synchronization across components
@@ -6,15 +6,11 @@ const globalVoteState = new Map<string, {
   upvotes: number
   downvotes: number
   userVote: "up" | "down" | null
-  listeners: Set<(state: any, skipInitiator?: boolean) => void>
-  isUpdating: boolean // Prevent cascade updates
-  lastUpdate: number
+  listeners: Set<(state: any) => void>
 }>()
 
 export function usePostVote(postId: string, initialVote: "up" | "down" | null, initialUpvotes: number, initialDownvotes: number) {
   const { user } = useAuth()
-  const mountedRef = useRef(true)
-  const isInitiatorRef = useRef(false) // Track if this instance initiated the change
   
   // Initialize global state for this post if it doesn't exist
   if (!globalVoteState.has(postId)) {
@@ -22,9 +18,7 @@ export function usePostVote(postId: string, initialVote: "up" | "down" | null, i
       upvotes: initialUpvotes,
       downvotes: initialDownvotes,
       userVote: initialVote,
-      listeners: new Set(),
-      isUpdating: false,
-      lastUpdate: Date.now()
+      listeners: new Set()
     })
   }
   
@@ -34,21 +28,12 @@ export function usePostVote(postId: string, initialVote: "up" | "down" | null, i
   const [upvotes, setUpvotes] = useState(globalState.upvotes || initialUpvotes)
   const [downvotes, setDownvotes] = useState(globalState.downvotes || initialDownvotes)
 
-  // Listen for global state changes - but skip if this instance initiated the change
+  // Listen for global state changes
   useEffect(() => {
-    const listener = (state: { upvotes: number; downvotes: number; userVote: "up" | "down" | null }, skipInitiator = false) => {
-      // Skip update if this instance initiated the change and skipInitiator is true
-      if (skipInitiator && isInitiatorRef.current) {
-        isInitiatorRef.current = false // Reset the flag
-        return
-      }
-      
-      if (!mountedRef.current) return
-      
-      // Only update if values actually changed to prevent unnecessary re-renders
-      if (state.upvotes !== upvotes) setUpvotes(state.upvotes)
-      if (state.downvotes !== downvotes) setDownvotes(state.downvotes)
-      if (state.userVote !== userVote) setUserVote(state.userVote)
+    const listener = (state: { upvotes: number; downvotes: number; userVote: "up" | "down" | null }) => {
+      setUpvotes(state.upvotes)
+      setDownvotes(state.downvotes)
+      setUserVote(state.userVote)
     }
     
     globalState.listeners.add(listener)
@@ -56,16 +41,9 @@ export function usePostVote(postId: string, initialVote: "up" | "down" | null, i
     return () => {
       globalState.listeners.delete(listener)
     }
-  }, [globalState, upvotes, downvotes, userVote])
+  }, [globalState])
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false
-    }
-  }, [])
-
-  // Fetch user's current vote when component mounts - but only notify other listeners
+  // Fetch user's current vote when component mounts
   useEffect(() => {
     if (user && postId) {
       fetch(`/api/posts/${postId}/vote`)
@@ -86,7 +64,6 @@ export function usePostVote(postId: string, initialVote: "up" | "down" | null, i
           globalState.upvotes = newState.upvotes
           globalState.downvotes = newState.downvotes
           globalState.userVote = newState.userVote
-          globalState.lastUpdate = Date.now()
           
           // Update local state
           setUpvotes(newState.upvotes)
@@ -94,19 +71,11 @@ export function usePostVote(postId: string, initialVote: "up" | "down" | null, i
           setUserVote(newState.userVote)
           
           // Notify other listeners
-          setTimeout(() => {
-            globalState.listeners.forEach(listener => {
-              try {
-                listener(newState, false) // Don't skip any listeners for initial fetch
-              } catch (e) {
-                console.error("Error in initial fetch listener:", e)
-              }
-            })
-          }, 0)
+          globalState.listeners.forEach(listener => listener(newState))
         })
         .catch(error => console.error("Error fetching vote data:", error))
     }
-  }, [postId, user])
+  }, [postId, user, globalState])
 
   const handleVote = async (type: "up" | "down") => {
     if (!user) {
@@ -114,16 +83,7 @@ export function usePostVote(postId: string, initialVote: "up" | "down" | null, i
       return
     }
     
-    // Prevent multiple concurrent votes
-    if (globalState.isUpdating) {
-      console.log(`� Vote already in progress for post ${postId}, skipping...`)
-      return
-    }
-    
-    globalState.isUpdating = true
-    isInitiatorRef.current = true // Mark this instance as the initiator
-    
-    console.log(`�🗳️ Vote initiated: ${type} for post ${postId}`)
+    console.log(`🗳️ Vote initiated: ${type} for post ${postId}`)
     
     // Store previous state for rollback
     const previousVote = userVote
@@ -157,28 +117,19 @@ export function usePostVote(postId: string, initialVote: "up" | "down" | null, i
       else newDownvotes = downvotes + 1
     }
     
-    // Update global state immediately
+    // Update global state immediately for instant sync across all instances
     globalState.upvotes = newUpvotes
     globalState.downvotes = newDownvotes
     globalState.userVote = newUserVote
-    globalState.lastUpdate = Date.now()
     
-    // Update local state immediately for this instance
+    // Update local state immediately
     setUpvotes(newUpvotes)
     setDownvotes(newDownvotes)
     setUserVote(newUserVote)
     
-    // Notify other listeners (excluding this instance) with debouncing
+    // Notify all listeners immediately for instant real-time updates
     const optimisticState = { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
-    setTimeout(() => {
-      globalState.listeners.forEach(listener => {
-        try {
-          listener(optimisticState, true) // Skip initiator
-        } catch (e) {
-          console.error("Error in listener:", e)
-        }
-      })
-    }, 0)
+    globalState.listeners.forEach(listener => listener(optimisticState))
     
     console.log(`⚡ Optimistic update applied: ${type} for post ${postId}`, optimisticState)
     
@@ -198,22 +149,12 @@ export function usePostVote(postId: string, initialVote: "up" | "down" | null, i
         globalState.upvotes = previousUpvotes
         globalState.downvotes = previousDownvotes
         globalState.userVote = previousVote
-        globalState.lastUpdate = Date.now()
         
         setUserVote(previousVote)
         setUpvotes(previousUpvotes)
         setDownvotes(previousDownvotes)
         
-        // Notify all listeners about rollback
-        setTimeout(() => {
-          globalState.listeners.forEach(listener => {
-            try {
-              listener(rollbackState)
-            } catch (e) {
-              console.error("Error in rollback listener:", e)
-            }
-          })
-        }, 0)
+        globalState.listeners.forEach(listener => listener(rollbackState))
         
         const errorText = await response.text()
         console.error("Failed to vote:", response.status, errorText)
@@ -229,33 +170,18 @@ export function usePostVote(postId: string, initialVote: "up" | "down" | null, i
             userVote: result.userVote
           }
           
-          // Only update if server state is different from current state
-          if (serverState.upvotes !== globalState.upvotes || 
-              serverState.downvotes !== globalState.downvotes || 
-              serverState.userVote !== globalState.userVote) {
-            
-            // Update global state with server response
-            globalState.upvotes = serverState.upvotes
-            globalState.downvotes = serverState.downvotes
-            globalState.userVote = serverState.userVote
-            globalState.lastUpdate = Date.now()
-            
-            // Update local state with server response
-            setUpvotes(serverState.upvotes)
-            setDownvotes(serverState.downvotes)
-            setUserVote(serverState.userVote)
-            
-            // Notify all listeners with server state for final sync
-            setTimeout(() => {
-              globalState.listeners.forEach(listener => {
-                try {
-                  listener(serverState)
-                } catch (e) {
-                  console.error("Error in server sync listener:", e)
-                }
-              })
-            }, 0)
-          }
+          // Update global state with server response
+          globalState.upvotes = serverState.upvotes
+          globalState.downvotes = serverState.downvotes
+          globalState.userVote = serverState.userVote
+          
+          // Update local state with server response
+          setUpvotes(serverState.upvotes)
+          setDownvotes(serverState.downvotes)
+          setUserVote(serverState.userVote)
+          
+          // Notify all listeners with server state for final sync
+          globalState.listeners.forEach(listener => listener(serverState))
           
           console.log(`🎯 Server state synchronized: ${type} for post ${postId}`, serverState)
         }
@@ -269,28 +195,14 @@ export function usePostVote(postId: string, initialVote: "up" | "down" | null, i
       globalState.upvotes = previousUpvotes
       globalState.downvotes = previousDownvotes
       globalState.userVote = previousVote
-      globalState.lastUpdate = Date.now()
       
       setUserVote(previousVote)
       setUpvotes(previousUpvotes)
       setDownvotes(previousDownvotes)
       
-      // Notify all listeners about rollback
-      setTimeout(() => {
-        globalState.listeners.forEach(listener => {
-          try {
-            listener(rollbackState)
-          } catch (e) {
-            console.error("Error in error rollback listener:", e)
-          }
-        })
-      }, 0)
+      globalState.listeners.forEach(listener => listener(rollbackState))
       
       console.error("Error voting:", error)
-    } finally {
-      // Reset the updating flag
-      globalState.isUpdating = false
-      isInitiatorRef.current = false
     }
   }
 

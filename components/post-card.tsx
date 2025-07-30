@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo, memo } from "react"
+import { useState, useCallback, useMemo, memo, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -46,6 +46,7 @@ interface PostCardProps {
   }
   onDelete?: () => void
   onCommentCountChange?: (postId: string, newCount: number) => void
+  onVoteChange?: (postId: string, newUpvotes: number, newDownvotes: number) => void
 }
 
 // Constants
@@ -80,7 +81,7 @@ const shouldUseColoredBackground = (content: string, hasImages: boolean): boolea
   return !hasImages && content.length <= 300
 }
 
-const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }: PostCardProps) {
+const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, onVoteChange }: PostCardProps) {
   const { user, isLoading } = useAuth()
   
   // Memoized computed values
@@ -95,6 +96,39 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }
   const [modalOpen, setModalOpen] = useState(false)
   const [modalImageIndex, setModalImageIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Use refs to track previous values to prevent unnecessary parent notifications
+  const prevUpvotes = useRef(post.upvotes)
+  const prevDownvotes = useRef(post.downvotes)
+  const prevCommentCount = useRef(post.comments)
+  const lastClickTime = useRef(0) // Track last click time for debouncing
+
+  // Notify parent component when votes change (debounced)
+  useEffect(() => {
+    if (onVoteChange && (upvotes !== prevUpvotes.current || downvotes !== prevDownvotes.current)) {
+      const timer = setTimeout(() => {
+        onVoteChange(post.id, upvotes, downvotes)
+        prevUpvotes.current = upvotes
+        prevDownvotes.current = downvotes
+      }, 50) // Small delay to batch updates
+      
+      return () => clearTimeout(timer)
+    }
+    return undefined // Return undefined when no cleanup is needed
+  }, [upvotes, downvotes, post.id, onVoteChange])
+
+  // Notify parent component when comment count changes (debounced)
+  useEffect(() => {
+    if (onCommentCountChange && commentCount !== prevCommentCount.current) {
+      const timer = setTimeout(() => {
+        onCommentCountChange(post.id, commentCount)
+        prevCommentCount.current = commentCount
+      }, 50) // Small delay to batch updates
+      
+      return () => clearTimeout(timer)
+    }
+    return undefined // Return undefined when no cleanup is needed
+  }, [commentCount, post.id, onCommentCountChange])
 
   // Everything syncs instantly now - votes AND comments!
 
@@ -152,15 +186,29 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }
     // Use the instant sync function for immediate updates across all instances
     syncState(newUpvotes, newDownvotes, newUserVote)
     
-    console.log("Modal vote update - instant sync:", {
+    console.log("📊 Modal vote update - instant sync:", {
+      postId: post.id,
       newVotes: { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
     })
-  }, [syncState])
+  }, [syncState, post.id])
 
-  // Enhanced vote handler that syncs with modals
+  // Enhanced vote handler that syncs with modals and provides instant feedback
   const handleCardVote = useCallback(async (type: "up" | "down") => {
+    console.log(`🗳️ Card vote initiated:`, { postId: post.id, type, currentUserVote: userVote })
+    
+    // Prevent rapid clicking - debounce button clicks using ref
+    const now = Date.now()
+    if (lastClickTime.current && now - lastClickTime.current < 500) {
+      console.log("🚫 Vote too fast, ignoring...")
+      return
+    }
+    lastClickTime.current = now
+    
+    // Call the synchronized vote handler for instant updates
     await handleVote(type)
-  }, [handleVote])
+    
+    console.log(`✅ Card vote completed:`, { postId: post.id, type })
+  }, [handleVote, post.id, userVote])
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-40">

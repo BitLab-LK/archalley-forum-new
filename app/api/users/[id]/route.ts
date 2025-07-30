@@ -62,7 +62,39 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Profile is private" }, { status: 403 })
     }
 
-    return NextResponse.json({ user })
+    // Check if the current user is viewing their own profile for conditional data
+    const isOwnProfile = session?.user?.id === user.id
+
+    // Transform the data to match the profile page format
+    const formattedUser = {
+      id: user.id,
+      name: user.name || 'Anonymous User',
+      email: isOwnProfile ? user.email : undefined, // Only include email for own profile
+      image: user.image,
+      profession: user.profession,
+      company: user.company,
+      location: user.location,
+      website: user.website,
+      phone: user.phone,
+      linkedinUrl: user.linkedinUrl,
+      twitterUrl: user.twitterUrl,
+      instagramUrl: user.instagramUrl,
+      rank: user.rank || 'Member',
+      posts: user._count.Post,
+      comments: user._count.Comment,
+      upvotes: 0, // Simplified for now - can be enhanced later
+      joinDate: new Date(user.createdAt).toLocaleDateString('en-US', { 
+        month: 'short', 
+        year: 'numeric' 
+      }),
+      isVerified: user.isVerified || false,
+      bio: user.bio,
+      role: user.role,
+      profileVisibility: user.profileVisibility,
+      lastActiveAt: user.lastActiveAt,
+    }
+
+    return NextResponse.json({ user: formattedUser })
   } catch (error) {
     console.error("Get user error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

@@ -1,18 +1,19 @@
 import { useState, useEffect, useCallback } from "react"
 import { usePostVote } from "./use-post-vote"
 
-// Global state store for post synchronization
+// Global state store for post synchronization - enhanced for better performance
 const postStates = new Map<string, {
   upvotes: number
   downvotes: number
   userVote: "up" | "down" | null
   commentCount: number
   listeners: Set<(state: any) => void>
+  lastUpdate: number
 }>()
 
 export function usePostSync(postId: string, initialUpvotes: number, initialDownvotes: number, initialCommentCount: number = 0) {
-  // Get the voting functionality from the original hook
-  const { userVote, upvotes, downvotes, handleVote, socket } = usePostVote(postId, null, initialUpvotes, initialDownvotes)
+  // Get the voting functionality from the improved hook
+  const { userVote, upvotes, downvotes, handleVote } = usePostVote(postId, null, initialUpvotes, initialDownvotes)
   
   // Initialize or get existing post state
   if (!postStates.has(postId)) {
@@ -21,24 +22,20 @@ export function usePostSync(postId: string, initialUpvotes: number, initialDownv
       downvotes: initialDownvotes,
       userVote: null,
       commentCount: initialCommentCount,
-      listeners: new Set()
+      listeners: new Set(),
+      lastUpdate: Date.now()
     })
   }
   
   const postState = postStates.get(postId)!
   
-  // Local state for this component instance
-  const [syncedUpvotes, setSyncedUpvotes] = useState(upvotes)
-  const [syncedDownvotes, setSyncedDownvotes] = useState(downvotes)
-  const [syncedUserVote, setSyncedUserVote] = useState(userVote)
+  // Local state for this component instance - sync with vote hook
   const [syncedCommentCount, setSyncedCommentCount] = useState(initialCommentCount)
   
   // Update listener for global state changes
   const updateListener = useCallback((state: { upvotes: number; downvotes: number; userVote: "up" | "down" | null; commentCount: number }) => {
-    setSyncedUpvotes(state.upvotes)
-    setSyncedDownvotes(state.downvotes)
-    setSyncedUserVote(state.userVote)
-    setSyncedCommentCount(state.commentCount)
+    // Only update comment count as votes are handled by the vote hook directly
+    setSyncedCommentCount(prev => prev !== state.commentCount ? state.commentCount : prev)
   }, [])
   
   // Register this component as a listener
@@ -50,100 +47,73 @@ export function usePostSync(postId: string, initialUpvotes: number, initialDownv
     }
   }, [postState, updateListener])
   
-  // Sync from usePostVote hook to global state
+  // Sync comment count changes to global state
   useEffect(() => {
-    const newState = { upvotes, downvotes, userVote, commentCount: syncedCommentCount }
-    
-    // Update global state
-    postState.upvotes = upvotes
-    postState.downvotes = downvotes
-    postState.userVote = userVote
-    // Don't override comment count from vote changes
-    
-    // Update local state
-    setSyncedUpvotes(upvotes)
-    setSyncedDownvotes(downvotes)  
-    setSyncedUserVote(userVote)
-    
-    // Notify all other listeners (modals, other instances)
-    postState.listeners.forEach(listener => {
-      if (listener !== updateListener) {
-        listener(newState)
-      }
-    })
-  }, [upvotes, downvotes, userVote, postState, updateListener, syncedCommentCount])
+    if (syncedCommentCount !== postState.commentCount) {
+      postState.commentCount = syncedCommentCount
+      postState.lastUpdate = Date.now()
+    }
+  }, [syncedCommentCount, postState])
   
-  // Enhanced vote handler that triggers instant sync
+  // Enhanced vote handler - direct pass-through to the improved vote hook
   const handleSyncedVote = useCallback(async (type: "up" | "down") => {
+    console.log(`🗳️ [${postId}] Synced vote triggered:`, type)
+    // The vote hook now handles all synchronization internally
     await handleVote(type)
-  }, [handleVote])
+  }, [handleVote, postId])
   
-  // Manual sync function for external updates (from modals)
+  // Manual sync function for external updates (from modals) - simplified
   const syncState = useCallback((newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => {
-    const newState = { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote, commentCount: syncedCommentCount }
+    console.log(`🔄 [${postId}] Manual vote sync triggered:`, { newUpvotes, newDownvotes, newUserVote })
+    
+    // The vote hook handles vote state, we just need to notify about comment count
+    const newState = { 
+      upvotes: newUpvotes, 
+      downvotes: newDownvotes, 
+      userVote: newUserVote, 
+      commentCount: syncedCommentCount 
+    }
     
     // Update global state
     postState.upvotes = newUpvotes
     postState.downvotes = newDownvotes
     postState.userVote = newUserVote
+    postState.lastUpdate = Date.now()
     
-    // Queue listener notifications to avoid render-time updates
-    setTimeout(() => {
-      postState.listeners.forEach(listener => {
-        listener(newState)
-      })
-    }, 0)
-    
-    // Emit socket event for other users
-    if (socket) {
-      socket.emit('vote-sync', {
-        postId,
-        upvotes: newUpvotes,
-        downvotes: newDownvotes,
-        userVote: newUserVote
-      })
-    }
-  }, [postState, socket, postId, syncedCommentCount])
+    // Notify listeners about the full state change
+    postState.listeners.forEach(listener => listener(newState))
+  }, [postState, postId, syncedCommentCount])
   
   // Comment sync function for instant comment updates
   const syncCommentCount = useCallback((newCommentCount: number) => {
+    console.log(`💬 [${postId}] Comment count sync:`, newCommentCount)
+    
     const newState = { 
-      upvotes: syncedUpvotes, 
-      downvotes: syncedDownvotes, 
-      userVote: syncedUserVote, 
+      upvotes, 
+      downvotes, 
+      userVote, 
       commentCount: newCommentCount 
     }
     
     // Update global state
     postState.commentCount = newCommentCount
+    postState.lastUpdate = Date.now()
     
-    // Update local state
+    // Update local state immediately
     setSyncedCommentCount(newCommentCount)
     
-    // Queue listener notifications to avoid render-time updates
-    setTimeout(() => {
-      postState.listeners.forEach(listener => {
-        listener(newState)
-      })
-    }, 0)
-    
-    // Emit socket event for other users
-    if (socket) {
-      socket.emit('comment-count-sync', {
-        postId,
-        commentCount: newCommentCount
-      })
-    }
-  }, [postState, socket, postId, syncedUpvotes, syncedDownvotes, syncedUserVote])
+    // Notify all listeners immediately
+    postState.listeners.forEach(listener => listener(newState))
+  }, [postState, postId, upvotes, downvotes, userVote])
   
   return {
-    userVote: syncedUserVote,
-    upvotes: syncedUpvotes,
-    downvotes: syncedDownvotes,
+    userVote,
+    upvotes,
+    downvotes,
     commentCount: syncedCommentCount,
     handleVote: handleSyncedVote,
     syncState,
     syncCommentCount,
-    socket
+    socket: null
   }
 }

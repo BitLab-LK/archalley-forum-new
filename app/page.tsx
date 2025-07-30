@@ -131,6 +131,16 @@ function HomePageContent() {
     )
   }
 
+  const handleVoteChange = (postId: string, newUpvotes: number, newDownvotes: number) => {
+    setPosts(prevPosts => 
+      prevPosts.map(post => 
+        post.id === postId 
+          ? { ...post, upvotes: newUpvotes, downvotes: newDownvotes }
+          : post
+      )
+    )
+  }
+
   // Generate pagination range with ellipsis
   const getPaginationRange = () => {
     const range: (number | string)[] = []
@@ -217,6 +227,7 @@ function HomePageContent() {
                           : undefined
                       }
                       onCommentCountChange={handleCommentCountChange}
+                      onVoteChange={handleVoteChange}
                     />
               ))}
             </div>

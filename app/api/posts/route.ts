@@ -270,15 +270,18 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "10")
     const categoryId = searchParams.get("category")
+    const authorId = searchParams.get("authorId")
     const sortBy = searchParams.get("sortBy") || "createdAt"
     const sortOrder = searchParams.get("sortOrder") || "desc"
 
-    console.log("Fetching posts with params:", { page, limit, categoryId, sortBy, sortOrder })
+    console.log("Fetching posts with params:", { page, limit, categoryId, authorId, sortBy, sortOrder })
 
     const skip = (page - 1) * limit
 
     // Build the where clause
-    const where = categoryId ? { categoryId } : {}
+    const where: any = {}
+    if (categoryId) where.categoryId = categoryId
+    if (authorId) where.authorId = authorId
 
     try {
       // Get posts with related data

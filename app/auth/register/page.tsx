@@ -25,6 +25,7 @@ export default function RegisterPage() {
     confirmPassword: "",
     company: "",
     profession: "",
+    location: "",
     bio: "",
     agreeToTerms: false,
   })
@@ -83,6 +84,7 @@ export default function RegisterPage() {
           password: formData.password,
           company: formData.company,
           profession: formData.profession,
+          location: formData.location,
           bio: formData.bio,
         }),
       })
@@ -235,6 +237,18 @@ export default function RegisterPage() {
                 placeholder="Your company or organization"
                 value={formData.company}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                type="text"
+                placeholder="City, State/Country"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 disabled={isLoading}
               />
             </div>
