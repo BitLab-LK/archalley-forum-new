@@ -23,7 +23,7 @@ interface Activity {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -37,7 +37,7 @@ export async function GET(
     const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 20) // Cap at 20
     const offset = (page - 1) * limit
 
-    const { id: userId } = params
+    const { id: userId } = await params
 
     // Check if requesting user can view this profile
     const targetUser = await prisma.users.findUnique({
