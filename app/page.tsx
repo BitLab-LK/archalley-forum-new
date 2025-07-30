@@ -132,6 +132,8 @@ function HomePageContent() {
   }
 
   const handleVoteChange = (postId: string, newUpvotes: number, newDownvotes: number) => {
+    console.log(`🏠 Homepage received vote change for ${postId}:`, { newUpvotes, newDownvotes })
+    
     setPosts(prevPosts => 
       prevPosts.map(post => 
         post.id === postId 
@@ -139,6 +141,8 @@ function HomePageContent() {
           : post
       )
     )
+    
+    console.log(`✅ Homepage posts state updated for ${postId}`)
   }
 
   // Generate pagination range with ellipsis

@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Edit, Camera, CheckCircle, MapPin, Calendar, LinkIcon } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { AuthGuard } from "@/components/auth-guard"
+import ActivityFeed from "@/components/activity-feed"
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
@@ -392,15 +393,11 @@ export default function ProfilePage() {
             </TabsContent>
 
             <TabsContent value="activity">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
-                  <CardDescription>Your recent forum activity and interactions</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-center text-gray-500 py-8">Your activity will appear here</p>
-                </CardContent>
-              </Card>
+              <ActivityFeed 
+                userId={user?.id || ""} 
+                userName={user?.name || ""}
+                isOwnProfile={true}
+              />
             </TabsContent>
           </Tabs>
         </div>

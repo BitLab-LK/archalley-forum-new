@@ -11,6 +11,31 @@ const globalVoteState = new Map<string, {
   lastUpdate: number
 }>()
 
+// Utility function to sync external vote updates to global state
+export function syncGlobalVoteState(postId: string, upvotes: number, downvotes: number, userVote: "up" | "down" | null) {
+  if (globalVoteState.has(postId)) {
+    const state = globalVoteState.get(postId)!
+    state.upvotes = upvotes
+    state.downvotes = downvotes
+    state.userVote = userVote
+    state.lastUpdate = Date.now()
+    
+    // Notify all listeners
+    const voteState = { upvotes, downvotes, userVote }
+    state.listeners.forEach(listener => {
+      try {
+        listener(voteState, false) // Don't skip any listeners for external sync
+      } catch (error) {
+        console.error(`❌ Error in global vote sync listener for ${postId}:`, error)
+      }
+    })
+    
+    console.log(`🌐 Global vote state synced for ${postId}:`, voteState)
+    return true
+  }
+  return false
+}
+
 export function usePostVote(postId: string, initialVote: "up" | "down" | null, initialUpvotes: number, initialDownvotes: number) {
   const { user } = useAuth()
   const mountedRef = useRef(true)
@@ -26,13 +51,23 @@ export function usePostVote(postId: string, initialVote: "up" | "down" | null, i
       isUpdating: false,
       lastUpdate: Date.now()
     })
+    console.log(`🎯 Initialized global vote state for ${postId}:`, { initialUpvotes, initialDownvotes, initialVote })
+  } else {
+    // If global state exists, use it as the source of truth
+    const existingState = globalVoteState.get(postId)!
+    console.log(`🔄 Using existing global vote state for ${postId}:`, { 
+      upvotes: existingState.upvotes, 
+      downvotes: existingState.downvotes, 
+      userVote: existingState.userVote 
+    })
   }
   
   const globalState = globalVoteState.get(postId)!
   
-  const [userVote, setUserVote] = useState<"up" | "down" | null>(globalState.userVote || initialVote)
-  const [upvotes, setUpvotes] = useState(globalState.upvotes || initialUpvotes)
-  const [downvotes, setDownvotes] = useState(globalState.downvotes || initialDownvotes)
+  // Use global state as source of truth for initial values
+  const [userVote, setUserVote] = useState<"up" | "down" | null>(globalState.userVote)
+  const [upvotes, setUpvotes] = useState(globalState.upvotes)
+  const [downvotes, setDownvotes] = useState(globalState.downvotes)
 
   // Listen for global state changes - but skip if this instance initiated the change
   useEffect(() => {

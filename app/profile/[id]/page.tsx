@@ -11,6 +11,7 @@ import { MapPin, Calendar, CheckCircle, ArrowLeft, Edit, MessageCircle } from "l
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import PostCard from "@/components/post-card"
+import ActivityFeed from "@/components/activity-feed"
 
 interface User {
   id: string
@@ -56,7 +57,7 @@ interface Post {
 
 export default function UserProfilePage() {
   const params = useParams()
-  const userId = params.userId as string
+  const userId = params.id as string
   const { user: currentUser } = useAuth() // Get current logged-in user
   const [user, setUser] = useState<User | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
@@ -401,11 +402,11 @@ export default function UserProfilePage() {
           )}
 
           <TabsContent value="activity" className="space-y-4">
-            <Card>
-              <CardContent className="p-8 text-center">
-                <p className="text-gray-500 dark:text-gray-400">Activity feed coming soon</p>
-              </CardContent>
-            </Card>
+            <ActivityFeed 
+              userId={userId as string} 
+              userName={user?.name || ""}
+              isOwnProfile={currentUser?.id === userId}
+            />
           </TabsContent>
         </Tabs>
       </main>

@@ -79,3 +79,12 @@
 .category-other {
   @apply bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200;
 }
+
+/* Line clamp utilities */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

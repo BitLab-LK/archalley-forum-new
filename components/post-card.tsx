@@ -97,19 +97,26 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   const [modalImageIndex, setModalImageIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Use refs to track previous values to prevent unnecessary parent notifications
-  const prevUpvotes = useRef(post.upvotes)
-  const prevDownvotes = useRef(post.downvotes)
-  const prevCommentCount = useRef(post.comments)
+  // Use refs to track previous values for parent notifications - initialize with current hook values
+  const prevUpvotes = useRef(upvotes)
+  const prevDownvotes = useRef(downvotes)
+  const prevCommentCount = useRef(commentCount)
   const lastClickTime = useRef(0) // Track last click time for debouncing
 
-  // Notify parent component when votes change (debounced)
+  // Notify parent component when votes change (debounced) - track all vote sources
   useEffect(() => {
     if (onVoteChange && (upvotes !== prevUpvotes.current || downvotes !== prevDownvotes.current)) {
+      console.log(`📊 PostCard vote change detected for ${post.id}:`, {
+        from: { upvotes: prevUpvotes.current, downvotes: prevDownvotes.current },
+        to: { upvotes, downvotes }
+      })
+      
       const timer = setTimeout(() => {
         onVoteChange(post.id, upvotes, downvotes)
         prevUpvotes.current = upvotes
         prevDownvotes.current = downvotes
+        
+        console.log(`✅ PostCard notified parent of vote change for ${post.id}:`, { upvotes, downvotes })
       }, 50) // Small delay to batch updates
       
       return () => clearTimeout(timer)
@@ -117,12 +124,19 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     return undefined // Return undefined when no cleanup is needed
   }, [upvotes, downvotes, post.id, onVoteChange])
 
-  // Notify parent component when comment count changes (debounced)
+  // Notify parent component when comment count changes (debounced) - track all comment sources
   useEffect(() => {
     if (onCommentCountChange && commentCount !== prevCommentCount.current) {
+      console.log(`💬 PostCard comment count change detected for ${post.id}:`, {
+        from: prevCommentCount.current,
+        to: commentCount
+      })
+      
       const timer = setTimeout(() => {
         onCommentCountChange(post.id, commentCount)
         prevCommentCount.current = commentCount
+        
+        console.log(`✅ PostCard notified parent of comment count change for ${post.id}:`, commentCount)
       }, 50) // Small delay to batch updates
       
       return () => clearTimeout(timer)
@@ -183,14 +197,28 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   }, [])
 
   const handleModalVoteUpdate = useCallback((newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => {
+    console.log("📊 Modal vote update received:", {
+      postId: post.id,
+      newVotes: { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote },
+      currentCardVotes: { upvotes, downvotes, userVote }
+    })
+    
     // Use the instant sync function for immediate updates across all instances
     syncState(newUpvotes, newDownvotes, newUserVote)
     
-    console.log("📊 Modal vote update - instant sync:", {
+    // Also trigger a small delay to ensure the state persists after modal close
+    setTimeout(() => {
+      console.log("🔄 Post-modal persistence check:", {
+        postId: post.id,
+        persistedVotes: { upvotes, downvotes, userVote }
+      })
+    }, 100)
+    
+    console.log("✅ Modal vote update - instant sync completed:", {
       postId: post.id,
-      newVotes: { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
+      syncedVotes: { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
     })
-  }, [syncState, post.id])
+  }, [syncState, post.id, upvotes, downvotes, userVote])
 
   // Enhanced vote handler that syncs with modals and provides instant feedback
   const handleCardVote = useCallback(async (type: "up" | "down") => {

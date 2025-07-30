@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Globe, Trash2, MoreHorizontal } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
@@ -71,15 +71,40 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   
+  const lastVoteClickTime = useRef<number>(0) // Debounce vote clicks
   const { user } = useAuth()
   const { userVote, upvotes, downvotes, handleVote, commentCount, syncCommentCount } = usePostSync(post.id, post.upvotes, post.downvotes, post.comments)
   
-  // Sync vote changes with parent component
+  // Sync vote changes with parent component - enhanced with debouncing
   useEffect(() => {
     if (onVoteUpdate) {
-      onVoteUpdate(upvotes, downvotes, userVote)
+      // Add a small delay to ensure vote state is stable before syncing
+      const syncTimeout = setTimeout(() => {
+        onVoteUpdate(upvotes, downvotes, userVote)
+        console.log("🔄 Text Modal vote sync to parent:", { 
+          postId: post.id, 
+          upvotes, 
+          downvotes, 
+          userVote 
+        })
+      }, 10)
+      
+      return () => clearTimeout(syncTimeout)
     }
-  }, [upvotes, downvotes, userVote, onVoteUpdate])
+    return undefined
+  }, [upvotes, downvotes, userVote, onVoteUpdate, post.id])
+
+  // Final sync when modal closes to ensure state persistence
+  useEffect(() => {
+    if (!open && onVoteUpdate) {
+      // When modal closes, do a final sync to ensure state persists
+      onVoteUpdate(upvotes, downvotes, userVote)
+      console.log("🚪 Text Modal closing - final vote sync:", { 
+        postId: post.id, 
+        finalVotes: { upvotes, downvotes, userVote } 
+      })
+    }
+  }, [open, onVoteUpdate, upvotes, downvotes, userVote, post.id])
 
   // Check if this is an image post
   const hasImages = post.images && post.images.length > 0
@@ -133,6 +158,20 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
     
     fetchData();
   }, [open, post.id])
+
+  // Debounced vote handler to prevent rapid clicking
+  const handleDebouncedVote = async (type: "up" | "down") => {
+    const now = Date.now()
+    if (lastVoteClickTime.current && now - lastVoteClickTime.current < 500) {
+      console.log("🚫 Text Modal vote too fast, ignoring...")
+      return
+    }
+    lastVoteClickTime.current = now
+    
+    console.log(`🗳️ Text Modal vote initiated:`, { postId: post.id, type })
+    await handleVote(type)
+    console.log(`✅ Text Modal vote completed:`, { postId: post.id, type })
+  }
 
   const handleSubmitComment = async () => {
     if (!commentInput.trim()) return
@@ -841,7 +880,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
               <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-2 py-1">
                 <div className="flex">
                   <button 
-                    onClick={() => handleVote("up")}
+                    onClick={() => handleDebouncedVote("up")}
                     className={cn(
                       "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium active:scale-95",
                       userVote === "up" 
@@ -854,7 +893,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                     {upvotes > 0 && <span className="text-sm">({upvotes})</span>}
                   </button>
                   <button 
-                    onClick={() => handleVote("down")}
+                    onClick={() => handleDebouncedVote("down")}
                     className={cn(
                       "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium active:scale-95",
                       userVote === "down" 
@@ -1020,7 +1059,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
               <div className="sticky top-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 py-1 z-10">
                 <div className="flex">
                   <button 
-                    onClick={() => handleVote("up")}
+                    onClick={() => handleDebouncedVote("up")}
                     className={cn(
                       "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 font-medium active:scale-95",
                       userVote === "up" 
@@ -1033,7 +1072,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                     {upvotes > 0 && <span className="text-sm">({upvotes})</span>}
                   </button>
                   <button 
-                    onClick={() => handleVote("down")}
+                    onClick={() => handleDebouncedVote("down")}
                     className={cn(
                       "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 font-medium active:scale-95",
                       userVote === "down" 
