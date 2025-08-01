@@ -244,7 +244,10 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
       
       // Emit activity event for real-time feed updates
       if (user?.id) {
+        console.log(`🎯 TextModal emitting vote event for user ${user.id} on post ${post.id}`)
         activityEventManager.emitVote(user.id, post.id)
+      } else {
+        console.log('⚠️ TextModal: No user ID available for activity event emission')
       }
       
       console.log('✅ Modal Vote successful:', result)

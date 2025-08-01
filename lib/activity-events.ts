@@ -20,6 +20,7 @@ class ActivityEventManager {
       this.listeners.set(userId, [])
     }
     this.listeners.get(userId)!.push(callback)
+    console.log(`✅ Subscribed to activity events for user ${userId}. Total listeners: ${this.listeners.get(userId)!.length}`)
   }
 
   // Unsubscribe from activity events
@@ -29,8 +30,10 @@ class ActivityEventManager {
       const index = userListeners.indexOf(callback)
       if (index > -1) {
         userListeners.splice(index, 1)
+        console.log(`❌ Unsubscribed from activity events for user ${userId}. Remaining listeners: ${userListeners.length}`)
         if (userListeners.length === 0) {
           this.listeners.delete(userId)
+          console.log(`🗑️ Removed all listeners for user ${userId}`)
         }
       }
     }
@@ -38,8 +41,10 @@ class ActivityEventManager {
 
   // Emit an activity event
   emit(event: ActivityEvent) {
+    console.log(`📢 Emitting activity event for user ${event.userId}:`, event, `at ${new Date().toISOString()}`)
     const userListeners = this.listeners.get(event.userId)
     if (userListeners) {
+      console.log(`🎯 Found ${userListeners.length} listeners for user ${event.userId}`)
       userListeners.forEach(callback => {
         try {
           callback(event)
@@ -47,6 +52,8 @@ class ActivityEventManager {
           console.error('Error in activity event listener:', error)
         }
       })
+    } else {
+      console.log(`❌ No listeners found for user ${event.userId}`)
     }
   }
 

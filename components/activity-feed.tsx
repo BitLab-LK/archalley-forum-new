@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -58,20 +58,32 @@ export default function ActivityFeed({ userId, userName, isOwnProfile = false }:
     fetchActivities()
   }, [userId])
 
+  const refreshActivities = useCallback(() => {
+    fetchActivities(1, true)
+  }, [])
+
   // Listen to real-time activity events
   useEffect(() => {
     const handleActivityEvent = (event: ActivityEvent) => {
       // Refresh activities when user performs actions
-      console.log('🔄 Activity event received:', event)
-      refreshActivities()
+      console.log(`🔄 Activity event received for user ${userId}:`, event, `at ${new Date().toISOString()}`)
+      console.log(`🔄 Current activities count before refresh: ${activities.length}`)
+      
+      // Add a small delay to ensure database has been updated
+      setTimeout(() => {
+        console.log(`⏰ Refreshing activities after 500ms delay for user ${userId}`)
+        refreshActivities()
+      }, 500)
     }
 
+    console.log(`📡 Subscribing to activity events for user ${userId}`)
     activityEventManager.subscribe(userId, handleActivityEvent)
     
     return () => {
+      console.log(`📡 Unsubscribing from activity events for user ${userId}`)
       activityEventManager.unsubscribe(userId, handleActivityEvent)
     }
-  }, [userId])
+  }, [userId, refreshActivities])
 
   // Auto-refresh every 30 seconds if user is active on the page
   useEffect(() => {
@@ -82,7 +94,7 @@ export default function ActivityFeed({ userId, userName, isOwnProfile = false }:
     }, 30000) // 30 seconds
 
     return () => clearInterval(interval)
-  }, [userId]) // Add userId dependency
+  }, [refreshActivities]) // Fixed: use refreshActivities instead of userId
 
   // Listen for page visibility changes to refresh when user comes back
   useEffect(() => {
@@ -94,10 +106,11 @@ export default function ActivityFeed({ userId, userName, isOwnProfile = false }:
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [userId])
+  }, [refreshActivities]) // Fixed: use refreshActivities instead of userId
 
   const fetchActivities = async (pageNum = 1, isRefresh = false) => {
     try {
+      console.log(`🔄 Fetching activities for user ${userId}, page ${pageNum}, isRefresh: ${isRefresh}`)
       if (!isRefresh) setLoading(true)
       if (isRefresh) setIsRefreshing(true)
       
@@ -108,25 +121,25 @@ export default function ActivityFeed({ userId, userName, isOwnProfile = false }:
       }
       
       const data = await response.json()
+      console.log(`✅ Fetched ${data.activities.length} activities for user ${userId}`)
       
       if (pageNum === 1) {
         setActivities(data.activities)
+        console.log(`📊 Activities updated. New count: ${data.activities.length}`)
       } else {
         setActivities(prev => [...prev, ...data.activities])
+        console.log(`📊 Activities appended. Total count will be: ${activities.length + data.activities.length}`)
       }
       
       setHasMore(data.pagination.hasMore)
       setPage(pageNum)
     } catch (err) {
+      console.error(`❌ Failed to fetch activities for user ${userId}:`, err)
       setError(err instanceof Error ? err.message : "Failed to load activities")
     } finally {
       setLoading(false)
       setIsRefreshing(false)
     }
-  }
-
-  const refreshActivities = () => {
-    fetchActivities(1, true)
   }
 
   const loadMore = () => {

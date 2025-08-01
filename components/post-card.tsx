@@ -275,7 +275,10 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
       
       // Emit activity event for real-time feed updates
       if (user?.id) {
+        console.log(`🎯 PostCard emitting vote event for user ${user.id} on post ${post.id}`)
         activityEventManager.emitVote(user.id, post.id)
+      } else {
+        console.log('⚠️ No user ID available for activity event emission')
       }
       
       console.log('✅ Vote successful:', result)
