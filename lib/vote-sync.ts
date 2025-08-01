@@ -1,5 +1,4 @@
 // Global vote synchronization system for real-time updates between components
-import { activityEventManager } from "./activity-events"
 
 type VoteType = "up" | "down" | null
 
