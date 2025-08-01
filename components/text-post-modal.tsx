@@ -981,7 +981,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                             </div>
                           )}
                         </div>
-                        <span>{upvotes || 0}</span>
+                        <span>{(upvotes || 0) + (downvotes || 0)}</span>
                       </span>
                     )}
                     </div>
@@ -1165,7 +1165,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                             </div>
                           )}
                         </div>
-                        <span>{upvotes || 0}</span>
+                        <span>{(upvotes || 0) + (downvotes || 0)}</span>
                       </span>
                     )}
                   </div>

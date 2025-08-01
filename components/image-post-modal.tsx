@@ -1025,12 +1025,7 @@ export default function ImagePostModal({
                         )}
                       </div>
                       <span>
-                        {upvotes > 0 && downvotes > 0 
-                          ? `${upvotes} • ${downvotes}` 
-                          : upvotes > 0 
-                            ? upvotes 
-                            : downvotes
-                        }
+                        {(upvotes || 0) + (downvotes || 0)}
                       </span>
                     </span>
                   )}
