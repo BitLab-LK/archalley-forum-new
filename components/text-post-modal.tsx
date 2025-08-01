@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Globe, Trash2, MoreHorizontal } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { cn } from "@/lib/utils"
-import { usePostSync } from "@/hooks/use-post-sync"
+import { useGlobalVoteState } from "@/lib/vote-sync"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,7 @@ interface TextPostModalProps {
   onClose: () => void
   onCommentAdded?: () => void
   onCommentCountUpdate?: (newCount: number) => void
-  onVoteUpdate?: (upvotes: number, downvotes: number, userVote: "up" | "down" | null) => void
+  onVoteChange?: (postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => void
   post: {
     id: string
     author: {
@@ -35,6 +35,7 @@ interface TextPostModalProps {
     isPinned: boolean
     upvotes: number
     downvotes: number
+    userVote?: "up" | "down" | null
     comments: number
     timeAgo: string
     images?: string[]
@@ -63,7 +64,7 @@ interface Comment {
   replies: Comment[]
 }
 
-export default function TextPostModal({ open, onClose, onCommentAdded, onCommentCountUpdate: _onCommentCountUpdate, onVoteUpdate, post }: TextPostModalProps) {
+export default function TextPostModal({ open, onClose, onCommentAdded, onCommentCountUpdate: _onCommentCountUpdate, onVoteChange, post }: TextPostModalProps) {
   const [comments, setComments] = useState<Comment[]>([])
   const [commentInput, setCommentInput] = useState("")
   const [replyInput, setReplyInput] = useState("")
@@ -73,39 +74,45 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
   
   const lastVoteClickTime = useRef<number>(0) // Debounce vote clicks
   const { user } = useAuth()
-  const { userVote, upvotes, downvotes, handleVote, commentCount, syncCommentCount } = usePostSync(post.id, post.upvotes, post.downvotes, post.comments)
   
-  // Sync vote changes with parent component - enhanced with debouncing
+  // Use global vote state for real-time synchronization
+  const { voteState, updateVote } = useGlobalVoteState(post.id, {
+    upvotes: post.upvotes,
+    downvotes: post.downvotes,
+    userVote: post.userVote || null
+  })
+  
+  // Extract values for easier use
+  const { upvotes, downvotes, userVote } = voteState
+  const [isVoting, setIsVoting] = useState(false)
+  
+  // Simple comment count management for now
+  const commentCount = post.comments
+  
+  // Notify parent when vote changes 
+  const prevVoteState = useRef({ upvotes, downvotes, userVote })
+  
   useEffect(() => {
-    if (onVoteUpdate) {
-      // Add a small delay to ensure vote state is stable before syncing
-      const syncTimeout = setTimeout(() => {
-        onVoteUpdate(upvotes, downvotes, userVote)
-        console.log("🔄 Text Modal vote sync to parent:", { 
-          postId: post.id, 
-          upvotes, 
-          downvotes, 
-          userVote 
-        })
-      }, 10)
-      
-      return () => clearTimeout(syncTimeout)
+    if (onVoteChange && 
+        (prevVoteState.current.upvotes !== upvotes || 
+         prevVoteState.current.downvotes !== downvotes || 
+         prevVoteState.current.userVote !== userVote)) {
+      onVoteChange(post.id, upvotes, downvotes, userVote)
+      prevVoteState.current = { upvotes, downvotes, userVote }
     }
-    return undefined
-  }, [upvotes, downvotes, userVote, onVoteUpdate, post.id])
-
-  // Final sync when modal closes to ensure state persistence
+  }, [upvotes, downvotes, userVote, post.id, onVoteChange])
+  
+  // Debug: Log when modal opens
   useEffect(() => {
-    if (!open && onVoteUpdate) {
-      // When modal closes, do a final sync to ensure state persists
-      onVoteUpdate(upvotes, downvotes, userVote)
-      console.log("🚪 Text Modal closing - final vote sync:", { 
-        postId: post.id, 
-        finalVotes: { upvotes, downvotes, userVote } 
+    if (open) {
+      console.log('📝 Text Modal opened:', {
+        postId: post.id,
+        propVotes: { up: post.upvotes, down: post.downvotes, userVote: post.userVote },
+        hookVotes: { up: upvotes, down: downvotes, userVote }
       })
     }
-  }, [open, onVoteUpdate, upvotes, downvotes, userVote, post.id])
-
+  }, [open, post.id])
+  
   // Check if this is an image post
   const hasImages = post.images && post.images.length > 0
 
@@ -159,18 +166,111 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
     fetchData();
   }, [open, post.id])
 
-  // Debounced vote handler to prevent rapid clicking
+  // Vote handler with real-time synchronization
+  const handleVote = async (type: "up" | "down") => {
+    if (!user) {
+      alert("Please log in to vote on posts")
+      return
+    }
+    
+    if (isVoting) {
+      return // Prevent double clicks
+    }
+    
+    setIsVoting(true)
+    console.log('🗳️ Starting modal vote:', { postId: post.id, type, currentVote: userVote })
+    
+    // Calculate optimistic update
+    let newUpvotes = upvotes
+    let newDownvotes = downvotes
+    let newUserVote: "up" | "down" | null = userVote
+    
+    if (userVote === type) {
+      // Remove vote
+      newUserVote = null
+      if (type === "up") {
+        newUpvotes = Math.max(0, upvotes - 1)
+      } else {
+        newDownvotes = Math.max(0, downvotes - 1)
+      }
+    } else if (userVote) {
+      // Change vote
+      if (type === "up") {
+        newUpvotes = upvotes + 1
+        newDownvotes = Math.max(0, downvotes - 1)
+      } else {
+        newUpvotes = Math.max(0, upvotes - 1)
+        newDownvotes = downvotes + 1
+      }
+      newUserVote = type
+    } else {
+      // New vote
+      newUserVote = type
+      if (type === "up") {
+        newUpvotes = upvotes + 1
+      } else {
+        newDownvotes = downvotes + 1
+      }
+    }
+    
+    // Update UI immediately using global state manager
+    updateVote({
+      upvotes: newUpvotes,
+      downvotes: newDownvotes,
+      userVote: newUserVote
+    })
+    
+    try {
+      // Send to server
+      const response = await fetch(`/api/posts/${post.id}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: type.toUpperCase() }),
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Vote failed: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      
+      // Update with server response using global state
+      updateVote({
+        upvotes: result.upvotes,
+        downvotes: result.downvotes,
+        userVote: result.userVote
+      })
+      
+      console.log('✅ Modal Vote successful:', result)
+      
+    } catch (error) {
+      console.error('❌ Modal Vote failed:', error)
+      
+      // Rollback on error using global state
+      updateVote({
+        upvotes: upvotes,
+        downvotes: downvotes,
+        userVote: userVote
+      })
+      
+      alert('Failed to vote. Please try again.')
+    } finally {
+      setIsVoting(false)
+    }
+  }
+
   const handleDebouncedVote = async (type: "up" | "down") => {
     const now = Date.now()
     if (lastVoteClickTime.current && now - lastVoteClickTime.current < 500) {
-      console.log("🚫 Text Modal vote too fast, ignoring...")
       return
     }
     lastVoteClickTime.current = now
     
-    console.log(`🗳️ Text Modal vote initiated:`, { postId: post.id, type })
+    console.log('📝 Text Modal vote clicked:', { postId: post.id, type, currentVote: userVote })
+    
     await handleVote(type)
-    console.log(`✅ Text Modal vote completed:`, { postId: post.id, type })
+    
+    console.log('✅ Text Modal vote completed:', { postId: post.id, type, newVote: userVote })
   }
 
   const handleSubmitComment = async () => {
@@ -211,8 +311,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
         const data = await fetch(`/api/comments?postId=${post.id}`).then(res => res.json())
         if (Array.isArray(data.comments)) {
           setComments(data.comments)
-          // Sync the new comment count
-          syncCommentCount(data.comments.length)
+          // Comment count will be handled by parent component
         }
         onCommentAdded?.()
       } else {
@@ -330,8 +429,8 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
             return total + 1 + (comment.replies?.length || 0)
           }, 0)
           
-          // Instantly sync the new comment count
-          syncCommentCount(totalComments)
+          // Update comment count in parent
+          _onCommentCountUpdate?.(totalComments)
           
           return updatedComments
         })
@@ -450,8 +549,8 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
             return total + 1 + (comment.replies?.length || 0)
           }, 0)
           
-          // Instantly sync the new comment count
-          syncCommentCount(totalComments)
+          // Update comment count in parent
+          _onCommentCountUpdate?.(totalComments)
           
           return updatedComments
         })
@@ -882,28 +981,32 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                   <button 
                     onClick={() => handleDebouncedVote("up")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium active:scale-95",
+                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ease-in-out font-medium transform hover:scale-105 active:scale-95",
                       userVote === "up" 
                         ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950" 
-                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white",
+                      isVoting && "opacity-70 cursor-not-allowed"
                     )}
+                    disabled={isVoting}
                   >
-                    <ThumbsUp className="w-5 h-5" />
-                    <span>{userVote === "up" ? "Unlike" : "Like"}</span>
-                    {upvotes > 0 && <span className="text-sm">({upvotes})</span>}
+                    <ThumbsUp className={cn("w-5 h-5 transition-transform duration-200", userVote === "up" && "scale-110")} />
+                    <span className="transition-all duration-200">{userVote === "up" ? "Unlike" : "Like"}</span>
+                    {upvotes > 0 && <span className="text-sm transition-all duration-200">({upvotes})</span>}
                   </button>
                   <button 
                     onClick={() => handleDebouncedVote("down")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium active:scale-95",
+                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ease-in-out font-medium transform hover:scale-105 active:scale-95",
                       userVote === "down" 
                         ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950" 
-                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white",
+                      isVoting && "opacity-70 cursor-not-allowed"
                     )}
+                    disabled={isVoting}
                   >
-                    <ThumbsDown className="w-5 h-5" />
-                    <span>{userVote === "down" ? "Remove Dislike" : "Dislike"}</span>
-                    {downvotes > 0 && <span className="text-sm">({downvotes})</span>}
+                    <ThumbsDown className={cn("w-5 h-5 transition-transform duration-200", userVote === "down" && "scale-110")} />
+                    <span className="transition-all duration-200">{userVote === "down" ? "Remove Dislike" : "Dislike"}</span>
+                    {downvotes > 0 && <span className="text-sm transition-all duration-200">({downvotes})</span>}
                   </button>
                   <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95">
                     <MessageCircle className="w-5 h-5" />

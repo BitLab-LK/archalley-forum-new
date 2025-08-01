@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Flag, Pin, CheckCircle, Trash2, MoreHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { usePostSync } from "@/hooks/use-post-sync"
+import { useGlobalVoteState } from "@/lib/vote-sync"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +35,7 @@ interface PostCardProps {
     isPinned: boolean
     upvotes: number
     downvotes: number
+    userVote?: "up" | "down" | null
     comments: number
     timeAgo: string
     images?: string[]
@@ -46,7 +47,7 @@ interface PostCardProps {
   }
   onDelete?: () => void
   onCommentCountChange?: (postId: string, newCount: number) => void
-  onVoteChange?: (postId: string, newUpvotes: number, newDownvotes: number) => void
+  onVoteChange?: (postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => void
 }
 
 // Constants
@@ -89,8 +90,44 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   const isAdmin = useMemo(() => user?.role === "ADMIN", [user?.role])
   const canDelete = useMemo(() => isAuthor || isAdmin, [isAuthor, isAdmin])
   
-  // Use the new synchronized voting hook for instant updates
-  const { userVote, upvotes, downvotes, handleVote, syncState, commentCount, syncCommentCount } = usePostSync(post.id, post.upvotes, post.downvotes, post.comments)
+  // Use global vote state for real-time synchronization between post and modal
+  const { voteState, updateVote } = useGlobalVoteState(post.id, {
+    upvotes: post.upvotes,
+    downvotes: post.downvotes,
+    userVote: post.userVote || null
+  })
+  
+  // Extract values for easier use
+  const { upvotes, downvotes, userVote } = voteState
+  const [isVoting, setIsVoting] = useState(false)
+  
+  // For now, use the original comment count from props
+  const commentCount = post.comments
+  const syncCommentCount = useCallback((newCount: number) => {
+    console.log('Comment count would sync to:', newCount)
+  }, [])
+  
+  // Debug: Log vote changes
+  useEffect(() => {
+    console.log('🎯 PostCard vote state:', {
+      postId: post.id,
+      propVotes: { up: post.upvotes, down: post.downvotes, userVote: post.userVote },
+      hookVotes: { up: upvotes, down: downvotes, userVote }
+    })
+  }, [upvotes, downvotes, userVote, post.id])
+  
+  // Notify parent when vote changes
+  const prevVoteState = useRef({ upvotes, downvotes, userVote })
+  
+  useEffect(() => {
+    if (onVoteChange && 
+        (prevVoteState.current.upvotes !== upvotes || 
+         prevVoteState.current.downvotes !== downvotes || 
+         prevVoteState.current.userVote !== userVote)) {
+      onVoteChange(post.id, upvotes, downvotes, userVote)
+      prevVoteState.current = { upvotes, downvotes, userVote }
+    }
+  }, [upvotes, downvotes, userVote, post.id, onVoteChange])
   
   // Local state
   const [modalOpen, setModalOpen] = useState(false)
@@ -98,50 +135,16 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Use refs to track previous values for parent notifications - initialize with current hook values
-  const prevUpvotes = useRef(upvotes)
-  const prevDownvotes = useRef(downvotes)
   const prevCommentCount = useRef(commentCount)
   const lastClickTime = useRef(0) // Track last click time for debouncing
 
-  // Notify parent component when votes change (debounced) - track all vote sources
-  useEffect(() => {
-    if (onVoteChange && (upvotes !== prevUpvotes.current || downvotes !== prevDownvotes.current)) {
-      console.log(`📊 PostCard vote change detected for ${post.id}:`, {
-        from: { upvotes: prevUpvotes.current, downvotes: prevDownvotes.current },
-        to: { upvotes, downvotes }
-      })
-      
-      const timer = setTimeout(() => {
-        onVoteChange(post.id, upvotes, downvotes)
-        prevUpvotes.current = upvotes
-        prevDownvotes.current = downvotes
-        
-        console.log(`✅ PostCard notified parent of vote change for ${post.id}:`, { upvotes, downvotes })
-      }, 50) // Small delay to batch updates
-      
-      return () => clearTimeout(timer)
-    }
-    return undefined // Return undefined when no cleanup is needed
-  }, [upvotes, downvotes, post.id, onVoteChange])
-
-  // Notify parent component when comment count changes (debounced) - track all comment sources
+  // Notify parent component when comment count changes - immediate sync for smooth UX
   useEffect(() => {
     if (onCommentCountChange && commentCount !== prevCommentCount.current) {
-      console.log(`💬 PostCard comment count change detected for ${post.id}:`, {
-        from: prevCommentCount.current,
-        to: commentCount
-      })
-      
-      const timer = setTimeout(() => {
-        onCommentCountChange(post.id, commentCount)
-        prevCommentCount.current = commentCount
-        
-        console.log(`✅ PostCard notified parent of comment count change for ${post.id}:`, commentCount)
-      }, 50) // Small delay to batch updates
-      
-      return () => clearTimeout(timer)
+      // Immediate notification without delay
+      onCommentCountChange(post.id, commentCount)
+      prevCommentCount.current = commentCount
     }
-    return undefined // Return undefined when no cleanup is needed
   }, [commentCount, post.id, onCommentCountChange])
 
   // Everything syncs instantly now - votes AND comments!
@@ -172,8 +175,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
         setIsDeleting(false)
         throw new Error(errorData.error || "Failed to delete post")
       }
-      
-      console.log("Post deleted successfully")
     } catch (error) {
       console.error("Error deleting post:", error)
       setIsDeleting(false)
@@ -196,46 +197,126 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     setModalOpen(true)
   }, [])
 
-  const handleModalVoteUpdate = useCallback((newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => {
-    console.log("📊 Modal vote update received:", {
-      postId: post.id,
-      newVotes: { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote },
-      currentCardVotes: { upvotes, downvotes, userVote }
+  // Simple, direct vote handler that actually works
+  const handleVote = useCallback(async (type: "up" | "down") => {
+    if (!user) {
+      alert("Please log in to vote on posts")
+      return
+    }
+    
+    if (isVoting) {
+      return // Prevent double clicks
+    }
+    
+    setIsVoting(true)
+    console.log('🗳️ Starting vote:', { postId: post.id, type, currentVote: userVote })
+    
+    // Calculate optimistic update
+    let newUpvotes = upvotes
+    let newDownvotes = downvotes
+    let newUserVote: "up" | "down" | null = userVote
+    
+    if (userVote === type) {
+      // Remove vote
+      newUserVote = null
+      if (type === "up") {
+        newUpvotes = Math.max(0, upvotes - 1)
+      } else {
+        newDownvotes = Math.max(0, downvotes - 1)
+      }
+    } else if (userVote) {
+      // Change vote
+      if (type === "up") {
+        newUpvotes = upvotes + 1
+        newDownvotes = Math.max(0, downvotes - 1)
+      } else {
+        newUpvotes = Math.max(0, upvotes - 1)
+        newDownvotes = downvotes + 1
+      }
+      newUserVote = type
+    } else {
+      // New vote
+      newUserVote = type
+      if (type === "up") {
+        newUpvotes = upvotes + 1
+      } else {
+        newDownvotes = downvotes + 1
+      }
+    }
+    
+    // Update UI immediately using global state manager
+    updateVote({
+      upvotes: newUpvotes,
+      downvotes: newDownvotes,
+      userVote: newUserVote
     })
     
-    // Use the instant sync function for immediate updates across all instances
-    syncState(newUpvotes, newDownvotes, newUserVote)
-    
-    // Also trigger a small delay to ensure the state persists after modal close
-    setTimeout(() => {
-      console.log("🔄 Post-modal persistence check:", {
-        postId: post.id,
-        persistedVotes: { upvotes, downvotes, userVote }
+    try {
+      // Send to server
+      const response = await fetch(`/api/posts/${post.id}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: type.toUpperCase() }),
       })
-    }, 100)
-    
-    console.log("✅ Modal vote update - instant sync completed:", {
-      postId: post.id,
-      syncedVotes: { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
-    })
-  }, [syncState, post.id, upvotes, downvotes, userVote])
+      
+      if (!response.ok) {
+        throw new Error(`Vote failed: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      
+      // Update with server response using global state
+      updateVote({
+        upvotes: result.upvotes,
+        downvotes: result.downvotes,
+        userVote: result.userVote
+      })
+      
+      console.log('✅ Vote successful:', result)
+      
+    } catch (error) {
+      console.error('❌ Vote failed:', error)
+      
+      // Rollback on error using global state
+      updateVote({
+        upvotes: upvotes,
+        downvotes: downvotes,
+        userVote: userVote
+      })
+      
+      alert('Failed to vote. Please try again.')
+    } finally {
+      setIsVoting(false)
+    }
+  }, [user, isVoting, post.id, userVote, upvotes, downvotes])
 
   // Enhanced vote handler that syncs with modals and provides instant feedback
   const handleCardVote = useCallback(async (type: "up" | "down") => {
-    console.log(`🗳️ Card vote initiated:`, { postId: post.id, type, currentUserVote: userVote })
+    console.log('🎯 DEBUG: PostCard vote clicked START:', { 
+      postId: post.id, 
+      type, 
+      currentVote: userVote,
+      handleVote: typeof handleVote 
+    })
     
     // Prevent rapid clicking - debounce button clicks using ref
     const now = Date.now()
     if (lastClickTime.current && now - lastClickTime.current < 500) {
-      console.log("🚫 Vote too fast, ignoring...")
+      console.log('🎯 DEBUG: Vote debounced')
       return
     }
     lastClickTime.current = now
     
-    // Call the synchronized vote handler for instant updates
-    await handleVote(type)
+    try {
+      console.log('🎯 DEBUG: Calling handleVote...')
+      await handleVote(type)
+      console.log('🎯 DEBUG: handleVote completed successfully')
+    } catch (error) {
+      console.error('🎯 DEBUG: handleVote failed:', error)
+    }
     
-    console.log(`✅ Card vote completed:`, { postId: post.id, type })
+    
+    console.log('✅ PostCard vote completed:', { postId: post.id, type, newVote: userVote })
   }, [handleVote, post.id, userVote])
   if (isLoading) {
     return (
@@ -248,8 +329,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
 
   // Memoized image renderer for better performance
   const renderImages = useCallback((images: string[]) => {
-    console.log('🖼️ Rendering images for post:', post.id, 'Images:', images)
-    
     const count = images.length
     
     if (count === 1) {
@@ -265,9 +344,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
               priority
               onError={(e) => {
                 console.error('❌ Image failed to load:', images[0], e)
-              }}
-              onLoad={() => {
-                console.log('✅ Image loaded successfully:', images[0])
               }}
             />
           </div>
@@ -446,24 +522,28 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                   size="sm"
                   onClick={() => handleCardVote("up")}
                   className={cn(
-                    "text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3",
-                    userVote === "up" && "text-primary"
+                    "text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95",
+                    userVote === "up" && "text-primary",
+                    isVoting && "opacity-70 cursor-not-allowed"
                   )}
+                  disabled={isVoting}
                 >
-                  <ThumbsUp className="w-4 h-4 mr-1" />
-                  <span>{upvotes}</span>
+                  <ThumbsUp className={cn("w-4 h-4 mr-1 transition-transform duration-200", userVote === "up" && "scale-110")} />
+                  <span className="transition-all duration-200">{upvotes}</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleCardVote("down")}
                   className={cn(
-                    "text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-3",
-                    userVote === "down" && "text-red-500"
+                    "text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-3 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95",
+                    userVote === "down" && "text-red-500",
+                    isVoting && "opacity-70 cursor-not-allowed"
                   )}
+                  disabled={isVoting}
                 >
-                  <ThumbsDown className="w-4 h-4 mr-1" />
-                  <span>{downvotes}</span>
+                  <ThumbsDown className={cn("w-4 h-4 mr-1 transition-transform duration-200", userVote === "down" && "scale-110")} />
+                  <span className="transition-all duration-200">{downvotes}</span>
                 </Button>
               </div>
 
@@ -517,14 +597,15 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
         onClose={() => setModalOpen(false)} 
         post={{
           ...post,
-          upvotes: upvotes,
-          downvotes: downvotes,
+          upvotes: upvotes,        // Current global state, not original props
+          downvotes: downvotes,    // Current global state, not original props  
+          userVote: userVote,      // Current global state, not original props
           comments: commentCount
         }} 
         initialImage={modalImageIndex} 
         onCommentAdded={handleCommentAdded}
         onCommentCountUpdate={handleCommentCountUpdate}
-        onVoteUpdate={handleModalVoteUpdate}
+        onVoteChange={onVoteChange}
       />
     </>
   )

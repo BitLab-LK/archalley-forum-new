@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/lib/auth-context"
+import { useSidebar } from "@/lib/sidebar-context"
 import { toast } from "sonner"
 
 interface Post {
@@ -26,6 +27,7 @@ interface Post {
   isPinned: boolean
   upvotes: number
   downvotes: number
+  userVote?: "up" | "down" | null
   comments: number
   timeAgo: string
   images?: string[]
@@ -51,6 +53,7 @@ function HomePageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { user } = useAuth()
+  const { refreshAll } = useSidebar() // For refreshing sidebar on post deletion
 
   const fetchPosts = async (page: number = 1) => {
     setIsLoading(true)
@@ -116,6 +119,10 @@ function HomePageContent() {
       }
 
       toast.success("Post deleted successfully")
+      
+      // Refresh sidebar data in real-time after successful deletion
+      refreshAll()
+      
     } catch (error) {
       toast.error("Failed to delete post")
     }
@@ -131,18 +138,14 @@ function HomePageContent() {
     )
   }
 
-  const handleVoteChange = (postId: string, newUpvotes: number, newDownvotes: number) => {
-    console.log(`🏠 Homepage received vote change for ${postId}:`, { newUpvotes, newDownvotes })
-    
+  const handleVoteChange = (postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => {
     setPosts(prevPosts => 
       prevPosts.map(post => 
         post.id === postId 
-          ? { ...post, upvotes: newUpvotes, downvotes: newDownvotes }
+          ? { ...post, upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
           : post
       )
     )
-    
-    console.log(`✅ Homepage posts state updated for ${postId}`)
   }
 
   // Generate pagination range with ellipsis

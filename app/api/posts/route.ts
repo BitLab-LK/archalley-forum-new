@@ -397,7 +397,7 @@ export async function GET(request: NextRequest) {
       // Transform the data to match the frontend format
       let transformedPosts = posts.map((post) => {
         const voteCount = voteCountMap.get(post.id) || { upvotes: 0, downvotes: 0 }
-        // const userVote = userVoteMap.get(post.id) || null // Can be used later if needed
+        const userVote = userVoteMap.get(post.id)?.toLowerCase() || null // Include user vote
         const images = attachmentMap.get(post.id) || []
         
         return {
@@ -416,6 +416,7 @@ export async function GET(request: NextRequest) {
           isPinned: post.isPinned,
           upvotes: voteCount.upvotes,
           downvotes: voteCount.downvotes,
+          userVote: userVote as "up" | "down" | null, // Add user vote to post data
           comments: post._count.Comment,
           timeAgo: getTimeAgo(post.createdAt),
           images: images,

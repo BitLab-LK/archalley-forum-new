@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import { usePostSync } from "@/hooks/use-post-sync"
+import { useGlobalVoteState } from "@/lib/vote-sync"
 import { useAuth } from "@/lib/auth-context"
 
 // Types
@@ -45,7 +45,7 @@ interface ImagePostModalProps {
   onClose: () => void
   onCommentAdded?: () => void
   onCommentCountUpdate?: (newCount: number) => void
-  onVoteUpdate?: (upvotes: number, downvotes: number, userVote: "up" | "down" | null) => void
+  onVoteChange?: (postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => void
   post: {
     id: string
     author: {
@@ -62,6 +62,7 @@ interface ImagePostModalProps {
     isPinned: boolean
     upvotes: number
     downvotes: number
+    userVote?: "up" | "down" | null
     comments: number
     timeAgo: string
     images?: string[]
@@ -79,7 +80,7 @@ export default function ImagePostModal({
   onClose, 
   onCommentAdded, 
   onCommentCountUpdate,
-  onVoteUpdate, 
+  onVoteChange,
   post, 
   initialImage = 0 
 }: ImagePostModalProps) {
@@ -96,12 +97,48 @@ export default function ImagePostModal({
   const commentInputRef = useRef<HTMLInputElement>(null)
   const lastVoteClickTime = useRef<number>(0) // Debounce vote clicks
   const { user } = useAuth()
-  const { userVote, upvotes, downvotes, handleVote, commentCount, syncCommentCount } = usePostSync(
-    post.id,
-    post.upvotes, 
-    post.downvotes,
-    post.comments
-  )  // Computed values
+  
+  // Use global vote state for real-time synchronization
+  const { voteState, updateVote } = useGlobalVoteState(post.id, {
+    upvotes: post.upvotes,
+    downvotes: post.downvotes,
+    userVote: post.userVote || null
+  })
+  
+  // Extract values for easier use
+  const { upvotes, downvotes, userVote } = voteState
+  const [isVoting, setIsVoting] = useState(false)
+  
+  // Simple comment count management for now
+  const commentCount = post.comments
+  
+  // Notify parent when vote changes 
+  const prevVoteState = useRef({ upvotes, downvotes, userVote })
+  
+  useEffect(() => {
+    if (onVoteChange && 
+        (prevVoteState.current.upvotes !== upvotes || 
+         prevVoteState.current.downvotes !== downvotes || 
+         prevVoteState.current.userVote !== userVote)) {
+      onVoteChange(post.id, upvotes, downvotes, userVote)
+      prevVoteState.current = { upvotes, downvotes, userVote }
+    }
+  }, [upvotes, downvotes, userVote, post.id, onVoteChange])
+  
+  // Debug: Log when modal opens
+  useEffect(() => {
+    if (open) {
+      console.log('🖼️ Image Modal opened:', {
+        postId: post.id,
+        propVotes: { up: post.upvotes, down: post.downvotes, userVote: post.userVote },
+        hookVotes: { up: upvotes, down: downvotes, userVote }
+      })
+    }
+  }, [open, post.id])
+  
+
+
+  // Computed values
   const images = post.images || []
   const hasImages = images.length > 0
 
@@ -109,37 +146,6 @@ export default function ImagePostModal({
   useEffect(() => {
     setCarouselIndex(initialImage)
   }, [initialImage, open])
-
-  // Sync vote changes with parent component - enhanced with debouncing
-  useEffect(() => {
-    if (onVoteUpdate) {
-      // Add a small delay to ensure vote state is stable before syncing
-      const syncTimeout = setTimeout(() => {
-        onVoteUpdate(upvotes, downvotes, userVote)
-        console.log("🔄 Image Modal vote sync to parent:", { 
-          postId: post.id, 
-          upvotes, 
-          downvotes, 
-          userVote 
-        })
-      }, 10)
-      
-      return () => clearTimeout(syncTimeout)
-    }
-    return undefined
-  }, [upvotes, downvotes, userVote, onVoteUpdate, post.id])
-
-  // Final sync when modal closes to ensure state persistence
-  useEffect(() => {
-    if (!open && onVoteUpdate) {
-      // When modal closes, do a final sync to ensure state persists
-      onVoteUpdate(upvotes, downvotes, userVote)
-      console.log("🚪 Image Modal closing - final vote sync:", { 
-        postId: post.id, 
-        finalVotes: { upvotes, downvotes, userVote } 
-      })
-    }
-  }, [open, onVoteUpdate, upvotes, downvotes, userVote, post.id])
 
   // Fetch comments when modal opens
   useEffect(() => {
@@ -169,6 +175,99 @@ export default function ImagePostModal({
       .finally(() => setLoading(false))
   }, [open, post.id])
 
+  // Handle vote action with smooth animation and global sync
+  const handleVote = async (type: "up" | "down") => {
+    if (!user) {
+      alert("Please log in to vote on posts")
+      return
+    }
+    
+    if (isVoting) {
+      return // Prevent double clicks
+    }
+    
+    setIsVoting(true)
+    console.log('🗳️ Starting vote:', { postId: post.id, type, currentVote: userVote })
+    
+    // Calculate optimistic update
+    let newUpvotes = upvotes
+    let newDownvotes = downvotes
+    let newUserVote: "up" | "down" | null = userVote
+    
+    if (userVote === type) {
+      // Remove vote
+      newUserVote = null
+      if (type === "up") {
+        newUpvotes = Math.max(0, upvotes - 1)
+      } else {
+        newDownvotes = Math.max(0, downvotes - 1)
+      }
+    } else if (userVote) {
+      // Change vote
+      if (type === "up") {
+        newUpvotes = upvotes + 1
+        newDownvotes = Math.max(0, downvotes - 1)
+      } else {
+        newUpvotes = Math.max(0, upvotes - 1)
+        newDownvotes = downvotes + 1
+      }
+      newUserVote = type
+    } else {
+      // New vote
+      newUserVote = type
+      if (type === "up") {
+        newUpvotes = upvotes + 1
+      } else {
+        newDownvotes = downvotes + 1
+      }
+    }
+    
+    // Update UI immediately using global state manager
+    updateVote({
+      upvotes: newUpvotes,
+      downvotes: newDownvotes,
+      userVote: newUserVote
+    })
+    
+    try {
+      // Send to server
+      const response = await fetch(`/api/posts/${post.id}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: type.toUpperCase() }),
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Vote failed: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      
+      // Update with server response using global state
+      updateVote({
+        upvotes: result.upvotes,
+        downvotes: result.downvotes,
+        userVote: result.userVote
+      })
+      
+      console.log('✅ Vote successful:', result)
+      
+    } catch (error) {
+      console.error('❌ Vote failed:', error)
+      
+      // Rollback on error using global state
+      updateVote({
+        upvotes: upvotes,
+        downvotes: downvotes,
+        userVote: userVote
+      })
+      
+      alert('Failed to vote. Please try again.')
+    } finally {
+      setIsVoting(false)
+    }
+  }
+
   // Event handlers
   const handleCommentClick = () => {
     commentInputRef.current?.focus()
@@ -184,18 +283,18 @@ export default function ImagePostModal({
     }
   }
 
-  // Debounced vote handler to prevent rapid clicking
   const handleDebouncedVote = async (type: "up" | "down") => {
     const now = Date.now()
     if (lastVoteClickTime.current && now - lastVoteClickTime.current < 500) {
-      console.log("🚫 Image Modal vote too fast, ignoring...")
       return
     }
     lastVoteClickTime.current = now
     
-    console.log(`🗳️ Image Modal vote initiated:`, { postId: post.id, type })
+    console.log('🖼️ Image Modal vote clicked:', { postId: post.id, type, currentVote: userVote })
+    
     await handleVote(type)
-    console.log(`✅ Image Modal vote completed:`, { postId: post.id, type })
+    
+    console.log('✅ Image Modal vote completed:', { postId: post.id, type, newVote: userVote })
   }
 
   const handleSubmitComment = async () => {
@@ -244,7 +343,7 @@ export default function ImagePostModal({
               : comment
           )
           // Sync comment count with the updated length
-          syncCommentCount(updatedComments.length)
+          onCommentCountUpdate?.(updatedComments.length)
           return updatedComments
         })
         
@@ -356,7 +455,7 @@ export default function ImagePostModal({
           }, 0)
           
           // Instantly sync the new comment count
-          syncCommentCount(totalComments)
+          onCommentCountUpdate?.(totalComments)
           
           return updatedComments
         })
@@ -762,7 +861,7 @@ export default function ImagePostModal({
           }, 0)
           
           // Instantly sync the new comment count after deletion
-          syncCommentCount(totalComments)
+          onCommentCountUpdate?.(totalComments)
           
           return updatedComments
         })
@@ -994,8 +1093,10 @@ export default function ImagePostModal({
           <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
             <div className="flex items-center gap-3">
               <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarImage src="/placeholder-user.jpg" />
-                <AvatarFallback className="bg-blue-500 text-white text-xs">U</AvatarFallback>
+                <AvatarImage src={user?.image || "/placeholder-user.jpg"} />
+                <AvatarFallback className="bg-blue-500 text-white text-xs">
+                  {user?.name?.[0]?.toUpperCase() || "U"}
+                </AvatarFallback>
               </Avatar>
               <div className="flex-1 relative">
                 <input 

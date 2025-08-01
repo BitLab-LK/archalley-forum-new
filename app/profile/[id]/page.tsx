@@ -87,10 +87,10 @@ export default function UserProfilePage() {
   }
 
   // Handle vote changes - this will trigger recalculation of totals
-  const handleVoteChange = (postId: string, newUpvotes: number, newDownvotes: number) => {
+  const handleVoteChange = (postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => {
     setPosts(posts.map(post => 
       post.id === postId 
-        ? { ...post, upvotes: newUpvotes, downvotes: newDownvotes }
+        ? { ...post, upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
         : post
     ))
   }

@@ -8,7 +8,7 @@ interface PostModalProps {
   onClose: () => void
   onCommentAdded?: () => void
   onCommentCountUpdate?: (newCount: number) => void
-  onVoteUpdate?: (upvotes: number, downvotes: number, userVote: "up" | "down" | null) => void
+  onVoteChange?: (postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => void
   post: {
     id: string
     author: {
@@ -25,6 +25,7 @@ interface PostModalProps {
     isPinned: boolean
     upvotes: number
     downvotes: number
+    userVote?: "up" | "down" | null
     comments: number
     timeAgo: string
     images?: string[]
@@ -37,9 +38,9 @@ interface PostModalProps {
   initialImage?: number
 }
 
-export default function PostModal({ open, onClose, onCommentAdded, onCommentCountUpdate, onVoteUpdate, post, initialImage }: PostModalProps) {
+export default function PostModal({ open, onClose, onCommentAdded, onCommentCountUpdate, onVoteChange, post, initialImage }: PostModalProps) {
   if (post.images && post.images.length > 0) {
-    return <ImagePostModal open={open} onClose={onClose} onCommentAdded={onCommentAdded} onCommentCountUpdate={onCommentCountUpdate} onVoteUpdate={onVoteUpdate} post={post} initialImage={initialImage} />
+    return <ImagePostModal open={open} onClose={onClose} onCommentAdded={onCommentAdded} onCommentCountUpdate={onCommentCountUpdate} onVoteChange={onVoteChange} post={post} initialImage={initialImage} />
   }
-  return <TextPostModal open={open} onClose={onClose} onCommentAdded={onCommentAdded} onCommentCountUpdate={onCommentCountUpdate} onVoteUpdate={onVoteUpdate} post={post} />
+  return <TextPostModal open={open} onClose={onClose} onCommentAdded={onCommentAdded} onCommentCountUpdate={onCommentCountUpdate} onVoteChange={onVoteChange} post={post} />
 } 

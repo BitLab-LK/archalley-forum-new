@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth-context"
+import { useSidebar } from "@/lib/sidebar-context"
 import { X, Loader2, Cloud } from "lucide-react"
 import Image from "next/image"
 import { Progress } from "@/components/ui/progress"
@@ -28,6 +29,7 @@ interface AIClassification {
 
 export default function PostCreator({ onPostCreated }: PostCreatorProps) {
   const { user, isAuthenticated } = useAuth()
+  const { refreshAll } = useSidebar() // Get refresh function from context
   const [content, setContent] = useState("")
   const [isAnonymous, setIsAnonymous] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -259,6 +261,11 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       }
 
       toast.success("Post created successfully!")
+      
+      // Refresh sidebar data in real-time
+      console.log('🔄 Post created - refreshing sidebar...')
+      refreshAll()
+      
       onPostCreated()
 
     } catch (error) {

@@ -82,12 +82,9 @@ Return the response in this exact JSON format:
 }`
 
   try {
-    console.log("🤖 Calling Gemini API for translation...")
     const result = await model.generateContent(prompt)
     const response = await result.response
     const responseText = response.text()
-    
-    console.log("📝 Raw AI response:", responseText)
     
     const data = extractJsonFromMarkdown(responseText)
 

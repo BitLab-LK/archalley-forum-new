@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { TrendingUp, Users, Award } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useSidebar } from "@/lib/sidebar-context"
+import { cn } from "@/lib/utils"
 
 interface Category {
   id: string
@@ -42,16 +44,23 @@ export default function Sidebar() {
   const [isLoading, setIsLoading] = useState(true)
   const [trendingPosts, setTrendingPosts] = useState<TrendingPost[]>([])
   const [isTrendingLoading, setIsTrendingLoading] = useState(true)
+  
+  // Use sidebar context for real-time updates
+  const { categoriesKey, trendingKey } = useSidebar()
 
+  // Fetch categories - now responds to categoriesKey changes
   useEffect(() => {
     const fetchCategories = async () => {
+      setIsLoading(true)
       try {
+        console.log('📊 Fetching categories (refresh key:', categoriesKey, ')')
         const response = await fetch('/api/categories')
         if (!response.ok) {
           throw new Error('Failed to fetch categories')
         }
         const data = await response.json()
         setCategories(data)
+        console.log('✅ Categories loaded:', data.length, 'categories')
       } catch (error) {
         console.error('Error fetching categories:', error)
       } finally {
@@ -60,18 +69,21 @@ export default function Sidebar() {
     }
 
     fetchCategories()
-  }, [])
+  }, [categoriesKey]) // Re-fetch when categoriesKey changes
 
+  // Fetch trending posts - now responds to trendingKey changes  
   useEffect(() => {
     const fetchTrendingPosts = async () => {
       setIsTrendingLoading(true)
       try {
+        console.log('🔥 Fetching trending posts (refresh key:', trendingKey, ')')
         const response = await fetch('/api/posts?limit=5&sortBy=upvotes&sortOrder=desc')
         if (!response.ok) {
           throw new Error('Failed to fetch trending posts')
         }
         const data = await response.json()
         setTrendingPosts(data.posts || [])
+        console.log('✅ Trending posts loaded:', data.posts?.length || 0, 'posts')
       } catch (error) {
         console.error('Error fetching trending posts:', error)
       } finally {
@@ -79,7 +91,7 @@ export default function Sidebar() {
       }
     }
     fetchTrendingPosts()
-  }, [])
+  }, [trendingKey]) // Re-fetch when trendingKey changes
 
   return (
     <div className="space-y-6">
@@ -87,8 +99,11 @@ export default function Sidebar() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <TrendingUp className="w-5 h-5" />
+            <TrendingUp className={cn("w-5 h-5", isLoading && "animate-pulse")} />
             <span>Categories</span>
+            {isLoading && (
+              <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -105,13 +120,13 @@ export default function Sidebar() {
             ))
           ) : (
             categories.map((category) => (
-              <div key={category.id} className="flex items-center justify-between">
+              <div key={category.id} className="flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg p-2 transition-colors cursor-pointer">
                 <div className="flex items-center space-x-2">
                   <div className={`w-3 h-3 rounded-full ${category.color}`} />
                   <span className="text-sm font-medium">{category.name}</span>
                 </div>
                 <Badge variant="secondary" className="text-xs">
-                  {category.count}
+                  {category.count || 0}
                 </Badge>
               </div>
             ))
@@ -123,8 +138,11 @@ export default function Sidebar() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Award className="w-5 h-5" />
+            <Award className={cn("w-5 h-5", isTrendingLoading && "animate-pulse")} />
             <span>Trending Posts</span>
+            {isTrendingLoading && (
+              <div className="w-4 h-4 border-2 border-orange-200 border-t-orange-600 rounded-full animate-spin" />
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
