@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { useGlobalVoteState } from "@/lib/vote-sync"
+import { activityEventManager } from "@/lib/activity-events"
 import { useAuth } from "@/lib/auth-context"
 
 // Types
@@ -250,6 +251,11 @@ export default function ImagePostModal({
         userVote: result.userVote
       })
       
+      // Emit activity event for real-time feed updates
+      if (user?.id) {
+        activityEventManager.emitVote(user.id, post.id)
+      }
+      
       console.log('✅ Vote successful:', result)
       
     } catch (error) {
@@ -342,6 +348,12 @@ export default function ImagePostModal({
                 }
               : comment
           )
+          
+          // Emit activity event for real-time feed updates
+          if (user?.id) {
+            activityEventManager.emitComment(user.id, post.id, data.comment.id)
+          }
+          
           // Sync comment count with the updated length
           onCommentCountUpdate?.(updatedComments.length)
           return updatedComments
@@ -453,6 +465,11 @@ export default function ImagePostModal({
           const totalComments = updatedComments.reduce((total, comment) => {
             return total + 1 + (comment.replies?.length || 0)
           }, 0)
+          
+          // Emit activity event for real-time feed updates
+          if (user?.id) {
+            activityEventManager.emitComment(user.id, post.id, data.comment.id)
+          }
           
           // Instantly sync the new comment count
           onCommentCountUpdate?.(totalComments)

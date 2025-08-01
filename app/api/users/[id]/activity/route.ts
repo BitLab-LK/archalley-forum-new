@@ -68,11 +68,14 @@ export async function GET(
       return NextResponse.json({ error: "Profile is private" }, { status: 403 })
     }
 
-    // Get user activities - combining multiple data sources
+    // Get user activities - improved approach with proper chronological ordering
     const activities: Activity[] = []
 
-    // 1. Post creation activities
-    const posts = await prisma.post.findMany({
+    // Get all activities in chronological order by using a unified approach
+    // We'll fetch recent data and then sort by actual creation time
+    
+    // 1. Get recent posts
+    const recentPosts = await prisma.post.findMany({
       where: { authorId: userId },
       select: {
         id: true,
@@ -83,12 +86,67 @@ export async function GET(
         }
       },
       orderBy: { createdAt: "desc" },
-      take: limit,
-      skip: offset
+      take: 50 // Get more to ensure we capture enough recent activity
     })
 
-    // Add post activities
-    posts.forEach(post => {
+    // 2. Get recent votes
+    const recentVotes = await prisma.votes.findMany({
+      where: { 
+        userId,
+        postId: { not: null },
+        createdAt: {
+          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
+        }
+      },
+      select: {
+        id: true,
+        type: true,
+        createdAt: true,
+        postId: true
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50
+    })
+
+    // Get post details for votes
+    const votePostIds = recentVotes.map(vote => vote.postId).filter(Boolean) as string[]
+    const postsForVotes = await prisma.post.findMany({
+      where: { id: { in: votePostIds } },
+      select: {
+        id: true,
+        content: true,
+        users: {
+          select: { name: true, id: true }
+        }
+      }
+    })
+    const votePostMap = new Map(postsForVotes.map(post => [post.id, post]))
+
+    // 3. Get recent comments
+    const recentComments = await prisma.comment.findMany({
+      where: { 
+        authorId: userId,
+        createdAt: {
+          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
+        }
+      },
+      include: {
+        Post: {
+          select: {
+            id: true,
+            content: true,
+            users: {
+              select: { name: true, id: true }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50
+    })
+
+    // Convert to unified activity format
+    recentPosts.forEach(post => {
       activities.push({
         id: `post-${post.id}`,
         type: "post_created",
@@ -103,41 +161,9 @@ export async function GET(
       })
     })
 
-    // 2. Vote activities (likes/dislikes)
-    const votes = await prisma.votes.findMany({
-      where: { 
-        userId,
-        postId: { not: null } // Only post votes for now
-      },
-      select: {
-        id: true,
-        type: true,
-        createdAt: true,
-        postId: true
-      },
-      orderBy: { createdAt: "desc" },
-      take: limit
-    })
-
-    // Get post details for votes
-    const postIds = votes.map(vote => vote.postId).filter(Boolean) as string[]
-    const postsForVotes = await prisma.post.findMany({
-      where: { id: { in: postIds } },
-      select: {
-        id: true,
-        content: true,
-        users: {
-          select: { name: true, id: true }
-        }
-      }
-    })
-
-    const postMap = new Map(postsForVotes.map(post => [post.id, post]))
-
-    // Add vote activities  
-    votes.forEach(vote => {
+    recentVotes.forEach(vote => {
       if (vote.postId) {
-        const post = postMap.get(vote.postId)
+        const post = votePostMap.get(vote.postId)
         if (post) {
           activities.push({
             id: `vote-${vote.id}`,
@@ -158,29 +184,7 @@ export async function GET(
       }
     })
 
-    // 3. Comment activities
-    const comments = await prisma.comment.findMany({
-      where: { authorId: userId },
-      select: {
-        id: true,
-        content: true,
-        createdAt: true,
-        Post: {
-          select: {
-            id: true,
-            content: true,
-            users: {
-              select: { name: true, id: true }
-            }
-          }
-        }
-      },
-      orderBy: { createdAt: "desc" },
-      take: limit
-    })
-
-    // Add comment activities
-    comments.forEach(comment => {
+    recentComments.forEach(comment => {
       activities.push({
         id: `comment-${comment.id}`,
         type: "comment_created",
@@ -198,11 +202,13 @@ export async function GET(
       })
     })
 
-    // Sort all activities by date
+    // Sort all activities by date (most recent first)
     activities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-    // Paginate the combined results
-    const paginatedActivities = activities.slice(0, limit)
+    // Apply pagination to the sorted results
+    const totalActivities = activities.length
+    const paginatedActivities = activities.slice(offset, offset + limit)
+    const hasMore = offset + limit < totalActivities
 
     // Calculate time ago for each activity
     const activitiesWithTimeAgo = paginatedActivities.map(activity => ({
@@ -214,13 +220,21 @@ export async function GET(
       activities: activitiesWithTimeAgo,
       pagination: {
         currentPage: page,
-        totalPages: Math.ceil(activities.length / limit),
-        totalActivities: activities.length,
-        hasMore: activities.length > limit
+        totalPages: Math.ceil(totalActivities / limit),
+        totalActivities,
+        hasMore,
+        limit
       },
       user: {
         id: targetUser.id,
         name: targetUser.name
+      },
+      debug: {
+        fetchedActivities: totalActivities,
+        returnedActivities: paginatedActivities.length,
+        page,
+        offset,
+        limit
       }
     })
 

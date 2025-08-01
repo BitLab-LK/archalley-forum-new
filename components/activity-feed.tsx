@@ -15,6 +15,7 @@ import {
   ChevronUp
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { activityEventManager, ActivityEvent } from "@/lib/activity-events"
 
 interface Activity {
   id: string
@@ -51,15 +52,56 @@ export default function ActivityFeed({ userId, userName, isOwnProfile = false }:
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [showAll, setShowAll] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
     fetchActivities()
   }, [userId])
 
-  const fetchActivities = async (pageNum = 1) => {
+  // Listen to real-time activity events
+  useEffect(() => {
+    const handleActivityEvent = (event: ActivityEvent) => {
+      // Refresh activities when user performs actions
+      console.log('🔄 Activity event received:', event)
+      refreshActivities()
+    }
+
+    activityEventManager.subscribe(userId, handleActivityEvent)
+    
+    return () => {
+      activityEventManager.unsubscribe(userId, handleActivityEvent)
+    }
+  }, [userId])
+
+  // Auto-refresh every 30 seconds if user is active on the page
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refreshActivities()
+      }
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [userId]) // Add userId dependency
+
+  // Listen for page visibility changes to refresh when user comes back
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshActivities()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [userId])
+
+  const fetchActivities = async (pageNum = 1, isRefresh = false) => {
     try {
-      setLoading(true)
-      const response = await fetch(`/api/users/${userId}/activity?page=${pageNum}&limit=10`)
+      if (!isRefresh) setLoading(true)
+      if (isRefresh) setIsRefreshing(true)
+      
+      const response = await fetch(`/api/users/${userId}/activity?page=${pageNum}&limit=10&t=${Date.now()}`)
       
       if (!response.ok) {
         throw new Error("Failed to fetch activities")
@@ -79,7 +121,12 @@ export default function ActivityFeed({ userId, userName, isOwnProfile = false }:
       setError(err instanceof Error ? err.message : "Failed to load activities")
     } finally {
       setLoading(false)
+      setIsRefreshing(false)
     }
+  }
+
+  const refreshActivities = () => {
+    fetchActivities(1, true)
   }
 
   const loadMore = () => {
@@ -209,27 +256,41 @@ export default function ActivityFeed({ userId, userName, isOwnProfile = false }:
             <div className="flex items-center space-x-2">
               <Clock className="w-5 h-5 text-gray-500" />
               <h3 className="text-lg font-semibold">Recent Activity</h3>
+              {isRefreshing && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+              )}
             </div>
-            {activities.length > 5 && (
+            <div className="flex items-center space-x-2">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowAll(!showAll)}
+                onClick={refreshActivities}
+                disabled={isRefreshing}
                 className="text-sm"
               >
-                {showAll ? (
-                  <>
-                    <ChevronUp className="w-4 h-4 mr-1" />
-                    Show Less
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="w-4 h-4 mr-1" />
-                    Show All ({activities.length})
-                  </>
-                )}
+                {isRefreshing ? "Refreshing..." : "Refresh"}
               </Button>
-            )}
+              {activities.length > 5 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAll(!showAll)}
+                  className="text-sm"
+                >
+                  {showAll ? (
+                    <>
+                      <ChevronUp className="w-4 h-4 mr-1" />
+                      Show Less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4 mr-1" />
+                      Show All ({activities.length})
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-4">

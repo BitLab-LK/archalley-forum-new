@@ -6,6 +6,7 @@ import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Globe, Trash2, MoreHorizon
 import { useAuth } from "@/lib/auth-context"
 import { cn } from "@/lib/utils"
 import { useGlobalVoteState } from "@/lib/vote-sync"
+import { activityEventManager } from "@/lib/activity-events"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -241,6 +242,11 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
         userVote: result.userVote
       })
       
+      // Emit activity event for real-time feed updates
+      if (user?.id) {
+        activityEventManager.emitVote(user.id, post.id)
+      }
+      
       console.log('✅ Modal Vote successful:', result)
       
     } catch (error) {
@@ -313,6 +319,12 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
           setComments(data.comments)
           // Comment count will be handled by parent component
         }
+        
+        // Emit activity event for real-time feed updates
+        if (user?.id) {
+          activityEventManager.emitComment(user.id, post.id, optimisticComment.id)
+        }
+        
         onCommentAdded?.()
       } else {
         // Remove optimistic comment on error
@@ -543,6 +555,11 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
         
         setComments(prev => {
           const updatedComments = removeOptimisticAndAddReal(prev)
+          
+          // Emit activity event for real-time feed updates
+          if (user?.id) {
+            activityEventManager.emitComment(user.id, post.id, data.comment.id)
+          }
           
           // Calculate total comments including replies after adding the new reply
           const totalComments = updatedComments.reduce((total, comment) => {

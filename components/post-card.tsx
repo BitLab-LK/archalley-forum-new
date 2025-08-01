@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Flag, Pin, CheckCircle, Trash2, MoreHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useGlobalVoteState } from "@/lib/vote-sync"
+import { activityEventManager } from "@/lib/activity-events"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -271,6 +272,11 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
         downvotes: result.downvotes,
         userVote: result.userVote
       })
+      
+      // Emit activity event for real-time feed updates
+      if (user?.id) {
+        activityEventManager.emitVote(user.id, post.id)
+      }
       
       console.log('✅ Vote successful:', result)
       
