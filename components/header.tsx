@@ -180,10 +180,10 @@ export default function Header() {
           ) : (
             <div className="flex items-center space-x-2">
               <Button variant="ghost" asChild>
-                <Link href="/auth/login">Sign In</Link>
+                <Link href="/auth/register?tab=login">Sign In</Link>
               </Button>
               <Button asChild>
-                <Link href="/auth/register">Sign Up</Link>
+                <Link href="/auth/register?tab=register">Sign Up</Link>
               </Button>
             </div>
           )}

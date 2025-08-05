@@ -155,21 +155,31 @@ model settings {
 
 model users {
   id                String          @id
-  name              String?
+  firstName         String?
+  lastName          String?
+  name              String?         // Keep for backward compatibility
   email             String          @unique
   emailVerified     DateTime?
   image             String?
   password          String?
+  phoneNumber       String?
+  headline          String?
+  skills            String[]        @default([])
+  industry          String?
+  country           String?
+  city              String?
   company           String?
   profession        String?
   bio               String?
-  location          String?
+  location          String?         // Keep for backward compatibility
   website           String?
+  portfolioUrl      String?
   phone             String?
   profileVisibility Boolean         @default(true)
   linkedinUrl       String?
   twitterUrl        String?
   instagramUrl      String?
+  facebookUrl       String?
   role              UserRole        @default(MEMBER)
   rank              UserRank        @default(NEW_MEMBER)
   isVerified        Boolean         @default(false)
@@ -187,6 +197,40 @@ model users {
   pages             pages[]
   settings          settings[]
   votes             votes[]
+  workExperience    WorkExperience[]
+  education         Education[]
+}
+
+model WorkExperience {
+  id          String    @id
+  jobTitle    String
+  company     String
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean   @default(false)
+  description String?
+  userId      String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  user        users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Education {
+  id          String    @id
+  degree      String
+  institution String
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean   @default(false)
+  description String?
+  userId      String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  user        users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model votes {
