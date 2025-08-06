@@ -10,6 +10,7 @@ const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
   phoneNumber: z.string().optional(),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  image: z.string().optional(), // Add image field
   headline: z.string().optional(),
   skills: z.array(z.string()).optional(),
   industry: z.string().optional(),
@@ -43,12 +44,20 @@ const registerSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('📥 Registration request received:', {
+      email: body.email,
+      firstName: body.firstName,
+      lastName: body.lastName,
+      image: body.image || 'No image provided'
+    })
+    
     const {
       firstName,
       lastName,
       email,
       phoneNumber,
       password,
+      image,
       headline,
       skills,
       industry,
@@ -74,6 +83,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User with this email already exists" }, { status: 400 })
     }
 
+    // Check if phone number already exists (if provided)
+    if (phoneNumber) {
+      console.log('📞 Checking phone number uniqueness:', phoneNumber)
+      const existingPhoneUser = await prisma.users.findFirst({
+        where: { phone: phoneNumber },
+      })
+
+      if (existingPhoneUser) {
+        console.log('❌ Phone number already exists for user:', existingPhoneUser.id)
+        return NextResponse.json({ error: "User with this phone number already exists" }, { status: 400 })
+      }
+      console.log('✅ Phone number is available')
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12)
 
@@ -83,6 +106,7 @@ export async function POST(request: NextRequest) {
         id: crypto.randomUUID(),
         name: `${firstName} ${lastName}`,
         email,
+        image: image || null, // Add profile image
         phone: phoneNumber,
         password: hashedPassword,
         company,
@@ -100,6 +124,13 @@ export async function POST(request: NextRequest) {
         twitterUrl: facebookUrl, // Using twitterUrl field for Facebook temporarily
         updatedAt: new Date(),
       },
+    })
+
+    console.log('✅ User created successfully:', {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      image: user.image || 'No image'
     })
 
     // Store work experience and education info in a comment or log for now

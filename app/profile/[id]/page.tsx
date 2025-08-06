@@ -629,9 +629,11 @@ export default function UserProfilePage() {
                       </Link>
                     </div>
                     <div>
-                      <Button variant="outline" className="w-full">
-                        Change Profile Picture
-                      </Button>
+                      <Link href="/profile/edit">
+                        <Button variant="outline" className="w-full">
+                          Change Profile Picture
+                        </Button>
+                      </Link>
                     </div>
                     <div>
                       <Button variant="outline" className="w-full">

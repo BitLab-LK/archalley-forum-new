@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,11 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Save, Plus, X, Briefcase, GraduationCap, ExternalLink, User } from "lucide-react"
+import { ArrowLeft, Save, Plus, X, Briefcase, GraduationCap, ExternalLink, User, Camera } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { AuthGuard } from "@/components/auth-guard"
 import { useToast } from "@/hooks/use-toast"
+import { useVercelBlobUpload } from "@/hooks/use-vercel-blob-upload"
 
 interface WorkExperience {
   id?: string
@@ -34,12 +34,38 @@ interface Education {
 }
 
 export default function EditProfilePage() {
-  const router = useRouter()
-  const { user } = useAuth()
+  const { user, refreshSession } = useAuth()
   const { toast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState("")
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
+
+  // Image upload hook
+  const { uploadFiles, isUploading } = useVercelBlobUpload({
+    maxFiles: 1,
+    maxFileSize: 2 * 1024 * 1024, // 2MB for profile images
+    allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    onSuccess: (files) => {
+      if (files.length > 0) {
+        setProfileData(prev => ({ ...prev, image: files[0].url }))
+        setPreviewImage(files[0].url)
+        toast({
+          title: "Image Uploaded",
+          description: "Profile image uploaded successfully",
+        })
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Upload Failed",
+        description: error,
+        variant: "destructive",
+      })
+    }
+  })
 
   const [profileData, setProfileData] = useState({
     // Basic Information
@@ -48,6 +74,7 @@ export default function EditProfilePage() {
     name: "",
     email: "",
     phoneNumber: "",
+    image: "",
     
     // Professional Profile
     headline: "",
@@ -97,6 +124,7 @@ export default function EditProfilePage() {
         name: userData.name || "",
         email: userData.email || "",
         phoneNumber: userData.phoneNumber || "",
+        image: userData.image || "",
         headline: userData.headline || "",
         skills: userData.skills || [],
         industry: userData.industry || "",
@@ -111,6 +139,8 @@ export default function EditProfilePage() {
         company: userData.company || "",
         location: userData.location || "",
       })
+
+      setPreviewImage(userData.image || null)
 
       setWorkExperience(userData.workExperience || [])
       setEducation(userData.education || [])
@@ -143,6 +173,25 @@ export default function EditProfilePage() {
       ...prev,
       skills: prev.skills.filter(skill => skill !== skillToRemove)
     }))
+  }
+
+  // Image upload functions
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    try {
+      setIsUploadingImage(true)
+      await uploadFiles(Array.from(files))
+    } catch (error) {
+      console.error('Upload error:', error)
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
+  const triggerImageUpload = () => {
+    fileInputRef.current?.click()
   }
 
   const addWorkExperience = () => {
@@ -238,7 +287,13 @@ export default function EditProfilePage() {
         description: "Your profile has been successfully updated.",
       })
 
-      router.push(`/profile/${user?.id}`)
+      // Refresh the session to get updated user data
+      console.log('🔄 Refreshing session to update profile data...')
+      await refreshSession()
+
+      // Force a page refresh to ensure all components update
+      console.log('🔄 Forcing page refresh to update all components...')
+      window.location.href = `/profile/${user?.id}`
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save profile')
       toast({
@@ -314,17 +369,30 @@ export default function EditProfilePage() {
                 <CardContent className="space-y-6">
                   <div className="flex items-center gap-6">
                     <Avatar className="w-20 h-20">
-                      <AvatarImage src={user?.image || "/placeholder-user.jpg"} alt={user?.name} />
+                      <AvatarImage src={previewImage || profileData.image || "/placeholder-user.jpg"} alt={user?.name} />
                       <AvatarFallback className="text-xl">
                         {user?.name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <Button variant="outline" size="sm">
-                        Change Photo
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={triggerImageUpload}
+                        disabled={isUploadingImage || isUploading}
+                      >
+                        <Camera className="w-4 h-4 mr-2" />
+                        {isUploadingImage || isUploading ? 'Uploading...' : 'Change Photo'}
                       </Button>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Upload a new profile picture
+                        Upload a new profile picture (JPEG, PNG, WebP - Max 2MB)
                       </p>
                     </div>
                   </div>
