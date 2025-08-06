@@ -840,6 +840,8 @@ export default function SimplifiedEnhancedRegisterPage() {
                               value={exp.startDate}
                               onChange={(e) => updateWorkExperience(exp.id, 'startDate', e.target.value)}
                               disabled={isLoading}
+                              min="1950-01"
+                              max="2050-12"
                             />
                           </div>
                           <div className="space-y-2">
@@ -849,6 +851,8 @@ export default function SimplifiedEnhancedRegisterPage() {
                               value={exp.endDate}
                               onChange={(e) => updateWorkExperience(exp.id, 'endDate', e.target.value)}
                               disabled={isLoading || exp.isCurrent}
+                              min="1950-01"
+                              max="2050-12"
                             />
                           </div>
                         </div>
@@ -858,8 +862,9 @@ export default function SimplifiedEnhancedRegisterPage() {
                             id={`current-${exp.id}`}
                             checked={exp.isCurrent}
                             onCheckedChange={(checked) => {
-                              updateWorkExperience(exp.id, 'isCurrent', checked)
-                              if (checked) {
+                              const isChecked = checked === true
+                              updateWorkExperience(exp.id, 'isCurrent', isChecked)
+                              if (isChecked) {
                                 updateWorkExperience(exp.id, 'endDate', "")
                               }
                             }}
@@ -940,6 +945,8 @@ export default function SimplifiedEnhancedRegisterPage() {
                               value={edu.startDate}
                               onChange={(e) => updateEducation(edu.id, 'startDate', e.target.value)}
                               disabled={isLoading}
+                              min="1950-01"
+                              max="2050-12"
                             />
                           </div>
                           <div className="space-y-2">
@@ -949,6 +956,8 @@ export default function SimplifiedEnhancedRegisterPage() {
                               value={edu.endDate}
                               onChange={(e) => updateEducation(edu.id, 'endDate', e.target.value)}
                               disabled={isLoading || edu.isCurrent}
+                              min="1950-01"
+                              max="2050-12"
                             />
                           </div>
                         </div>
@@ -958,8 +967,9 @@ export default function SimplifiedEnhancedRegisterPage() {
                             id={`current-edu-${edu.id}`}
                             checked={edu.isCurrent}
                             onCheckedChange={(checked) => {
-                              updateEducation(edu.id, 'isCurrent', checked)
-                              if (checked) {
+                              const isChecked = checked === true
+                              updateEducation(edu.id, 'isCurrent', isChecked)
+                              if (isChecked) {
                                 updateEducation(edu.id, 'endDate', "")
                               }
                             }}

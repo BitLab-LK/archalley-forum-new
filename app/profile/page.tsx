@@ -9,7 +9,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Edit, Camera, CheckCircle, MapPin, Calendar, LinkIcon } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
@@ -22,11 +21,36 @@ export default function ProfilePage() {
   const [error, setError] = useState("")
   const { user } = useAuth()
   const [profileData, setProfileData] = useState({
+    // Basic Information
+    firstName: "",
+    lastName: "",
     name: "",
     email: "",
+    phoneNumber: "",
+    
+    // Professional Profile
+    headline: "",
+    skills: [] as string[],
+    industry: "",
+    country: "",
+    city: "",
+    bio: "",
+    portfolioUrl: "",
+    
+    // Social Media
+    linkedinUrl: "",
+    facebookUrl: "",
+    instagramUrl: "",
+    
+    // Work Experience
+    workExperience: [] as any[],
+    
+    // Education
+    education: [] as any[],
+    
+    // Legacy fields for backward compatibility
     company: "",
     profession: "",
-    bio: "",
     location: "",
     website: "",
     phone: "",
@@ -50,11 +74,34 @@ export default function ProfilePage() {
         
         const data = await response.json()
         setProfileData({
+          // Basic Information
+          firstName: data.user.firstName || "",
+          lastName: data.user.lastName || "",
           name: data.user.name || "",
           email: data.user.email || "",
+          phoneNumber: data.user.phoneNumber || "",
+          
+          // Professional Profile
+          headline: data.user.headline || "",
+          skills: data.user.skills || [],
+          industry: data.user.industry || "",
+          country: data.user.country || "",
+          city: data.user.city || "",
+          bio: data.user.bio || "",
+          portfolioUrl: data.user.portfolioUrl || "",
+          
+          // Social Media
+          linkedinUrl: data.user.linkedinUrl || "",
+          facebookUrl: data.user.facebookUrl || "",
+          instagramUrl: data.user.instagramUrl || "",
+          
+          // Work Experience & Education
+          workExperience: data.user.workExperience || [],
+          education: data.user.education || [],
+          
+          // Legacy fields for backward compatibility
           company: data.user.company || "",
           profession: data.user.profession || "",
-          bio: data.user.bio || "",
           location: data.user.location || "",
           website: data.user.website || "",
           phone: data.user.phone || "",
@@ -86,17 +133,34 @@ export default function ProfilePage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: profileData.name,
+          // Basic Information (name is combined from firstName + lastName)
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+          name: `${profileData.firstName} ${profileData.lastName}`.trim(),
+          phoneNumber: profileData.phoneNumber,
+          
+          // Professional Profile
+          headline: profileData.headline,
+          skills: profileData.skills,
+          industry: profileData.industry,
+          country: profileData.country,
+          city: profileData.city,
+          bio: profileData.bio,
+          portfolioUrl: profileData.portfolioUrl,
+          
+          // Social Media
+          linkedinUrl: profileData.linkedinUrl,
+          facebookUrl: profileData.facebookUrl,
+          instagramUrl: profileData.instagramUrl,
+          
+          // Legacy fields for backward compatibility
           company: profileData.company,
           profession: profileData.profession,
-          bio: profileData.bio,
-          location: profileData.location,
-          website: profileData.website,
-          phone: profileData.phone,
+          location: `${profileData.city}${profileData.city && profileData.country ? ', ' : ''}${profileData.country}`.trim(),
+          website: profileData.portfolioUrl,
+          phone: profileData.phoneNumber,
           profileVisibility: profileData.profileVisibility,
-          linkedinUrl: profileData.socialLinks.linkedin,
           twitterUrl: profileData.socialLinks.twitter,
-          instagramUrl: profileData.socialLinks.instagram,
         }),
       })
 
@@ -208,64 +272,71 @@ export default function ProfilePage() {
 
             <TabsContent value="overview" className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Contact Information */}
+                {/* Basic Information */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Contact Information</CardTitle>
+                    <CardTitle>Basic Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {isEditing ? (
                       <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="firstName">First Name</Label>
+                            <Input
+                              id="firstName"
+                              value={profileData.firstName}
+                              onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="lastName">Last Name</Label>
+                            <Input
+                              id="lastName"
+                              value={profileData.lastName}
+                              onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
+                            />
+                          </div>
+                        </div>
                         <div className="space-y-2">
-                          <Label htmlFor="email">Email</Label>
+                          <Label htmlFor="email">Email Address</Label>
                           <Input
                             id="email"
                             value={profileData.email}
                             disabled
-                            className="bg-muted"
+                            className="bg-muted cursor-not-allowed"
                           />
+                          <p className="text-xs text-muted-foreground">Email address cannot be changed</p>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="phone">Phone</Label>
+                          <Label htmlFor="phoneNumber">Phone Number</Label>
                           <Input
-                            id="phone"
-                            value={profileData.phone}
-                            onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="website">Website</Label>
-                          <Input
-                            id="website"
-                            value={profileData.website}
-                            onChange={(e) => setProfileData({ ...profileData, website: e.target.value })}
+                            id="phoneNumber"
+                            value={profileData.phoneNumber}
+                            onChange={(e) => setProfileData({ ...profileData, phoneNumber: e.target.value })}
                           />
                         </div>
                       </>
                     ) : (
                       <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-sm font-medium">First Name</Label>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.firstName || "Not provided"}</p>
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium">Last Name</Label>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.lastName || "Not provided"}</p>
+                          </div>
+                        </div>
                         <div>
-                          <Label className="text-sm font-medium">Email</Label>
+                          <Label className="text-sm font-medium">Email Address</Label>
                           <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.email}</p>
                         </div>
-                        {profileData.phone && (
+                        {profileData.phoneNumber && (
                         <div>
-                          <Label className="text-sm font-medium">Phone</Label>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.phone}</p>
-                        </div>
-                        )}
-                        {profileData.website && (
-                        <div>
-                          <Label className="text-sm font-medium">Website</Label>
-                          <a
-                            href={profileData.website}
-                            className="text-sm text-primary hover:underline flex items-center"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                          >
-                            <LinkIcon className="w-4 h-4 mr-1" />
-                            {profileData.website}
-                          </a>
+                          <Label className="text-sm font-medium">Phone Number</Label>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.phoneNumber}</p>
                         </div>
                         )}
                       </>
@@ -273,73 +344,99 @@ export default function ProfilePage() {
                   </CardContent>
                 </Card>
 
-                {/* Professional Information */}
+                {/* Professional Profile */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Professional Information</CardTitle>
+                    <CardTitle>Professional Profile</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {isEditing ? (
                       <>
                         <div className="space-y-2">
-                          <Label htmlFor="company">Company</Label>
+                          <Label htmlFor="headline">Headline</Label>
                           <Input
-                            id="company"
-                            value={profileData.company}
-                            onChange={(e) => setProfileData({ ...profileData, company: e.target.value })}
+                            id="headline"
+                            value={profileData.headline}
+                            onChange={(e) => setProfileData({ ...profileData, headline: e.target.value })}
+                            placeholder="e.g., Civil Engineer at XYZ Constructions"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="profession">Profession</Label>
-                          <Select
-                            value={profileData.profession}
-                            onValueChange={(value) => setProfileData({ ...profileData, profession: value })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select profession" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="architect">Architect</SelectItem>
-                              <SelectItem value="interior-designer">Interior Designer</SelectItem>
-                              <SelectItem value="urban-planner">Urban Planner</SelectItem>
-                              <SelectItem value="construction-manager">Construction Manager</SelectItem>
-                              <SelectItem value="student">Student</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Label htmlFor="industry">Industry</Label>
+                          <Input
+                            id="industry"
+                            value={profileData.industry}
+                            onChange={(e) => setProfileData({ ...profileData, industry: e.target.value })}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="country">Country</Label>
+                            <Input
+                              id="country"
+                              value={profileData.country}
+                              onChange={(e) => setProfileData({ ...profileData, country: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="city">City</Label>
+                            <Input
+                              id="city"
+                              value={profileData.city}
+                              onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
+                            />
+                          </div>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="bio">Bio</Label>
+                          <Label htmlFor="bio">About/Summary</Label>
                           <Textarea
                             id="bio"
                             value={profileData.bio}
                             onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
                             rows={4}
+                            placeholder="Tell us about yourself..."
                           />
                         </div>
                       </>
                     ) : (
                       <>
-                        {profileData.company && (
+                        {profileData.headline && (
                         <div>
-                          <Label className="text-sm font-medium">Company</Label>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.company}</p>
+                          <Label className="text-sm font-medium">Headline</Label>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.headline}</p>
                         </div>
                         )}
-                        {profileData.profession && (
+                        {profileData.industry && (
                         <div>
-                          <Label className="text-sm font-medium">Profession</Label>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {profileData.profession.split("-").map(word => 
-                                word.charAt(0).toUpperCase() + word.slice(1)
-                              ).join(" ")}
-                            </p>
+                          <Label className="text-sm font-medium">Industry</Label>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.industry}</p>
+                        </div>
+                        )}
+                        {(profileData.country || profileData.city) && (
+                        <div>
+                          <Label className="text-sm font-medium">Location</Label>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
+                            <MapPin className="w-4 h-4 mr-1" />
+                            {[profileData.city, profileData.country].filter(Boolean).join(", ")}
+                          </p>
                         </div>
                         )}
                         {profileData.bio && (
                         <div>
-                          <Label className="text-sm font-medium">Bio</Label>
+                          <Label className="text-sm font-medium">About</Label>
                           <p className="text-sm text-gray-600 dark:text-gray-400">{profileData.bio}</p>
+                        </div>
+                        )}
+                        {profileData.skills && profileData.skills.length > 0 && (
+                        <div>
+                          <Label className="text-sm font-medium">Skills</Label>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {profileData.skills.map((skill, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {skill}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                         )}
                       </>
@@ -348,12 +445,197 @@ export default function ProfilePage() {
                 </Card>
               </div>
 
+              {/* Portfolio & Social Links Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Portfolio/Website Links */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Portfolio & Links</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="portfolioUrl">Portfolio/Website URL</Label>
+                        <Input
+                          id="portfolioUrl"
+                          type="url"
+                          value={profileData.portfolioUrl}
+                          onChange={(e) => setProfileData({ ...profileData, portfolioUrl: e.target.value })}
+                          placeholder="https://www.yourportfolio.com"
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        {profileData.portfolioUrl && (
+                        <div>
+                          <Label className="text-sm font-medium">Portfolio/Website</Label>
+                          <a
+                            href={profileData.portfolioUrl}
+                            className="text-sm text-primary hover:underline flex items-center"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <LinkIcon className="w-4 h-4 mr-1" />
+                            {profileData.portfolioUrl}
+                          </a>
+                        </div>
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Social Media Profiles */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Social Media</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {isEditing ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="linkedinUrl">LinkedIn Profile</Label>
+                          <Input
+                            id="linkedinUrl"
+                            type="url"
+                            value={profileData.linkedinUrl}
+                            onChange={(e) => setProfileData({ ...profileData, linkedinUrl: e.target.value })}
+                            placeholder="LinkedIn Profile URL"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="facebookUrl">Facebook Profile</Label>
+                          <Input
+                            id="facebookUrl"
+                            type="url"
+                            value={profileData.facebookUrl}
+                            onChange={(e) => setProfileData({ ...profileData, facebookUrl: e.target.value })}
+                            placeholder="Facebook Profile URL"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="instagramUrl">Instagram Profile</Label>
+                          <Input
+                            id="instagramUrl"
+                            type="url"
+                            value={profileData.instagramUrl}
+                            onChange={(e) => setProfileData({ ...profileData, instagramUrl: e.target.value })}
+                            placeholder="Instagram Profile URL"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {profileData.linkedinUrl && (
+                        <div>
+                          <Label className="text-sm font-medium">LinkedIn</Label>
+                          <a
+                            href={profileData.linkedinUrl}
+                            className="text-sm text-primary hover:underline flex items-center"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <LinkIcon className="w-4 h-4 mr-1" />
+                            LinkedIn Profile
+                          </a>
+                        </div>
+                        )}
+                        {profileData.facebookUrl && (
+                        <div>
+                          <Label className="text-sm font-medium">Facebook</Label>
+                          <a
+                            href={profileData.facebookUrl}
+                            className="text-sm text-primary hover:underline flex items-center"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <LinkIcon className="w-4 h-4 mr-1" />
+                            Facebook Profile
+                          </a>
+                        </div>
+                        )}
+                        {profileData.instagramUrl && (
+                        <div>
+                          <Label className="text-sm font-medium">Instagram</Label>
+                          <a
+                            href={profileData.instagramUrl}
+                            className="text-sm text-primary hover:underline flex items-center"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <LinkIcon className="w-4 h-4 mr-1" />
+                            Instagram Profile
+                          </a>
+                        </div>
+                        )}
+                        {!profileData.linkedinUrl && !profileData.facebookUrl && !profileData.instagramUrl && (
+                        <p className="text-sm text-gray-500">No social media profiles added</p>
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Work Experience & Education */}
+              {(profileData.workExperience?.length > 0 || profileData.education?.length > 0) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Work Experience */}
+                  {profileData.workExperience?.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Work Experience</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {profileData.workExperience.map((exp, index) => (
+                          <div key={index} className="border-l-2 border-gray-200 pl-4 pb-4">
+                            <h4 className="font-semibold text-sm">{exp.jobTitle}</h4>
+                            <p className="text-sm text-gray-600">{exp.company}</p>
+                            <p className="text-xs text-gray-500">
+                              {exp.startDate} - {exp.isCurrent ? "Present" : exp.endDate}
+                            </p>
+                            {exp.description && (
+                              <p className="text-sm text-gray-600 mt-2">{exp.description}</p>
+                            )}
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Education */}
+                  {profileData.education?.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Education</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {profileData.education.map((edu, index) => (
+                          <div key={index} className="border-l-2 border-gray-200 pl-4 pb-4">
+                            <h4 className="font-semibold text-sm">{edu.degree}</h4>
+                            <p className="text-sm text-gray-600">{edu.institution}</p>
+                            <p className="text-xs text-gray-500">
+                              {edu.startDate} - {edu.isCurrent ? "Present" : edu.endDate}
+                            </p>
+                            {edu.description && (
+                              <p className="text-sm text-gray-600 mt-2">{edu.description}</p>
+                            )}
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              )}
+
               {isEditing && (
                 <div className="flex justify-end space-x-4">
                   <Button variant="outline" onClick={() => setIsEditing(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleSaveProfile}>Save Changes</Button>
+                  <Button onClick={handleSaveProfile} style={{ backgroundColor: '#ffa500', borderColor: '#ffa500' }}>
+                    Save Changes
+                  </Button>
                 </div>
               )}
             </TabsContent>

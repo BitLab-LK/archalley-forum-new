@@ -5,17 +5,37 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
 const updateUserSchema = z.object({
+  // Basic Information
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
   name: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  
+  // Professional Profile
+  headline: z.string().optional(),
+  skills: z.array(z.string()).optional(),
+  industry: z.string().optional(),
+  country: z.string().optional(),
+  city: z.string().optional(),
+  bio: z.string().optional(),
+  portfolioUrl: z.string().optional(),
+  
+  // Social Media
+  linkedinUrl: z.string().optional(),
+  facebookUrl: z.string().optional(),
+  instagramUrl: z.string().optional(),
+  
+  // Note: workExperience and education are handled separately via their own endpoints
+  // They are not included in this schema to avoid Prisma type conflicts
+  
+  // Legacy fields for backward compatibility
   company: z.string().optional(),
   profession: z.string().optional(),
-  bio: z.string().optional(),
   location: z.string().optional(),
   website: z.string().optional(),
   phone: z.string().optional(),
   profileVisibility: z.boolean().optional(),
-  linkedinUrl: z.string().optional(),
   twitterUrl: z.string().optional(),
-  instagramUrl: z.string().optional(),
 })
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -23,26 +43,18 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const { id } = await params
     const user = await prisma.users.findUnique({
       where: { id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        company: true,
-        profession: true,
-        bio: true,
-        location: true,
-        website: true,
-        phone: true,
-        profileVisibility: true,
-        linkedinUrl: true,
-        twitterUrl: true,
-        instagramUrl: true,
-        role: true,
-        rank: true,
-        isVerified: true,
-        createdAt: true,
-        lastActiveAt: true,
+      include: {
+        // Work Experience & Education as relationships
+        workExperience: {
+          orderBy: {
+            startDate: 'desc'
+          }
+        },
+        education: {
+          orderBy: {
+            startDate: 'desc'
+          }
+        },
         _count: {
           select: {
             Post: true,
@@ -71,14 +83,47 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       name: user.name || 'Anonymous User',
       email: isOwnProfile ? user.email : undefined, // Only include email for own profile
       image: user.image,
+      
+      // Basic Information
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phoneNumber: user.phoneNumber,
+      
+      // Professional Profile
+      headline: user.headline,
+      skills: user.skills,
+      industry: user.industry,
+      country: user.country,
+      city: user.city,
+      bio: user.bio,
+      portfolioUrl: user.portfolioUrl,
+      
+      // Social Media
+      linkedinUrl: user.linkedinUrl,
+      facebookUrl: user.facebookUrl,
+      instagramUrl: user.instagramUrl,
+      
+      // Work Experience & Education
+      workExperience: user.workExperience?.map(work => ({
+        ...work,
+        startDate: work.startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        endDate: work.endDate ? work.endDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : null,
+      })),
+      education: user.education?.map(edu => ({
+        ...edu,
+        startDate: edu.startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        endDate: edu.endDate ? edu.endDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : null,
+      })),
+      
+      // Legacy fields
       profession: user.profession,
       company: user.company,
       location: user.location,
       website: user.website,
       phone: user.phone,
-      linkedinUrl: user.linkedinUrl,
       twitterUrl: user.twitterUrl,
-      instagramUrl: user.instagramUrl,
+      
+      // System fields
       rank: user.rank || 'Member',
       posts: user._count.Post,
       comments: user._count.Comment,
@@ -88,7 +133,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         year: 'numeric' 
       }),
       isVerified: user.isVerified || false,
-      bio: user.bio,
       role: user.role,
       profileVisibility: user.profileVisibility,
       lastActiveAt: user.lastActiveAt,
@@ -125,16 +169,36 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         name: true,
         email: true,
         image: true,
+        
+        // Basic Information
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+        
+        // Professional Profile
+        headline: true,
+        skills: true,
+        industry: true,
+        country: true,
+        city: true,
+        bio: true,
+        portfolioUrl: true,
+        
+        // Social Media
+        linkedinUrl: true,
+        facebookUrl: true,
+        instagramUrl: true,
+        
+        // Legacy fields
         company: true,
         profession: true,
-        bio: true,
         location: true,
         website: true,
         phone: true,
         profileVisibility: true,
-        linkedinUrl: true,
         twitterUrl: true,
-        instagramUrl: true,
+        
+        // System fields
         role: true,
         rank: true,
         isVerified: true,

@@ -1,0 +1,759 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Textarea } from "@/components/ui/textarea"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ArrowLeft, Save, Plus, X, Briefcase, GraduationCap, ExternalLink, User } from "lucide-react"
+import Link from "next/link"
+import { useAuth } from "@/lib/auth-context"
+import { AuthGuard } from "@/components/auth-guard"
+import { useToast } from "@/hooks/use-toast"
+
+interface WorkExperience {
+  id?: string
+  jobTitle: string
+  company: string
+  startDate: string
+  endDate?: string
+  description?: string
+}
+
+interface Education {
+  id?: string
+  degree: string
+  institution: string
+  startDate: string
+  endDate?: string
+  description?: string
+}
+
+export default function EditProfilePage() {
+  const router = useRouter()
+  const { user } = useAuth()
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState("")
+
+  const [profileData, setProfileData] = useState({
+    // Basic Information
+    firstName: "",
+    lastName: "",
+    name: "",
+    email: "",
+    phoneNumber: "",
+    
+    // Professional Profile
+    headline: "",
+    skills: [] as string[],
+    industry: "",
+    country: "",
+    city: "",
+    bio: "",
+    portfolioUrl: "",
+    
+    // Social Media
+    linkedinUrl: "",
+    facebookUrl: "",
+    instagramUrl: "",
+    
+    // Legacy fields
+    profession: "",
+    company: "",
+    location: "",
+  })
+
+  const [workExperience, setWorkExperience] = useState<WorkExperience[]>([])
+  const [education, setEducation] = useState<Education[]>([])
+  const [newSkill, setNewSkill] = useState("")
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserData()
+    }
+  }, [user?.id])
+
+  const fetchUserData = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/users/${user?.id}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch user data')
+      }
+
+      const data = await response.json()
+      const userData = data.user
+
+      setProfileData({
+        firstName: userData.firstName || "",
+        lastName: userData.lastName || "",
+        name: userData.name || "",
+        email: userData.email || "",
+        phoneNumber: userData.phoneNumber || "",
+        headline: userData.headline || "",
+        skills: userData.skills || [],
+        industry: userData.industry || "",
+        country: userData.country || "",
+        city: userData.city || "",
+        bio: userData.bio || "",
+        portfolioUrl: userData.portfolioUrl || "",
+        linkedinUrl: userData.linkedinUrl || "",
+        facebookUrl: userData.facebookUrl || "",
+        instagramUrl: userData.instagramUrl || "",
+        profession: userData.profession || "",
+        company: userData.company || "",
+        location: userData.location || "",
+      })
+
+      setWorkExperience(userData.workExperience || [])
+      setEducation(userData.education || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load user data')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleInputChange = (field: string, value: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  const addSkill = () => {
+    if (newSkill.trim() && !profileData.skills.includes(newSkill.trim())) {
+      setProfileData(prev => ({
+        ...prev,
+        skills: [...prev.skills, newSkill.trim()]
+      }))
+      setNewSkill("")
+    }
+  }
+
+  const removeSkill = (skillToRemove: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      skills: prev.skills.filter(skill => skill !== skillToRemove)
+    }))
+  }
+
+  const addWorkExperience = () => {
+    setWorkExperience(prev => [...prev, {
+      jobTitle: "",
+      company: "",
+      startDate: "",
+      endDate: "",
+      description: ""
+    }])
+  }
+
+  const updateWorkExperience = (index: number, field: string, value: string) => {
+    setWorkExperience(prev => prev.map((work, i) => 
+      i === index ? { ...work, [field]: value } : work
+    ))
+  }
+
+  const removeWorkExperience = (index: number) => {
+    setWorkExperience(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const addEducation = () => {
+    setEducation(prev => [...prev, {
+      degree: "",
+      institution: "",
+      startDate: "",
+      endDate: "",
+      description: ""
+    }])
+  }
+
+  const updateEducation = (index: number, field: string, value: string) => {
+    setEducation(prev => prev.map((edu, i) => 
+      i === index ? { ...edu, [field]: value } : edu
+    ))
+  }
+
+  const removeEducation = (index: number) => {
+    setEducation(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true)
+      setError("")
+
+      // Update basic profile data
+      const profileResponse = await fetch(`/api/users/${user?.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileData),
+      })
+
+      if (!profileResponse.ok) {
+        throw new Error('Failed to update profile')
+      }
+
+      // Update work experience
+      if (workExperience.length > 0) {
+        const workResponse = await fetch(`/api/users/${user?.id}/work-experience`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ workExperience }),
+        })
+
+        if (!workResponse.ok) {
+          console.warn('Failed to update work experience')
+        }
+      }
+
+      // Update education
+      if (education.length > 0) {
+        const educationResponse = await fetch(`/api/users/${user?.id}/education`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ education }),
+        })
+
+        if (!educationResponse.ok) {
+          console.warn('Failed to update education')
+        }
+      }
+
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been successfully updated.",
+      })
+
+      router.push(`/profile/${user?.id}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save profile')
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading profile...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <Link href={`/profile/${user?.id}`}>
+                  <Button variant="ghost" size="sm">
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Profile
+                  </Button>
+                </Link>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Profile</h1>
+                  <p className="text-gray-600 dark:text-gray-400">Update your profile information</p>
+                </div>
+              </div>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+                <p className="text-red-800 dark:text-red-200">{error}</p>
+              </div>
+            )}
+          </div>
+
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="professional">Professional</TabsTrigger>
+              <TabsTrigger value="experience">Experience</TabsTrigger>
+              <TabsTrigger value="education">Education</TabsTrigger>
+              <TabsTrigger value="social">Social Links</TabsTrigger>
+            </TabsList>
+
+            {/* Basic Information */}
+            <TabsContent value="basic" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="w-5 h-5" />
+                    Basic Information
+                  </CardTitle>
+                  <CardDescription>
+                    Update your basic personal information
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center gap-6">
+                    <Avatar className="w-20 h-20">
+                      <AvatarImage src={user?.image || "/placeholder-user.jpg"} alt={user?.name} />
+                      <AvatarFallback className="text-xl">
+                        {user?.name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <Button variant="outline" size="sm">
+                        Change Photo
+                      </Button>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Upload a new profile picture
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        id="firstName"
+                        value={profileData.firstName}
+                        onChange={(e) => handleInputChange('firstName', e.target.value)}
+                        placeholder="Enter your first name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        value={profileData.lastName}
+                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                        placeholder="Enter your last name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="name">Display Name</Label>
+                      <Input
+                        id="name"
+                        value={profileData.name}
+                        onChange={(e) => handleInputChange('name', e.target.value)}
+                        placeholder="Enter your display name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phoneNumber">Phone Number</Label>
+                      <Input
+                        id="phoneNumber"
+                        value={profileData.phoneNumber}
+                        onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                        placeholder="Enter your phone number"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="bio">Bio</Label>
+                    <Textarea
+                      id="bio"
+                      value={profileData.bio}
+                      onChange={(e) => handleInputChange('bio', e.target.value)}
+                      placeholder="Write a brief description about yourself..."
+                      rows={4}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Professional Information */}
+            <TabsContent value="professional" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Briefcase className="w-5 h-5" />
+                    Professional Information
+                  </CardTitle>
+                  <CardDescription>
+                    Update your professional details and location
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="profession">Profession</Label>
+                      <Input
+                        id="profession"
+                        value={profileData.profession}
+                        onChange={(e) => handleInputChange('profession', e.target.value)}
+                        placeholder="e.g., Software Engineer"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="company">Company</Label>
+                      <Input
+                        id="company"
+                        value={profileData.company}
+                        onChange={(e) => handleInputChange('company', e.target.value)}
+                        placeholder="e.g., Tech Corp"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="industry">Industry</Label>
+                      <Input
+                        id="industry"
+                        value={profileData.industry}
+                        onChange={(e) => handleInputChange('industry', e.target.value)}
+                        placeholder="e.g., Information Technology"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="headline">Professional Headline</Label>
+                      <Input
+                        id="headline"
+                        value={profileData.headline}
+                        onChange={(e) => handleInputChange('headline', e.target.value)}
+                        placeholder="e.g., Senior Developer at Tech Corp"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="city">City</Label>
+                      <Input
+                        id="city"
+                        value={profileData.city}
+                        onChange={(e) => handleInputChange('city', e.target.value)}
+                        placeholder="e.g., New York"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="country">Country</Label>
+                      <Input
+                        id="country"
+                        value={profileData.country}
+                        onChange={(e) => handleInputChange('country', e.target.value)}
+                        placeholder="e.g., United States"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="portfolioUrl">Portfolio URL</Label>
+                    <Input
+                      id="portfolioUrl"
+                      value={profileData.portfolioUrl}
+                      onChange={(e) => handleInputChange('portfolioUrl', e.target.value)}
+                      placeholder="https://yourportfolio.com"
+                    />
+                  </div>
+
+                  {/* Skills */}
+                  <div>
+                    <Label>Skills</Label>
+                    <div className="flex gap-2 mt-2 mb-4">
+                      <Input
+                        value={newSkill}
+                        onChange={(e) => setNewSkill(e.target.value)}
+                        placeholder="Add a skill..."
+                        onKeyPress={(e) => e.key === 'Enter' && addSkill()}
+                      />
+                      <Button type="button" onClick={addSkill} variant="outline">
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {profileData.skills.map((skill, index) => (
+                        <div key={index} className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm">
+                          {skill}
+                          <button onClick={() => removeSkill(skill)} className="ml-1 hover:text-red-600">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Work Experience */}
+            <TabsContent value="experience" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Briefcase className="w-5 h-5" />
+                        Work Experience
+                      </CardTitle>
+                      <CardDescription>
+                        Add your work experience and career history
+                      </CardDescription>
+                    </div>
+                    <Button onClick={addWorkExperience} variant="outline" size="sm">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Experience
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {workExperience.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <Briefcase className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No work experience added yet.</p>
+                      <Button onClick={addWorkExperience} variant="outline" className="mt-4">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Your First Experience
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {workExperience.map((work, index) => (
+                        <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-medium">Experience #{index + 1}</h4>
+                            <Button 
+                              onClick={() => removeWorkExperience(index)} 
+                              variant="ghost" 
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor={`work-title-${index}`}>Job Title</Label>
+                              <Input
+                                id={`work-title-${index}`}
+                                value={work.jobTitle}
+                                onChange={(e) => updateWorkExperience(index, 'jobTitle', e.target.value)}
+                                placeholder="e.g., Software Engineer"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`work-company-${index}`}>Company</Label>
+                              <Input
+                                id={`work-company-${index}`}
+                                value={work.company}
+                                onChange={(e) => updateWorkExperience(index, 'company', e.target.value)}
+                                placeholder="e.g., Tech Corp"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`work-start-${index}`}>Start Date</Label>
+                              <Input
+                                id={`work-start-${index}`}
+                                type="date"
+                                value={work.startDate}
+                                onChange={(e) => updateWorkExperience(index, 'startDate', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`work-end-${index}`}>End Date (Leave empty if current)</Label>
+                              <Input
+                                id={`work-end-${index}`}
+                                type="date"
+                                value={work.endDate || ''}
+                                onChange={(e) => updateWorkExperience(index, 'endDate', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                          <div className="mt-4">
+                            <Label htmlFor={`work-desc-${index}`}>Description</Label>
+                            <Textarea
+                              id={`work-desc-${index}`}
+                              value={work.description || ''}
+                              onChange={(e) => updateWorkExperience(index, 'description', e.target.value)}
+                              placeholder="Describe your role and achievements..."
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Education */}
+            <TabsContent value="education" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <GraduationCap className="w-5 h-5" />
+                        Education
+                      </CardTitle>
+                      <CardDescription>
+                        Add your educational background and qualifications
+                      </CardDescription>
+                    </div>
+                    <Button onClick={addEducation} variant="outline" size="sm">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Education
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {education.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <GraduationCap className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No education added yet.</p>
+                      <Button onClick={addEducation} variant="outline" className="mt-4">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Your First Education
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {education.map((edu, index) => (
+                        <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-medium">Education #{index + 1}</h4>
+                            <Button 
+                              onClick={() => removeEducation(index)} 
+                              variant="ghost" 
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor={`edu-degree-${index}`}>Degree</Label>
+                              <Input
+                                id={`edu-degree-${index}`}
+                                value={edu.degree}
+                                onChange={(e) => updateEducation(index, 'degree', e.target.value)}
+                                placeholder="e.g., Bachelor of Science in Computer Science"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edu-institution-${index}`}>Institution</Label>
+                              <Input
+                                id={`edu-institution-${index}`}
+                                value={edu.institution}
+                                onChange={(e) => updateEducation(index, 'institution', e.target.value)}
+                                placeholder="e.g., University of Technology"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edu-start-${index}`}>Start Date</Label>
+                              <Input
+                                id={`edu-start-${index}`}
+                                type="date"
+                                value={edu.startDate}
+                                onChange={(e) => updateEducation(index, 'startDate', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edu-end-${index}`}>End Date (Leave empty if current)</Label>
+                              <Input
+                                id={`edu-end-${index}`}
+                                type="date"
+                                value={edu.endDate || ''}
+                                onChange={(e) => updateEducation(index, 'endDate', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                          <div className="mt-4">
+                            <Label htmlFor={`edu-desc-${index}`}>Description</Label>
+                            <Textarea
+                              id={`edu-desc-${index}`}
+                              value={edu.description || ''}
+                              onChange={(e) => updateEducation(index, 'description', e.target.value)}
+                              placeholder="Describe your studies, achievements, etc..."
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Social Links */}
+            <TabsContent value="social" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ExternalLink className="w-5 h-5" />
+                    Social Links
+                  </CardTitle>
+                  <CardDescription>
+                    Add your social media profiles and professional links
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
+                      <Input
+                        id="linkedinUrl"
+                        value={profileData.linkedinUrl}
+                        onChange={(e) => handleInputChange('linkedinUrl', e.target.value)}
+                        placeholder="https://linkedin.com/in/yourprofile"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="facebookUrl">Facebook URL</Label>
+                      <Input
+                        id="facebookUrl"
+                        value={profileData.facebookUrl}
+                        onChange={(e) => handleInputChange('facebookUrl', e.target.value)}
+                        placeholder="https://facebook.com/yourprofile"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="instagramUrl">Instagram URL</Label>
+                      <Input
+                        id="instagramUrl"
+                        value={profileData.instagramUrl}
+                        onChange={(e) => handleInputChange('instagramUrl', e.target.value)}
+                        placeholder="https://instagram.com/yourprofile"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          {/* Fixed Save Button */}
+          <div className="sticky bottom-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 pt-4 mt-8">
+            <div className="flex justify-end gap-4">
+              <Link href={`/profile/${user?.id}`}>
+                <Button variant="outline">Cancel</Button>
+              </Link>
+              <Button onClick={handleSave} disabled={isSaving}>
+                <Save className="w-4 h-4 mr-2" />
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+    </AuthGuard>
+  )
+}

@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MapPin, Calendar, CheckCircle, ArrowLeft, Edit, MessageCircle } from "lucide-react"
+import { MapPin, Calendar, CheckCircle, ArrowLeft, Edit, MessageCircle, Phone, Mail, Building, Briefcase, GraduationCap, ExternalLink, Users, Trophy } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import PostCard from "@/components/post-card"
@@ -16,7 +16,7 @@ import ActivityFeed from "@/components/activity-feed"
 interface User {
   id: string
   name: string
-  email?: string // Made optional since it's only shown for own profile
+  email?: string
   image?: string
   profession?: string
   company?: string
@@ -27,6 +27,22 @@ interface User {
   joinDate: string
   isVerified: boolean
   bio?: string
+  
+  // Additional comprehensive fields
+  firstName?: string
+  lastName?: string
+  phoneNumber?: string
+  headline?: string
+  skills?: string[]
+  industry?: string
+  country?: string
+  city?: string
+  portfolioUrl?: string
+  linkedinUrl?: string
+  facebookUrl?: string
+  instagramUrl?: string
+  workExperience?: any[]
+  education?: any[]
 }
 
 interface Post {
@@ -193,10 +209,12 @@ export default function UserProfilePage() {
                     )}
                   </div>
                   {isOwnProfile && (
-                    <Button variant="outline" size="sm">
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit Profile
-                    </Button>
+                    <Link href="/profile/edit">
+                      <Button variant="outline" size="sm" className="border-orange-500 text-orange-600 hover:bg-orange-50 dark:border-orange-400 dark:text-orange-400 dark:hover:bg-orange-950">
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Profile
+                      </Button>
+                    </Link>
                   )}
                   {!isOwnProfile && (
                     <Badge variant="outline">
@@ -205,16 +223,15 @@ export default function UserProfilePage() {
                   )}
                 </div>
 
-                {user.profession && (
-                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-2">
-                    {user.profession}{user.company && ` at ${user.company}`}
-                  </p>
-                )}
-
-                {user.location && (
+                {(user.city || user.country || user.location) && (
                   <div className="flex items-center text-gray-500 dark:text-gray-400 mb-3">
                     <MapPin className="w-4 h-4 mr-1" />
-                    <span>{user.location}</span>
+                    <span>
+                      {user.city && user.country 
+                        ? `${user.city}, ${user.country}`
+                        : user.location || user.city || user.country
+                      }
+                    </span>
                   </div>
                 )}
 
@@ -246,14 +263,26 @@ export default function UserProfilePage() {
                     <span className="text-gray-500 dark:text-gray-400 ml-1">comments</span>
                   </div>
                 </div>
+
+                {/* Basic Information in Header */}
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    {user.phoneNumber && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-gray-500" />
+                        <span className="text-gray-600 dark:text-gray-400">Phone:</span>
+                        <span className="text-gray-900 dark:text-white font-medium">{user.phoneNumber}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-600 dark:text-gray-400">Member Since:</span>
+                      <span className="text-gray-900 dark:text-white font-medium">{user.joinDate}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-
-            {user.bio && (
-              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-gray-700 dark:text-gray-300">{user.bio}</p>
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -267,68 +296,280 @@ export default function UserProfilePage() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Contact Information */}
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
-                  <div className="space-y-3">
-                    {user.email && (
+            {/* Professional Information */}
+            <Card className="hover:border-l-4 hover:border-l-blue-500 transition-all duration-200">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-blue-600" />
+                  Professional Information
+                </h3>
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                        <Briefcase className="w-4 h-4 text-blue-600" />
+                      </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
-                        <p className="text-blue-600 dark:text-blue-400">{user.email}</p>
+                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Profession</label>
+                        <p className="text-gray-900 dark:text-white font-medium">{user.profession || 'Not specified'}</p>
+                      </div>
+                    </div>
+                    
+                    {user.company && (
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-green-50 dark:bg-green-950 rounded-lg">
+                          <Building className="w-4 h-4 text-green-600" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Company</label>
+                          <p className="text-gray-900 dark:text-white font-medium">{user.company}</p>
+                        </div>
                       </div>
                     )}
-                    {user.location && (
+                    
+                    {user.industry && (
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-purple-50 dark:bg-purple-950 rounded-lg">
+                          <Building className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Industry</label>
+                          <p className="text-gray-900 dark:text-white font-medium">{user.industry}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-orange-50 dark:bg-orange-950 rounded-lg">
+                        <MapPin className="w-4 h-4 text-orange-600" />
+                      </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Location</label>
-                        <p className="text-gray-900 dark:text-white">{user.location}</p>
+                        <p className="text-gray-900 dark:text-white font-medium">
+                          {user.city && user.country 
+                            ? `${user.city}, ${user.country}`
+                            : user.location || user.city || user.country || 'Not specified'
+                          }
+                        </p>
                       </div>
-                    )}
-                    {!user.email && !user.location && (
-                      <p className="text-gray-500 dark:text-gray-400">No contact information available</p>
-                    )}
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
+                        <Trophy className="w-4 h-4 text-yellow-600" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Rank</label>
+                        <p className="text-gray-900 dark:text-white font-medium">{user.rank || 'New Member'}</p>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Professional Information */}
-              <Card>
+            {/* Skills Section */}
+            {user.skills && user.skills.length > 0 && (
+              <Card className="border-l-4 border-l-orange-500">
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Professional Information</h3>
-                  <div className="space-y-3">
-                    {user.profession && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Profession</label>
-                        <p className="text-gray-900 dark:text-white">{user.profession}</p>
-                      </div>
-                    )}
-                    {user.company && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Company</label>
-                        <p className="text-gray-900 dark:text-white">{user.company}</p>
-                      </div>
-                    )}
-                    {user.rank && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Rank</label>
-                        <p className="text-gray-900 dark:text-white">{user.rank}</p>
-                      </div>
-                    )}
-                    {!user.profession && !user.company && (
-                      <p className="text-gray-500 dark:text-gray-400">No professional information available</p>
-                    )}
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-orange-600" />
+                    Skills & Expertise
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
+                    {user.skills.map((skill, index) => (
+                      <Badge 
+                        key={index} 
+                        variant="secondary" 
+                        className="px-4 py-2 bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 dark:from-orange-900 dark:to-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700 hover:shadow-md transition-all duration-200"
+                      >
+                        {skill}
+                      </Badge>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            )}
 
             {/* Bio Section */}
             {user.bio && (
-              <Card>
+              <Card className="hover:border-l-4 hover:border-l-green-500 transition-all duration-200">
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">About</h3>
-                  <p className="text-gray-700 dark:text-gray-300">{user.bio}</p>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-green-600" />
+                    About
+                  </h3>
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{user.bio}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Work Experience */}
+            {user.workExperience && user.workExperience.length > 0 && (
+              <Card className="hover:border-l-4 hover:border-l-blue-500 transition-all duration-200">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-blue-600" />
+                    Work Experience
+                  </h3>
+                  <div className="space-y-6">
+                    {user.workExperience.map((work, index) => (
+                      <div key={index} className="relative pl-8 pb-6 border-l-2 border-orange-200 dark:border-orange-800 last:border-l-0 last:pb-0">
+                        <div className="absolute -left-3 top-0 w-6 h-6 bg-orange-500 rounded-full border-4 border-white dark:border-gray-900 flex items-center justify-center">
+                          <Briefcase className="w-3 h-3 text-white" />
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                          <h4 className="font-semibold text-lg text-gray-900 dark:text-white mb-1">{work.jobTitle}</h4>
+                          <p className="text-orange-600 dark:text-orange-400 font-medium mb-2 flex items-center gap-1">
+                            <Building className="w-4 h-4" />
+                            {work.company}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            {work.startDate} - {work.endDate || 'Present'}
+                          </p>
+                          {work.description && (
+                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{work.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Education */}
+            {user.education && user.education.length > 0 && (
+              <Card className="hover:border-l-4 hover:border-l-green-500 transition-all duration-200">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5 text-green-600" />
+                    Education
+                  </h3>
+                  <div className="space-y-6">
+                    {user.education.map((edu, index) => (
+                      <div key={index} className="relative pl-8 pb-6 border-l-2 border-green-200 dark:border-green-800 last:border-l-0 last:pb-0">
+                        <div className="absolute -left-3 top-0 w-6 h-6 bg-green-500 rounded-full border-4 border-white dark:border-gray-900 flex items-center justify-center">
+                          <GraduationCap className="w-3 h-3 text-white" />
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                          <h4 className="font-semibold text-lg text-gray-900 dark:text-white mb-1">{edu.degree}</h4>
+                          <p className="text-green-600 dark:text-green-400 font-medium mb-2 flex items-center gap-1">
+                            <Building className="w-4 h-4" />
+                            {edu.institution}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            {edu.startDate} - {edu.endDate || 'Present'}
+                          </p>
+                          {edu.description && (
+                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{edu.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Social Links & Portfolio */}
+            {(user.email || user.portfolioUrl || user.linkedinUrl || user.facebookUrl || user.instagramUrl) && (
+              <Card className="hover:border-l-4 hover:border-l-purple-500 transition-all duration-200">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <ExternalLink className="w-5 h-5 text-purple-600" />
+                    Links & Portfolio
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {user.email && (
+                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-lg hover:shadow-md transition-all duration-200">
+                        <div className="p-2 bg-blue-200 dark:bg-blue-800 rounded-lg">
+                          <Mail className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
+                          <a 
+                            href={`mailto:${user.email}`}
+                            className="block text-blue-600 dark:text-blue-400 hover:underline font-medium truncate max-w-48"
+                          >
+                            {user.email}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    {user.portfolioUrl && (
+                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 rounded-lg hover:shadow-md transition-all duration-200">
+                        <div className="p-2 bg-purple-200 dark:bg-purple-800 rounded-lg">
+                          <ExternalLink className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Portfolio</label>
+                          <a 
+                            href={user.portfolioUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="block text-purple-600 dark:text-purple-400 hover:underline font-medium truncate max-w-48"
+                          >
+                            {user.portfolioUrl.replace(/^https?:\/\//, '')}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    {user.linkedinUrl && (
+                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-lg hover:shadow-md transition-all duration-200">
+                        <div className="p-2 bg-blue-200 dark:bg-blue-800 rounded-lg">
+                          <ExternalLink className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">LinkedIn</label>
+                          <a 
+                            href={user.linkedinUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="block text-blue-600 dark:text-blue-400 hover:underline font-medium truncate max-w-48"
+                          >
+                            {user.linkedinUrl.replace(/^https?:\/\//, '')}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    {user.facebookUrl && (
+                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-lg hover:shadow-md transition-all duration-200">
+                        <div className="p-2 bg-blue-200 dark:bg-blue-800 rounded-lg">
+                          <ExternalLink className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Facebook</label>
+                          <a 
+                            href={user.facebookUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="block text-blue-600 dark:text-blue-400 hover:underline font-medium truncate max-w-48"
+                          >
+                            {user.facebookUrl.replace(/^https?:\/\//, '')}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    {user.instagramUrl && (
+                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-pink-50 to-pink-100 dark:from-pink-950 dark:to-pink-900 rounded-lg hover:shadow-md transition-all duration-200">
+                        <div className="p-2 bg-pink-200 dark:bg-pink-800 rounded-lg">
+                          <ExternalLink className="w-4 h-4 text-pink-600" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Instagram</label>
+                          <a 
+                            href={user.instagramUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="block text-pink-600 dark:text-pink-400 hover:underline font-medium truncate max-w-48"
+                          >
+                            {user.instagramUrl.replace(/^https?:\/\//, '')}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -380,10 +621,12 @@ export default function UserProfilePage() {
                   <h3 className="text-lg font-semibold mb-4">Profile Settings</h3>
                   <div className="space-y-4">
                     <div>
-                      <Button variant="outline" className="w-full">
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Profile Information
-                      </Button>
+                      <Link href="/profile/edit">
+                        <Button variant="outline" className="w-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:border-orange-400 dark:text-orange-400 dark:hover:bg-orange-950">
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Profile Information
+                        </Button>
+                      </Link>
                     </div>
                     <div>
                       <Button variant="outline" className="w-full">

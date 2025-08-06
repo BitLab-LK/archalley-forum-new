@@ -54,21 +54,38 @@ export default function Sidebar() {
       setIsLoading(true)
       try {
         console.log('📊 Fetching categories (refresh key:', categoriesKey, ')')
-        const response = await fetch('/api/categories')
+        const response = await fetch('/api/categories', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-cache', // Prevent caching issues after logout
+        })
+        
         if (!response.ok) {
-          throw new Error('Failed to fetch categories')
+          const errorText = await response.text()
+          console.error('Failed to fetch categories:', response.status, errorText)
+          throw new Error(`Failed to fetch categories: ${response.status}`)
         }
+        
         const data = await response.json()
         setCategories(data)
         console.log('✅ Categories loaded:', data.length, 'categories')
       } catch (error) {
         console.error('Error fetching categories:', error)
+        // Set empty array instead of keeping old data
+        setCategories([])
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchCategories()
+    // Add a small delay to prevent race conditions after logout
+    const timeoutId = setTimeout(() => {
+      fetchCategories()
+    }, 50)
+
+    return () => clearTimeout(timeoutId)
   }, [categoriesKey]) // Re-fetch when categoriesKey changes
 
   // Fetch trending posts - now responds to trendingKey changes  
@@ -77,20 +94,38 @@ export default function Sidebar() {
       setIsTrendingLoading(true)
       try {
         console.log('🔥 Fetching trending posts (refresh key:', trendingKey, ')')
-        const response = await fetch('/api/posts?limit=5&sortBy=upvotes&sortOrder=desc')
+        const response = await fetch('/api/posts?limit=5&sortBy=upvotes&sortOrder=desc', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-cache', // Prevent caching issues after logout
+        })
+        
         if (!response.ok) {
-          throw new Error('Failed to fetch trending posts')
+          const errorText = await response.text()
+          console.error('Failed to fetch trending posts:', response.status, errorText)
+          throw new Error(`Failed to fetch trending posts: ${response.status}`)
         }
+        
         const data = await response.json()
         setTrendingPosts(data.posts || [])
         console.log('✅ Trending posts loaded:', data.posts?.length || 0, 'posts')
       } catch (error) {
         console.error('Error fetching trending posts:', error)
+        // Set empty array instead of keeping old data
+        setTrendingPosts([])
       } finally {
         setIsTrendingLoading(false)
       }
     }
-    fetchTrendingPosts()
+
+    // Add a small delay to prevent race conditions after logout
+    const timeoutId = setTimeout(() => {
+      fetchTrendingPosts()
+    }, 100)
+
+    return () => clearTimeout(timeoutId)
   }, [trendingKey]) // Re-fetch when trendingKey changes
 
   return (

@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Account {
-  id                String  @id
+  id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
@@ -26,10 +26,10 @@ model Account {
 }
 
 model Comment {
-  id            String    @id
+  id            String    @id @default(cuid())
   content       String
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime  @updatedAt
   postId        String
   authorId      String
   parentId      String?
@@ -40,25 +40,25 @@ model Comment {
 }
 
 model Post {
-  id                String     @id
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime
+  id                String        @id @default(cuid())
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
   title             String?
   content           String
-  isAnonymous       Boolean    @default(false)
-  isPinned          Boolean    @default(false)
-  isLocked          Boolean    @default(false)
+  isAnonymous       Boolean       @default(false)
+  isPinned          Boolean       @default(false)
+  isLocked          Boolean       @default(false)
   aiCategory        String?
   aiTags            String[]
-  originalLanguage  String     @default("English")
+  originalLanguage  String        @default("English")
   translatedContent String?
-  viewCount         Int        @default(0)
-  shareCount        Int        @default(0)
+  viewCount         Int           @default(0)
+  shareCount        Int           @default(0)
   authorId          String
   categoryId        String
   Comment           Comment[]
-  users             users      @relation(fields: [authorId], references: [id])
-  categories        categories @relation(fields: [categoryId], references: [id])
+  users             users         @relation(fields: [authorId], references: [id])
+  categories        categories    @relation(fields: [categoryId], references: [id])
   attachments       attachments[]
 
   @@index([authorId])
@@ -66,7 +66,7 @@ model Post {
 }
 
 model Session {
-  id           String   @id
+  id           String   @id @default(cuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
@@ -77,6 +77,7 @@ model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
+  id         String   @id @default(cuid())
 
   @@unique([identifier, token])
 }
@@ -154,55 +155,55 @@ model settings {
 }
 
 model users {
-  id                String          @id
-  firstName         String?
-  lastName          String?
-  name              String?         // Keep for backward compatibility
-  email             String          @unique
+  id                String           @id
+  name              String?
+  email             String           @unique
   emailVerified     DateTime?
   image             String?
   password          String?
-  phoneNumber       String?
-  headline          String?
-  skills            String[]        @default([])
-  industry          String?
-  country           String?
-  city              String?
   company           String?
   profession        String?
   bio               String?
-  location          String?         // Keep for backward compatibility
+  location          String?
   website           String?
-  portfolioUrl      String?
   phone             String?
-  profileVisibility Boolean         @default(true)
+  profileVisibility Boolean          @default(true)
   linkedinUrl       String?
   twitterUrl        String?
   instagramUrl      String?
-  facebookUrl       String?
-  role              UserRole        @default(MEMBER)
-  rank              UserRank        @default(NEW_MEMBER)
-  isVerified        Boolean         @default(false)
-  isSuspended       Boolean         @default(false)
+  role              UserRole         @default(MEMBER)
+  rank              UserRank         @default(NEW_MEMBER)
+  isVerified        Boolean          @default(false)
+  isSuspended       Boolean          @default(false)
   suspendedUntil    DateTime?
-  createdAt         DateTime        @default(now())
+  createdAt         DateTime         @default(now())
   updatedAt         DateTime
-  lastActiveAt      DateTime        @default(now())
+  lastActiveAt      DateTime         @default(now())
+  city              String?
+  country           String?
+  facebookUrl       String?
+  firstName         String?
+  headline          String?
+  industry          String?
+  lastName          String?
+  phoneNumber       String?
+  portfolioUrl      String?
+  skills            String[]         @default([])
   Account           Account[]
   Comment           Comment[]
+  education         Education[]
   Post              Post[]
   Session           Session[]
+  workExperience    WorkExperience[]
   flags             flags[]
   notifications     notifications[]
   pages             pages[]
   settings          settings[]
   votes             votes[]
-  workExperience    WorkExperience[]
-  education         Education[]
 }
 
 model WorkExperience {
-  id          String    @id
+  id          String    @id @default(cuid())
   jobTitle    String
   company     String
   startDate   DateTime
@@ -211,14 +212,14 @@ model WorkExperience {
   description String?
   userId      String
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime  @updatedAt
   user        users     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model Education {
-  id          String    @id
+  id          String    @id @default(cuid())
   degree      String
   institution String
   startDate   DateTime
@@ -227,7 +228,7 @@ model Education {
   description String?
   userId      String
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime  @updatedAt
   user        users     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
