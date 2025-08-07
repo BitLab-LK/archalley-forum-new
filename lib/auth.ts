@@ -18,6 +18,11 @@ export const authOptions: NextAuthOptions = {
     FacebookProvider({
       clientId: process.env.FACEBOOK_CLIENT_ID!,
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          scope: "email"
+        }
+      }
     }),
     LinkedInProvider({
       clientId: process.env.LINKEDIN_CLIENT_ID!,
@@ -148,6 +153,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/auth/login",
+    signOut: "/",  // Redirect to home page after sign out
     error: "/auth/error", // Error code passed in query string as ?error=
   },
   events: {

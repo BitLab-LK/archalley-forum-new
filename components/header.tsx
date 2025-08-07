@@ -36,7 +36,14 @@ export default function Header() {
   }
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/" })
+    // Ensure logout redirects to the correct URL (port 3000, not 3001)
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? window.location.origin 
+      : "http://localhost:3000"
+    
+    await signOut({ 
+      callbackUrl: baseUrl + "/"
+    })
   }
 
   const getRankColor = (rank: string) => {
