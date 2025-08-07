@@ -42,17 +42,6 @@ export default withAuth(
             return true
           }
           
-          // Allow auth-related routes (registration, sign-in, etc.)
-          if (req.nextUrl.pathname.startsWith("/api/auth/")) {
-            return true
-          }
-          
-          // Allow upload blob for registration (when registration flag is present)
-          if (req.nextUrl.pathname === "/api/upload/blob" && req.method === "POST") {
-            // We'll let the API route handle authentication based on the registration flag
-            return true
-          }
-          
           // Require authentication for all other API routes
           return !!token
         }

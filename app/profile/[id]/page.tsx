@@ -209,12 +209,10 @@ export default function UserProfilePage() {
                     )}
                   </div>
                   {isOwnProfile && (
-                    <Link href="/profile/edit">
-                      <Button variant="outline" size="sm" className="border-orange-500 text-orange-600 hover:bg-orange-50 dark:border-orange-400 dark:text-orange-400 dark:hover:bg-orange-950">
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Profile
-                      </Button>
-                    </Link>
+                    <Button variant="outline" size="sm">
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit Profile
+                    </Button>
                   )}
                   {!isOwnProfile && (
                     <Badge variant="outline">
@@ -621,19 +619,15 @@ export default function UserProfilePage() {
                   <h3 className="text-lg font-semibold mb-4">Profile Settings</h3>
                   <div className="space-y-4">
                     <div>
-                      <Link href="/profile/edit">
-                        <Button variant="outline" className="w-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:border-orange-400 dark:text-orange-400 dark:hover:bg-orange-950">
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit Profile Information
-                        </Button>
-                      </Link>
+                      <Button variant="outline" className="w-full">
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Profile Information
+                      </Button>
                     </div>
                     <div>
-                      <Link href="/profile/edit">
-                        <Button variant="outline" className="w-full">
-                          Change Profile Picture
-                        </Button>
-                      </Link>
+                      <Button variant="outline" className="w-full">
+                        Change Profile Picture
+                      </Button>
                     </div>
                     <div>
                       <Button variant="outline" className="w-full">

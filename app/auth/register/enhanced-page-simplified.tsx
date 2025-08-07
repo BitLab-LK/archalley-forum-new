@@ -70,31 +70,9 @@ export default function SimplifiedEnhancedRegisterPage() {
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
   const [phoneNumber, setPhoneNumber] = useState("")
-  const [phoneValidation, setPhoneValidation] = useState<{
-    isChecking: boolean
-    isValid: boolean | null
-    message: string
-  }>({ isChecking: false, isValid: null, message: "" })
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null)
-  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null)
-  
-  // Handle profile photo change with preview
-  const handleProfilePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null
-    setProfilePhoto(file)
-    
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setProfilePhotoPreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
-    } else {
-      setProfilePhotoPreview(null)
-    }
-  }
   
   // Professional Profile
   const [headline, setHeadline] = useState("")
@@ -142,68 +120,6 @@ export default function SimplifiedEnhancedRegisterPage() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
   const router = useRouter()
-
-  // Phone validation function
-  const validatePhoneNumber = async (phone: string) => {
-    if (!phone.trim()) {
-      setPhoneValidation({ isChecking: false, isValid: null, message: "" })
-      return
-    }
-
-    // Basic format validation (should contain at least 10 digits)
-    const phoneDigits = phone.replace(/\D/g, '')
-    if (phoneDigits.length < 10) {
-      setPhoneValidation({ 
-        isChecking: false, 
-        isValid: false, 
-        message: "Phone number should have at least 10 digits" 
-      })
-      return
-    }
-
-    setPhoneValidation({ isChecking: true, isValid: null, message: "Checking..." })
-    
-    try {
-      const response = await fetch('/api/auth/check-phone', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: phone })
-      })
-      
-      const data = await response.json()
-      
-      if (response.ok) {
-        setPhoneValidation({ 
-          isChecking: false, 
-          isValid: data.available, 
-          message: data.available ? "Phone number is available" : "Phone number is already taken"
-        })
-      } else {
-        setPhoneValidation({ 
-          isChecking: false, 
-          isValid: false, 
-          message: data.error || "Error checking phone number"
-        })
-      }
-    } catch (error) {
-      setPhoneValidation({ 
-        isChecking: false, 
-        isValid: null, 
-        message: "Unable to verify phone number"
-      })
-    }
-  }
-
-  // Debounced phone validation
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (phoneNumber) {
-        validatePhoneNumber(phoneNumber)
-      }
-    }, 500) // Wait 500ms after user stops typing
-
-    return () => clearTimeout(timeoutId)
-  }, [phoneNumber])
 
   const industries = [
     "Architecture",
@@ -306,20 +222,6 @@ export default function SimplifiedEnhancedRegisterPage() {
       return
     }
 
-    // Check phone number validation if phone is provided
-    if (phoneNumber && phoneValidation.isValid === false) {
-      setError("Please use a different phone number")
-      setIsLoading(false)
-      return
-    }
-
-    // Check if phone validation is still in progress
-    if (phoneNumber && phoneValidation.isChecking) {
-      setError("Please wait while we verify your phone number")
-      setIsLoading(false)
-      return
-    }
-
     if (!agreeToTerms) {
       setError("You must agree to the terms and conditions")
       setIsLoading(false)
@@ -327,69 +229,6 @@ export default function SimplifiedEnhancedRegisterPage() {
     }
 
     try {
-      let imageUrl = ""
-      
-      // Upload profile photo if provided
-      if (profilePhoto) {
-        console.log('� Profile photo selected, starting upload...', {
-          fileName: profilePhoto.name,
-          fileSize: profilePhoto.size,
-          fileType: profilePhoto.type
-        })
-        
-        try {
-          const imageFormData = new FormData()
-          imageFormData.append('images', profilePhoto)
-          imageFormData.append('registration', 'true') // Flag for registration upload
-          
-          console.log('📤 Sending upload request to /api/upload/blob...')
-          
-          const uploadResponse = await fetch('/api/upload/blob', {
-            method: 'POST',
-            body: imageFormData,
-          })
-          
-          console.log('📥 Upload response status:', uploadResponse.status)
-          console.log('📥 Upload response headers:', Object.fromEntries(uploadResponse.headers.entries()))
-          
-          if (uploadResponse.ok) {
-            const responseText = await uploadResponse.text()
-            console.log('📋 Raw upload response:', responseText)
-            
-            try {
-              const uploadData = JSON.parse(responseText)
-              console.log('📋 Parsed upload response data:', uploadData)
-              
-              if (uploadData.images && uploadData.images.length > 0) {
-                imageUrl = uploadData.images[0].url
-                console.log('✅ Profile image uploaded successfully:', imageUrl)
-              } else {
-                console.warn('⚠️ No images returned from upload. Full response:', uploadData)
-              }
-            } catch (parseError) {
-              console.error('❌ Failed to parse upload response as JSON:', parseError)
-              console.error('❌ Response was:', responseText)
-            }
-          } else {
-            const errorText = await uploadResponse.text()
-            console.error('❌ Upload failed with status', uploadResponse.status)
-            console.error('❌ Error response text:', errorText)
-            
-            try {
-              const errorData = JSON.parse(errorText)
-              console.error('❌ Parsed error data:', errorData)
-            } catch (parseError) {
-              console.error('❌ Could not parse error response as JSON:', parseError)
-            }
-          }
-        } catch (uploadError) {
-          console.error('🚨 Upload error:', uploadError)
-          // Continue with registration even if image upload fails
-        }
-      } else {
-        console.log('ℹ️ No profile photo selected')
-      }
-
       const formData = {
         firstName,
         lastName,
@@ -406,16 +245,9 @@ export default function SimplifiedEnhancedRegisterPage() {
         linkedinUrl,
         facebookUrl,
         instagramUrl,
-        image: imageUrl, // Include the uploaded image URL
         workExperience: workExperience.filter(exp => exp.jobTitle && exp.company),
         education: education.filter(edu => edu.degree && edu.institution),
       }
-
-      console.log('📋 Registration data:', {
-        ...formData,
-        password: '[HIDDEN]',
-        imageUrl: imageUrl || 'No image'
-      })
 
       const response = await fetch("/api/auth/register", {
         method: "POST",
@@ -435,7 +267,6 @@ export default function SimplifiedEnhancedRegisterPage() {
 
       // Auto-login after successful registration
       setTimeout(async () => {
-        console.log('🔐 Starting auto-login after registration...')
         const result = await signIn("credentials", {
           email,
           password,
@@ -443,12 +274,8 @@ export default function SimplifiedEnhancedRegisterPage() {
         })
 
         if (result?.ok) {
-          console.log('✅ Auto-login successful, redirecting...')
-          // Force session refresh to get updated user data including image
-          window.location.href = "/"
-        } else {
-          console.error('❌ Auto-login failed:', result?.error)
-          router.push("/auth/login")
+          router.push("/")
+          router.refresh()
         }
       }, 2000)
     } catch (error: any) {
@@ -711,38 +538,13 @@ export default function SimplifiedEnhancedRegisterPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="phoneNumber">Phone Number</Label>
-                  <div className="relative">
-                    <Input
-                      id="phoneNumber"
-                      placeholder="+1 (555) 123-4567"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      disabled={isLoading}
-                      className={
-                        phoneValidation.isValid === false 
-                          ? "border-red-500 focus:border-red-500" 
-                          : phoneValidation.isValid === true 
-                          ? "border-green-500 focus:border-green-500" 
-                          : ""
-                      }
-                    />
-                    {phoneValidation.isChecking && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-                  {phoneValidation.message && (
-                    <p className={`text-sm ${
-                      phoneValidation.isValid === false 
-                        ? "text-red-500" 
-                        : phoneValidation.isValid === true 
-                        ? "text-green-500" 
-                        : "text-gray-500"
-                    }`}>
-                      {phoneValidation.message}
-                    </p>
-                  )}
+                  <Input
+                    id="phoneNumber"
+                    placeholder="+1 (555) 123-4567"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    disabled={isLoading}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -774,40 +576,27 @@ export default function SimplifiedEnhancedRegisterPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="profilePhoto">Profile Photo</Label>
-                  <div className="flex items-center space-x-4">
-                    {/* Profile Photo Preview */}
-                    {profilePhotoPreview && (
-                      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200">
-                        <img 
-                          src={profilePhotoPreview} 
-                          alt="Profile preview" 
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    
-                    <div className="flex-1">
-                      <Input
-                        id="profilePhoto"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={handleProfilePhotoChange}
-                        disabled={isLoading}
-                        className="hidden"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('profilePhoto')?.click()}
-                        disabled={isLoading}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        {profilePhoto ? 'Change Photo' : 'Choose Photo'}
-                      </Button>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {profilePhoto ? `Selected: ${profilePhoto.name}` : "Upload a profile picture (JPEG, PNG, WebP - Max 2MB)"}
-                      </p>
-                    </div>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="profilePhoto"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setProfilePhoto(e.target.files?.[0] || null)}
+                      disabled={isLoading}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('profilePhoto')?.click()}
+                      disabled={isLoading}
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      Choose File
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      {profilePhoto ? profilePhoto.name : "No file chosen"}
+                    </span>
                   </div>
                 </div>
 

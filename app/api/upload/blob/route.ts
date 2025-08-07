@@ -35,40 +35,17 @@ function sanitizeFilename(filename: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚀 Blob upload API called')
-    
-    const data = await request.formData()
-    console.log('📋 FormData received, keys:', Array.from(data.keys()))
-    
-    const isRegistration = data.get("registration") === "true"
-    console.log('🔍 Is registration upload:', isRegistration)
-    
-    // Check authentication - skip for registration uploads
-    if (!isRegistration) {
-      console.log('🔐 Checking authentication for regular upload...')
-      const session = await getServerSession(authOptions)
-      if (!session?.user) {
-        console.log('❌ No authenticated user found')
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-      }
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
-      // Check rate limit for authenticated users
-      if (!checkRateLimit(session.user.id)) {
-        console.log('❌ Rate limit exceeded for user:', session.user.id)
-        return NextResponse.json({ error: "Rate limit exceeded. Please try again later." }, { status: 429 })
-      }
-    } else {
-      console.log('🔓 Registration upload - skipping authentication')
+    // Check rate limit
+    if (!checkRateLimit(session.user.id)) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again later." }, { status: 429 })
     }
-    
-    // Check if blob token is configured
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      console.error('❌ BLOB_READ_WRITE_TOKEN environment variable is not set')
-      return NextResponse.json({ 
-        error: "Server configuration error",
-        message: "Blob storage is not properly configured"
-      }, { status: 500 })
-    }
+
+    const data = await request.formData()
     const files = data.getAll("images") as File[]
 
     if (!files || files.length === 0) {

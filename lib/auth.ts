@@ -1,6 +1,7 @@
 import type { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import FacebookProvider from "next-auth/providers/facebook"
+import LinkedInProvider from "next-auth/providers/linkedin"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
@@ -17,6 +18,10 @@ export const authOptions: NextAuthOptions = {
     FacebookProvider({
       clientId: process.env.FACEBOOK_CLIENT_ID!,
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
+    }),
+    LinkedInProvider({
+      clientId: process.env.LINKEDIN_CLIENT_ID!,
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
     }),
     CredentialsProvider({
       name: "credentials",
@@ -66,8 +71,7 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user, trigger }) {
-      // If this is a sign-in, add user data to token
+    async jwt({ token, user }) {
       if (user) {
         const dbUser = await prisma.users.findUnique({
           where: { email: user.email! },
@@ -78,32 +82,8 @@ export const authOptions: NextAuthOptions = {
           token.rank = dbUser.rank
           token.isVerified = dbUser.isVerified
           token.id = dbUser.id
-          token.image = dbUser.image // Ensure image is passed through
-          token.name = dbUser.name
         }
       }
-
-      // If this is a session update, fetch fresh user data
-      if (trigger === "update" && token.email) {
-        console.log('🔄 JWT callback: Fetching fresh user data for session update')
-        const dbUser = await prisma.users.findUnique({
-          where: { email: token.email },
-        })
-
-        if (dbUser) {
-          token.role = dbUser.role
-          token.rank = dbUser.rank
-          token.isVerified = dbUser.isVerified
-          token.id = dbUser.id
-          token.image = dbUser.image // Get updated image
-          token.name = dbUser.name // Get updated name
-          console.log('✅ JWT callback: Updated token with fresh user data', {
-            image: dbUser.image,
-            name: dbUser.name
-          })
-        }
-      }
-
       return token
     },
     async session({ session, token }) {
@@ -112,14 +92,6 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as any
         session.user.rank = token.rank as any
         session.user.isVerified = token.isVerified as boolean
-        session.user.image = token.image as string // Ensure image is in session
-        session.user.name = token.name as string // Ensure name is in session
-        
-        console.log('📋 Session callback: Setting session data', {
-          userId: session.user.id,
-          image: session.user.image,
-          name: session.user.name
-        })
       }
       return session
     },
@@ -127,7 +99,7 @@ export const authOptions: NextAuthOptions = {
       console.log("=== SIGNIN CALLBACK ===")
       console.log("User:", user?.email, "Provider:", account?.provider)
       
-      if (account?.provider === "google" || account?.provider === "facebook") {
+      if (account?.provider === "google" || account?.provider === "facebook" || account?.provider === "linkedin") {
         try {
           // Check if user exists
           const existingUser = await prisma.users.findUnique({

@@ -9,35 +9,26 @@ interface AuthContextType {
   user: any
   isLoading: boolean
   isAuthenticated: boolean
-  refreshSession: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
   isAuthenticated: false,
-  refreshSession: async () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status, update } = useSession()
+  const { data: session, status } = useSession()
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     setIsLoading(status === "loading")
   }, [status])
 
-  const refreshSession = async () => {
-    console.log('🔄 AuthContext: Refreshing session...')
-    await update()
-    console.log('✅ AuthContext: Session refreshed')
-  }
-
   const value = {
     user: session?.user || null,
     isLoading,
     isAuthenticated: !!session?.user,
-    refreshSession,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
