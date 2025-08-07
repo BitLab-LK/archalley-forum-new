@@ -239,7 +239,7 @@ export default function SimplifiedEnhancedRegisterPage() {
           const uploadFormData = new FormData()
           uploadFormData.append('images', profilePhoto)
           
-          const uploadResponse = await fetch('/api/upload/blob', {
+          const uploadResponse = await fetch('/api/upload/registration', {
             method: 'POST',
             body: uploadFormData,
           })
