@@ -254,14 +254,22 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     
     try {
       // Send to server
+      console.log('🌐 Making fetch request to:', `/api/posts/${post.id}/vote`)
+      console.log('📤 Request payload:', { type: type.toUpperCase() })
+      
       const response = await fetch(`/api/posts/${post.id}/vote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: type.toUpperCase() }),
       })
       
+      console.log('📥 Response status:', response.status)
+      console.log('📥 Response ok:', response.ok)
+      
       if (!response.ok) {
-        throw new Error(`Vote failed: ${response.status}`)
+        const errorText = await response.text()
+        console.error('❌ Error response:', errorText)
+        throw new Error(`Vote failed: ${response.status} - ${errorText}`)
       }
       
       const result = await response.json()
@@ -283,8 +291,27 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
       
       console.log('✅ Vote successful:', result)
       
-    } catch (error) {
-      console.error('❌ Vote failed:', error)
+    } catch (error: unknown) {
+      console.error('❌ Vote failed - Full error details:', error)
+      
+      // Type-safe error handling
+      const errorName = error instanceof Error ? error.name : 'Unknown'
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      
+      console.error('❌ Error name:', errorName)
+      console.error('❌ Error message:', errorMessage)
+      
+      // Check if it's a network error
+      if (error instanceof TypeError && errorMessage === 'Failed to fetch') {
+        console.error('🌐 Network error detected - possible causes:')
+        console.error('  - Development server not running')
+        console.error('  - API route not found')
+        console.error('  - CORS issue')
+        console.error('  - Network connectivity problem')
+        alert('Network error: Unable to connect to server. Please check if the development server is running.')
+      } else {
+        alert(`Failed to vote: ${errorMessage || 'Unknown error'}`)
+      }
       
       // Rollback on error using global state
       updateVote({
@@ -292,8 +319,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
         downvotes: downvotes,
         userVote: userVote
       })
-      
-      alert('Failed to vote. Please try again.')
     } finally {
       setIsVoting(false)
     }
