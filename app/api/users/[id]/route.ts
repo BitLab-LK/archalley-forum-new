@@ -10,6 +10,7 @@ const updateUserSchema = z.object({
   lastName: z.string().optional(),
   name: z.string().optional(),
   phoneNumber: z.string().optional(),
+  image: z.string().optional(), // Add image field
   
   // Professional Profile
   headline: z.string().optional(),

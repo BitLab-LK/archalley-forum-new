@@ -293,9 +293,12 @@ export default function EditProfilePage() {
       console.log('🔄 Refreshing session to update profile data...')
       await update()
 
-      // Force a page refresh to ensure all components update
-      console.log('🔄 Forcing page refresh to update all components...')
-      window.location.href = `/profile/${user?.id}`
+      // Navigate back to profile with cache busting
+      console.log('🔄 Navigating to profile page with updated data...')
+      
+      // Add a timestamp to force cache invalidation
+      const timestamp = Date.now()
+      window.location.href = `/profile/${user?.id}?updated=${timestamp}`
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save profile')
       toast({

@@ -22,6 +22,7 @@ const registerSchema = z.object({
   linkedinUrl: z.string().url().optional().or(z.literal("")),
   facebookUrl: z.string().url().optional().or(z.literal("")),
   instagramUrl: z.string().url().optional().or(z.literal("")),
+  profileImageUrl: z.string().url().optional().or(z.literal("")), // Add profile image URL
   workExperience: z.array(z.object({
     jobTitle: z.string(),
     company: z.string(),
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
       linkedinUrl,
       facebookUrl,
       instagramUrl,
+      profileImageUrl, // Add profile image URL
       workExperience,
       education,
     } = registerSchema.parse(body)
@@ -88,6 +90,7 @@ export async function POST(request: NextRequest) {
         company,
         profession: profession || industry,
         location: country && city ? `${city}, ${country}` : (city || country),
+        image: profileImageUrl || null, // Add profile image URL
         bio: [
           bio,
           headline ? `Headline: ${headline}` : '',

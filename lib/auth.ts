@@ -71,10 +71,11 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
+    async jwt({ token, user, trigger }) {
+      // Always fetch fresh user data when token is updated or session is refreshed
+      if (user || trigger === "update") {
         const dbUser = await prisma.users.findUnique({
-          where: { email: user.email! },
+          where: { email: token.email! },
         })
 
         if (dbUser) {
@@ -82,6 +83,8 @@ export const authOptions: NextAuthOptions = {
           token.rank = dbUser.rank
           token.isVerified = dbUser.isVerified
           token.id = dbUser.id
+          token.name = dbUser.name
+          token.image = dbUser.image
         }
       }
       return token
@@ -92,6 +95,8 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as any
         session.user.rank = token.rank as any
         session.user.isVerified = token.isVerified as boolean
+        session.user.name = token.name as string
+        session.user.image = token.image as string
       }
       return session
     },

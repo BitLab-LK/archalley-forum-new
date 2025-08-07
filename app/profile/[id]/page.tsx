@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -73,6 +73,7 @@ interface Post {
 
 export default function UserProfilePage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const userId = params.id as string
   const { user: currentUser } = useAuth() // Get current logged-in user
   const [user, setUser] = useState<User | null>(null)
@@ -82,6 +83,9 @@ export default function UserProfilePage() {
 
   // Check if the current user is viewing their own profile
   const isOwnProfile = currentUser?.id === userId
+
+  // Check if we're coming from an edit (to force refresh)
+  const wasUpdated = searchParams.get('updated')
 
   // Calculate total comments and votes for user's posts
   const totalComments = posts.reduce((sum, post) => sum + post.comments, 0)
@@ -115,17 +119,20 @@ export default function UserProfilePage() {
     async function fetchUserProfile() {
       try {
         setIsLoading(true)
-        const response = await fetch(`/api/users/${userId}`)
+        // Add cache busting when coming from edit
+        const cacheBuster = wasUpdated ? `?t=${Date.now()}` : ''
+        const response = await fetch(`/api/users/${userId}${cacheBuster}`)
         
         if (!response.ok) {
           throw new Error('User not found')
         }
 
         const userData = await response.json()
+        console.log('📸 User data fetched:', { id: userData.user?.id, image: userData.user?.image })
         setUser(userData.user) // Extract user from the response object
 
         // Fetch user's posts
-        const postsResponse = await fetch(`/api/posts?authorId=${userId}`)
+        const postsResponse = await fetch(`/api/posts?authorId=${userId}${cacheBuster}`)
         if (postsResponse.ok) {
           const postsData = await postsResponse.json()
           // Use the posts data directly as it comes from the API with proper formatting
@@ -141,7 +148,7 @@ export default function UserProfilePage() {
     if (userId) {
       fetchUserProfile()
     }
-  }, [userId])
+  }, [userId, wasUpdated]) // Add wasUpdated as dependency
 
   if (isLoading) {
     return (
@@ -208,11 +215,14 @@ export default function UserProfilePage() {
                       <CheckCircle className="w-6 h-6 text-blue-500" />
                     )}
                   </div>
+                  
                   {isOwnProfile && (
-                    <Button variant="outline" size="sm">
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit Profile
-                    </Button>
+                    <Link href={`/profile/edit`}>
+                      <Button variant="outline" size="sm">
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Profile
+                      </Button>
+                    </Link>
                   )}
                   {!isOwnProfile && (
                     <Badge variant="outline">

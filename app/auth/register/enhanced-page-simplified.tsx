@@ -117,6 +117,7 @@ export default function SimplifiedEnhancedRegisterPage() {
   
   const [agreeToTerms, setAgreeToTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
   const router = useRouter()
@@ -229,6 +230,37 @@ export default function SimplifiedEnhancedRegisterPage() {
     }
 
     try {
+      let profileImageUrl = ""
+
+      // Upload profile photo first if provided
+      if (profilePhoto) {
+        try {
+          setIsUploadingPhoto(true)
+          const uploadFormData = new FormData()
+          uploadFormData.append('images', profilePhoto)
+          
+          const uploadResponse = await fetch('/api/upload/blob', {
+            method: 'POST',
+            body: uploadFormData,
+          })
+          
+          const uploadData = await uploadResponse.json()
+          
+          if (uploadResponse.ok && uploadData.images && uploadData.images.length > 0) {
+            profileImageUrl = uploadData.images[0].url
+            console.log('📸 Profile photo uploaded successfully:', profileImageUrl)
+          } else {
+            console.warn('⚠️ Profile photo upload failed:', uploadData.error)
+            // Continue with registration even if photo upload fails
+          }
+        } catch (uploadError) {
+          console.warn('⚠️ Profile photo upload error:', uploadError)
+          // Continue with registration even if photo upload fails
+        } finally {
+          setIsUploadingPhoto(false)
+        }
+      }
+
       const formData = {
         firstName,
         lastName,
@@ -245,6 +277,7 @@ export default function SimplifiedEnhancedRegisterPage() {
         linkedinUrl,
         facebookUrl,
         instagramUrl,
+        profileImageUrl, // Add the uploaded image URL
         workExperience: workExperience.filter(exp => exp.jobTitle && exp.company),
         education: education.filter(edu => edu.degree && edu.institution),
       }
@@ -1016,11 +1049,11 @@ export default function SimplifiedEnhancedRegisterPage() {
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={isLoading}
+                  disabled={isLoading || isUploadingPhoto}
                   style={{ backgroundColor: '#ffa500', borderColor: '#ffa500' }}
                 >
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Register
+                  {(isLoading || isUploadingPhoto) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isUploadingPhoto ? "Uploading Photo..." : isLoading ? "Creating Account..." : "Register"}
                 </Button>
               </form>
 
