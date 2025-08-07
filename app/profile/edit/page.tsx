@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/auth-context"
 import { AuthGuard } from "@/components/auth-guard"
 import { useToast } from "@/hooks/use-toast"
 import { useVercelBlobUpload } from "@/hooks/use-vercel-blob-upload"
+import { useSession } from "next-auth/react"
 
 interface WorkExperience {
   id?: string
@@ -34,7 +35,8 @@ interface Education {
 }
 
 export default function EditProfilePage() {
-  const { user, refreshSession } = useAuth()
+  const { user } = useAuth()
+  const { update } = useSession()
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -289,7 +291,7 @@ export default function EditProfilePage() {
 
       // Refresh the session to get updated user data
       console.log('🔄 Refreshing session to update profile data...')
-      await refreshSession()
+      await update()
 
       // Force a page refresh to ensure all components update
       console.log('🔄 Forcing page refresh to update all components...')
