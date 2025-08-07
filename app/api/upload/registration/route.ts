@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { put } from '@vercel/blob'
-import sharp from "sharp"
 
 // Rate limiting map for unauthenticated uploads
 const registrationUploadAttempts = new Map<string, { count: number; resetTime: number }>()
@@ -58,7 +57,6 @@ export async function POST(request: NextRequest) {
     
     // Stricter validation for registration uploads
     const maxSize = 2 * 1024 * 1024 // 2MB for registration
-    const maxDimensions = 1024 // 1024px for registration
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"]
 
     // Validate file type
@@ -73,46 +71,17 @@ export async function POST(request: NextRequest) {
 
     let buffer = Buffer.from(await file.arrayBuffer())
     let sanitizedFilename = sanitizeFilename(file.name)
-    let filenameBase = `registration-${Date.now()}-${sanitizedFilename}`.replace(/\.[^.]+$/, "")
-    let filename = `${filenameBase}.webp`
+    let filename = `registration-${Date.now()}-${sanitizedFilename}`
 
-    try {
-      console.log(`🖼️ Processing registration image: ${file.name} (${buffer.length} bytes)`)
-      
-      let sharpImg = sharp(buffer).rotate()
-      const metadata = await sharpImg.metadata()
-      
-      console.log(`📏 Original dimensions: ${metadata.width}x${metadata.height}`)
-      
-      // Resize if image dimensions are too large
-      if (metadata.width && metadata.width > maxDimensions) {
-        sharpImg = sharpImg.resize(maxDimensions, null, { withoutEnlargement: true })
-        console.log(`📐 Resized width to ${maxDimensions}px`)
-      }
-      if (metadata.height && metadata.height > maxDimensions) {
-        sharpImg = sharpImg.resize(null, maxDimensions, { withoutEnlargement: true })
-        console.log(`📐 Resized height to ${maxDimensions}px`)
-      }
-      
-      // Convert to WebP with good quality
-      const processedBuffer = await sharpImg
-        .webp({ quality: 85, effort: 4 })
-        .toBuffer()
-      
-      buffer = Buffer.from(processedBuffer)
-        
-      console.log(`✅ Image processed successfully: ${buffer.length} bytes`)
-    } catch (error) {
-      console.error("Image processing error:", error)
-      return NextResponse.json({ error: "Failed to process image" }, { status: 400 })
-    }
+    console.log(`🖼️ Processing registration image: ${file.name} (${buffer.length} bytes)`)
+    console.log(`� Final filename: ${filename}`)
 
     try {
       console.log(`☁️ Uploading to Vercel Blob: ${filename}`)
       
       const blob = await put(filename, buffer, {
         access: 'public',
-        contentType: 'image/webp',
+        contentType: file.type,
       })
 
       console.log(`✅ Upload successful: ${blob.url}`)
