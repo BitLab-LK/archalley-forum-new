@@ -31,6 +31,7 @@ const nextConfig = {
   images: {
     domains: [
       'localhost',
+      'vnvpjdgzlsratzhmyiry.supabase.co',
     ],
     remotePatterns: [
       {
@@ -42,6 +43,12 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'vdatlalr25kbvq64.public.blob.vercel-storage.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.public.blob.vercel-storage.com',
         port: '',
         pathname: '/**',
       }
