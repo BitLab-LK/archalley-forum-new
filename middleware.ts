@@ -2,7 +2,12 @@ import { withAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
 
 export default withAuth(
-  function middleware(_req) {
+  function middleware(req) {
+    // Log API requests in development
+    if (process.env.NODE_ENV === 'development' && req.nextUrl.pathname.startsWith('/api/')) {
+      console.log(`🔍 Middleware: ${req.method} ${req.nextUrl.pathname}`)
+    }
+    
     // Add security headers
     const response = NextResponse.next()
     
@@ -39,6 +44,21 @@ export default withAuth(
           
           // Allow GET requests to categories (public)
           if (req.nextUrl.pathname.startsWith("/api/categories") && req.method === "GET") {
+            return true
+          }
+          
+          // Allow GET requests to users (public - for members page)
+          if (req.nextUrl.pathname.startsWith("/api/users") && req.method === "GET") {
+            return true
+          }
+          
+          // Allow health check
+          if (req.nextUrl.pathname.startsWith("/api/health")) {
+            return true
+          }
+          
+          // Allow auth endpoints
+          if (req.nextUrl.pathname.startsWith("/api/auth")) {
             return true
           }
           

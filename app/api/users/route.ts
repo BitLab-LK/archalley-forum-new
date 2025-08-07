@@ -5,6 +5,21 @@ export async function GET() {
   try {
     console.log('🔍 Starting users API request...')
     
+    // Test database connection first
+    try {
+      await prisma.$connect()
+      console.log('✅ Database connected successfully')
+    } catch (dbError) {
+      console.error('❌ Database connection failed:', dbError)
+      return NextResponse.json(
+        { 
+          error: "Database connection failed",
+          details: dbError instanceof Error ? dbError.message : 'Unknown database error'
+        },
+        { status: 500 }
+      )
+    }
+    
     // Get users with their post count and post IDs
     // Remove the profileVisibility filter for now to see if that's causing issues
     const users = await prisma.users.findMany({
@@ -49,26 +64,29 @@ export async function GET() {
       upvoteMap.set(user.id, 0)
     })
 
-    // For each user, count their upvotes efficiently
-    for (const user of publicUsers) {
-      if (user.Post.length > 0) {
-        const postIds = user.Post.map(post => post.id)
-        
-        try {
-          // Count upvotes for all this user's posts
-          const upvoteCount = await prisma.votes.count({
-            where: {
-              type: 'UP',
-              postId: {
-                in: postIds,
-              },
-            },
-          })
+    // For each user, count their upvotes efficiently (simplified for now to avoid timeouts)
+    // Skip vote counting in production to avoid potential timeouts
+    if (process.env.NODE_ENV !== 'production') {
+      for (const user of publicUsers.slice(0, 10)) { // Limit to first 10 users to avoid timeouts
+        if (user.Post.length > 0) {
+          const postIds = user.Post.map(post => post.id)
           
-          upvoteMap.set(user.id, upvoteCount)
-        } catch (voteError) {
-          console.warn(`Failed to count votes for user ${user.id}:`, voteError)
-          upvoteMap.set(user.id, 0)
+          try {
+            // Count upvotes for all this user's posts
+            const upvoteCount = await prisma.votes.count({
+              where: {
+                type: 'UP',
+                postId: {
+                  in: postIds,
+                },
+              },
+            })
+            
+            upvoteMap.set(user.id, upvoteCount)
+          } catch (voteError) {
+            console.warn(`Failed to count votes for user ${user.id}:`, voteError)
+            upvoteMap.set(user.id, 0)
+          }
         }
       }
     }
@@ -82,7 +100,7 @@ export async function GET() {
       location: user.location,
       rank: user.rank || 'Member',
       posts: user._count.Post,
-      upvotes: upvoteMap.get(user.id) || 0, // Real upvote count from database
+      upvotes: upvoteMap.get(user.id) || 0, // Real upvote count from database (or 0 in production)
       joinDate: new Date(user.createdAt).toLocaleDateString('en-US', { 
         month: 'short', 
         year: 'numeric' 
@@ -92,15 +110,31 @@ export async function GET() {
     }))
 
     console.log(`🎯 Returning ${formattedUsers.length} formatted users`)
-    return NextResponse.json({ users: formattedUsers })
+    
+    return NextResponse.json({ 
+      users: formattedUsers,
+      metadata: {
+        total: formattedUsers.length,
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV
+      }
+    })
   } catch (error) {
     console.error("❌ Error fetching users:", error)
     return NextResponse.json(
       { 
         error: "Failed to fetch users",
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
       },
       { status: 500 }
     )
+  } finally {
+    // Ensure database connection is properly closed
+    try {
+      await prisma.$disconnect()
+    } catch (disconnectError) {
+      console.warn('Failed to disconnect from database:', disconnectError)
+    }
   }
 }

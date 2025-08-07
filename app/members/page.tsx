@@ -43,25 +43,36 @@ export default function MembersPage() {
     async function fetchMembers() {
       try {
         setIsLoading(true)
-        const response = await fetch('/api/users')
+        
+        // Try the API endpoint
+        const apiUrl = process.env.NODE_ENV === 'production' 
+          ? `${window.location.origin}/api/users`
+          : '/api/users'
+        
+        console.log('🔍 Fetching members from:', apiUrl)
+        const response = await fetch(apiUrl)
+        
+        console.log('📡 Response status:', response.status)
+        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
         
         if (!response.ok) {
           const errorText = await response.text()
-          console.error('Failed to fetch members:', response.status, errorText)
-          throw new Error(`Failed to fetch members: ${response.status}`)
+          console.error('❌ Failed to fetch members:', response.status, errorText)
+          throw new Error(`Failed to fetch members: ${response.status} - ${errorText.substring(0, 100)}`)
         }
         
         const contentType = response.headers.get('content-type')
         if (!contentType || !contentType.includes('application/json')) {
           const responseText = await response.text()
-          console.error('Expected JSON but got:', contentType, responseText.substring(0, 200))
-          throw new Error('Server returned invalid response format')
+          console.error('❌ Expected JSON but got:', contentType, responseText.substring(0, 200))
+          throw new Error('Server returned invalid response format. Expected JSON but got: ' + contentType)
         }
         
         const data = await response.json()
+        console.log('✅ Successfully fetched members:', data.users?.length || 0)
         setMembers(data.users || [])
       } catch (err) {
-        console.error('Error fetching members:', err)
+        console.error('❌ Error fetching members:', err)
         setError(err instanceof Error ? err.message : 'Failed to load members')
       } finally {
         setIsLoading(false)
@@ -161,14 +172,49 @@ export default function MembersPage() {
           <Card className="mb-8">
             <CardContent className="p-6">
               <div className="text-center text-red-600 dark:text-red-400">
-                <p>{error}</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => window.location.reload()}
-                >
-                  Try Again
-                </Button>
+                <h3 className="text-lg font-semibold mb-2">Unable to Load Members</h3>
+                <p className="mb-4">{error}</p>
+                <div className="flex justify-center gap-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => window.location.reload()}
+                  >
+                    Reload Page
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        setError(null)
+                        setIsLoading(true)
+                        const healthResponse = await fetch('/api/health')
+                        const healthData = await healthResponse.json()
+                        console.log('Health check:', healthData)
+                        if (healthData.status === 'ok') {
+                          window.location.reload()
+                        } else {
+                          setError('API is not responding correctly')
+                        }
+                      } catch (err) {
+                        setError('Unable to connect to server')
+                      } finally {
+                        setIsLoading(false)
+                      }
+                    }}
+                  >
+                    Test Connection
+                  </Button>
+                </div>
+                <details className="mt-4 text-left">
+                  <summary className="cursor-pointer text-sm font-medium">Technical Details</summary>
+                  <pre className="mt-2 text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto">
+                    {JSON.stringify({
+                      url: window.location.href,
+                      userAgent: navigator.userAgent,
+                      timestamp: new Date().toISOString()
+                    }, null, 2)}
+                  </pre>
+                </details>
               </div>
             </CardContent>
           </Card>
