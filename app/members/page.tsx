@@ -46,12 +46,22 @@ export default function MembersPage() {
         const response = await fetch('/api/users')
         
         if (!response.ok) {
-          throw new Error('Failed to fetch members')
+          const errorText = await response.text()
+          console.error('Failed to fetch members:', response.status, errorText)
+          throw new Error(`Failed to fetch members: ${response.status}`)
+        }
+        
+        const contentType = response.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+          const responseText = await response.text()
+          console.error('Expected JSON but got:', contentType, responseText.substring(0, 200))
+          throw new Error('Server returned invalid response format')
         }
         
         const data = await response.json()
         setMembers(data.users || [])
       } catch (err) {
+        console.error('Error fetching members:', err)
         setError(err instanceof Error ? err.message : 'Failed to load members')
       } finally {
         setIsLoading(false)

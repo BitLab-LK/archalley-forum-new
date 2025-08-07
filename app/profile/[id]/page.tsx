@@ -124,7 +124,16 @@ export default function UserProfilePage() {
         const response = await fetch(`/api/users/${userId}${cacheBuster}`)
         
         if (!response.ok) {
-          throw new Error('User not found')
+          const errorText = await response.text()
+          console.error('Failed to fetch user profile:', response.status, errorText)
+          throw new Error(`User not found: ${response.status}`)
+        }
+
+        const contentType = response.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+          const responseText = await response.text()
+          console.error('Expected JSON but got:', contentType, responseText.substring(0, 200))
+          throw new Error('Server returned invalid response format')
         }
 
         const userData = await response.json()
@@ -132,13 +141,28 @@ export default function UserProfilePage() {
         setUser(userData.user) // Extract user from the response object
 
         // Fetch user's posts
-        const postsResponse = await fetch(`/api/posts?authorId=${userId}${cacheBuster}`)
-        if (postsResponse.ok) {
-          const postsData = await postsResponse.json()
-          // Use the posts data directly as it comes from the API with proper formatting
-          setPosts(postsData.posts || [])
+        try {
+          const postsResponse = await fetch(`/api/posts?authorId=${userId}${cacheBuster}`)
+          if (postsResponse.ok) {
+            const postsContentType = postsResponse.headers.get('content-type')
+            if (postsContentType && postsContentType.includes('application/json')) {
+              const postsData = await postsResponse.json()
+              // Use the posts data directly as it comes from the API with proper formatting
+              setPosts(postsData.posts || [])
+            } else {
+              console.warn('Posts API returned non-JSON response')
+              setPosts([])
+            }
+          } else {
+            console.warn('Failed to fetch posts:', postsResponse.status)
+            setPosts([])
+          }
+        } catch (postsError) {
+          console.warn('Error fetching posts:', postsError)
+          setPosts([])
         }
       } catch (err) {
+        console.error('Error fetching user profile:', err)
         setError(err instanceof Error ? err.message : 'Failed to load profile')
       } finally {
         setIsLoading(false)

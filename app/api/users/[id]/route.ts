@@ -41,7 +41,10 @@ const updateUserSchema = z.object({
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    console.log('🔍 Starting user profile API request...')
     const { id } = await params
+    console.log(`📋 Fetching user profile for ID: ${id}`)
+    
     const user = await prisma.users.findUnique({
       where: { id },
       include: {
@@ -66,12 +69,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     })
 
     if (!user) {
+      console.log(`❌ User not found for ID: ${id}`)
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
+
+    console.log(`✅ Found user: ${user.name} (${user.id})`)
 
     // Check if profile is private
     const session = await getServerSession(authOptions)
     if (!user.profileVisibility && session?.user?.id !== user.id) {
+      console.log(`🔒 Profile is private for user: ${id}`)
       return NextResponse.json({ error: "Profile is private" }, { status: 403 })
     }
 
@@ -139,10 +146,14 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       lastActiveAt: user.lastActiveAt,
     }
 
+    console.log(`🎯 Returning user profile for: ${formattedUser.name}`)
     return NextResponse.json({ user: formattedUser })
   } catch (error) {
-    console.error("Get user error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("❌ Get user error:", error)
+    return NextResponse.json({ 
+      error: "Internal server error",
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
