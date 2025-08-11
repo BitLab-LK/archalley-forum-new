@@ -1,4 +1,4 @@
-import type { UserRole, UserRank } from "@prisma/client"
+import type { UserRole } from "@prisma/client"
 
 declare module "next-auth" {
   interface Session {
@@ -8,14 +8,12 @@ declare module "next-auth" {
       name?: string
       image?: string
       role: UserRole
-      rank: UserRank
       isVerified: boolean
     }
   }
 
   interface User {
     role: UserRole
-    rank: UserRank
     isVerified: boolean
   }
 }
@@ -23,7 +21,6 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     role: UserRole
-    rank: UserRank
     isVerified: boolean
   }
 }

@@ -297,7 +297,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
 
   if (!isAuthenticated) {
     return (
-      <Card className="w-full max-w-2xl mx-auto">
+      <Card className="w-full mb-6">
         <CardContent className="p-6">
           <div className="text-center">
             <p className="text-gray-600">Please sign in to create a post.</p>
@@ -308,7 +308,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full mb-6">
       <CardContent className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <Avatar className="h-10 w-10">
@@ -347,31 +347,46 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
 
             {/* Image Upload Section */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading || !canUploadMore || isSubmitting}
-                  className="flex items-center gap-2"
-                >
-                  <Cloud className="h-4 w-4" />
-                  {hasFiles ? `Add More Images (${remainingSlots} left)` : 'Upload to Cloud'}
-                </Button>
-                
-                {hasFiles && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={clearAllFiles}
-                    disabled={isUploading || isSubmitting}
-                    className="text-red-600 hover:text-red-700"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading || !canUploadMore || isSubmitting}
+                    className="flex items-center gap-2"
                   >
-                    Clear All
+                    <Cloud className="h-4 w-4" />
+                    {hasFiles ? `Add More Images (${remainingSlots} left)` : 'Upload Media'}
                   </Button>
-                )}
+                  
+                  {hasFiles && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={clearAllFiles}
+                      disabled={isUploading || isSubmitting}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Clear All
+                    </Button>
+                  )}
+                </div>
+
+                {/* Anonymous Toggle - Inline on the right */}
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="anonymous"
+                    checked={isAnonymous}
+                    onCheckedChange={setIsAnonymous}
+                    disabled={isSubmitting}
+                  />
+                  <Label htmlFor="anonymous" className="text-sm whitespace-nowrap">
+                    Post anonymously
+                  </Label>
+                </div>
               </div>
 
               <input
@@ -426,19 +441,6 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* Anonymous Toggle */}
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="anonymous"
-                checked={isAnonymous}
-                onCheckedChange={setIsAnonymous}
-                disabled={isSubmitting}
-              />
-              <Label htmlFor="anonymous" className="text-sm">
-                Post anonymously
-              </Label>
             </div>
 
             {/* AI Progress */}

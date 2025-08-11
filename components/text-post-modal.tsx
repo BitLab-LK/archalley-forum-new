@@ -633,7 +633,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
       'CONVERSATION_STARTER': 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
       'RISING_STAR': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
       'VISUAL_STORYTELLER': 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-      'VALUED_RESPONDER': 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+      'VALUED_RESPONDER': 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
       'COMMUNITY_EXPERT': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
       'TOP_CONTRIBUTOR': 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
     };
@@ -661,7 +661,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
           
           <Avatar className={cn("flex-shrink-0", isNested ? "h-6 w-6" : "h-8 w-8")}>
             <AvatarImage src={comment.authorImage || "/placeholder-user.jpg"} />
-            <AvatarFallback className="bg-blue-500 text-white text-xs">
+            <AvatarFallback className="bg-orange-500 text-white text-xs">
               {comment.author ? comment.author[0].toUpperCase() : "U"}
             </AvatarFallback>
           </Avatar>
@@ -693,7 +693,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                       </span>
                     )}
                     {isAuthor && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                         Author
                       </span>
                     )}
@@ -745,7 +745,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                 onClick={() => handleCommentVote(comment.id, "up")}
                 className={cn(
                   "font-semibold transition-colors duration-75 hover:underline",
-                  comment.userVote === "up" ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
+                  comment.userVote === "up" ? "text-orange-600 dark:text-orange-400" : "text-gray-500 dark:text-gray-400"
                 )}
               >
                 {comment.userVote === "up" ? "Unlike" : "Like"}
@@ -771,7 +771,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
               {hasReplies && (
                 <button 
                   onClick={() => toggleReplies(comment.id)}
-                  className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline transition-colors duration-75 flex items-center gap-1"
+                  className="font-semibold text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 hover:underline transition-colors duration-75 flex items-center gap-1"
                 >
                   {isExpanded ? (
                     <>
@@ -796,7 +796,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                   {comment.upvotes > 0 && (
                     <div className="flex items-center">
                       <div className="flex items-center -space-x-0.5">
-                        <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">👍</div>
+                        <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs">👍</div>
                         {comment.upvotes > 5 && <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">❤️</div>}
                         {comment.upvotes > 10 && <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs">😂</div>}
                       </div>
@@ -819,7 +819,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                 <div className="flex items-start gap-2">
                   <Avatar className="h-6 w-6 flex-shrink-0">
                     <AvatarImage src={user?.image || "/placeholder-user.jpg"} />
-                    <AvatarFallback className="bg-blue-500 text-white text-xs">
+                    <AvatarFallback className="bg-orange-500 text-white text-xs">
                       {user?.name?.[0]?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
@@ -831,7 +831,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                       onChange={(e) => setReplyInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSubmitReply()}
                       autoFocus
-                      className="w-full bg-transparent rounded-full px-4 py-2 text-sm border-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-100"
+                      className="w-full bg-transparent rounded-full px-4 py-2 text-sm border-none focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 transition-all duration-100"
                     />
                   </div>
                 </div>
@@ -917,7 +917,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
-                    <AvatarFallback className="bg-blue-500 text-white">{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
+                    <AvatarFallback className="bg-orange-500 text-white">{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="flex items-center gap-2">
@@ -925,7 +925,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                         {post.isAnonymous ? "Anonymous" : post.author.name}
                       </h3>
                       {!post.isAnonymous && post.author.isVerified && (
-                        <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                        <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
                           <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
@@ -959,7 +959,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                   {/* Category Tag */}
                   {post.category && (
                     <div className="mt-3">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                         #{post.category}
                       </span>
                     </div>
@@ -971,7 +971,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                       <span className="flex items-center gap-1">
                         <div className="flex items-center">
                           {(upvotes && upvotes > 0) && (
-                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                            <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
                               <ThumbsUp className="w-3 h-3 text-white" />
                             </div>
                           )}
@@ -997,42 +997,40 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
 
               {/* Action Buttons */}
               <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-2 py-1">
-                <div className="flex">
+                <div className="flex items-center justify-between gap-1">
                   <button 
                     onClick={() => handleDebouncedVote("up")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ease-in-out font-medium transform hover:scale-105 active:scale-95",
+                      "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ease-in-out font-medium transform hover:scale-105 active:scale-95",
                       userVote === "up" 
-                        ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950" 
+                        ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950" 
                         : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white",
                       isVoting && "opacity-70 cursor-not-allowed"
                     )}
                     disabled={isVoting}
                   >
                     <ThumbsUp className={cn("w-5 h-5 transition-transform duration-200", userVote === "up" && "scale-110")} />
-                    <span className="transition-all duration-200">{userVote === "up" ? "Unlike" : "Like"}</span>
                     {upvotes > 0 && <span className="text-sm transition-all duration-200">({upvotes})</span>}
                   </button>
                   <button 
                     onClick={() => handleDebouncedVote("down")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ease-in-out font-medium transform hover:scale-105 active:scale-95",
+                      "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ease-in-out font-medium transform hover:scale-105 active:scale-95",
                       userVote === "down" 
-                        ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950" 
+                        ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950" 
                         : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white",
                       isVoting && "opacity-70 cursor-not-allowed"
                     )}
                     disabled={isVoting}
                   >
                     <ThumbsDown className={cn("w-5 h-5 transition-transform duration-200", userVote === "down" && "scale-110")} />
-                    <span className="transition-all duration-200">{userVote === "down" ? "Remove Dislike" : "Dislike"}</span>
                     {downvotes > 0 && <span className="text-sm transition-all duration-200">({downvotes})</span>}
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95">
+                  <button className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95">
                     <MessageCircle className="w-5 h-5" />
                     <span className="font-medium">Comment</span>
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95">
+                  <button className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95">
                     <Share2 className="w-5 h-5" />
                     <span className="font-medium">Share</span>
                   </button>
@@ -1056,7 +1054,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8 flex-shrink-0">
                     <AvatarImage src={user?.image || "/placeholder-user.jpg"} />
-                    <AvatarFallback className="bg-blue-500 text-white text-xs">
+                    <AvatarFallback className="bg-orange-500 text-white text-xs">
                       {user?.name?.[0]?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
@@ -1067,12 +1065,12 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                       value={commentInput}
                       onChange={(e) => setCommentInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSubmitComment()}
-                      className="w-full bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 pr-10 text-sm border-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-100"
+                      className="w-full bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 pr-10 text-sm border-none focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 transition-all duration-100"
                     />
                     <button 
                       onClick={handleSubmitComment}
                       disabled={!commentInput.trim()}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-75"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-75"
                     >
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
@@ -1091,7 +1089,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
-                  <AvatarFallback className="bg-blue-500 text-white">{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
+                  <AvatarFallback className="bg-orange-500 text-white">{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
                 </Avatar>
                 <div>
                   <div className="flex items-center gap-2">
@@ -1099,7 +1097,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                       {post.isAnonymous ? "Anonymous" : post.author.name}
                     </h3>
                     {!post.isAnonymous && post.author.isVerified && (
-                      <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                      <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
                         <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
@@ -1142,7 +1140,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                 {/* Category Tag (subtle) */}
                 {post.category && (
                   <div className="mt-3">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                       #{post.category}
                     </span>
                   </div>
@@ -1155,7 +1153,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                       <span className="flex items-center gap-1">
                         <div className="flex items-center">
                           {(upvotes && upvotes > 0) && (
-                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                            <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
                               <ThumbsUp className="w-3 h-3 text-white" />
                             </div>
                           )}
@@ -1180,38 +1178,36 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
 
               {/* Action Buttons - Sticky */}
               <div className="sticky top-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 py-1 z-10">
-                <div className="flex">
+                <div className="flex items-center justify-between gap-1">
                   <button 
                     onClick={() => handleDebouncedVote("up")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 font-medium active:scale-95",
+                      "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 font-medium active:scale-95",
                       userVote === "up" 
-                        ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950" 
+                        ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950" 
                         : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     )}
                   >
                     <ThumbsUp className="w-5 h-5" />
-                    <span>{userVote === "up" ? "Unlike" : "Like"}</span>
                     {upvotes > 0 && <span className="text-sm">({upvotes})</span>}
                   </button>
                   <button 
                     onClick={() => handleDebouncedVote("down")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 font-medium active:scale-95",
+                      "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 font-medium active:scale-95",
                       userVote === "down" 
-                        ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950" 
+                        ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950" 
                         : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     )}
                   >
                     <ThumbsDown className="w-5 h-5" />
-                    <span>{userVote === "down" ? "Remove Dislike" : "Dislike"}</span>
                     {downvotes > 0 && <span className="text-sm">({downvotes})</span>}
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95">
+                  <button className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95">
                     <MessageCircle className="w-5 h-5" />
                     <span className="font-medium">Comment</span>
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                  <button className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
                     <Share2 className="w-5 h-5" />
                     <span className="font-medium">Share</span>
                   </button>
@@ -1236,7 +1232,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarImage src={user?.image || "/placeholder-user.jpg"} />
-                  <AvatarFallback className="bg-blue-500 text-white text-xs">
+                  <AvatarFallback className="bg-orange-500 text-white text-xs">
                     {user?.name?.[0]?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
@@ -1246,12 +1242,12 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                       value={commentInput}
                       onChange={(e) => setCommentInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSubmitComment()}
-                      className="w-full bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 pr-10 text-sm border-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-100"
+                      className="w-full bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 pr-10 text-sm border-none focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 transition-all duration-100"
                     />
                     <button 
                       onClick={handleSubmitComment}
                       disabled={!commentInput.trim()}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-75"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-75"
                     >
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />

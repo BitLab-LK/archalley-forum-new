@@ -61,7 +61,6 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           image: user.image,
           role: user.role,
-          rank: user.rank,
           isVerified: user.isVerified,
         }
       },
@@ -85,7 +84,6 @@ export const authOptions: NextAuthOptions = {
 
         if (dbUser) {
           token.role = dbUser.role
-          token.rank = dbUser.rank
           token.isVerified = dbUser.isVerified
           token.id = dbUser.id
           token.name = dbUser.name
@@ -98,7 +96,6 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.id = token.id as string || token.sub!
         session.user.role = token.role as any
-        session.user.rank = token.rank as any
         session.user.isVerified = token.isVerified as boolean
         session.user.name = token.name as string
         session.user.image = token.image as string
@@ -126,7 +123,6 @@ export const authOptions: NextAuthOptions = {
                 name: user.name || '',
                 image: user.image || null,
                 role: 'MEMBER',
-                rank: 'NEW_MEMBER',
                 isVerified: true,
                 updatedAt: new Date(),
               },

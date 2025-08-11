@@ -130,12 +130,26 @@ export async function POST(request: Request) {
       include: {
         users: {
           select: {
+            id: true,
             name: true,
             image: true,
-            rank: true,
+            userBadges: {
+              take: 3, // Only get top 3 badges
+              include: {
+                badges: true
+              },
+              orderBy: {
+                earnedAt: 'desc'
+              }
+            }
           },
         },
         categories: true,
+        _count: {
+          select: {
+            Comment: true
+          }
+        }
       },
     })
 
@@ -293,7 +307,15 @@ export async function GET(request: NextRequest) {
               id: true,
               name: true,
               image: true,
-              rank: true,
+              userBadges: {
+                take: 3, // Only get top 3 badges
+                include: {
+                  badges: true
+                },
+                orderBy: {
+                  earnedAt: 'desc'
+                }
+              }
             },
           },
           categories: true,
@@ -399,6 +421,7 @@ export async function GET(request: NextRequest) {
         const voteCount = voteCountMap.get(post.id) || { upvotes: 0, downvotes: 0 }
         const userVote = userVoteMap.get(post.id)?.toLowerCase() || null // Include user vote
         const images = attachmentMap.get(post.id) || []
+        const primaryBadge = getPrimaryBadge(post.users.userBadges)
         
         return {
           id: post.id,
@@ -406,9 +429,10 @@ export async function GET(request: NextRequest) {
             id: post.users.id,
             name: post.isAnonymous ? "Anonymous" : post.users.name,
             avatar: post.users.image || "/placeholder.svg",
-            isVerified: post.users.rank === "COMMUNITY_EXPERT" || post.users.rank === "TOP_CONTRIBUTOR",
-            rank: post.users.rank,
-            rankIcon: getRankIcon(post.users.rank),
+            isVerified: isUserVerified(post.users.userBadges),
+            rank: primaryBadge?.badges.name || "Member",
+            rankIcon: primaryBadge?.badges.icon || "👋",
+            badges: post.users.userBadges?.slice(0, 3) || [], // Include top 3 badges
           },
           content: post.content,
           category: post.categories.name,
@@ -488,16 +512,31 @@ function getTimeAgo(date: Date): string {
   return Math.floor(seconds) + " seconds ago"
 }
 
-// Helper function to get rank icon
-function getRankIcon(rank: string): string {
-  const icons = {
-    COMMUNITY_EXPERT: "🏆",
-    TOP_CONTRIBUTOR: "⭐",
-    VISUAL_STORYTELLER: "📸",
-    VALUED_RESPONDER: "💬",
-    RISING_STAR: "🌟",
-    CONVERSATION_STARTER: "💡",
-    NEW_MEMBER: "👋",
-  }
-  return icons[rank as keyof typeof icons] || ""
+// Helper function to get highest badge level for verification
+function isUserVerified(userBadges: any[]): boolean {
+  if (!userBadges || userBadges.length === 0) return false
+  
+  // Check if user has any high-level badges or specific verification badges
+  return userBadges.some(ub => 
+    ub.badges.id === 'verified-expert' ||
+    ub.badges.level === 'PLATINUM' ||
+    ub.badges.level === 'GOLD'
+  )
 }
+
+// Helper function to get the primary badge (highest level or most recent)
+function getPrimaryBadge(userBadges: any[]) {
+  if (!userBadges || userBadges.length === 0) return null
+  
+  // Priority: PLATINUM > GOLD > SILVER > BRONZE
+  const levelPriority = { PLATINUM: 4, GOLD: 3, SILVER: 2, BRONZE: 1 }
+  
+  return userBadges.reduce((best, current) => {
+    const currentLevel = levelPriority[current.badges.level as keyof typeof levelPriority] || 0
+    const bestLevel = best ? levelPriority[best.badges.level as keyof typeof levelPriority] || 0 : 0
+    
+    return currentLevel > bestLevel ? current : best
+  }, null)
+}
+
+

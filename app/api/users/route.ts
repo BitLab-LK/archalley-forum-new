@@ -30,7 +30,12 @@ export async function GET() {
         company: true,
         profession: true,
         location: true,
-        rank: true,
+        userBadges: {
+          include: {
+            badges: true
+          },
+          take: 5 // Get user's top 5 badges
+        },
         isVerified: true,
         createdAt: true,
         profileVisibility: true, // Include it in select to check if it exists
@@ -92,22 +97,27 @@ export async function GET() {
     }
 
     // Transform the data to match the members page format
-    const formattedUsers = publicUsers.map(user => ({
-      id: user.id,
-      name: user.name || 'Anonymous User',
-      profession: user.profession,
-      company: user.company,
-      location: user.location,
-      rank: user.rank || 'Member',
-      posts: user._count.Post,
-      upvotes: upvoteMap.get(user.id) || 0, // Real upvote count from database (or 0 in production)
-      joinDate: new Date(user.createdAt).toLocaleDateString('en-US', { 
-        month: 'short', 
-        year: 'numeric' 
-      }),
-      isVerified: user.isVerified || false,
-      avatar: user.image,
-    }))
+    const formattedUsers = publicUsers.map(user => {
+      const primaryBadge = user.userBadges?.[0]?.badges // Get the most recent badge
+      return {
+        id: user.id,
+        name: user.name || 'Anonymous User',
+        profession: user.profession,
+        company: user.company,
+        location: user.location,
+        rank: primaryBadge?.name || 'Member',
+        badgeCount: user.userBadges?.length || 0,
+        badges: user.userBadges || [],
+        posts: user._count.Post,
+        upvotes: upvoteMap.get(user.id) || 0, // Real upvote count from database (or 0 in production)
+        joinDate: new Date(user.createdAt).toLocaleDateString('en-US', { 
+          month: 'short', 
+          year: 'numeric' 
+        }),
+        isVerified: user.isVerified || false,
+        avatar: user.image,
+      }
+    })
 
     console.log(`🎯 Returning ${formattedUsers.length} formatted users`)
     

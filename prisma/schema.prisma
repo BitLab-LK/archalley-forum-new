@@ -172,7 +172,6 @@ model users {
   twitterUrl        String?
   instagramUrl      String?
   role              UserRole         @default(MEMBER)
-  rank              UserRank         @default(NEW_MEMBER)
   isVerified        Boolean          @default(false)
   isSuspended       Boolean          @default(false)
   suspendedUntil    DateTime?
@@ -200,6 +199,7 @@ model users {
   pages             pages[]
   settings          settings[]
   votes             votes[]
+  userBadges        userBadges[]
 }
 
 model WorkExperience {
@@ -234,6 +234,38 @@ model Education {
   @@index([userId])
 }
 
+model badges {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String
+  icon        String
+  color       String
+  type        BadgeType
+  level       BadgeLevel @default(BRONZE)
+  criteria    Json       // Stores the criteria for earning this badge
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  userBadges  userBadges[]
+
+  @@index([type])
+  @@index([isActive])
+}
+
+model userBadges {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  earnedAt  DateTime @default(now())
+  awardedBy String?  // For manually awarded badges
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badges    badges   @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
+}
+
 model votes {
   id        String   @id
   type      VoteType
@@ -263,14 +295,21 @@ enum NotificationType {
   SYSTEM
 }
 
-enum UserRank {
-  NEW_MEMBER
-  CONVERSATION_STARTER
-  RISING_STAR
-  VISUAL_STORYTELLER
-  VALUED_RESPONDER
-  COMMUNITY_EXPERT
-  TOP_CONTRIBUTOR
+enum BadgeType {
+  ACTIVITY
+  APPRECIATION
+  ENGAGEMENT
+  TENURE
+  ACHIEVEMENT
+  CONTENT_TYPE
+  QUALITY
+}
+
+enum BadgeLevel {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
 }
 
 enum UserRole {

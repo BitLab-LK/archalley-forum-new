@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, UserRank } from "@prisma/client"
+import { PrismaClient, UserRole } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
@@ -10,7 +10,6 @@ async function main() {
       name: "Admin User",
       email: "admin@archalley.com",
       role: UserRole.ADMIN,
-      rank: UserRank.COMMUNITY_EXPERT,
       isVerified: true,
       company: "Archalley",
       bio: "Forum administrator and community manager.",
@@ -26,7 +25,6 @@ async function main() {
         name: "Sarah Chen",
         email: "sarah@example.com",
         role: UserRole.MEMBER,
-        rank: UserRank.COMMUNITY_EXPERT,
         isVerified: true,
         company: "Chen Design Studio",
         bio: "Passionate architect with 10+ years of experience in sustainable design.",
@@ -39,7 +37,6 @@ async function main() {
         name: "Mike Johnson",
         email: "mike@example.com",
         role: UserRole.MODERATOR,
-        rank: UserRank.TOP_CONTRIBUTOR,
         isVerified: true,
         company: "Johnson Interiors",
         bio: "Interior designer specializing in modern commercial spaces.",
@@ -52,7 +49,6 @@ async function main() {
         name: "Emma Davis",
         email: "emma@example.com",
         role: UserRole.MEMBER,
-        rank: UserRank.RISING_STAR,
         isVerified: false,
         company: "Davis Engineering",
         bio: "Structural engineer passionate about sustainable construction.",
@@ -208,11 +204,152 @@ async function main() {
     }),
   ])
 
+  // Create badges
+  const badges = await Promise.all([
+    // Activity badges
+    prisma.badges.create({
+      data: {
+        id: "first-post",
+        name: "First Post",
+        description: "Created your first post",
+        icon: "🎉",
+        color: "#10B981",
+        type: "ACTIVITY",
+        level: "BRONZE",
+        criteria: { postsCount: 1 },
+        updatedAt: new Date(),
+      },
+    }),
+    prisma.badges.create({
+      data: {
+        id: "prolific-writer",
+        name: "Prolific Writer",
+        description: "Created 50+ posts",
+        icon: "✍️",
+        color: "#F59E0B",
+        type: "ACTIVITY",
+        level: "GOLD",
+        criteria: { postsCount: 50 },
+        updatedAt: new Date(),
+      },
+    }),
+    // Appreciation badges
+    prisma.badges.create({
+      data: {
+        id: "well-liked",
+        name: "Well Liked",
+        description: "Received 100+ upvotes",
+        icon: "❤️",
+        color: "#EC4899",
+        type: "APPRECIATION",
+        level: "SILVER",
+        criteria: { upvotesReceived: 100 },
+        updatedAt: new Date(),
+      },
+    }),
+    prisma.badges.create({
+      data: {
+        id: "community-favorite",
+        name: "Community Favorite",
+        description: "Received 1000+ upvotes",
+        icon: "🏆",
+        color: "#8B5CF6",
+        type: "APPRECIATION",
+        level: "PLATINUM",
+        criteria: { upvotesReceived: 1000 },
+        updatedAt: new Date(),
+      },
+    }),
+    // Engagement badges
+    prisma.badges.create({
+      data: {
+        id: "conversationalist",
+        name: "Conversationalist",
+        description: "Posted 50+ comments",
+        icon: "💬",
+        color: "#3B82F6",
+        type: "ENGAGEMENT",
+        level: "SILVER",
+        criteria: { commentsCount: 50 },
+        updatedAt: new Date(),
+      },
+    }),
+    // Tenure badges
+    prisma.badges.create({
+      data: {
+        id: "regular",
+        name: "Regular",
+        description: "Member for 6+ months",
+        icon: "🎖️",
+        color: "#F59E0B",
+        type: "TENURE",
+        level: "BRONZE",
+        criteria: { daysAsActiveMember: 180 },
+        updatedAt: new Date(),
+      },
+    }),
+    // Achievement badges
+    prisma.badges.create({
+      data: {
+        id: "verified-expert",
+        name: "Verified Expert",
+        description: "Manually verified by administrators",
+        icon: "✅",
+        color: "#059669",
+        type: "ACHIEVEMENT",
+        level: "PLATINUM",
+        criteria: { manuallyAwarded: true },
+        updatedAt: new Date(),
+      },
+    }),
+    // Content type badges
+    prisma.badges.create({
+      data: {
+        id: "visual-storyteller",
+        name: "Visual Storyteller",
+        description: "Posted 10+ image posts",
+        icon: "📸",
+        color: "#EC4899",
+        type: "CONTENT_TYPE",
+        level: "SILVER",
+        criteria: { imagePostsCount: 10 },
+        updatedAt: new Date(),
+      },
+    }),
+  ])
+
+  // Award some badges to users
+  await Promise.all([
+    // Give admin user the verified expert badge
+    prisma.userBadges.create({
+      data: {
+        userId: adminUser.id,
+        badgeId: badges.find((b: any) => b.id === "verified-expert")!.id,
+        awardedBy: "system",
+      },
+    }),
+    // Give Sarah the first post badge
+    prisma.userBadges.create({
+      data: {
+        userId: users[0].id,
+        badgeId: badges.find((b: any) => b.id === "first-post")!.id,
+      },
+    }),
+    // Give Mike the conversationalist badge
+    prisma.userBadges.create({
+      data: {
+        userId: users[1].id,
+        badgeId: badges.find((b: any) => b.id === "conversationalist")!.id,
+      },
+    }),
+  ])
+
   console.log("Database seeded successfully!")
   console.log(`Created admin user: ${adminUser.email}`)
   console.log(`Created ${users.length} sample users`)
   console.log(`Created ${categories.length} categories`)
   console.log(`Created ${posts.length} posts`)
+  console.log(`Created ${badges.length} badges`)
   console.log("✅ All sample data has been added to the database")
 }
 

@@ -27,16 +27,16 @@ interface TrendingPost {
 
 interface TopContributor {
   name: string
-  rank: string
+  badge: string
   posts: number
   avatar: string
 }
 
 const topContributors: TopContributor[] = [
-  { name: "Sarah Chen", rank: "Community Expert", posts: 156, avatar: "/placeholder.svg?height=32&width=32" },
-  { name: "Mike Johnson", rank: "Top Contributor", posts: 134, avatar: "/placeholder.svg?height=32&width=32" },
-  { name: "Alex Rivera", rank: "Visual Storyteller", posts: 98, avatar: "/placeholder.svg?height=32&width=32" },
-  { name: "Emma Davis", rank: "Valued Responder", posts: 87, avatar: "/placeholder.svg?height=32&width=32" },
+  { name: "Sarah Chen", badge: "Community Expert", posts: 156, avatar: "/placeholder.svg?height=32&width=32" },
+  { name: "Mike Johnson", badge: "Top Contributor", posts: 134, avatar: "/placeholder.svg?height=32&width=32" },
+  { name: "Alex Rivera", badge: "Visual Storyteller", posts: 98, avatar: "/placeholder.svg?height=32&width=32" },
+  { name: "Emma Davis", badge: "Valued Responder", posts: 87, avatar: "/placeholder.svg?height=32&width=32" },
 ]
 
 export default function Sidebar() {
@@ -47,6 +47,48 @@ export default function Sidebar() {
   
   // Use sidebar context for real-time updates
   const { categoriesKey, trendingKey } = useSidebar()
+
+  // Category color mapping consistent with post-card.tsx
+  const CATEGORY_COLORS = {
+    business: "bg-blue-500",
+    design: "bg-purple-500", 
+    career: "bg-green-500",
+    construction: "bg-yellow-500",
+    academic: "bg-indigo-500",
+    informative: "bg-cyan-500",
+    other: "bg-gray-500",
+  } as const
+
+  // Get light background color for categories
+  const getCategoryLightColor = (categoryName: string): string => {
+    const normalizedName = categoryName.toLowerCase()
+    const colorClass = CATEGORY_COLORS[normalizedName as keyof typeof CATEGORY_COLORS] ?? "bg-gray-500"
+    
+    // Map to light background versions
+    switch (colorClass) {
+      case 'bg-blue-500':
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-900/50'
+      case 'bg-purple-500':
+        return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 hover:bg-purple-200 dark:hover:bg-purple-900/50'
+      case 'bg-green-500':
+        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-900/50'
+      case 'bg-yellow-500':
+        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
+      case 'bg-indigo-500':
+        return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-200 dark:hover:bg-indigo-900/50'
+      case 'bg-cyan-500':
+        return 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-200 dark:hover:bg-cyan-900/50'
+      case 'bg-gray-500':
+      default:
+        return 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-900/50'
+    }
+  }
+
+  // Get dot color for category indicator
+  const getCategoryDotColor = (categoryName: string): string => {
+    const normalizedName = categoryName.toLowerCase()
+    return CATEGORY_COLORS[normalizedName as keyof typeof CATEGORY_COLORS] ?? "bg-gray-500"
+  }
 
   // Fetch categories - now responds to categoriesKey changes
   useEffect(() => {
@@ -135,13 +177,13 @@ export default function Sidebar() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between text-lg font-semibold">
             <div className="flex items-center space-x-2">
-              <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                <TrendingUp className={cn("w-4 h-4 text-blue-600 dark:text-blue-400", isLoading && "animate-pulse")} />
+              <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                <TrendingUp className={cn("w-4 h-4 text-orange-600 dark:text-orange-400", isLoading && "animate-pulse")} />
               </div>
               <span className="text-gray-900 dark:text-gray-100">Categories</span>
             </div>
             {isLoading && (
-              <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-orange-200 border-t-orange-600 rounded-full animate-spin" />
             )}
           </CardTitle>
         </CardHeader>
@@ -159,60 +201,12 @@ export default function Sidebar() {
             ))
           ) : (
             categories.map((category) => {
-              // Generate colorful badge styles based on category color
-              const getBadgeStyle = (colorClass: string) => {
-                // Map specific colors to their badge styles
-                switch (colorClass) {
-                  case 'bg-blue-500':
-                    return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50'
-                  case 'bg-purple-500':
-                    return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50'
-                  case 'bg-green-500':
-                    return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 group-hover:bg-green-200 dark:group-hover:bg-green-900/50'
-                  case 'bg-yellow-500':
-                    return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800 group-hover:bg-yellow-200 dark:group-hover:bg-yellow-900/50'
-                  case 'bg-indigo-500':
-                    return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-900/50'
-                  case 'bg-cyan-500':
-                    return 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800 group-hover:bg-cyan-200 dark:group-hover:bg-cyan-900/50'
-                  case 'bg-gray-500':
-                    return 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-900/50'
-                  case 'bg-red-500':
-                    return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800 group-hover:bg-red-200 dark:group-hover:bg-red-900/50'
-                  case 'bg-orange-500':
-                    return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/50'
-                  case 'bg-pink-500':
-                    return 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-800 group-hover:bg-pink-200 dark:group-hover:bg-pink-900/50'
-                  case 'bg-teal-500':
-                    return 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800 group-hover:bg-teal-200 dark:group-hover:bg-teal-900/50'
-                  case 'bg-emerald-500':
-                    return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-900/50'
-                  case 'bg-violet-500':
-                    return 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800 group-hover:bg-violet-200 dark:group-hover:bg-violet-900/50'
-                  case 'bg-rose-500':
-                    return 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800 group-hover:bg-rose-200 dark:group-hover:bg-rose-900/50'
-                  case 'bg-lime-500':
-                    return 'bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-300 border-lime-200 dark:border-lime-800 group-hover:bg-lime-200 dark:group-hover:bg-lime-900/50'
-                  case 'bg-amber-500':
-                    return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800 group-hover:bg-amber-200 dark:group-hover:bg-amber-900/50'
-                  case 'bg-sky-500':
-                    return 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800 group-hover:bg-sky-200 dark:group-hover:bg-sky-900/50'
-                  case 'bg-slate-500':
-                    return 'bg-slate-100 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 group-hover:bg-slate-200 dark:group-hover:bg-slate-900/50'
-                  default:
-                    return 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-900/50'
-                }
-              }
-
               return (
-                <div key={category.id} className="group flex items-center justify-between hover:bg-white/60 dark:hover:bg-gray-800/60 rounded-xl p-3 transition-all duration-200 cursor-pointer hover:shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
+                <div key={category.id} className={`group flex items-center justify-between rounded-xl p-3 transition-all duration-200 cursor-pointer border border-transparent ${getCategoryLightColor(category.name)}`}>
                   <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full ${category.color} ring-2 ring-white dark:ring-gray-800 group-hover:scale-110 transition-transform`} />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100">{category.name}</span>
+                    <div className={`w-3 h-3 rounded-full ${getCategoryDotColor(category.name)} ring-2 ring-white dark:ring-gray-800 group-hover:scale-110 transition-transform`} />
+                    <span className="text-sm font-medium">{category.name}</span>
                   </div>
-                  <Badge variant="outline" className={`text-xs font-semibold border transition-all duration-200 ${getBadgeStyle(category.color)}`}>
-                    {category.count || 0}
-                  </Badge>
                 </div>
               )
             })
@@ -294,7 +288,7 @@ export default function Sidebar() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate group-hover:text-green-700 dark:group-hover:text-green-300 transition-colors">{contributor.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{contributor.rank}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{contributor.badge}</p>
               </div>
               <div className="text-right">
                 <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 group-hover:bg-green-100 dark:group-hover:bg-green-900/30 transition-colors">

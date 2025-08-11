@@ -59,6 +59,15 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
             startDate: 'desc'
           }
         },
+        userBadges: {
+          include: {
+            badges: true
+          },
+          take: 10,
+          orderBy: {
+            earnedAt: 'desc'
+          }
+        },
         _count: {
           select: {
             Post: true,
@@ -132,7 +141,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       twitterUrl: user.twitterUrl,
       
       // System fields
-      rank: user.rank || 'Member',
+      rank: user.userBadges?.[0]?.badges?.name || 'Member',
+      badgeCount: user.userBadges?.length || 0,
+      badges: user.userBadges || [],
       posts: user._count.Post,
       comments: user._count.Comment,
       upvotes: 0, // Simplified for now - can be enhanced later
@@ -212,7 +223,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         
         // System fields
         role: true,
-        rank: true,
+        userBadges: {
+          include: {
+            badges: true
+          },
+          take: 5
+        },
         isVerified: true,
       },
     })
