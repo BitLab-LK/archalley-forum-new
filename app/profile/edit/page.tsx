@@ -34,6 +34,20 @@ interface Education {
   description?: string
 }
 
+// Helper function to count words in text
+const countWords = (text: string): number => {
+  return text.trim() === '' ? 0 : text.trim().split(/\s+/).length
+}
+
+// Helper function to get word count status
+const getWordCountStatus = (text: string, limit: number = 150) => {
+  const count = countWords(text)
+  if (count === 0) return { status: 'empty', color: 'text-gray-400' }
+  if (count > limit) return { status: 'exceeded', color: 'text-red-500' }
+  if (count > limit - 10) return { status: 'warning', color: 'text-yellow-600' }
+  return { status: 'normal', color: 'text-gray-600' }
+}
+
 export default function EditProfilePage() {
   const { user } = useAuth()
   const { update } = useSession()
@@ -241,6 +255,13 @@ export default function EditProfilePage() {
       setIsSaving(true)
       setError("")
 
+      // Validate bio word count
+      if (countWords(profileData.bio) > 150) {
+        setError("Bio must not exceed 150 words")
+        setIsSaving(false)
+        return
+      }
+
       // Update basic profile data
       const profileResponse = await fetch(`/api/users/${user?.id}`, {
         method: 'PUT',
@@ -441,15 +462,58 @@ export default function EditProfilePage() {
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="bio">Bio</Label>
-                    <Textarea
-                      id="bio"
-                      value={profileData.bio}
-                      onChange={(e) => handleInputChange('bio', e.target.value)}
-                      placeholder="Write a brief description about yourself..."
-                      rows={4}
-                    />
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center mb-2">
+                      <Label htmlFor="bio">Bio</Label>
+                      <span className={`text-xs font-medium ${getWordCountStatus(profileData.bio, 150).color}`}>
+                        {countWords(profileData.bio)}/150 words
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      <Textarea
+                        id="bio"
+                        value={profileData.bio}
+                        onChange={(e) => {
+                          const text = e.target.value
+                          const wordCount = countWords(text)
+                          
+                          // Allow typing if under limit or if deleting text
+                          if (wordCount <= 150 || text.length < profileData.bio.length) {
+                            handleInputChange('bio', text)
+                          }
+                        }}
+                        placeholder="Write a brief description about yourself..."
+                        rows={4}
+                        className={`resize-none ${
+                          (() => {
+                            const status = getWordCountStatus(profileData.bio, 150)
+                            if (status.status === 'exceeded') return 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                            if (status.status === 'warning') return 'border-yellow-300 focus:border-yellow-500 focus:ring-yellow-500'
+                            return ''
+                          })()
+                        }`}
+                      />
+                      {(() => {
+                        const wordCount = countWords(profileData.bio)
+                        const status = getWordCountStatus(profileData.bio, 150)
+                        
+                        if (wordCount > 140) {
+                          return (
+                            <div className={`text-xs p-2 rounded-md ${
+                              status.status === 'exceeded' 
+                                ? 'bg-red-50 text-red-700 border border-red-200' 
+                                : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                            }`}>
+                              {status.status === 'exceeded' 
+                                ? '⚠️ Bio exceeds 150 words. Please shorten your text.' 
+                                : `⚡ Approaching word limit (${150 - wordCount} words remaining)`
+                              }
+                            </div>
+                          )
+                        }
+                        return null
+                      })()}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

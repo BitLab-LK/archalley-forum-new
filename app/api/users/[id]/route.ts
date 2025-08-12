@@ -18,7 +18,13 @@ const updateUserSchema = z.object({
   industry: z.string().optional(),
   country: z.string().optional(),
   city: z.string().optional(),
-  bio: z.string().optional(),
+  bio: z.string().optional().refine((bio) => {
+    if (!bio) return true; // Allow empty bio
+    const wordCount = bio.trim().split(/\s+/).length;
+    return wordCount <= 150;
+  }, {
+    message: "Bio must be 150 words or less"
+  }),
   portfolioUrl: z.string().optional(),
   
   // Social Media

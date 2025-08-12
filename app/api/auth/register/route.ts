@@ -17,7 +17,11 @@ const registerSchema = z.object({
   city: z.string().optional(),
   company: z.string().optional(),
   profession: z.string().optional(),
-  bio: z.string().optional(),
+  bio: z.string().optional().refine((bio) => {
+    if (!bio || bio.trim() === '') return true
+    const wordCount = bio.trim().split(/\s+/).length
+    return wordCount <= 150
+  }, "About/Summary must not exceed 150 words"),
   portfolioUrl: z.string().url().optional().or(z.literal("")),
   linkedinUrl: z.string().url().optional().or(z.literal("")),
   facebookUrl: z.string().url().optional().or(z.literal("")),
