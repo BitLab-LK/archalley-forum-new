@@ -159,9 +159,17 @@ export default function SimplifiedEnhancedRegisterPage() {
   ]
 
   const addSkill = () => {
-    if (skillInput.trim() && !skills.includes(skillInput.trim())) {
-      setSkills([...skills, skillInput.trim()])
-      setSkillInput("")
+    if (skillInput.trim()) {
+      // Split by comma and process each skill
+      const newSkills = skillInput
+        .split(',')
+        .map(skill => skill.trim())
+        .filter(skill => skill && !skills.includes(skill)) // Remove empty and duplicate skills
+      
+      if (newSkills.length > 0) {
+        setSkills([...skills, ...newSkills])
+        setSkillInput("")
+      }
     }
   }
 
@@ -688,19 +696,19 @@ export default function SimplifiedEnhancedRegisterPage() {
 
                     <div className="space-y-2">
                       <Label htmlFor="skills">Skills (comma-separated)</Label>
-                      <div className="flex space-x-2">
-                        <Input
-                          id="skills"
-                          placeholder="e.g., BIM, Project Management, AutoCAD"
-                          value={skillInput}
-                          onChange={(e) => setSkillInput(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-                          disabled={isLoading}
-                        />
-                        <Button type="button" onClick={addSkill} disabled={isLoading}>
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <Input
+                        id="skills"
+                        placeholder="e.g., BIM, Project Management, AutoCAD, Civil Engineering"
+                        value={skillInput}
+                        onChange={(e) => setSkillInput(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            addSkill()
+                          }
+                        }}
+                        disabled={isLoading}
+                      />
                       {skills.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {skills.map((skill, index) => (
