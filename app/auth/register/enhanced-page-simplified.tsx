@@ -74,6 +74,38 @@ export default function SimplifiedEnhancedRegisterPage() {
     if (tab === 'login' || tab === 'register') {
       setActiveTab(tab)
     }
+    
+    // Handle messages from URL parameters (e.g., after registration completion)
+    const urlMessage = searchParams.get('message')
+    if (urlMessage) {
+      setMessage(decodeURIComponent(urlMessage))
+    }
+  }, [searchParams])
+
+  // Handle pre-filled data from social OAuth
+  useEffect(() => {
+    const provider = searchParams.get('provider')
+    const email = searchParams.get('email')
+    const name = searchParams.get('name')
+    const image = searchParams.get('image')
+
+    if (provider && email) {
+      console.log('Social OAuth registration detected:', { provider, email, name })
+      // Pre-fill the form with social data
+      setEmail(decodeURIComponent(email))
+      if (name) {
+        const names = decodeURIComponent(name).split(' ')
+        setFirstName(names[0] || '')
+        setLastName(names.slice(1).join(' ') || '')
+      }
+      if (image) {
+        // We'll handle profile image URL separately since it's not a File object
+        setSocialProfileImage(decodeURIComponent(image))
+      }
+      // Show a message that this is social registration
+      setError("")
+      setSuccess(false)
+    }
   }, [searchParams])
   
   // Login state
@@ -88,6 +120,7 @@ export default function SimplifiedEnhancedRegisterPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null)
+  const [socialProfileImage, setSocialProfileImage] = useState<string>("")
   
   // Professional Profile
   const [headline, setHeadline] = useState("")
@@ -137,6 +170,7 @@ export default function SimplifiedEnhancedRegisterPage() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+  const [message, setMessage] = useState("")
   const router = useRouter()
 
   const industries = [
@@ -285,14 +319,17 @@ export default function SimplifiedEnhancedRegisterPage() {
     setIsLoading(true)
     setError("")
 
+    const provider = searchParams.get('provider')
+    const isSocialRegistration = !!provider
+
     // Validation
-    if (password !== confirmPassword) {
+    if (!isSocialRegistration && password !== confirmPassword) {
       setError("Passwords do not match")
       setIsLoading(false)
       return
     }
 
-    if (password.length < 6) {
+    if (!isSocialRegistration && password.length < 6) {
       setError("Password must be at least 6 characters")
       setIsLoading(false)
       return
@@ -341,6 +378,9 @@ export default function SimplifiedEnhancedRegisterPage() {
         } finally {
           setIsUploadingPhoto(false)
         }
+      } else if (socialProfileImage) {
+        // Use social profile image if no file was uploaded
+        profileImageUrl = socialProfileImage
       }
 
       const formData = {
@@ -348,7 +388,7 @@ export default function SimplifiedEnhancedRegisterPage() {
         lastName,
         email,
         phoneNumber,
-        password,
+        password: isSocialRegistration ? undefined : password, // Don't send password for social registration
         headline,
         skills,
         industry,
@@ -358,9 +398,11 @@ export default function SimplifiedEnhancedRegisterPage() {
         websiteUrl,
         portfolioLinks,
         socialMediaLinks,
-        profileImageUrl, // Add the uploaded image URL
+        profileImageUrl, // Add the uploaded image URL or social image
         workExperience: workExperience.filter(exp => exp.jobTitle && exp.company),
         education: education.filter(edu => edu.degree && edu.institution),
+        isSocialRegistration,
+        provider,
       }
 
       const response = await fetch("/api/auth/register", {
@@ -379,19 +421,27 @@ export default function SimplifiedEnhancedRegisterPage() {
 
       setSuccess(true)
 
-      // Auto-login after successful registration
-      setTimeout(async () => {
-        const result = await signIn("credentials", {
-          email,
-          password,
-          redirect: false,
-        })
+      // Handle post-registration flow
+      if (isSocialRegistration) {
+        // For social registration, show success message and provide clear next steps
+        setTimeout(() => {
+          router.push("/auth/login?message=Registration complete! Click your social login button below to access your account&provider=" + provider)
+        }, 3000)
+      } else {
+        // For regular registration, auto-login
+        setTimeout(async () => {
+          const result = await signIn("credentials", {
+            email,
+            password,
+            redirect: false,
+          })
 
-        if (result?.ok) {
-          router.push("/")
-          router.refresh()
-        }
-      }, 2000)
+          if (result?.ok) {
+            router.push("/")
+            router.refresh()
+          }
+        }, 2000)
+      }
     } catch (error: any) {
       setError(error.message || "An error occurred. Please try again.")
     } finally {
@@ -405,31 +455,17 @@ export default function SimplifiedEnhancedRegisterPage() {
     
     try {
       console.log(`Attempting ${provider} login...`)
-      const result = await signIn(provider, { 
+      // For social logins, let NextAuth handle the redirect automatically
+      await signIn(provider, { 
         callbackUrl: "/",
-        redirect: false // Don't automatically redirect to see the result
+        redirect: true // Let NextAuth handle the redirect
       })
-      
-      console.log("Social login result:", result)
-      
-      if (result?.error) {
-        console.error("Social login error:", result.error)
-        setError(`Failed to sign in with ${provider}. Please try again.`)
-      } else if (result?.ok) {
-        console.log("Social login successful, redirecting...")
-        // Manual redirect after successful login
-        window.location.href = result.url || "/"
-      } else if (result?.url) {
-        // If we get a URL but no explicit success, still redirect
-        console.log("Social login potentially successful, redirecting to:", result.url)
-        window.location.href = result.url
-      }
     } catch (error) {
       console.error("Social login exception:", error)
       setError(`An error occurred during ${provider} login. Please try again.`)
-    } finally {
       setIsLoading(false)
     }
+    // Don't set loading to false here since we're redirecting
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -458,6 +494,9 @@ export default function SimplifiedEnhancedRegisterPage() {
   }
 
   if (success) {
+    const provider = searchParams.get('provider')
+    const isSocialRegistration = !!provider
+
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <Card className="w-full max-w-md">
@@ -465,10 +504,24 @@ export default function SimplifiedEnhancedRegisterPage() {
             <div className="text-center space-y-4">
               <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
               <h2 className="text-2xl font-bold">Account Created!</h2>
-              <p className="text-muted-foreground">
-                Your professional profile has been created successfully. You're being signed in...
-              </p>
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{ borderColor: '#ffa500' }}></div>
+              {isSocialRegistration ? (
+                <div className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Your profile has been created successfully! You'll be redirected to the login page where you can click "{provider?.toUpperCase()} Login" to access your account.
+                  </p>
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2" style={{ borderColor: '#ffa500' }}></div>
+                    <span className="text-sm text-muted-foreground">Redirecting to login...</span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-muted-foreground">
+                    Your professional profile has been created successfully. You're being signed in...
+                  </p>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{ borderColor: '#ffa500' }}></div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -496,11 +549,21 @@ export default function SimplifiedEnhancedRegisterPage() {
             </TabsList>
             
             <TabsContent value="login" className="space-y-6">
+              {/* Success Message */}
+              {message && (
+                <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/50">
+                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <AlertDescription className="text-green-700 dark:text-green-300">
+                    {message}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               {/* Social Login */}
               <div className="space-y-3">
                 <Button
-                  variant="outline"
-                  className="w-full"
+                  variant={searchParams.get('provider') === 'google' ? "default" : "outline"}
+                  className={`w-full ${searchParams.get('provider') === 'google' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
                   type="button"
                   onClick={() => handleSocialLogin("google")}
                   disabled={isLoading}
@@ -509,8 +572,8 @@ export default function SimplifiedEnhancedRegisterPage() {
                   Login with Google
                 </Button>
                 <Button
-                  variant="outline"
-                  className="w-full"
+                  variant={searchParams.get('provider') === 'facebook' ? "default" : "outline"}
+                  className={`w-full ${searchParams.get('provider') === 'facebook' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
                   type="button"
                   onClick={() => handleSocialLogin("facebook")}
                   disabled={isLoading}
@@ -519,8 +582,8 @@ export default function SimplifiedEnhancedRegisterPage() {
                   Login with Facebook
                 </Button>
                 <Button
-                  variant="outline"
-                  className="w-full"
+                  variant={searchParams.get('provider') === 'linkedin' ? "default" : "outline"}
+                  className={`w-full ${searchParams.get('provider') === 'linkedin' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
                   type="button"
                   onClick={() => handleSocialLogin("linkedin")}
                   disabled={isLoading}
@@ -634,6 +697,23 @@ export default function SimplifiedEnhancedRegisterPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Social Registration Indicator */}
+                {searchParams.get('provider') && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        {searchParams.get('provider') === 'google' && <Mail className="h-4 w-4 text-white" />}
+                        {searchParams.get('provider') === 'facebook' && <Facebook className="h-4 w-4 text-white" />}
+                        {searchParams.get('provider') === 'linkedin' && <Linkedin className="h-4 w-4 text-white" />}
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-blue-900">Complete Your {searchParams.get('provider')?.charAt(0).toUpperCase()}{searchParams.get('provider')?.slice(1)} Registration</h4>
+                        <p className="text-sm text-blue-700">Your basic information has been pre-filled. Please complete the remaining fields.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Registration Form Fields */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -686,26 +766,26 @@ export default function SimplifiedEnhancedRegisterPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password">Password {searchParams.get('provider') && <span className="text-sm text-muted-foreground">(Optional for social login)</span>}</Label>
                     <Input
                       id="password"
                       type="password"
-                      placeholder="Create a password"
+                      placeholder={searchParams.get('provider') ? "Optional - leave blank for social login" : "Create a password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      required
+                      required={!searchParams.get('provider')}
                       disabled={isLoading}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <Label htmlFor="confirmPassword">Confirm Password {searchParams.get('provider') && <span className="text-sm text-muted-foreground">(Optional)</span>}</Label>
                     <Input
                       id="confirmPassword"
                       type="password"
-                      placeholder="Confirm your password"
+                      placeholder={searchParams.get('provider') ? "Optional" : "Confirm your password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
+                      required={!searchParams.get('provider')}
                       disabled={isLoading}
                     />
                   </div>

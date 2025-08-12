@@ -5,7 +5,6 @@ import LinkedInProvider from "next-auth/providers/linkedin"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
-import crypto from "crypto"
 
 export const authOptions: NextAuthOptions = {
   // Removed PrismaAdapter to avoid conflicts with custom signIn callback
@@ -80,6 +79,14 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url
+      // Default redirect to home page
+      return baseUrl
+    },
     async jwt({ token, user, trigger }) {
       // Always fetch fresh user data when token is updated or session is refreshed
       if (user || trigger === "update") {
@@ -121,23 +128,12 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (!existingUser) {
-            console.log("Creating new social user:", user.email)
-            // Create new user for social login with all required fields
-            const newUser = await prisma.users.create({
-              data: {
-                id: crypto.randomUUID(),
-                email: user.email!,
-                name: user.name || '',
-                image: user.image || null,
-                role: 'MEMBER',
-                isVerified: true,
-                updatedAt: new Date(),
-              },
-            })
-            console.log("Successfully created new social user:", newUser.email)
+            console.log("New social user detected:", user.email)
+            // Redirect to registration for truly new users
+            return `/auth/register?provider=${account.provider}&email=${encodeURIComponent(user.email!)}&name=${encodeURIComponent(user.name || '')}&image=${encodeURIComponent(user.image || '')}`
           } else {
             console.log("Existing social user signing in:", existingUser.email)
-            // Update user info if needed
+            // Update user info if needed for existing users
             await prisma.users.update({
               where: { id: existingUser.id },
               data: {
@@ -146,10 +142,10 @@ export const authOptions: NextAuthOptions = {
                 updatedAt: new Date(),
               },
             })
+            
+            console.log("Sign-in successful for existing user, returning true")
+            return true
           }
-          
-          console.log("Sign-in successful, returning true")
-          return true
         } catch (error) {
           console.error("=== SIGNIN ERROR ===")
           console.error("Error during social sign in:", error)
@@ -164,7 +160,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: "/auth/login",
+    signIn: "/auth/register?tab=login", // Updated to use the register page with login tab
     signOut: "/",  // Redirect to home page after sign out
     error: "/auth/error", // Error code passed in query string as ?error=
   },

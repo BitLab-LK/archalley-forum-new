@@ -9,7 +9,7 @@ const registerSchema = z.object({
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   phoneNumber: z.string().optional(),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters").optional(),
   headline: z.string().optional(),
   skills: z.array(z.string()).optional(),
   industry: z.string().optional(),
@@ -43,6 +43,15 @@ const registerSchema = z.object({
     isCurrent: z.boolean().optional(),
     description: z.string().optional(),
   })).optional(),
+  // Social registration fields
+  isSocialRegistration: z.boolean().optional(),
+  provider: z.string().optional(),
+  websiteUrl: z.string().url().optional().or(z.literal("")),
+  portfolioLinks: z.array(z.string()).optional(),
+  socialMediaLinks: z.array(z.object({
+    platform: z.string(),
+    url: z.string(),
+  })).optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -66,9 +75,14 @@ export async function POST(request: NextRequest) {
       linkedinUrl,
       facebookUrl,
       instagramUrl,
-      profileImageUrl, // Add profile image URL
+      profileImageUrl,
       workExperience,
       education,
+      isSocialRegistration,
+      provider,
+      websiteUrl,
+      portfolioLinks,
+      socialMediaLinks,
     } = registerSchema.parse(body)
 
     // Check if user already exists
@@ -80,8 +94,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User with this email already exists" }, { status: 400 })
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12)
+    // Validate password for non-social registration
+    if (!isSocialRegistration && !password) {
+      return NextResponse.json({ error: "Password is required for regular registration" }, { status: 400 })
+    }
+
+    // Hash password only if provided (for non-social registration)
+    let hashedPassword = null
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 12)
+    }
 
     // Create user with current schema (temporarily store additional info in existing fields)
     const user = await prisma.users.create({
@@ -94,17 +116,21 @@ export async function POST(request: NextRequest) {
         company,
         profession: profession || industry,
         location: country && city ? `${city}, ${country}` : (city || country),
-        image: profileImageUrl || null, // Add profile image URL
+        image: profileImageUrl || null,
         bio: [
           bio,
           headline ? `Headline: ${headline}` : '',
           skills && skills.length > 0 ? `Skills: ${skills.join(', ')}` : '',
-          portfolioUrl ? `Portfolio: ${portfolioUrl}` : '',
+          websiteUrl ? `Website: ${websiteUrl}` : '',
+          portfolioLinks && portfolioLinks.length > 0 ? `Portfolio Links: ${portfolioLinks.join(', ')}` : '',
+          socialMediaLinks && socialMediaLinks.length > 0 ? `Social Media: ${socialMediaLinks.map(link => `${link.platform}: ${link.url}`).join(', ')}` : '',
         ].filter(Boolean).join('\n\n'),
-        website: portfolioUrl,
+        website: websiteUrl || portfolioUrl,
         linkedinUrl,
         instagramUrl: instagramUrl,
-        twitterUrl: facebookUrl, // Using twitterUrl field for Facebook temporarily
+        twitterUrl: facebookUrl,
+        role: 'MEMBER',
+        isVerified: isSocialRegistration ? true : false, // Social registrations are automatically verified
         updatedAt: new Date(),
       },
     })
@@ -118,12 +144,19 @@ export async function POST(request: NextRequest) {
       console.log('Education for user', user.id, ':', education)
     }
 
+    // Log social registration info
+    if (isSocialRegistration && provider) {
+      console.log(`Social registration completed for ${email} via ${provider}`)
+    }
+
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user
 
     return NextResponse.json({ 
       user: userWithoutPassword, 
-      message: "User created successfully. Enhanced profile features will be available after database migration." 
+      message: isSocialRegistration 
+        ? `Profile completed successfully! You can now sign in with ${provider}.`
+        : "User created successfully. Enhanced profile features will be available after database migration." 
     }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
