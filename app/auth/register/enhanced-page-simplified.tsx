@@ -96,7 +96,9 @@ export default function SimplifiedEnhancedRegisterPage() {
   const [country, setCountry] = useState("")
   const [city, setCity] = useState("")
   const [bio, setBio] = useState("")
-  const [portfolioUrl, setPortfolioUrl] = useState("")
+  const [websiteUrl, setWebsiteUrl] = useState("")
+  const [portfolioLinks, setPortfolioLinks] = useState<string[]>([])
+  const [portfolioLinkInput, setPortfolioLinkInput] = useState("")
   
   // Social Media
   const [linkedinUrl, setLinkedinUrl] = useState("")
@@ -175,6 +177,17 @@ export default function SimplifiedEnhancedRegisterPage() {
 
   const removeSkill = (skillToRemove: string) => {
     setSkills(skills.filter(skill => skill !== skillToRemove))
+  }
+
+  const addPortfolioLink = () => {
+    if (portfolioLinkInput.trim() && !portfolioLinks.includes(portfolioLinkInput.trim())) {
+      setPortfolioLinks([...portfolioLinks, portfolioLinkInput.trim()])
+      setPortfolioLinkInput("")
+    }
+  }
+
+  const removePortfolioLink = (linkToRemove: string) => {
+    setPortfolioLinks(portfolioLinks.filter(link => link !== linkToRemove))
   }
 
   const addWorkExperience = () => {
@@ -302,7 +315,8 @@ export default function SimplifiedEnhancedRegisterPage() {
         country,
         city,
         bio,
-        portfolioUrl,
+        websiteUrl,
+        portfolioLinks,
         linkedinUrl,
         facebookUrl,
         instagramUrl,
@@ -824,23 +838,69 @@ export default function SimplifiedEnhancedRegisterPage() {
                 {/* Portfolio/Website Links - Only show if createMemberProfile is checked */}
                 {createMemberProfile && (
                   <div className="space-y-4 animate-in slide-in-from-top-5 duration-300">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Portfolio/Website Links</h3>
-                      <Button type="button" variant="outline" size="sm" disabled={isLoading}>
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add
-                      </Button>
-                    </div>
+                    <h3 className="text-lg font-semibold">Portfolio/Website Links</h3>
                     
                     <div className="space-y-2">
+                      <Label htmlFor="websiteUrl">Personal/Company Website</Label>
                       <Input
-                        id="portfolioUrl"
+                        id="websiteUrl"
                         type="url"
-                        placeholder="https://www.yourportfolio.com"
-                        value={portfolioUrl}
-                        onChange={(e) => setPortfolioUrl(e.target.value)}
+                        placeholder="https://www.yourcompany.com"
+                        value={websiteUrl}
+                        onChange={(e) => setWebsiteUrl(e.target.value)}
                         disabled={isLoading}
                       />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="portfolioLinkInput">Portfolio Links</Label>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={addPortfolioLink}
+                          disabled={isLoading || !portfolioLinkInput.trim()}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add
+                        </Button>
+                      </div>
+                      <Input
+                        id="portfolioLinkInput"
+                        type="url"
+                        placeholder="https://www.behance.net/yourprofile or project links"
+                        value={portfolioLinkInput}
+                        onChange={(e) => setPortfolioLinkInput(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            addPortfolioLink()
+                          }
+                        }}
+                        disabled={isLoading}
+                      />
+                      {portfolioLinks.length > 0 && (
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground">Added Portfolio & Project Links:</Label>
+                          <div className="space-y-1">
+                            {portfolioLinks.map((link, index) => (
+                              <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                                <span className="text-sm truncate mr-2">{link}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removePortfolioLink(link)}
+                                  disabled={isLoading}
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
