@@ -101,9 +101,9 @@ export default function SimplifiedEnhancedRegisterPage() {
   const [portfolioLinkInput, setPortfolioLinkInput] = useState("")
   
   // Social Media
-  const [linkedinUrl, setLinkedinUrl] = useState("")
-  const [facebookUrl, setFacebookUrl] = useState("")
-  const [instagramUrl, setInstagramUrl] = useState("")
+  const [socialMediaLinks, setSocialMediaLinks] = useState<{platform: string, url: string}[]>([])
+  const [selectedPlatform, setSelectedPlatform] = useState("")
+  const [socialMediaUrl, setSocialMediaUrl] = useState("")
   
   // Work Experience
   const [workExperience, setWorkExperience] = useState<WorkExperience[]>([
@@ -160,6 +160,19 @@ export default function SimplifiedEnhancedRegisterPage() {
     "India", "China", "Japan", "South Korea", "Other"
   ]
 
+  const socialMediaPlatforms = [
+    "LinkedIn",
+    "Facebook", 
+    "Instagram",
+    "Twitter/X",
+    "YouTube",
+    "TikTok",
+    "Behance",
+    "Dribbble",
+    "GitHub",
+    "Other"
+  ]
+
   const addSkill = () => {
     if (skillInput.trim()) {
       // Split by comma and process each skill
@@ -188,6 +201,30 @@ export default function SimplifiedEnhancedRegisterPage() {
 
   const removePortfolioLink = (linkToRemove: string) => {
     setPortfolioLinks(portfolioLinks.filter(link => link !== linkToRemove))
+  }
+
+  const addSocialMediaLink = () => {
+    if (selectedPlatform && socialMediaUrl.trim()) {
+      // Check if platform already exists
+      const existingIndex = socialMediaLinks.findIndex(link => link.platform === selectedPlatform)
+      
+      if (existingIndex >= 0) {
+        // Update existing platform URL
+        const updatedLinks = [...socialMediaLinks]
+        updatedLinks[existingIndex].url = socialMediaUrl.trim()
+        setSocialMediaLinks(updatedLinks)
+      } else {
+        // Add new platform
+        setSocialMediaLinks([...socialMediaLinks, { platform: selectedPlatform, url: socialMediaUrl.trim() }])
+      }
+      
+      setSelectedPlatform("")
+      setSocialMediaUrl("")
+    }
+  }
+
+  const removeSocialMediaLink = (platform: string) => {
+    setSocialMediaLinks(socialMediaLinks.filter(link => link.platform !== platform))
   }
 
   const addWorkExperience = () => {
@@ -317,9 +354,7 @@ export default function SimplifiedEnhancedRegisterPage() {
         bio,
         websiteUrl,
         portfolioLinks,
-        linkedinUrl,
-        facebookUrl,
-        instagramUrl,
+        socialMediaLinks,
         profileImageUrl, // Add the uploaded image URL
         workExperience: workExperience.filter(exp => exp.jobTitle && exp.company),
         education: education.filter(edu => edu.degree && edu.institution),
@@ -911,39 +946,73 @@ export default function SimplifiedEnhancedRegisterPage() {
                     <h3 className="text-lg font-semibold">Social Media Profiles</h3>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="linkedinUrl">LinkedIn Profile URL</Label>
-                      <Input
-                        id="linkedinUrl"
-                        type="url"
-                        placeholder="LinkedIn Profile URL"
-                        value={linkedinUrl}
-                        onChange={(e) => setLinkedinUrl(e.target.value)}
-                        disabled={isLoading}
-                      />
-                    </div>
+                      <div className="flex items-center justify-between">
+                        <Label>Add Social Media Profile</Label>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={addSocialMediaLink}
+                          disabled={isLoading || !selectedPlatform || !socialMediaUrl.trim()}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <Select value={selectedPlatform} onValueChange={setSelectedPlatform} disabled={isLoading}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select platform" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {socialMediaPlatforms.map((platform) => (
+                              <SelectItem key={platform} value={platform}>
+                                {platform}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        <Input
+                          type="url"
+                          placeholder="https://platform.com/yourprofile"
+                          value={socialMediaUrl}
+                          onChange={(e) => setSocialMediaUrl(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              addSocialMediaLink()
+                            }
+                          }}
+                          disabled={isLoading || !selectedPlatform}
+                        />
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="facebookUrl">Facebook Profile URL</Label>
-                      <Input
-                        id="facebookUrl"
-                        type="url"
-                        placeholder="Facebook Profile URL"
-                        value={facebookUrl}
-                        onChange={(e) => setFacebookUrl(e.target.value)}
-                        disabled={isLoading}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="instagramUrl">Instagram Profile URL</Label>
-                      <Input
-                        id="instagramUrl"
-                        type="url"
-                        placeholder="Instagram Profile URL"
-                        value={instagramUrl}
-                        onChange={(e) => setInstagramUrl(e.target.value)}
-                        disabled={isLoading}
-                      />
+                      {socialMediaLinks.length > 0 && (
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground">Added Social Media Profiles:</Label>
+                          <div className="space-y-1">
+                            {socialMediaLinks.map((link, index) => (
+                              <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                                <div className="flex-1">
+                                  <span className="text-sm font-medium">{link.platform}:</span>
+                                  <span className="text-sm ml-2 truncate">{link.url}</span>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeSocialMediaLink(link.platform)}
+                                  disabled={isLoading}
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
