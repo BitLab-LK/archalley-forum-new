@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Switch } from "@/components/ui/switch"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -400,10 +401,33 @@ export default function SimplifiedEnhancedRegisterPage() {
 
   const handleSocialLogin = async (provider: string) => {
     setIsLoading(true)
+    setError("") // Clear any previous errors
+    
     try {
-      await signIn(provider, { callbackUrl: "/" })
+      console.log(`Attempting ${provider} login...`)
+      const result = await signIn(provider, { 
+        callbackUrl: "/",
+        redirect: false // Don't automatically redirect to see the result
+      })
+      
+      console.log("Social login result:", result)
+      
+      if (result?.error) {
+        console.error("Social login error:", result.error)
+        setError(`Failed to sign in with ${provider}. Please try again.`)
+      } else if (result?.ok) {
+        console.log("Social login successful, redirecting...")
+        // Manual redirect after successful login
+        window.location.href = result.url || "/"
+      } else if (result?.url) {
+        // If we get a URL but no explicit success, still redirect
+        console.log("Social login potentially successful, redirecting to:", result.url)
+        window.location.href = result.url
+      }
     } catch (error) {
-      setError("An error occurred. Please try again.")
+      console.error("Social login exception:", error)
+      setError(`An error occurred during ${provider} login. Please try again.`)
+    } finally {
       setIsLoading(false)
     }
   }
@@ -713,19 +737,30 @@ export default function SimplifiedEnhancedRegisterPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="createMemberProfile"
-                      checked={createMemberProfile}
-                      onCheckedChange={(checked) => setCreateMemberProfile(checked === true)}
-                      disabled={isLoading}
-                    />
-                    <Label htmlFor="createMemberProfile" className="text-sm text-muted-foreground">
-                      Create a Member Profile: This will create a public professional profile so other
-                      members can learn more about you, based on your skills, work
-                      history, education, and contact details.
-                    </Label>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50/50">
+                    <div className="space-y-1">
+                      <Label className="text-base font-medium">Profile Visibility</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Choose whether to create a public professional profile that other members can view, 
+                        including your skills, work history, education, and contact details.
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className={`text-sm font-medium transition-colors ${!createMemberProfile ? 'text-gray-900' : 'text-gray-500'}`}>
+                        Private
+                      </span>
+                      <Switch
+                        id="createMemberProfile"
+                        checked={createMemberProfile}
+                        onCheckedChange={setCreateMemberProfile}
+                        disabled={isLoading}
+                        className="data-[state=checked]:bg-orange-500"
+                      />
+                      <span className={`text-sm font-medium transition-colors ${createMemberProfile ? 'text-orange-600' : 'text-gray-500'}`}>
+                        Public
+                      </span>
+                    </div>
                   </div>
                 </div>
 

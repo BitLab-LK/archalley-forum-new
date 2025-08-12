@@ -27,6 +27,11 @@ export const authOptions: NextAuthOptions = {
     LinkedInProvider({
       clientId: process.env.LINKEDIN_CLIENT_ID!,
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          scope: "openid profile email",
+        },
+      },
     }),
     CredentialsProvider({
       name: "credentials",
@@ -102,9 +107,11 @@ export const authOptions: NextAuthOptions = {
       }
       return session
     },
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       console.log("=== SIGNIN CALLBACK ===")
       console.log("User:", user?.email, "Provider:", account?.provider)
+      console.log("Account details:", account)
+      console.log("Profile details:", profile)
       
       if (account?.provider === "google" || account?.provider === "facebook" || account?.provider === "linkedin") {
         try {
@@ -130,6 +137,15 @@ export const authOptions: NextAuthOptions = {
             console.log("Successfully created new social user:", newUser.email)
           } else {
             console.log("Existing social user signing in:", existingUser.email)
+            // Update user info if needed
+            await prisma.users.update({
+              where: { id: existingUser.id },
+              data: {
+                name: user.name || existingUser.name,
+                image: user.image || existingUser.image,
+                updatedAt: new Date(),
+              },
+            })
           }
           
           console.log("Sign-in successful, returning true")
