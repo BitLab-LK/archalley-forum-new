@@ -247,7 +247,8 @@ export default function SimplifiedEnhancedRegisterPage() {
   }
 
   const updateWorkExperience = (id: string, field: keyof WorkExperience, value: any) => {
-    setWorkExperience(workExperience.map(exp => 
+    console.log('Updating work experience:', id, field, value)
+    setWorkExperience(prev => prev.map(exp => 
       exp.id === id ? { ...exp, [field]: value } : exp
     ))
   }
@@ -272,7 +273,8 @@ export default function SimplifiedEnhancedRegisterPage() {
   }
 
   const updateEducation = (id: string, field: keyof Education, value: any) => {
-    setEducation(education.map(edu => 
+    console.log('Updating education:', id, field, value)
+    setEducation(prev => prev.map(edu => 
       edu.id === id ? { ...edu, [field]: value } : edu
     ))
   }
@@ -1068,7 +1070,7 @@ export default function SimplifiedEnhancedRegisterPage() {
 
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Start Date (YYYY-MM)</Label>
+                            <Label>Start Date</Label>
                             <Input
                               type="month"
                               value={exp.startDate}
@@ -1079,7 +1081,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>End Date (YYYY-MM)</Label>
+                            <Label>End Date</Label>
                             <Input
                               type="month"
                               value={exp.endDate}
@@ -1096,9 +1098,9 @@ export default function SimplifiedEnhancedRegisterPage() {
                             id={`current-${exp.id}`}
                             checked={exp.isCurrent}
                             onCheckedChange={(checked) => {
-                              const isChecked = checked === true
-                              updateWorkExperience(exp.id, 'isCurrent', isChecked)
-                              if (isChecked) {
+                              console.log('Work checkbox - before:', exp.isCurrent, 'checked value:', checked)
+                              updateWorkExperience(exp.id, 'isCurrent', !!checked)
+                              if (checked) {
                                 updateWorkExperience(exp.id, 'endDate', "")
                               }
                             }}
@@ -1152,9 +1154,9 @@ export default function SimplifiedEnhancedRegisterPage() {
                         
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Degree</Label>
+                            <Label>Qualifications</Label>
                             <Input
-                              placeholder="Degree"
+                              placeholder="Qualifications"
                               value={edu.degree}
                               onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
                               disabled={isLoading}
@@ -1173,7 +1175,7 @@ export default function SimplifiedEnhancedRegisterPage() {
 
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Start Date (YYYY-MM)</Label>
+                            <Label>Start Date</Label>
                             <Input
                               type="month"
                               value={edu.startDate}
@@ -1184,7 +1186,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>End Date (YYYY-MM)</Label>
+                            <Label>End Date</Label>
                             <Input
                               type="month"
                               value={edu.endDate}
@@ -1201,9 +1203,9 @@ export default function SimplifiedEnhancedRegisterPage() {
                             id={`current-edu-${edu.id}`}
                             checked={edu.isCurrent}
                             onCheckedChange={(checked) => {
-                              const isChecked = checked === true
-                              updateEducation(edu.id, 'isCurrent', isChecked)
-                              if (isChecked) {
+                              console.log('Education checkbox - before:', edu.isCurrent, 'checked value:', checked)
+                              updateEducation(edu.id, 'isCurrent', !!checked)
+                              if (checked) {
                                 updateEducation(edu.id, 'endDate', "")
                               }
                             }}
