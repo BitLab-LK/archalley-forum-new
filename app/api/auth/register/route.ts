@@ -8,64 +8,152 @@ const registerSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
-  phoneNumber: z.string().optional(),
-  password: z.string().min(6, "Password must be at least 6 characters").optional(),
-  headline: z.string().optional(),
-  skills: z.array(z.string()).optional(),
-  industry: z.string().optional(),
-  country: z.string().optional(),
-  city: z.string().optional(),
-  company: z.string().optional(),
-  profession: z.string().optional(),
-  bio: z.string().optional().refine((bio) => {
+  phoneNumber: z.string().nullable().optional().refine((phone) => {
+    if (!phone || phone.trim() === '') return true
+    // Basic phone number validation (international format)
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
+    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))
+  }, "Invalid phone number format"),
+  password: z.string().nullable().optional().refine((pwd) => {
+    if (!pwd) return true // Allow null/undefined
+    return pwd.length >= 6
+  }, "Password must be at least 6 characters"),
+  headline: z.string().nullable().optional(),
+  skills: z.array(z.string()).nullable().optional(),
+  industry: z.string().nullable().optional(),
+  country: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  company: z.string().nullable().optional(),
+  profession: z.string().nullable().optional(),
+  bio: z.string().nullable().optional().refine((bio) => {
     if (!bio || bio.trim() === '') return true
     const wordCount = bio.trim().split(/\s+/).length
     return wordCount <= 150
   }, "About/Summary must not exceed 150 words"),
-  portfolioUrl: z.string().url().optional().or(z.literal("")),
-  linkedinUrl: z.string().url().optional().or(z.literal("")),
-  facebookUrl: z.string().url().optional().or(z.literal("")),
-  instagramUrl: z.string().url().optional().or(z.literal("")),
-  profileImageUrl: z.string().url().optional().or(z.literal("")), // Add profile image URL
+  portfolioUrl: z.string().nullable().optional().refine((url) => {
+    if (!url || url.trim() === '') return true
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }, "Invalid portfolio URL"),
+  linkedinUrl: z.string().nullable().optional().refine((url) => {
+    if (!url || url.trim() === '') return true
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }, "Invalid LinkedIn URL"),
+  facebookUrl: z.string().nullable().optional().refine((url) => {
+    if (!url || url.trim() === '') return true
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }, "Invalid Facebook URL"),
+  instagramUrl: z.string().nullable().optional().refine((url) => {
+    if (!url || url.trim() === '') return true
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }, "Invalid Instagram URL"),
+  profileImageUrl: z.string().nullable().optional().refine((url) => {
+    if (!url || url.trim() === '') return true
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }, "Invalid profile image URL"),
   workExperience: z.array(z.object({
     jobTitle: z.string(),
     company: z.string(),
     startDate: z.string(),
-    endDate: z.string().optional(),
-    isCurrent: z.boolean().optional(),
-    description: z.string().optional(),
-  })).optional(),
+    endDate: z.string().nullable().optional(),
+    isCurrent: z.boolean().nullable().optional(),
+    description: z.string().nullable().optional(),
+  })).nullable().optional(),
   education: z.array(z.object({
     degree: z.string(),
     institution: z.string(),
     startDate: z.string(),
-    endDate: z.string().optional(),
-    isCurrent: z.boolean().optional(),
-    description: z.string().optional(),
-  })).optional(),
+    endDate: z.string().nullable().optional(),
+    isCurrent: z.boolean().nullable().optional(),
+    description: z.string().nullable().optional(),
+  })).nullable().optional(),
   // Social registration fields
-  isSocialRegistration: z.boolean().optional(),
-  provider: z.string().optional(),
-  providerAccountId: z.string().optional(),
-  accessToken: z.string().optional(),
-  tokenType: z.string().optional(),
-  scope: z.string().optional(),
-  websiteUrl: z.string().url().optional().or(z.literal("")),
-  portfolioLinks: z.array(z.string()).optional(),
+  isSocialRegistration: z.boolean().nullable().optional(),
+  provider: z.string().nullable().optional(),
+  providerAccountId: z.string().nullable().optional(),
+  accessToken: z.string().nullable().optional(),
+  tokenType: z.string().nullable().optional(),
+  scope: z.string().nullable().optional(),
+  websiteUrl: z.string().nullable().optional().refine((url) => {
+    if (!url || url.trim() === '') return true
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }, "Invalid website URL"),
+  portfolioLinks: z.array(z.string()).nullable().optional(),
   socialMediaLinks: z.array(z.object({
     platform: z.string(),
     url: z.string(),
-  })).optional(),
+  })).nullable().optional(),
 })
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    
+    // Basic validation for required fields before Zod parsing
+    const { email, phoneNumber } = body
+    
+    // Check if user already exists by email (before Zod validation)
+    if (email) {
+      const existingUser = await prisma.users.findUnique({
+        where: { email },
+      })
+
+      if (existingUser) {
+        return NextResponse.json({ error: "User with this email already exists" }, { status: 400 })
+      }
+    }
+
+    // Check if phone number already exists (before Zod validation)
+    if (phoneNumber && phoneNumber.trim() !== '') {
+      const existingUserByPhone = await prisma.users.findFirst({
+        where: { 
+          OR: [
+            { phone: phoneNumber },
+            { phoneNumber: phoneNumber }
+          ]
+        }
+      })
+
+      if (existingUserByPhone) {
+        return NextResponse.json({ error: "User with this phone number already exists" }, { status: 400 })
+      }
+    }
+
+    // Now parse with Zod schema
     const {
-      firstName,
-      lastName,
-      email,
-      phoneNumber,
+      firstName: validatedFirstName,
+      lastName: validatedLastName,
+      email: validatedEmail,
+      phoneNumber: validatedPhoneNumber,
       password,
       headline,
       skills,
@@ -93,15 +181,6 @@ export async function POST(request: NextRequest) {
       socialMediaLinks,
     } = registerSchema.parse(body)
 
-    // Check if user already exists
-    const existingUser = await prisma.users.findUnique({
-      where: { email },
-    })
-
-    if (existingUser) {
-      return NextResponse.json({ error: "User with this email already exists" }, { status: 400 })
-    }
-
     // Validate password for non-social registration
     if (!isSocialRegistration && !password) {
       return NextResponse.json({ error: "Password is required for regular registration" }, { status: 400 })
@@ -119,9 +198,10 @@ export async function POST(request: NextRequest) {
       const user = await tx.users.create({
         data: {
           id: crypto.randomUUID(),
-          name: `${firstName} ${lastName}`,
-          email,
-          phone: phoneNumber,
+          name: `${validatedFirstName} ${validatedLastName}`,
+          email: validatedEmail as string,
+          phone: validatedPhoneNumber || null,
+          phoneNumber: validatedPhoneNumber || null,
           password: hashedPassword,
           company,
           profession: profession || industry,
@@ -158,7 +238,6 @@ export async function POST(request: NextRequest) {
             scope: scope,
           }
         })
-        console.log(`OAuth account linked for ${email} via ${provider}`)
       }
 
       return user
@@ -166,16 +245,16 @@ export async function POST(request: NextRequest) {
 
     // Store work experience and education info in a comment or log for now
     if (workExperience && workExperience.length > 0) {
-      console.log('Work Experience for user', result.id, ':', workExperience)
+      // Future: Store in dedicated tables
     }
     
     if (education && education.length > 0) {
-      console.log('Education for user', result.id, ':', education)
+      // Future: Store in dedicated tables
     }
 
-    // Log social registration info
+    // Log social registration info for monitoring
     if (isSocialRegistration && provider) {
-      console.log(`Social registration completed for ${email} via ${provider} with automatic account linking`)
+      // Social registration completed successfully
     }
 
     // Remove password from response
@@ -190,7 +269,28 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 })
+      // Extract specific validation error messages
+      const fieldErrors = error.errors.map(err => ({
+        field: err.path.join('.'),
+        message: err.message
+      }))
+      
+      // Check if it's a phone number format error
+      const phoneError = fieldErrors.find(err => 
+        err.field === 'phoneNumber' && err.message === 'Invalid phone number format'
+      )
+      
+      if (phoneError) {
+        return NextResponse.json({ error: "Invalid phone number format" }, { status: 400 })
+      }
+      
+      // For other validation errors, return the first specific message
+      const firstError = fieldErrors[0]
+      return NextResponse.json({ 
+        error: firstError?.message || "Invalid input", 
+        field: firstError?.field,
+        details: fieldErrors 
+      }, { status: 400 })
     }
 
     console.error("Registration error:", error)

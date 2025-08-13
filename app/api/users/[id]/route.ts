@@ -9,7 +9,12 @@ const updateUserSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   name: z.string().optional(),
-  phoneNumber: z.string().optional(),
+  phoneNumber: z.string().optional().refine((phone) => {
+    if (!phone || phone.trim() === '') return true
+    // Basic phone number validation (international format)
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
+    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))
+  }, "Invalid phone number format"),
   image: z.string().optional(), // Add image field
   
   // Professional Profile
@@ -40,16 +45,19 @@ const updateUserSchema = z.object({
   profession: z.string().optional(),
   location: z.string().optional(),
   website: z.string().optional(),
-  phone: z.string().optional(),
+  phone: z.string().optional().refine((phone) => {
+    if (!phone || phone.trim() === '') return true
+    // Basic phone number validation (international format)
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
+    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))
+  }, "Invalid phone number format"),
   profileVisibility: z.boolean().optional(),
   twitterUrl: z.string().optional(),
 })
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    console.log('🔍 Starting user profile API request...')
     const { id } = await params
-    console.log(`📋 Fetching user profile for ID: ${id}`)
     
     const user = await prisma.users.findUnique({
       where: { id },
@@ -84,16 +92,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     })
 
     if (!user) {
-      console.log(`❌ User not found for ID: ${id}`)
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
-
-    console.log(`✅ Found user: ${user.name} (${user.id})`)
 
     // Check if profile is private
     const session = await getServerSession(authOptions)
     if (!user.profileVisibility && session?.user?.id !== user.id) {
-      console.log(`🔒 Profile is private for user: ${id}`)
       return NextResponse.json({ error: "Profile is private" }, { status: 403 })
     }
 
@@ -163,10 +167,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       lastActiveAt: user.lastActiveAt,
     }
 
-    console.log(`🎯 Returning user profile for: ${formattedUser.name}`)
     return NextResponse.json({ user: formattedUser })
   } catch (error) {
-    console.error("❌ Get user error:", error)
+    console.error("Get user error:", error)
     return NextResponse.json({ 
       error: "Internal server error",
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -189,6 +192,34 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const body = await request.json()
     const updateData = updateUserSchema.parse(body)
+
+    // Check if phone number already exists (if provided and different from current)
+    if ((updateData.phoneNumber && updateData.phoneNumber.trim() !== '') || 
+        (updateData.phone && updateData.phone.trim() !== '')) {
+      const phoneToCheck = updateData.phoneNumber || updateData.phone
+      
+      const existingUserByPhone = await prisma.users.findFirst({
+        where: { 
+          AND: [
+            {
+              OR: [
+                { phone: phoneToCheck },
+                { phoneNumber: phoneToCheck }
+              ]
+            },
+            {
+              id: {
+                not: id // Exclude current user
+              }
+            }
+          ]
+        }
+      })
+
+      if (existingUserByPhone) {
+        return NextResponse.json({ error: "User with this phone number already exists" }, { status: 400 })
+      }
+    }
 
     const user = await prisma.users.update({
       where: { id },
@@ -242,7 +273,29 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ user })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 })
+      // Extract specific validation error messages
+      const fieldErrors = error.errors.map(err => ({
+        field: err.path.join('.'),
+        message: err.message
+      }))
+      
+      // Check if it's a phone number format error
+      const phoneError = fieldErrors.find(err => 
+        (err.field === 'phoneNumber' || err.field === 'phone') && 
+        err.message === 'Invalid phone number format'
+      )
+      
+      if (phoneError) {
+        return NextResponse.json({ error: "Invalid phone number format" }, { status: 400 })
+      }
+      
+      // For other validation errors, return the first specific message
+      const firstError = fieldErrors[0]
+      return NextResponse.json({ 
+        error: firstError?.message || "Invalid input", 
+        field: firstError?.field,
+        details: fieldErrors 
+      }, { status: 400 })
     }
 
     console.error("Update user error:", error)
