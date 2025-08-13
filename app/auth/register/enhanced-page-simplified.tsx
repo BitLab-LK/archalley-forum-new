@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -88,9 +88,23 @@ export default function SimplifiedEnhancedRegisterPage() {
     const email = searchParams.get('email')
     const name = searchParams.get('name')
     const image = searchParams.get('image')
+    const providerAccountId = searchParams.get('providerAccountId')
+    const accessToken = searchParams.get('accessToken')
+    const tokenType = searchParams.get('tokenType')
+    const scope = searchParams.get('scope')
 
     if (provider && email) {
       console.log('Social OAuth registration detected:', { provider, email, name })
+      
+      // Store OAuth data for registration
+      setOauthData({
+        provider,
+        providerAccountId: providerAccountId || '',
+        accessToken: accessToken || '',
+        tokenType: tokenType || '',
+        scope: scope || ''
+      })
+      
       // Pre-fill the form with social data
       setEmail(decodeURIComponent(email))
       if (name) {
@@ -171,6 +185,13 @@ export default function SimplifiedEnhancedRegisterPage() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
   const [message, setMessage] = useState("")
+  const [oauthData, setOauthData] = useState<{
+    provider?: string
+    providerAccountId?: string
+    accessToken?: string
+    tokenType?: string
+    scope?: string
+  }>({})
   const router = useRouter()
 
   const industries = [
@@ -403,6 +424,13 @@ export default function SimplifiedEnhancedRegisterPage() {
         education: education.filter(edu => edu.degree && edu.institution),
         isSocialRegistration,
         provider,
+        // Include OAuth data for account linking
+        ...(isSocialRegistration && oauthData.provider ? {
+          providerAccountId: oauthData.providerAccountId,
+          accessToken: oauthData.accessToken,
+          tokenType: oauthData.tokenType,
+          scope: oauthData.scope,
+        } : {})
       }
 
       const response = await fetch("/api/auth/register", {
@@ -423,10 +451,39 @@ export default function SimplifiedEnhancedRegisterPage() {
 
       // Handle post-registration flow
       if (isSocialRegistration) {
-        // For social registration, show success message and provide clear next steps
-        setTimeout(() => {
-          router.push("/auth/login?message=Registration complete! Click your social login button below to access your account&provider=" + provider)
-        }, 3000)
+        // For social registration, use auto-login endpoint to avoid account selection
+        setTimeout(async () => {
+          try {
+            console.log(`Creating session directly for ${email} via ${provider}...`)
+            
+            const autoLoginResponse = await fetch("/api/auth/auto-login", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                email,
+                provider
+              }),
+            })
+
+            const autoLoginData = await autoLoginResponse.json()
+
+            if (autoLoginResponse.ok) {
+              console.log("Auto-login successful, redirecting to homepage...")
+              // Successful auto-login, redirect to homepage
+              window.location.href = "/"
+            } else {
+              console.error("Auto-login failed:", autoLoginData.error)
+              // Fallback to manual login if auto-login fails
+              router.push(`/auth/register?tab=login&message=✅ Registration complete! Click "${provider?.toUpperCase()}" to finish&provider=${provider}`)
+            }
+          } catch (error) {
+            console.error("Auto-login error:", error)
+            // Fallback to manual login if auto-login fails
+            router.push(`/auth/register?tab=login&message=✅ Registration complete! Click "${provider?.toUpperCase()}" to finish&provider=${provider}`)
+          }
+        }, 1500) // Give user moment to see success, then auto-login
       } else {
         // For regular registration, auto-login
         setTimeout(async () => {
@@ -449,7 +506,7 @@ export default function SimplifiedEnhancedRegisterPage() {
     }
   }
 
-  const handleSocialLogin = async (provider: string) => {
+  const handleSocialLogin = useCallback(async (provider: string) => {
     setIsLoading(true)
     setError("") // Clear any previous errors
     
@@ -466,7 +523,7 @@ export default function SimplifiedEnhancedRegisterPage() {
       setIsLoading(false)
     }
     // Don't set loading to false here since we're redirecting
-  }
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -507,11 +564,11 @@ export default function SimplifiedEnhancedRegisterPage() {
               {isSocialRegistration ? (
                 <div className="space-y-4">
                   <p className="text-muted-foreground">
-                    Your profile has been created successfully! You'll be redirected to the login page where you can click "{provider?.toUpperCase()} Login" to access your account.
+                    Your profile has been created successfully! You're being automatically logged in and redirected to the homepage.
                   </p>
                   <div className="flex items-center justify-center space-x-2">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2" style={{ borderColor: '#ffa500' }}></div>
-                    <span className="text-sm text-muted-foreground">Redirecting to login...</span>
+                    <span className="text-sm text-muted-foreground">Logging you in...</span>
                   </div>
                 </div>
               ) : (
@@ -563,33 +620,36 @@ export default function SimplifiedEnhancedRegisterPage() {
               <div className="space-y-3">
                 <Button
                   variant={searchParams.get('provider') === 'google' ? "default" : "outline"}
-                  className={`w-full ${searchParams.get('provider') === 'google' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
+                  className={`w-full ${searchParams.get('provider') === 'google' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
                   type="button"
                   onClick={() => handleSocialLogin("google")}
                   disabled={isLoading}
                 >
                   <Mail className="mr-2 h-4 w-4" />
                   Login with Google
+                  {searchParams.get('provider') === 'google' && <span className="ml-2">👈</span>}
                 </Button>
                 <Button
                   variant={searchParams.get('provider') === 'facebook' ? "default" : "outline"}
-                  className={`w-full ${searchParams.get('provider') === 'facebook' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
+                  className={`w-full ${searchParams.get('provider') === 'facebook' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
                   type="button"
                   onClick={() => handleSocialLogin("facebook")}
                   disabled={isLoading}
                 >
                   <Facebook className="mr-2 h-4 w-4" />
                   Login with Facebook
+                  {searchParams.get('provider') === 'facebook' && <span className="ml-2">👈</span>}
                 </Button>
                 <Button
                   variant={searchParams.get('provider') === 'linkedin' ? "default" : "outline"}
-                  className={`w-full ${searchParams.get('provider') === 'linkedin' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
+                  className={`w-full ${searchParams.get('provider') === 'linkedin' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
                   type="button"
                   onClick={() => handleSocialLogin("linkedin")}
                   disabled={isLoading}
                 >
                   <Linkedin className="mr-2 h-4 w-4" />
                   Login with LinkedIn
+                  {searchParams.get('provider') === 'linkedin' && <span className="ml-2">👈</span>}
                 </Button>
               </div>
 

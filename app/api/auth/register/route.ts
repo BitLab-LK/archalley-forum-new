@@ -46,6 +46,10 @@ const registerSchema = z.object({
   // Social registration fields
   isSocialRegistration: z.boolean().optional(),
   provider: z.string().optional(),
+  providerAccountId: z.string().optional(),
+  accessToken: z.string().optional(),
+  tokenType: z.string().optional(),
+  scope: z.string().optional(),
   websiteUrl: z.string().url().optional().or(z.literal("")),
   portfolioLinks: z.array(z.string()).optional(),
   socialMediaLinks: z.array(z.object({
@@ -80,6 +84,10 @@ export async function POST(request: NextRequest) {
       education,
       isSocialRegistration,
       provider,
+      providerAccountId,
+      accessToken,
+      tokenType,
+      scope,
       websiteUrl,
       portfolioLinks,
       socialMediaLinks,
@@ -105,58 +113,80 @@ export async function POST(request: NextRequest) {
       hashedPassword = await bcrypt.hash(password, 12)
     }
 
-    // Create user with current schema (temporarily store additional info in existing fields)
-    const user = await prisma.users.create({
-      data: {
-        id: crypto.randomUUID(),
-        name: `${firstName} ${lastName}`,
-        email,
-        phone: phoneNumber,
-        password: hashedPassword,
-        company,
-        profession: profession || industry,
-        location: country && city ? `${city}, ${country}` : (city || country),
-        image: profileImageUrl || null,
-        bio: [
-          bio,
-          headline ? `Headline: ${headline}` : '',
-          skills && skills.length > 0 ? `Skills: ${skills.join(', ')}` : '',
-          websiteUrl ? `Website: ${websiteUrl}` : '',
-          portfolioLinks && portfolioLinks.length > 0 ? `Portfolio Links: ${portfolioLinks.join(', ')}` : '',
-          socialMediaLinks && socialMediaLinks.length > 0 ? `Social Media: ${socialMediaLinks.map(link => `${link.platform}: ${link.url}`).join(', ')}` : '',
-        ].filter(Boolean).join('\n\n'),
-        website: websiteUrl || portfolioUrl,
-        linkedinUrl,
-        instagramUrl: instagramUrl,
-        twitterUrl: facebookUrl,
-        role: 'MEMBER',
-        isVerified: isSocialRegistration ? true : false, // Social registrations are automatically verified
-        updatedAt: new Date(),
-      },
+    // Create user and OAuth account in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Create user
+      const user = await tx.users.create({
+        data: {
+          id: crypto.randomUUID(),
+          name: `${firstName} ${lastName}`,
+          email,
+          phone: phoneNumber,
+          password: hashedPassword,
+          company,
+          profession: profession || industry,
+          location: country && city ? `${city}, ${country}` : (city || country),
+          image: profileImageUrl || null,
+          bio: [
+            bio,
+            headline ? `Headline: ${headline}` : '',
+            skills && skills.length > 0 ? `Skills: ${skills.join(', ')}` : '',
+            websiteUrl ? `Website: ${websiteUrl}` : '',
+            portfolioLinks && portfolioLinks.length > 0 ? `Portfolio Links: ${portfolioLinks.join(', ')}` : '',
+            socialMediaLinks && socialMediaLinks.length > 0 ? `Social Media: ${socialMediaLinks.map(link => `${link.platform}: ${link.url}`).join(', ')}` : '',
+          ].filter(Boolean).join('\n\n'),
+          website: websiteUrl || portfolioUrl,
+          linkedinUrl,
+          instagramUrl: instagramUrl,
+          twitterUrl: facebookUrl,
+          role: 'MEMBER',
+          isVerified: isSocialRegistration ? true : false, // Social registrations are automatically verified
+          updatedAt: new Date(),
+        },
+      })
+
+      // Create OAuth account if this is a social registration
+      if (isSocialRegistration && provider && providerAccountId) {
+        await tx.account.create({
+          data: {
+            userId: user.id,
+            type: "oauth",
+            provider: provider,
+            providerAccountId: providerAccountId,
+            access_token: accessToken,
+            token_type: tokenType,
+            scope: scope,
+          }
+        })
+        console.log(`OAuth account linked for ${email} via ${provider}`)
+      }
+
+      return user
     })
 
     // Store work experience and education info in a comment or log for now
     if (workExperience && workExperience.length > 0) {
-      console.log('Work Experience for user', user.id, ':', workExperience)
+      console.log('Work Experience for user', result.id, ':', workExperience)
     }
     
     if (education && education.length > 0) {
-      console.log('Education for user', user.id, ':', education)
+      console.log('Education for user', result.id, ':', education)
     }
 
     // Log social registration info
     if (isSocialRegistration && provider) {
-      console.log(`Social registration completed for ${email} via ${provider}`)
+      console.log(`Social registration completed for ${email} via ${provider} with automatic account linking`)
     }
 
     // Remove password from response
-    const { password: _, ...userWithoutPassword } = user
+    const { password: _, ...userWithoutPassword } = result
 
     return NextResponse.json({ 
       user: userWithoutPassword, 
       message: isSocialRegistration 
-        ? `Profile completed successfully! You can now sign in with ${provider}.`
-        : "User created successfully. Enhanced profile features will be available after database migration." 
+        ? `Profile completed successfully! You are now automatically logged in.`
+        : "User created successfully. Enhanced profile features will be available after database migration.",
+      autoLogin: isSocialRegistration // Flag to indicate auto-login should happen
     }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {

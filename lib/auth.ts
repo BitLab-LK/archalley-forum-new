@@ -129,10 +129,42 @@ export const authOptions: NextAuthOptions = {
 
           if (!existingUser) {
             console.log("New social user detected:", user.email)
-            // Redirect to registration for truly new users
-            return `/auth/register?provider=${account.provider}&email=${encodeURIComponent(user.email!)}&name=${encodeURIComponent(user.name || '')}&image=${encodeURIComponent(user.image || '')}`
+            // Redirect to registration with OAuth data for account linking
+            const redirectUrl = `/auth/register?provider=${account.provider}&email=${encodeURIComponent(user.email!)}&name=${encodeURIComponent(user.name || '')}&image=${encodeURIComponent(user.image || '')}&providerAccountId=${encodeURIComponent(account.providerAccountId)}&accessToken=${encodeURIComponent(account.access_token || '')}&tokenType=${encodeURIComponent(account.token_type || '')}&scope=${encodeURIComponent(account.scope || '')}`
+            return redirectUrl
           } else {
             console.log("Existing social user signing in:", existingUser.email)
+            
+            // Check if this social account is already linked
+            const existingAccount = await prisma.account.findUnique({
+              where: {
+                provider_providerAccountId: {
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                }
+              }
+            })
+
+            if (!existingAccount) {
+              console.log("Linking social account to existing user:", user.email)
+              // Link the social account to the existing user
+              await prisma.account.create({
+                data: {
+                  userId: existingUser.id,
+                  type: account.type,
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                  refresh_token: account.refresh_token,
+                  access_token: account.access_token,
+                  expires_at: account.expires_at,
+                  token_type: account.token_type,
+                  scope: account.scope,
+                  id_token: account.id_token,
+                  session_state: account.session_state,
+                }
+              })
+            }
+            
             // Update user info if needed for existing users
             await prisma.users.update({
               where: { id: existingUser.id },
