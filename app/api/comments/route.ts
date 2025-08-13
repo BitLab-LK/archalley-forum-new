@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     where: { postId },
     orderBy: { createdAt: "asc" },
     include: {
-      users: { select: { name: true, image: true, id: true, rank: true } }
+      users: { select: { name: true, image: true, id: true } }
     }
   })
   
@@ -42,7 +42,6 @@ export async function GET(request: NextRequest) {
           author: c.users.name,
           authorId: c.users.id,
           authorImage: c.users.image,
-          authorRank: c.users.rank,
           content: c.content,
           createdAt: c.createdAt,
           parentId: c.parentId,
@@ -84,7 +83,7 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date()
     },
     include: {
-      users: { select: { name: true, image: true, rank: true } }
+      users: { select: { name: true, image: true } }
     }
   })
   return NextResponse.json({ comment })

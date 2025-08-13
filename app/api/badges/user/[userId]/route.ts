@@ -6,11 +6,12 @@ import { badgeService } from "@/lib/badge-service"
 // GET /api/badges/user/[userId] - Get user's badges
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
-    const userId = params.userId
+    const resolvedParams = await params
+    const userId = resolvedParams.userId
 
     // Users can view their own badges, or public profiles
     if (session?.user?.id !== userId) {
@@ -29,11 +30,12 @@ export async function GET(
 // POST /api/badges/user/[userId]/check - Check and award automatic badges
 export async function POST(
   _request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
-    const userId = params.userId
+    const resolvedParams = await params
+    const userId = resolvedParams.userId
 
     // Users can only check their own badges, or admins can check any
     if (session?.user?.id !== userId && session?.user?.role !== "ADMIN") {
