@@ -65,8 +65,67 @@ const getWordCountStatus = (text: string, limit: number = 150) => {
 
 export default function SimplifiedEnhancedRegisterPage() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState("register")
   const [createMemberProfile, setCreateMemberProfile] = useState(false)
+
+  // Auto-refresh detection for OAuth returns
+  useEffect(() => {
+    const handleOAuthReturn = () => {
+      // Check if user was attempting OAuth login
+      const oauthAttempt = localStorage.getItem('oauth_attempt')
+      const oauthTimestamp = localStorage.getItem('oauth_timestamp')
+      
+      if (oauthAttempt && oauthTimestamp) {
+        // Check if OAuth attempt was recent (within last 5 minutes)
+        const attemptTime = parseInt(oauthTimestamp)
+        const now = Date.now()
+        const fiveMinutes = 5 * 60 * 1000
+        
+        if (now - attemptTime < fiveMinutes) {
+          // Check if OAuth was successful by looking for success parameters
+          const hasSuccessParams = searchParams.get('provider') || 
+                                  searchParams.get('email') || 
+                                  searchParams.get('name') ||
+                                  searchParams.get('message')
+          
+          const hasErrorParams = searchParams.get('error') || 
+                                searchParams.get('code')
+          
+          // If no success parameters but OAuth was attempted, likely user cancelled/failed
+          if (!hasSuccessParams && !hasErrorParams) {
+            console.log('OAuth return detected without success parameters - auto refreshing')
+            // Clear OAuth flags
+            localStorage.removeItem('oauth_attempt')
+            localStorage.removeItem('oauth_timestamp')
+            // Auto refresh page to reset state silently
+            window.location.reload()
+            return
+          }
+        }
+        
+        // Clean up old flags if attempt was too old
+        if (now - attemptTime >= fiveMinutes) {
+          localStorage.removeItem('oauth_attempt')
+          localStorage.removeItem('oauth_timestamp')
+        }
+      }
+    }
+
+    // Check on page load
+    handleOAuthReturn()
+
+    // Also check when the page gains focus (user returns from OAuth tab)
+    const handleFocus = () => {
+      setTimeout(handleOAuthReturn, 500) // Small delay to allow URL to update
+    }
+
+    window.addEventListener('focus', handleFocus)
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [searchParams, router])
 
   // Set active tab based on URL parameter
   useEffect(() => {
@@ -192,7 +251,6 @@ export default function SimplifiedEnhancedRegisterPage() {
     tokenType?: string
     scope?: string
   }>({})
-  const router = useRouter()
 
   const industries = [
     "Architecture",
@@ -512,6 +570,11 @@ export default function SimplifiedEnhancedRegisterPage() {
     
     try {
       console.log(`Attempting ${provider} login...`)
+      
+      // Set OAuth attempt flags before redirecting
+      localStorage.setItem('oauth_attempt', provider)
+      localStorage.setItem('oauth_timestamp', Date.now().toString())
+      
       // For social logins, let NextAuth handle the redirect automatically
       await signIn(provider, { 
         callbackUrl: "/",
@@ -519,6 +582,9 @@ export default function SimplifiedEnhancedRegisterPage() {
       })
     } catch (error) {
       console.error("Social login exception:", error)
+      // Clear OAuth flags on error
+      localStorage.removeItem('oauth_attempt')
+      localStorage.removeItem('oauth_timestamp')
       setError(`An error occurred during ${provider} login. Please try again.`)
       setIsLoading(false)
     }
