@@ -878,14 +878,8 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50/50">
-                    <div className="space-y-1">
-                      <Label className="text-base font-medium">Profile Visibility</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Choose whether to create a public professional profile that other members can view, 
-                        including your skills, work history, education, and contact details.
-                      </p>
-                    </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <Label className="text-base font-medium">Profile Visibility</Label>
                     <div className="flex items-center space-x-3">
                       <span className={`text-sm font-medium transition-colors ${!createMemberProfile ? 'text-gray-900' : 'text-gray-500'}`}>
                         Private
