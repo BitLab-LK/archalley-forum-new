@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, UserRank } from "@prisma/client"
+import { PrismaClient, UserRole } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
@@ -10,7 +10,6 @@ async function main() {
       name: "Admin User",
       email: "admin@archalley.com",
       role: UserRole.ADMIN,
-      rank: UserRank.COMMUNITY_EXPERT,
       isVerified: true,
       company: "Archalley",
       bio: "Forum administrator and community manager.",
@@ -26,7 +25,6 @@ async function main() {
         name: "Sarah Chen",
         email: "sarah@example.com",
         role: UserRole.MEMBER,
-        rank: UserRank.COMMUNITY_EXPERT,
         isVerified: true,
         company: "Chen Design Studio",
         bio: "Passionate architect with 10+ years of experience in sustainable design.",
@@ -39,7 +37,6 @@ async function main() {
         name: "Marcus Johnson",
         email: "marcus@example.com",
         role: UserRole.MEMBER,
-        rank: UserRank.TOP_CONTRIBUTOR,
         isVerified: false,
         company: "Creative Solutions Ltd",
         bio: "UI/UX designer focused on creating intuitive digital experiences.",
@@ -52,7 +49,6 @@ async function main() {
         name: "Emma Rodriguez",
         email: "emma@example.com",
         role: UserRole.MEMBER,
-        rank: UserRank.RISING_STAR,
         isVerified: false,
         company: "BuildRight Construction",
         bio: "Civil engineer specializing in infrastructure development.",

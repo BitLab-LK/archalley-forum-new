@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, UserRank } from '@prisma/client'
+import { PrismaClient, UserRole } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -110,7 +110,6 @@ async function seedDatabase() {
         email: 'admin@archalley.com',
         password: adminPassword,
         role: UserRole.ADMIN,
-        rank: UserRank.COMMUNITY_EXPERT,
         isVerified: true,
         company: 'Archalley',
         profession: 'Administrator',
@@ -132,7 +131,6 @@ async function seedDatabase() {
           email: 'sarah@example.com',
           password: userPassword,
           role: UserRole.MEMBER,
-          rank: UserRank.COMMUNITY_EXPERT,
           isVerified: true,
           company: 'Chen Design Studio',
           profession: 'Architect',
@@ -148,7 +146,6 @@ async function seedDatabase() {
           email: 'mike@example.com',
           password: userPassword,
           role: UserRole.MODERATOR,
-          rank: UserRank.TOP_CONTRIBUTOR,
           isVerified: true,
           company: 'Johnson Interiors',
           profession: 'Interior Designer',
