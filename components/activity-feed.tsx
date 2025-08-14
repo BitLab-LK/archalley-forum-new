@@ -64,13 +64,10 @@ export default function ActivityFeed({ userId, userName, isOwnProfile = false }:
 
   // Listen to real-time activity events
   useEffect(() => {
-    const handleActivityEvent = (event: ActivityEvent) => {
+    const handleActivityEvent = (_event: ActivityEvent) => {
       // Refresh activities when user performs actions
-      .toISOString()}`)
-
-// Add a small delay to ensure database has been updated
+      // Add a small delay to ensure database has been updated
       setTimeout(() => {
-        
         refreshActivities()
       }, 500)
     }

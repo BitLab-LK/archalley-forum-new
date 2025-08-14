@@ -37,7 +37,6 @@ export async function POST(req: Request) {
     }
 
     const { content } = validationResult.data
-     + "...")
 
     // Get AI classification
     const classification = await classifyPost(content)

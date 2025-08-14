@@ -78,32 +78,25 @@ const uploadPromises = files.map(async (file) => {
       // Always process images that are too large or not in optimal format
       if (buffer.length > maxSize || file.type !== "image/webp") {
         try {
-          `)
-          
           let sharpImg = sharp(buffer).rotate()
           const metadata = await sharpImg.metadata()
 
-// Resize if image dimensions are too large
+          // Resize if image dimensions are too large
           if (metadata.width && metadata.width > maxDimensions) {
             sharpImg = sharpImg.resize(maxDimensions, null, { withoutEnlargement: true })
-            
           }
           if (metadata.height && metadata.height > maxDimensions) {
             sharpImg = sharpImg.resize(null, maxDimensions, { withoutEnlargement: true })
-            
           }
           
           // Try WebP compression first
           let quality = 85
           let webpBuffer = await sharpImg.webp({ quality }).toBuffer()
           
-          : ${webpBuffer.length} bytes`)
-          
           // If still too large, reduce quality progressively
           while (webpBuffer.length > maxSize && quality > 20) {
             quality -= 15
             webpBuffer = await sharpImg.webp({ quality }).toBuffer()
-            : ${webpBuffer.length} bytes`)
           }
           
           if (webpBuffer.length <= maxSize) {
@@ -119,7 +112,6 @@ const uploadPromises = files.map(async (file) => {
             while (jpgBuffer.length > maxSize && quality > 20) {
               quality -= 15
               jpgBuffer = await sharpImg.jpeg({ quality }).toBuffer()
-              : ${jpgBuffer.length} bytes`)
             }
             
             if (jpgBuffer.length <= maxSize) {
