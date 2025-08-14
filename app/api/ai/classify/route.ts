@@ -10,26 +10,23 @@ const classifyRequestSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    console.log("🔍 AI classification request received")
-    
-    // Check authentication
+
+// Check authentication
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      console.log("❌ Unauthorized AI classification request")
+      
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
       )
     }
 
-    console.log("✅ User authenticated:", session.user.email)
-
-    // Get and validate the request body
+// Get and validate the request body
     const body = await req.json()
     const validationResult = classifyRequestSchema.safeParse(body)
     
     if (!validationResult.success) {
-      console.log("❌ Invalid request body:", validationResult.error.errors)
+      
       return NextResponse.json(
         { 
           error: "Invalid request", 
@@ -40,7 +37,7 @@ export async function POST(req: Request) {
     }
 
     const { content } = validationResult.data
-    console.log("📝 Processing content:", content.substring(0, 100) + "...")
+     + "...")
 
     // Get AI classification
     const classification = await classifyPost(content)
@@ -73,9 +70,8 @@ export async function POST(req: Request) {
 // Test endpoint to verify AI service is working
 export async function GET() {
   try {
-    console.log("🧪 AI service test request received")
-    
-    // Check authentication
+
+// Check authentication
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json(
@@ -92,9 +88,7 @@ export async function GET() {
       )
     }
 
-    console.log("✅ Admin user testing AI service:", session.user.email)
-
-    // Test the AI service
+// Test the AI service
     const isWorking = await testAIService()
 
     if (isWorking) {

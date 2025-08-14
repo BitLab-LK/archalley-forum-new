@@ -114,12 +114,7 @@ export const authOptions: NextAuthOptions = {
       }
       return session
     },
-    async signIn({ user, account, profile }) {
-      console.log("=== SIGNIN CALLBACK ===")
-      console.log("User:", user?.email, "Provider:", account?.provider)
-      console.log("Account details:", account)
-      console.log("Profile details:", profile)
-      
+    async signIn({ user, account }) {
       if (account?.provider === "google" || account?.provider === "facebook" || account?.provider === "linkedin") {
         try {
           // Check if user exists
@@ -128,13 +123,10 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (!existingUser) {
-            console.log("New social user detected:", user.email)
             // Redirect to registration with OAuth data for account linking
             const redirectUrl = `/auth/register?provider=${account.provider}&email=${encodeURIComponent(user.email!)}&name=${encodeURIComponent(user.name || '')}&image=${encodeURIComponent(user.image || '')}&providerAccountId=${encodeURIComponent(account.providerAccountId)}&accessToken=${encodeURIComponent(account.access_token || '')}&tokenType=${encodeURIComponent(account.token_type || '')}&scope=${encodeURIComponent(account.scope || '')}`
             return redirectUrl
           } else {
-            console.log("Existing social user signing in:", existingUser.email)
-            
             // Check if this social account is already linked
             const existingAccount = await prisma.account.findUnique({
               where: {
@@ -146,7 +138,6 @@ export const authOptions: NextAuthOptions = {
             })
 
             if (!existingAccount) {
-              console.log("Linking social account to existing user:", user.email)
               // Link the social account to the existing user
               await prisma.account.create({
                 data: {

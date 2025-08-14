@@ -20,6 +20,7 @@ interface TextPostModalProps {
   onCommentAdded?: () => void
   onCommentCountUpdate?: (newCount: number) => void
   onVoteChange?: (postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => void
+  onTopCommentVoteChange?: (postId: string, topComment: { id: string, author: string, content: string, upvotes: number, downvotes: number, isBestAnswer: boolean, userVote?: "up" | "down" } | null) => void
   post: {
     id: string
     author: {
@@ -65,7 +66,7 @@ interface Comment {
   replies: Comment[]
 }
 
-export default function TextPostModal({ open, onClose, onCommentAdded, onCommentCountUpdate: _onCommentCountUpdate, onVoteChange, post }: TextPostModalProps) {
+export default function TextPostModal({ open, onClose, onCommentAdded, onCommentCountUpdate: _onCommentCountUpdate, onVoteChange, onTopCommentVoteChange, post }: TextPostModalProps) {
   const [comments, setComments] = useState<Comment[]>([])
   const [commentInput, setCommentInput] = useState("")
   const [replyInput, setReplyInput] = useState("")
@@ -179,9 +180,8 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
     }
     
     setIsVoting(true)
-    console.log('🗳️ Starting modal vote:', { postId: post.id, type, currentVote: userVote })
-    
-    // Calculate optimistic update
+
+// Calculate optimistic update
     let newUpvotes = upvotes
     let newDownvotes = downvotes
     let newUserVote: "up" | "down" | null = userVote
@@ -244,15 +244,13 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
       
       // Emit activity event for real-time feed updates
       if (user?.id) {
-        console.log(`🎯 TextModal emitting vote event for user ${user.id} on post ${post.id}`)
+        
         activityEventManager.emitVote(user.id, post.id)
       } else {
-        console.log('⚠️ TextModal: No user ID available for activity event emission')
+        
       }
-      
-      console.log('✅ Modal Vote successful:', result)
-      
-    } catch (error) {
+
+} catch (error) {
       console.error('❌ Modal Vote failed:', error)
       
       // Rollback on error using global state
@@ -274,13 +272,10 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
       return
     }
     lastVoteClickTime.current = now
-    
-    console.log('📝 Text Modal vote clicked:', { postId: post.id, type, currentVote: userVote })
-    
-    await handleVote(type)
-    
-    console.log('✅ Text Modal vote completed:', { postId: post.id, type, newVote: userVote })
-  }
+
+await handleVote(type)
+
+}
 
   const handleSubmitComment = async () => {
     if (!commentInput.trim()) return
@@ -392,7 +387,34 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
     }
     
     // Update UI immediately
-    setComments(prev => updateVoteRecursively(prev))
+    const updatedComments = updateVoteRecursively(comments)
+    setComments(updatedComments)
+    
+    // Check if the top comment has changed after the vote
+    const newTopComment = updatedComments.reduce((top, comment) => {
+      const currentActivity = (comment.upvotes || 0) + (comment.downvotes || 0)
+      const topActivity = (top?.upvotes || 0) + (top?.downvotes || 0)
+      return currentActivity > topActivity ? comment : top
+    }, updatedComments[0])
+    
+    // Always notify the parent about top comment changes (even for vote count updates)
+    if (onTopCommentVoteChange) {
+      if (!newTopComment || (newTopComment.upvotes || 0) + (newTopComment.downvotes || 0) === 0) {
+        // No top comment or no votes left
+        onTopCommentVoteChange(post.id, null)
+      } else {
+        // Update top comment with complete data
+        onTopCommentVoteChange(post.id, {
+          id: newTopComment.id,
+          author: newTopComment.author,
+          content: newTopComment.content,
+          upvotes: newTopComment.upvotes || 0,
+          downvotes: newTopComment.downvotes || 0,
+          isBestAnswer: false, // Comments don't have best answer feature yet
+          userVote: newTopComment.userVote // Include user vote state
+        })
+      }
+    }
     
     // Then send request in background
     try {

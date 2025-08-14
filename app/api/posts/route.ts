@@ -21,7 +21,6 @@ const createPostSchema = z.object({
   translatedContent: z.string().optional(),
 })
 
-
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -45,19 +44,6 @@ export async function POST(request: Request) {
     }
 
     const formData = await request.formData()
-    
-    // Log the received form data for debugging
-    console.log("Received form data:", {
-      content: formData.get("content"),
-      categoryId: formData.get("categoryId"),
-      isAnonymous: formData.get("isAnonymous"),
-      tags: formData.get("tags"),
-      originalLanguage: formData.get("originalLanguage"),
-      translatedContent: formData.get("translatedContent"),
-      images: Array.from(formData.entries())
-        .filter(([key]) => key.startsWith("image"))
-        .map(([_, value]) => value)
-    })
 
     const content = formData.get("content") as string
     const categoryId = formData.get("categoryId") as string
@@ -102,9 +88,8 @@ export async function POST(request: Request) {
       const availableCategories = await prisma.categories.findMany({
         select: { id: true, name: true }
       })
-      console.log('📋 Available categories:', availableCategories)
-      
-      return NextResponse.json(
+
+return NextResponse.json(
         { 
           error: "Category not found", 
           message: `The selected category "${data.categoryId}" does not exist`,
@@ -288,9 +273,7 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "createdAt"
     const sortOrder = searchParams.get("sortOrder") || "desc"
 
-    console.log("Fetching posts with params:", { page, limit, categoryId, authorId, sortBy, sortOrder })
-
-    const skip = (page - 1) * limit
+const skip = (page - 1) * limit
 
     // Build the where clause
     const where: any = {}
@@ -333,9 +316,8 @@ export async function GET(request: NextRequest) {
 
       // Get total count for pagination
       const total = await prisma.post.count({ where })
-      console.log(`Total posts: ${total}`)
 
-      // Get vote counts for all posts in a single efficient query
+// Get vote counts for all posts in a single efficient query
       const voteCounts = await prisma.votes.groupBy({
         by: ['postId', 'type'],
         where: {
@@ -359,6 +341,104 @@ export async function GET(request: NextRequest) {
           filename: true,
           mimeType: true,
         },
+      })
+
+      // Get top comment for each post (most upvoted)
+      const topComments = await Promise.all(
+        posts.map(async (post) => {
+          const comments = await prisma.comment.findMany({
+            where: { postId: post.id },
+            include: {
+              users: {
+                select: {
+                  id: true,
+                  name: true,
+                  userBadges: {
+                    take: 1,
+                    include: { badges: true },
+                    orderBy: { earnedAt: 'desc' }
+                  }
+                }
+              }
+            }
+          })
+
+          if (comments.length === 0) return null
+
+          // Get vote counts for all comments of this post
+          const commentVotes = await prisma.votes.groupBy({
+            by: ['commentId', 'type'],
+            where: {
+              commentId: {
+                in: comments.map(c => c.id)
+              }
+            },
+            _count: true
+          })
+
+          // Calculate total vote activity for each comment (upvotes + downvotes)
+          const commentVoteActivity = new Map<string, number>()
+          comments.forEach(comment => {
+            commentVoteActivity.set(comment.id, 0)
+          })
+
+          commentVotes.forEach(vote => {
+            if (vote.commentId) {
+              const current = commentVoteActivity.get(vote.commentId) || 0
+              commentVoteActivity.set(vote.commentId, current + vote._count)
+            }
+          })
+
+          // Find comment with highest total vote activity
+          let topComment = comments[0]
+          let highestActivity = commentVoteActivity.get(topComment.id) || 0
+
+          comments.forEach(comment => {
+            const activity = commentVoteActivity.get(comment.id) || 0
+            if (activity > highestActivity) {
+              highestActivity = activity
+              topComment = comment
+            }
+          })
+
+          // Return the comment if it has any votes or is the only comment
+          if (highestActivity > 0 || comments.length === 1) {
+            // Calculate upvotes and downvotes for the top comment
+            const topCommentUpvotes = commentVotes.find(vote => 
+              vote.commentId === topComment.id && vote.type === 'UP'
+            )?._count || 0
+            
+            const topCommentDownvotes = commentVotes.find(vote => 
+              vote.commentId === topComment.id && vote.type === 'DOWN'
+            )?._count || 0
+
+            return {
+              postId: post.id,
+              author: topComment.users.name || "Anonymous",
+              content: topComment.content,
+              upvotes: topCommentUpvotes,
+              downvotes: topCommentDownvotes,
+              isBestAnswer: false, // Comments don't have best answer feature yet
+              activity: highestActivity
+            }
+          }
+
+          return null
+        })
+      )
+
+      // Create a map of top comments by post ID
+      const topCommentMap = new Map<string, any>()
+      topComments.forEach(comment => {
+        if (comment) {
+          topCommentMap.set(comment.postId, {
+            author: comment.author,
+            content: comment.content,
+            upvotes: comment.upvotes,
+            downvotes: comment.downvotes,
+            isBestAnswer: comment.isBestAnswer
+          })
+        }
       })
 
       // Group attachments by postId and clean blob URLs
@@ -422,6 +502,7 @@ export async function GET(request: NextRequest) {
         const userVote = userVoteMap.get(post.id)?.toLowerCase() || null // Include user vote
         const images = attachmentMap.get(post.id) || []
         const primaryBadge = getPrimaryBadge(post.users.userBadges)
+        const topComment = topCommentMap.get(post.id) || null
         
         return {
           id: post.id,
@@ -444,7 +525,7 @@ export async function GET(request: NextRequest) {
           comments: post._count.Comment,
           timeAgo: getTimeAgo(post.createdAt),
           images: images,
-          // userVote: userVote // Can be added later if needed in interface
+          topComment: topComment, // Add the most upvoted comment
         }
       })
 

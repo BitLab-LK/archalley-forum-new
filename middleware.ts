@@ -2,12 +2,7 @@ import { withAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
 
 export default withAuth(
-  function middleware(req) {
-    // Log API requests in development
-    if (process.env.NODE_ENV === 'development' && req.nextUrl.pathname.startsWith('/api/')) {
-      console.log(`🔍 Middleware: ${req.method} ${req.nextUrl.pathname}`)
-    }
-    
+  function middleware(_req) {
     // Add security headers
     const response = NextResponse.next()
     

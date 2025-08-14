@@ -73,20 +73,16 @@ export async function POST(request: NextRequest) {
     let sanitizedFilename = sanitizeFilename(file.name)
     let filename = `registration-${Date.now()}-${sanitizedFilename}`
 
-    console.log(`🖼️ Processing registration image: ${file.name} (${buffer.length} bytes)`)
-    console.log(`� Final filename: ${filename}`)
+    `)
 
-    try {
-      console.log(`☁️ Uploading to Vercel Blob: ${filename}`)
-      
-      const blob = await put(filename, buffer, {
+try {
+
+const blob = await put(filename, buffer, {
         access: 'public',
         contentType: file.type,
       })
 
-      console.log(`✅ Upload successful: ${blob.url}`)
-
-      return NextResponse.json({
+return NextResponse.json({
         images: [{
           url: blob.url,
           filename: filename,
@@ -103,3 +99,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Upload failed" }, { status: 500 })
   }
 }
+

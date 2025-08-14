@@ -31,6 +31,13 @@ interface Post {
   comments: number
   timeAgo: string
   images?: string[]
+  topComment?: {
+    author: string
+    content: string
+    upvotes: number
+    downvotes: number
+    isBestAnswer: boolean
+  }
 }
 
 interface Pagination {

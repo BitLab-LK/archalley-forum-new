@@ -66,21 +66,19 @@ export default function ActivityFeed({ userId, userName, isOwnProfile = false }:
   useEffect(() => {
     const handleActivityEvent = (event: ActivityEvent) => {
       // Refresh activities when user performs actions
-      console.log(`🔄 Activity event received for user ${userId}:`, event, `at ${new Date().toISOString()}`)
-      console.log(`🔄 Current activities count before refresh: ${activities.length}`)
-      
-      // Add a small delay to ensure database has been updated
+      .toISOString()}`)
+
+// Add a small delay to ensure database has been updated
       setTimeout(() => {
-        console.log(`⏰ Refreshing activities after 500ms delay for user ${userId}`)
+        
         refreshActivities()
       }, 500)
     }
 
-    console.log(`📡 Subscribing to activity events for user ${userId}`)
-    activityEventManager.subscribe(userId, handleActivityEvent)
+activityEventManager.subscribe(userId, handleActivityEvent)
     
     return () => {
-      console.log(`📡 Unsubscribing from activity events for user ${userId}`)
+      
       activityEventManager.unsubscribe(userId, handleActivityEvent)
     }
   }, [userId, refreshActivities])
@@ -110,7 +108,7 @@ export default function ActivityFeed({ userId, userName, isOwnProfile = false }:
 
   const fetchActivities = async (pageNum = 1, isRefresh = false) => {
     try {
-      console.log(`🔄 Fetching activities for user ${userId}, page ${pageNum}, isRefresh: ${isRefresh}`)
+      
       if (!isRefresh) setLoading(true)
       if (isRefresh) setIsRefreshing(true)
       
@@ -121,14 +119,13 @@ export default function ActivityFeed({ userId, userName, isOwnProfile = false }:
       }
       
       const data = await response.json()
-      console.log(`✅ Fetched ${data.activities.length} activities for user ${userId}`)
-      
-      if (pageNum === 1) {
+
+if (pageNum === 1) {
         setActivities(data.activities)
-        console.log(`📊 Activities updated. New count: ${data.activities.length}`)
+        
       } else {
         setActivities(prev => [...prev, ...data.activities])
-        console.log(`📊 Activities appended. Total count will be: ${activities.length + data.activities.length}`)
+        
       }
       
       setHasMore(data.pagination.hasMore)
@@ -360,3 +357,4 @@ export default function ActivityFeed({ userId, userName, isOwnProfile = false }:
     </div>
   )
 }
+

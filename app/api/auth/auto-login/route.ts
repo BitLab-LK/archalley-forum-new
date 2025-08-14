@@ -39,9 +39,7 @@ export async function POST(request: NextRequest) {
       secret: process.env.NEXTAUTH_SECRET!,
     })
 
-    console.log(`Auto-login session created for ${email}`)
-
-    // Set the session cookie
+// Set the session cookie
     const response = NextResponse.json({ 
       success: true,
       message: "Auto-login successful",
@@ -63,3 +61,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Auto-login failed" }, { status: 500 })
   }
 }
+

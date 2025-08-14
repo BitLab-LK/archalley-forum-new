@@ -95,7 +95,6 @@ export default function Sidebar() {
     const fetchCategories = async () => {
       setIsLoading(true)
       try {
-        console.log('📊 Fetching categories (refresh key:', categoriesKey, ')')
         const response = await fetch('/api/categories', {
           method: 'GET',
           headers: {
@@ -112,7 +111,7 @@ export default function Sidebar() {
         
         const data = await response.json()
         setCategories(data)
-        console.log('✅ Categories loaded:', data.length, 'categories')
+        
       } catch (error) {
         console.error('Error fetching categories:', error)
         // Set empty array instead of keeping old data
@@ -135,7 +134,6 @@ export default function Sidebar() {
     const fetchTrendingPosts = async () => {
       setIsTrendingLoading(true)
       try {
-        console.log('🔥 Fetching trending posts (refresh key:', trendingKey, ')')
         const response = await fetch('/api/posts?limit=5&sortBy=upvotes&sortOrder=desc', {
           method: 'GET',
           headers: {
@@ -152,7 +150,7 @@ export default function Sidebar() {
         
         const data = await response.json()
         setTrendingPosts(data.posts || [])
-        console.log('✅ Trending posts loaded:', data.posts?.length || 0, 'posts')
+        
       } catch (error) {
         console.error('Error fetching trending posts:', error)
         // Set empty array instead of keeping old data
@@ -303,3 +301,4 @@ export default function Sidebar() {
     </div>
   )
 }
+

@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "tsx scripts/ensure-upload-dir.ts && next dev",
-    "build": "tsx scripts/ensure-upload-dir.ts && prisma generate && next build",
+    "dev": "next dev",
+    "build": "prisma generate && next build",
     "start": "node server.js",
     "lint": "next lint",
     "seed": "ts-node --esm prisma/seed.ts",

@@ -263,7 +263,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       toast.success("Post created successfully!")
       
       // Refresh sidebar data in real-time
-      console.log('🔄 Post created - refreshing sidebar...')
+      
       refreshAll()
       
       onPostCreated()
@@ -475,3 +475,4 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
     </Card>
   )
 }
+

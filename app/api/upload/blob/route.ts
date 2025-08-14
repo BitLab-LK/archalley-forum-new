@@ -62,9 +62,7 @@ export async function POST(request: NextRequest) {
     const maxDimensions = parseInt(process.env.UPLOAD_MAX_DIMENSIONS || "2048") // 2048px default
     const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"]
 
-    console.log(`📁 Upload settings: maxSize=${maxSize} bytes, maxDimensions=${maxDimensions}px`)
-
-    const uploadPromises = files.map(async (file) => {
+const uploadPromises = files.map(async (file) => {
       // Validate file type
       if (!allowedTypes.includes(file.type)) {
         throw new Error(`Invalid file type for ${file.name}: ${file.type}`)
@@ -80,50 +78,48 @@ export async function POST(request: NextRequest) {
       // Always process images that are too large or not in optimal format
       if (buffer.length > maxSize || file.type !== "image/webp") {
         try {
-          console.log(`🖼️ Processing image: ${file.name} (${buffer.length} bytes)`)
+          `)
           
           let sharpImg = sharp(buffer).rotate()
           const metadata = await sharpImg.metadata()
-          
-          console.log(`📏 Original dimensions: ${metadata.width}x${metadata.height}`)
-          
-          // Resize if image dimensions are too large
+
+// Resize if image dimensions are too large
           if (metadata.width && metadata.width > maxDimensions) {
             sharpImg = sharpImg.resize(maxDimensions, null, { withoutEnlargement: true })
-            console.log(`📐 Resized width to ${maxDimensions}px`)
+            
           }
           if (metadata.height && metadata.height > maxDimensions) {
             sharpImg = sharpImg.resize(null, maxDimensions, { withoutEnlargement: true })
-            console.log(`📐 Resized height to ${maxDimensions}px`)
+            
           }
           
           // Try WebP compression first
           let quality = 85
           let webpBuffer = await sharpImg.webp({ quality }).toBuffer()
           
-          console.log(`🔄 WebP compression (quality ${quality}): ${webpBuffer.length} bytes`)
+          : ${webpBuffer.length} bytes`)
           
           // If still too large, reduce quality progressively
           while (webpBuffer.length > maxSize && quality > 20) {
             quality -= 15
             webpBuffer = await sharpImg.webp({ quality }).toBuffer()
-            console.log(`🔄 WebP compression (quality ${quality}): ${webpBuffer.length} bytes`)
+            : ${webpBuffer.length} bytes`)
           }
           
           if (webpBuffer.length <= maxSize) {
             buffer = webpBuffer as Buffer
             processed = true
-            console.log(`✅ WebP compression successful: ${buffer.length} bytes`)
+            
           } else {
             // If WebP still too large, try JPEG
-            console.log(`🔄 WebP too large, trying JPEG compression`)
+            
             quality = 85
             let jpgBuffer = await sharpImg.jpeg({ quality }).toBuffer()
             
             while (jpgBuffer.length > maxSize && quality > 20) {
               quality -= 15
               jpgBuffer = await sharpImg.jpeg({ quality }).toBuffer()
-              console.log(`🔄 JPEG compression (quality ${quality}): ${jpgBuffer.length} bytes`)
+              : ${jpgBuffer.length} bytes`)
             }
             
             if (jpgBuffer.length <= maxSize) {
@@ -131,7 +127,7 @@ export async function POST(request: NextRequest) {
               outputMime = "image/jpeg"
               filename = `${filenameBase}.jpg`
               processed = true
-              console.log(`✅ JPEG compression successful: ${buffer.length} bytes`)
+              
             }
           }
         } catch (err) {
@@ -143,7 +139,7 @@ export async function POST(request: NextRequest) {
       // If not processed and still too large, try one more aggressive compression
       if (!processed && buffer.length > maxSize) {
         try {
-          console.log(`🔄 Final compression attempt for ${file.name}`)
+          
           let sharpImg = sharp(buffer).rotate()
           
           // Get metadata
@@ -176,7 +172,7 @@ export async function POST(request: NextRequest) {
             outputMime = "image/jpeg"
             filename = `${filenameBase}.jpg`
             processed = true
-            console.log(`✅ Final compression successful: ${buffer.length} bytes`)
+            
           }
         } catch (err) {
           console.error(`❌ Final compression failed for ${file.name}:`, err)
@@ -190,25 +186,17 @@ export async function POST(request: NextRequest) {
 
       try {
         // Upload to Vercel Blob
-        console.log(`☁️ Uploading to Vercel Blob: ${filename}`)
-        console.log(`📦 Buffer size: ${buffer.length} bytes`)
-        console.log(`🔑 Token exists: ${!!process.env.BLOB_READ_WRITE_TOKEN}`)
-        
-        const blob = await put(filename, buffer, {
+
+const blob = await put(filename, buffer, {
           access: 'public',
           addRandomSuffix: true, // Avoid filename conflicts
           cacheControlMaxAge: 60 * 60 * 24 * 30, // Cache for 30 days
         })
 
-        console.log(`✅ Blob uploaded successfully:`)
-        console.log(`  - URL: ${blob.url}`)
-        console.log(`  - Download URL: ${blob.downloadUrl}`)
-        console.log(`  - Pathname: ${blob.pathname}`)
-        
-        // Test if the blob is immediately accessible
+// Test if the blob is immediately accessible
         try {
           const testResponse = await fetch(blob.url, { method: 'HEAD' })
-          console.log(`🔍 Blob accessibility test: ${testResponse.status}`)
+          
           if (!testResponse.ok) {
             console.warn(`⚠️ Blob may not be immediately accessible: ${testResponse.status}`)
           }
@@ -308,10 +296,8 @@ export async function DELETE(request: NextRequest) {
 
     // Delete from Vercel Blob
     await del(url)
-    
-    console.log(`🗑️ Blob deleted: ${url}`)
-    
-    return NextResponse.json({ message: "File deleted successfully" })
+
+return NextResponse.json({ message: "File deleted successfully" })
   } catch (error) {
     console.error("Delete error:", error)
     return NextResponse.json({ 
@@ -320,3 +306,4 @@ export async function DELETE(request: NextRequest) {
     }, { status: 500 })
   }
 }
+

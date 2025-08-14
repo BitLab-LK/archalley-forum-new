@@ -47,6 +47,7 @@ interface ImagePostModalProps {
   onCommentAdded?: () => void
   onCommentCountUpdate?: (newCount: number) => void
   onVoteChange?: (postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => void
+  onTopCommentVoteChange?: (postId: string, topComment: { id: string, author: string, content: string, upvotes: number, downvotes: number, isBestAnswer: boolean, userVote?: "up" | "down" } | null) => void
   post: {
     id: string
     author: {
@@ -82,6 +83,7 @@ export default function ImagePostModal({
   onCommentAdded, 
   onCommentCountUpdate,
   onVoteChange,
+  onTopCommentVoteChange,
   post, 
   initialImage = 0 
 }: ImagePostModalProps) {
@@ -126,19 +128,6 @@ export default function ImagePostModal({
     }
   }, [upvotes, downvotes, userVote, post.id, onVoteChange])
   
-  // Debug: Log when modal opens
-  useEffect(() => {
-    if (open) {
-      console.log('🖼️ Image Modal opened:', {
-        postId: post.id,
-        propVotes: { up: post.upvotes, down: post.downvotes, userVote: post.userVote },
-        hookVotes: { up: upvotes, down: downvotes, userVote }
-      })
-    }
-  }, [open, post.id])
-  
-
-
   // Computed values
   const images = post.images || []
   const hasImages = images.length > 0
@@ -188,9 +177,8 @@ export default function ImagePostModal({
     }
     
     setIsVoting(true)
-    console.log('🗳️ Starting vote:', { postId: post.id, type, currentVote: userVote })
-    
-    // Calculate optimistic update
+
+// Calculate optimistic update
     let newUpvotes = upvotes
     let newDownvotes = downvotes
     let newUserVote: "up" | "down" | null = userVote
@@ -253,15 +241,13 @@ export default function ImagePostModal({
       
       // Emit activity event for real-time feed updates
       if (user?.id) {
-        console.log(`🎯 ImageModal emitting vote event for user ${user.id} on post ${post.id}`)
+        
         activityEventManager.emitVote(user.id, post.id)
       } else {
-        console.log('⚠️ ImageModal: No user ID available for activity event emission')
+        
       }
-      
-      console.log('✅ Vote successful:', result)
-      
-    } catch (error) {
+
+} catch (error) {
       console.error('❌ Vote failed:', error)
       
       // Rollback on error using global state
@@ -298,13 +284,10 @@ export default function ImagePostModal({
       return
     }
     lastVoteClickTime.current = now
-    
-    console.log('🖼️ Image Modal vote clicked:', { postId: post.id, type, currentVote: userVote })
-    
-    await handleVote(type)
-    
-    console.log('✅ Image Modal vote completed:', { postId: post.id, type, newVote: userVote })
-  }
+
+await handleVote(type)
+
+}
 
   const handleSubmitComment = async () => {
     if (!commentInput.trim()) return
@@ -767,7 +750,7 @@ export default function ImagePostModal({
     const previousComments = comments
     
     // Update local state immediately (optimistic update)
-    setComments(prev => prev.map(comment => {
+    const updatedComments = comments.map(comment => {
       if (comment.id === commentId) {
         const currentVote = comment.userVote
         let newUpvotes = comment.upvotes || 0
@@ -833,7 +816,39 @@ export default function ImagePostModal({
           return reply
         })
       }
-    }))
+    })
+    
+    // Update state with the new comments
+    setComments(updatedComments)
+    
+    // Check if the top comment has changed after the vote
+    const newTopComment = updatedComments.reduce((top, comment) => {
+      const currentActivity = (comment.upvotes || 0) + (comment.downvotes || 0)
+      const topActivity = (top?.upvotes || 0) + (top?.downvotes || 0)
+      return currentActivity > topActivity ? comment : top
+    }, updatedComments[0])
+    
+    // Always notify the parent about top comment changes (even for vote count updates)
+    if (onTopCommentVoteChange) {
+      if (!newTopComment || (newTopComment.upvotes || 0) + (newTopComment.downvotes || 0) === 0) {
+        // No top comment or no votes left
+        
+        onTopCommentVoteChange(post.id, null)
+      } else {
+        // Update top comment with complete data
+        const topCommentData = {
+          id: newTopComment.id,
+          author: newTopComment.author,
+          content: newTopComment.content,
+          upvotes: newTopComment.upvotes || 0,
+          downvotes: newTopComment.downvotes || 0,
+          isBestAnswer: false, // Comments don't have best answer feature yet
+          userVote: newTopComment.userVote // Include user vote state
+        }
+        
+        onTopCommentVoteChange(post.id, topCommentData)
+      }
+    }
     
     // Send request to server
     try {

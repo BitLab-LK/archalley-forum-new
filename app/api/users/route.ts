@@ -3,12 +3,11 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET() {
   try {
-    console.log('🔍 Starting users API request...')
-    
-    // Test database connection first
+
+// Test database connection first
     try {
       await prisma.$connect()
-      console.log('✅ Database connected successfully')
+      
     } catch (dbError) {
       console.error('❌ Database connection failed:', dbError)
       return NextResponse.json(
@@ -55,13 +54,10 @@ export async function GET() {
       },
     })
 
-    console.log(`✅ Found ${users.length} users`)
-
-    // Filter by profileVisibility after fetching to handle cases where the field might be null
+// Filter by profileVisibility after fetching to handle cases where the field might be null
     const publicUsers = users.filter(user => user.profileVisibility !== false)
-    console.log(`🔓 ${publicUsers.length} users have public profiles`)
 
-    // Create a map of user ID to total upvotes
+// Create a map of user ID to total upvotes
     const upvoteMap = new Map<string, number>()
     
     // Initialize all users with 0 upvotes
@@ -119,9 +115,7 @@ export async function GET() {
       }
     })
 
-    console.log(`🎯 Returning ${formattedUsers.length} formatted users`)
-    
-    return NextResponse.json({ 
+return NextResponse.json({ 
       users: formattedUsers,
       metadata: {
         total: formattedUsers.length,
@@ -148,3 +142,4 @@ export async function GET() {
     }
   }
 }
+

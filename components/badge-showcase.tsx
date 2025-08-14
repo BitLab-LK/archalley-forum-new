@@ -43,7 +43,7 @@ export function BadgeShowcase({ userId, showAvailableBadges = false }: BadgeShow
       const result = await checkAndAwardBadges()
       if (result.awardedBadges.length > 0) {
         // Show success message or toast
-        console.log(`Awarded ${result.awardedBadges.length} new badges!`)
+        
       }
     } catch (error) {
       console.error('Error checking badges:', error)
@@ -185,3 +185,4 @@ export function BadgeShowcase({ userId, showAvailableBadges = false }: BadgeShow
     </div>
   )
 }
+
