@@ -73,11 +73,8 @@ export async function POST(request: NextRequest) {
     let sanitizedFilename = sanitizeFilename(file.name)
     let filename = `registration-${Date.now()}-${sanitizedFilename}`
 
-    `)
-
-try {
-
-const blob = await put(filename, buffer, {
+    try {
+      const blob = await put(filename, buffer, {
         access: 'public',
         contentType: file.type,
       })
