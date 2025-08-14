@@ -1197,33 +1197,37 @@ export default function SimplifiedEnhancedRegisterPage() {
                         </Button>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-2">
-                        <Select value={selectedPlatform} onValueChange={setSelectedPlatform} disabled={isLoading}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select platform" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {socialMediaPlatforms.map((platform) => (
-                              <SelectItem key={platform} value={platform}>
-                                {platform}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <div className="flex gap-2">
+                        <div className="w-1/3">
+                          <Select value={selectedPlatform} onValueChange={setSelectedPlatform} disabled={isLoading}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select platform" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {socialMediaPlatforms.map((platform) => (
+                                <SelectItem key={platform} value={platform}>
+                                  {platform}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                         
-                        <Input
-                          type="url"
-                          placeholder="https://platform.com/yourprofile"
-                          value={socialMediaUrl}
-                          onChange={(e) => setSocialMediaUrl(e.target.value)}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault()
-                              addSocialMediaLink()
-                            }
-                          }}
-                          disabled={isLoading || !selectedPlatform}
-                        />
+                        <div className="flex-1">
+                          <Input
+                            type="url"
+                            placeholder="https://platform.com/yourprofile"
+                            value={socialMediaUrl}
+                            onChange={(e) => setSocialMediaUrl(e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                addSocialMediaLink()
+                              }
+                            }}
+                            disabled={isLoading || !selectedPlatform}
+                          />
+                        </div>
                       </div>
 
                       {socialMediaLinks.length > 0 && (
