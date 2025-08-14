@@ -147,20 +147,43 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
     // Fetch both comments and post votes
     const fetchData = async () => {
       try {
-        const commentsRes = await fetch(`/api/comments?postId=${post.id}`);
+        // Add more explicit error handling for production debugging
+        const commentsUrl = `/api/comments?postId=${post.id}`;
+        console.log('Fetching comments from:', commentsUrl);
+        
+        const commentsRes = await fetch(commentsUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-cache'
+        });
+        
+        console.log('Comments response status:', commentsRes.status);
+        console.log('Comments response ok:', commentsRes.ok);
         
         // Handle comments response
         if (commentsRes.ok) {
           const commentsData = await commentsRes.json();
+          console.log('Comments data received:', commentsData);
+          
           if (Array.isArray(commentsData.comments)) {
             setComments(commentsData.comments);
+            console.log('Set comments count:', commentsData.comments.length);
             
             // Keep all replies collapsed by default (empty Set)
             setExpandedReplies(new Set<string>());
+          } else {
+            console.warn('Comments data is not an array:', commentsData);
+            setComments([]);
           }
+        } else {
+          const errorText = await commentsRes.text();
+          console.error('Comments fetch failed:', commentsRes.status, errorText);
+          setComments([]);
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching comments:", error);
         setComments([]);
       }
     };

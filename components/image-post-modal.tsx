@@ -142,27 +142,54 @@ export default function ImagePostModal({
     if (!open) return
     
     setLoading(true)
-    fetch(`/api/comments?postId=${post.id}`)
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
-        return res.json()
-      })
-      .then(data => {
+    
+    const fetchComments = async () => {
+      try {
+        const commentsUrl = `/api/comments?postId=${post.id}`;
+        console.log('ImageModal: Fetching comments from:', commentsUrl);
+        
+        const res = await fetch(commentsUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-cache'
+        });
+        
+        console.log('ImageModal: Comments response status:', res.status);
+        console.log('ImageModal: Comments response ok:', res.ok);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('ImageModal: Comments fetch failed:', res.status, errorText);
+          throw new Error(`HTTP error! status: ${res.status} - ${errorText}`);
+        }
+        
+        const data = await res.json();
+        console.log('ImageModal: Comments data received:', data);
+        
         if (Array.isArray(data.comments)) {
-          setComments(data.comments)
+          setComments(data.comments);
+          console.log('ImageModal: Set comments count:', data.comments.length);
           
           // Calculate and sync the actual comment count with parent
           const totalComments = data.comments.reduce((total: number, comment: any) => {
             return total + 1 + (comment.replies?.length || 0)
           }, 0)
           onCommentCountUpdate?.(totalComments)
+        } else {
+          console.warn('ImageModal: Comments data is not an array:', data);
+          setComments([]);
         }
-      })
-      .catch(error => {
-        console.error("Error fetching comments:", error)
-        setComments([])
-      })
-      .finally(() => setLoading(false))
+      } catch (error) {
+        console.error("ImageModal: Error fetching comments:", error);
+        setComments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchComments();
   }, [open, post.id])
 
   // Handle vote action with smooth animation and global sync

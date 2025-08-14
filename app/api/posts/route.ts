@@ -552,6 +552,24 @@ const skip = (page - 1) * limit
     })
     } catch (dbError) {
       console.error("Database error:", dbError)
+      
+      // Check if it's a connection error and try to reconnect
+      if (dbError instanceof Error && (
+        dbError.message.includes("Can't reach database server") ||
+        dbError.message.includes("connection") ||
+        dbError.message.includes("P1001")
+      )) {
+        console.log("Attempting to reconnect to database...")
+        try {
+          await prisma.$connect()
+          // Retry the operation once
+          throw new Error("Database temporarily unavailable - please try again")
+        } catch (reconnectError) {
+          console.error("Reconnection failed:", reconnectError)
+          throw new Error("Database connection failed - service temporarily unavailable")
+        }
+      }
+      
       throw dbError // Re-throw to be caught by outer try-catch
     }
   } catch (error) {
@@ -564,6 +582,24 @@ const skip = (page - 1) * limit
         stack: error.stack,
       })
     }
+    
+    // Check for database connection errors and provide user-friendly messages
+    if (error instanceof Error && (
+      error.message.includes("Can't reach database server") ||
+      error.message.includes("connection") ||
+      error.message.includes("Database connection failed") ||
+      error.message.includes("Database temporarily unavailable")
+    )) {
+      return NextResponse.json(
+        { 
+          error: "Database service temporarily unavailable",
+          details: "Please try refreshing the page in a few moments",
+          message: "The forum is experiencing connectivity issues"
+        },
+        { status: 503 }
+      )
+    }
+    
     return NextResponse.json(
       { error: "Failed to fetch posts", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }

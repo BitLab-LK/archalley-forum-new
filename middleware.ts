@@ -47,6 +47,16 @@ export default withAuth(
             return true
           }
           
+          // Allow GET requests to comments (needed for modal functionality)
+          if (req.nextUrl.pathname.startsWith("/api/comments") && req.method === "GET") {
+            return true
+          }
+          
+          // Allow debug endpoint
+          if (req.nextUrl.pathname.startsWith("/api/debug")) {
+            return true
+          }
+          
           // Allow health check
           if (req.nextUrl.pathname.startsWith("/api/health")) {
             return true
