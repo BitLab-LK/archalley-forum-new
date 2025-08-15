@@ -271,6 +271,21 @@ function getMimeType(filename: string): string {
 
 export async function GET(request: NextRequest) {
   try {
+    // Test database connection first
+    try {
+      await prisma.$connect()
+    } catch (dbError) {
+      console.error("Database connection failed in GET:", dbError)
+      return NextResponse.json(
+        { 
+          error: "Database connection failed", 
+          message: "The application is currently unable to connect to the database. Please try again later.",
+          details: "Database service is unavailable"
+        },
+        { status: 503 }
+      )
+    }
+
     // Get session for user vote information
     const session = await getServerSession(authOptions)
     
