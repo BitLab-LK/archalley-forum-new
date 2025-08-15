@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -29,10 +29,17 @@ export default function MembersPage() {
   const router = useRouter()
   const [members, setMembers] = useState<Member[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [professionFilter, setProfessionFilter] = useState("all")
-  const [sortBy, setSortBy] = useState("recent")
+  const [sortBy, setSortBy] = useState("none")
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const loadMoreRef = useRef<HTMLDivElement | null>(null)
+  
+  const ITEMS_PER_PAGE = 12
 
   const handleViewProfile = (memberId: string) => {
     router.push(`/profile/${memberId}`)
@@ -102,10 +109,65 @@ export default function MembersPage() {
       case "upvotes":
         return b.upvotes - a.upvotes
       case "recent":
-      default:
         return new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime()
+      case "none":
+      default:
+        return 0 // No sorting - keep original order
     }
   })
+
+  // Paginated members for display
+  const paginatedMembers = sortedMembers.slice(0, page * ITEMS_PER_PAGE)
+
+  // Load more function
+  const loadMore = useCallback(() => {
+    if (isLoadingMore || !hasMore) return
+    
+    setIsLoadingMore(true)
+    
+    // Simulate loading delay (remove this in production if not needed)
+    setTimeout(() => {
+      const nextPage = page + 1
+      const totalAvailable = sortedMembers.length
+      const itemsToShow = nextPage * ITEMS_PER_PAGE
+      
+      setPage(nextPage)
+      setHasMore(itemsToShow < totalAvailable)
+      setIsLoadingMore(false)
+    }, 500)
+  }, [page, sortedMembers.length, isLoadingMore, hasMore])
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setPage(1)
+    setHasMore(sortedMembers.length > ITEMS_PER_PAGE)
+  }, [searchTerm, professionFilter, sortBy, sortedMembers.length])
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect()
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          loadMore()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current)
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+      }
+    }
+  }, [loadMore, hasMore, isLoadingMore])
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -149,6 +211,7 @@ export default function MembersPage() {
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Default</SelectItem>
                   <SelectItem value="name">Name</SelectItem>
                   <SelectItem value="posts">Most Posts</SelectItem>
                   <SelectItem value="upvotes">Most Upvotes</SelectItem>
@@ -234,8 +297,9 @@ export default function MembersPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {sortedMembers.map((member) => (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {paginatedMembers.map((member) => (
                   <Card key={member.id} className="hover:shadow-lg transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-start space-x-4">
@@ -290,22 +354,31 @@ export default function MembersPage() {
                     </CardContent>
                   </Card>
                 ))}
-              </div>
-            )}
+                </div>
 
-            {/* Pagination */}
-            {sortedMembers.length > 0 && (
-              <div className="flex justify-center mt-8">
-                <nav className="flex space-x-2">
-                  <Button variant="outline" disabled>
-                    Previous
-                  </Button>
-                  <Button variant="default">1</Button>
-                  <Button variant="outline">2</Button>
-                  <Button variant="outline">3</Button>
-                  <Button variant="outline">Next</Button>
-                </nav>
-              </div>
+                {/* Infinite Scroll Trigger */}
+                {hasMore && (
+                  <div ref={loadMoreRef} className="flex justify-center py-8">
+                    {isLoadingMore ? (
+                      <div className="flex items-center space-x-2">
+                        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                        <span className="text-gray-600 dark:text-gray-400">Loading more members...</span>
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-sm">Scroll down to load more</div>
+                    )}
+                  </div>
+                )}
+
+                {/* End of results message */}
+                {!hasMore && paginatedMembers.length > ITEMS_PER_PAGE && (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">
+                      You've seen all {paginatedMembers.length} members
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

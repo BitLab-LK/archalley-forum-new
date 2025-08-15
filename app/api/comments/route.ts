@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { prisma, testDatabaseConnection } from "@/lib/prisma"
+import { prisma } from "@/lib/prisma"
+import { badgeService } from "@/lib/badge-service"
 
 // GET /api/comments?postId=...
 export async function GET(request: NextRequest) {
@@ -25,9 +26,10 @@ export async function GET(request: NextRequest) {
     console.log('Comments API: Fetching comments for postId:', postId);
     
     // Test database connection before proceeding
-    const isConnected = await testDatabaseConnection(2) // Quick retry
-    if (!isConnected) {
-      console.error("Comments API: Database connection failed")
+    try {
+      await prisma.users.findFirst({ select: { id: true } })
+    } catch (dbError) {
+      console.error("Comments API: Database connection failed", dbError)
       return NextResponse.json({
         error: 'Database temporarily unavailable',
         message: 'Unable to connect to the database. Please try again in a moment.',
@@ -141,5 +143,14 @@ export async function POST(request: NextRequest) {
       users: { select: { name: true, image: true } }
     }
   })
+
+  // Check and award badges after successful comment creation
+  try {
+    await badgeService.checkAndAwardBadges(session.user.id)
+  } catch (error) {
+    console.error("Error checking badges:", error)
+    // Don't fail the comment creation if badge checking fails
+  }
+
   return NextResponse.json({ comment })
 }

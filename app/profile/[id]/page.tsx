@@ -64,14 +64,12 @@ interface Post {
   comments: number
   timeAgo: string
   images?: string[]
-  userVote?: "up" | "down" | null
   topComment?: {
     author: string
     content: string
     upvotes: number
     downvotes: number
     isBestAnswer: boolean
-    userVote?: "up" | "down"
   }
 }
 

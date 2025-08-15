@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@/lib/auth-context"
 import Image from "next/image"
 import PostModal from "./post-modal"
+import { PostBadges } from "./post-badges"
 
 interface PostCardProps {
   post: {
@@ -29,6 +30,19 @@ interface PostCardProps {
       isVerified: boolean
       rank: string
       rankIcon: string
+      badges?: Array<{
+        id: string
+        badges: {
+          id: string
+          name: string
+          description: string
+          icon: string
+          color: string
+          level: string
+          type: string
+        }
+        earnedAt: Date
+      }>
     }
     content: string
     category: string
@@ -460,9 +474,20 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-gray-500">
                   {!post.isAnonymous && (
-                    <Badge variant="secondary" className="text-xs">
-                      {post.author.rank}
-                    </Badge>
+                    <>
+                      {/* Rank badge removed to show only icons
+                      <Badge variant="secondary" className="text-xs">
+                        {post.author.rank}
+                      </Badge>
+                      */}
+                      {post.author.badges && post.author.badges.length > 0 && (
+                        <PostBadges 
+                          badges={post.author.badges.map(b => b.badges)} 
+                          maxDisplay={2} 
+                          size="xs"
+                        />
+                      )}
+                    </>
                   )}
                   <span>{post.timeAgo}</span>
                 </div>

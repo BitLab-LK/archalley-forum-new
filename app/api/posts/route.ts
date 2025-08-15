@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { badgeService } from "@/lib/badge-service"
 import { join } from "path"
 import { stat } from "fs/promises"
 
@@ -209,6 +210,14 @@ return NextResponse.json(
         console.error("Error creating attachments:", error)
         // Don't fail the post creation if attachments fail
       }
+    }
+
+    // Check and award badges after successful post creation
+    try {
+      await badgeService.checkAndAwardBadges(session.user.id)
+    } catch (error) {
+      console.error("Error checking badges:", error)
+      // Don't fail the post creation if badge checking fails
     }
 
     return NextResponse.json(post)

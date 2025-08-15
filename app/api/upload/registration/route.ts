@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         contentType: file.type,
       })
 
-return NextResponse.json({
+      return NextResponse.json({
         images: [{
           url: blob.url,
           filename: filename,
