@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { put, del } from '@vercel/blob'
-import sharp from "sharp"
 
 // Rate limiting map (in production, use Redis or similar)
 const uploadAttempts = new Map<string, { count: number; resetTime: number }>()
@@ -78,6 +77,7 @@ const uploadPromises = files.map(async (file) => {
       // Always process images that are too large or not in optimal format
       if (buffer.length > maxSize || file.type !== "image/webp") {
         try {
+          const sharp = (await import("sharp")).default
           let sharpImg = sharp(buffer).rotate()
           const metadata = await sharpImg.metadata()
 
@@ -131,7 +131,7 @@ const uploadPromises = files.map(async (file) => {
       // If not processed and still too large, try one more aggressive compression
       if (!processed && buffer.length > maxSize) {
         try {
-          
+          const sharp = (await import("sharp")).default
           let sharpImg = sharp(buffer).rotate()
           
           // Get metadata
