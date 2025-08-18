@@ -398,8 +398,16 @@ export default function SimplifiedEnhancedRegisterPage() {
     setIsLoading(true)
     setError("")
 
+    console.log('🚀 Registration submit started')
+    console.log('📁 Current profilePhoto state:', profilePhoto ? {
+      name: profilePhoto.name,
+      size: profilePhoto.size,
+      type: profilePhoto.type
+    } : 'No file')
+
     const provider = searchParams.get('provider')
     const isSocialRegistration = !!provider
+    console.log('🔒 Social registration:', isSocialRegistration)
 
     // Validation
     if (!isSocialRegistration && password !== confirmPassword) {
@@ -433,26 +441,39 @@ export default function SimplifiedEnhancedRegisterPage() {
       // Upload profile photo first if provided
       if (profilePhoto) {
         try {
+          console.log('🔄 Starting profile photo upload:', profilePhoto.name, profilePhoto.size, profilePhoto.type)
           setIsUploadingPhoto(true)
           const uploadFormData = new FormData()
           uploadFormData.append('images', profilePhoto)
           
+          console.log('📤 Sending upload request to /api/upload/registration')
           const uploadResponse = await fetch('/api/upload/registration', {
             method: 'POST',
             body: uploadFormData,
           })
           
-          const uploadData = await uploadResponse.json()
+          console.log('📥 Upload response status:', uploadResponse.status, uploadResponse.statusText)
+          
+          let uploadData
+          try {
+            uploadData = await uploadResponse.json()
+            console.log('📥 Upload response data:', uploadData)
+          } catch (jsonError) {
+            console.error('❌ Failed to parse upload response as JSON:', jsonError)
+            console.log('📄 Response text:', await uploadResponse.text())
+            throw new Error('Upload response is not valid JSON')
+          }
           
           if (uploadResponse.ok && uploadData.images && uploadData.images.length > 0) {
             profileImageUrl = uploadData.images[0].url
-            console.log('📸 Profile photo uploaded successfully:', profileImageUrl)
+            console.log('✅ Profile photo uploaded successfully:', profileImageUrl)
           } else {
-            console.warn('⚠️ Profile photo upload failed:', uploadData.error)
+            console.warn('⚠️ Profile photo upload failed:', uploadData.error || 'Unknown error')
+            console.warn('⚠️ Response status:', uploadResponse.status)
             // Continue with registration even if photo upload fails
           }
         } catch (uploadError) {
-          console.warn('⚠️ Profile photo upload error:', uploadError)
+          console.error('❌ Profile photo upload error:', uploadError)
           // Continue with registration even if photo upload fails
         } finally {
           setIsUploadingPhoto(false)
@@ -924,7 +945,15 @@ export default function SimplifiedEnhancedRegisterPage() {
                       id="profilePhoto"
                       type="file"
                       accept="image/*"
-                      onChange={(e) => setProfilePhoto(e.target.files?.[0] || null)}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null
+                        console.log('📁 File selected:', file ? {
+                          name: file.name,
+                          size: file.size,
+                          type: file.type
+                        } : 'No file')
+                        setProfilePhoto(file)
+                      }}
                       disabled={isLoading}
                       className="hidden"
                     />
@@ -938,7 +967,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                       Choose File
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                      {profilePhoto ? profilePhoto.name : "No file chosen"}
+                      {profilePhoto ? `✅ ${profilePhoto.name} (${(profilePhoto.size / 1024).toFixed(1)}KB)` : "No file chosen"}
                     </span>
                   </div>
                 </div>

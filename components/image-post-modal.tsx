@@ -99,7 +99,21 @@ export default function ImagePostModal({
   // Refs and hooks
   const commentInputRef = useRef<HTMLInputElement>(null)
   const lastVoteClickTime = useRef<number>(0) // Debounce vote clicks
+  const previousCommentCount = useRef<number>(0) // Track previous comment count
   const { user } = useAuth()
+  
+  // Effect to update comment count whenever comments change
+  useEffect(() => {
+    const totalComments = comments.reduce((total, comment) => {
+      return total + 1 + (comment.replies?.length || 0)
+    }, 0)
+    
+    // Only call update if the count actually changed and callback exists
+    if (totalComments !== previousCommentCount.current && onCommentCountUpdate) {
+      previousCommentCount.current = totalComments
+      onCommentCountUpdate(totalComments)
+    }
+  }, [comments]) // Remove onCommentCountUpdate from dependencies
   
   // Use global vote state for real-time synchronization
   const { voteState, updateVote } = useGlobalVoteState(post.id, {
@@ -171,12 +185,6 @@ export default function ImagePostModal({
         if (Array.isArray(data.comments)) {
           setComments(data.comments);
           console.log('ImageModal: Set comments count:', data.comments.length);
-          
-          // Calculate and sync the actual comment count with parent
-          const totalComments = data.comments.reduce((total: number, comment: any) => {
-            return total + 1 + (comment.replies?.length || 0)
-          }, 0)
-          onCommentCountUpdate?.(totalComments)
         } else {
           console.warn('ImageModal: Comments data is not an array:', data);
           setComments([]);
@@ -367,15 +375,10 @@ await handleVote(type)
             activityEventManager.emitComment(user.id, post.id, data.comment.id)
           }
           
-          // Sync comment count with the updated length
-          onCommentCountUpdate?.(updatedComments.length)
           return updatedComments
         })
         
         onCommentAdded?.()
-        
-        // Update comment count in parent - new comment added
-        onCommentCountUpdate?.(comments.length + 1)
       } else {
         // Remove temp comment on error
         setComments(prev => prev.filter(comment => comment.id !== tempComment.id))
@@ -474,29 +477,15 @@ await handleVote(type)
               : comment
           )
           
-          // Calculate total comments including replies after adding the new reply
-          const totalComments = updatedComments.reduce((total, comment) => {
-            return total + 1 + (comment.replies?.length || 0)
-          }, 0)
-          
           // Emit activity event for real-time feed updates
           if (user?.id) {
             activityEventManager.emitComment(user.id, post.id, data.comment.id)
           }
           
-          // Instantly sync the new comment count
-          onCommentCountUpdate?.(totalComments)
-          
           return updatedComments
         })
         
         onCommentAdded?.()
-        
-        // Update comment count in parent - new reply added
-        const totalComments = comments.reduce((total, comment) => {
-          return total + 1 + (comment.replies?.length || 0)
-        }, 0)
-        onCommentCountUpdate?.(totalComments + 1) // +1 for the new reply
       } else {
         // Remove temp reply on error
         setComments(prev => prev.map(comment => 
@@ -916,14 +905,6 @@ await handleVote(type)
             
             return comment
           }).filter(Boolean) as Comment[]
-          
-          // Calculate total comments including replies
-          const totalComments = updatedComments.reduce((total, comment) => {
-            return total + 1 + (comment.replies?.length || 0)
-          }, 0)
-          
-          // Instantly sync the new comment count after deletion
-          onCommentCountUpdate?.(totalComments)
           
           return updatedComments
         })

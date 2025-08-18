@@ -75,7 +75,21 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   
   const lastVoteClickTime = useRef<number>(0) // Debounce vote clicks
+  const previousCommentCount = useRef<number>(0) // Track previous comment count
   const { user } = useAuth()
+  
+  // Effect to update comment count whenever comments change
+  useEffect(() => {
+    const totalComments = comments.reduce((total, comment) => {
+      return total + 1 + (comment.replies?.length || 0)
+    }, 0)
+    
+    // Only call update if the count actually changed and callback exists
+    if (totalComments !== previousCommentCount.current && _onCommentCountUpdate) {
+      previousCommentCount.current = totalComments
+      _onCommentCountUpdate(totalComments)
+    }
+  }, [comments]) // Remove _onCommentCountUpdate from dependencies
   
   // Use global vote state for real-time synchronization
   const { voteState, updateVote } = useGlobalVoteState(post.id, {
@@ -484,14 +498,6 @@ await handleVote(type)
         setComments(prev => {
           const updatedComments = removeCommentRecursively(prev)
           
-          // Calculate total comments including replies after deletion
-          const totalComments = updatedComments.reduce((total, comment) => {
-            return total + 1 + (comment.replies?.length || 0)
-          }, 0)
-          
-          // Update comment count in parent
-          _onCommentCountUpdate?.(totalComments)
-          
           return updatedComments
         })
       }
@@ -608,14 +614,6 @@ await handleVote(type)
           if (user?.id) {
             activityEventManager.emitComment(user.id, post.id, data.comment.id)
           }
-          
-          // Calculate total comments including replies after adding the new reply
-          const totalComments = updatedComments.reduce((total, comment) => {
-            return total + 1 + (comment.replies?.length || 0)
-          }, 0)
-          
-          // Update comment count in parent
-          _onCommentCountUpdate?.(totalComments)
           
           return updatedComments
         })

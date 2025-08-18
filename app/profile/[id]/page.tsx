@@ -32,15 +32,24 @@ interface User {
   firstName?: string
   lastName?: string
   phoneNumber?: string
+  phone?: string
   headline?: string
   skills?: string[]
   industry?: string
   country?: string
   city?: string
   portfolioUrl?: string
+  website?: string
   linkedinUrl?: string
   facebookUrl?: string
   instagramUrl?: string
+  twitterUrl?: string
+  githubUrl?: string
+  youtubeUrl?: string
+  tiktokUrl?: string
+  behanceUrl?: string
+  dribbbleUrl?: string
+  otherSocialUrl?: string
   workExperience?: any[]
   education?: any[]
 }
@@ -257,15 +266,10 @@ export default function UserProfilePage() {
                   )}
                 </div>
 
-                {(user.city || user.country || user.location) && (
+                {user.headline && (
                   <div className="flex items-center text-gray-500 dark:text-gray-400 mb-3">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    <span>
-                      {user.city && user.country 
-                        ? `${user.city}, ${user.country}`
-                        : user.location || user.city || user.country
-                      }
-                    </span>
+                    <Briefcase className="w-4 h-4 mr-1" />
+                    <span>{user.headline}</span>
                   </div>
                 )}
 
@@ -301,13 +305,6 @@ export default function UserProfilePage() {
                 {/* Basic Information in Header */}
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    {user.phoneNumber && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-600 dark:text-gray-400">Phone:</span>
-                        <span className="text-gray-900 dark:text-white font-medium">{user.phoneNumber}</span>
-                      </div>
-                    )}
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-gray-500" />
                       <span className="text-gray-600 dark:text-gray-400">Member Since:</span>
@@ -423,7 +420,7 @@ export default function UserProfilePage() {
               </Card>
             )}
 
-            {/* Bio Section */}
+            {/* About/Bio Section */}
             {user.bio && (
               <Card className="hover:border-l-4 hover:border-l-green-500 transition-all duration-200">
                 <CardContent className="p-6">
@@ -432,6 +429,225 @@ export default function UserProfilePage() {
                     About
                   </h3>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{user.bio}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Contact Information */}
+            <Card className="hover:border-l-4 hover:border-l-blue-500 transition-all duration-200">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-blue-600" />
+                  Contact Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {isOwnProfile && user.email && (
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                        <Mail className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
+                        <p className="text-gray-900 dark:text-white font-medium">{user.email}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {(user.phoneNumber || user.phone) && (
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-50 dark:bg-green-950 rounded-lg">
+                        <Phone className="w-4 h-4 text-green-600" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Phone</label>
+                        <p className="text-gray-900 dark:text-white font-medium">{user.phoneNumber || user.phone}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Links & Portfolio */}
+            {(user.portfolioUrl || user.website) && (
+              <Card className="hover:border-l-4 hover:border-l-purple-500 transition-all duration-200">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <ExternalLink className="w-5 h-5 text-purple-600" />
+                    Links & Portfolio
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-50 dark:bg-purple-950 rounded-lg">
+                        <ExternalLink className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Website/Portfolio</label>
+                        <a 
+                          href={user.portfolioUrl || user.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center gap-1"
+                        >
+                          {user.portfolioUrl || user.website}
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Social Media Links */}
+            {(user.linkedinUrl || user.facebookUrl || user.instagramUrl || user.twitterUrl || user.githubUrl || user.youtubeUrl || user.tiktokUrl || user.behanceUrl || user.dribbbleUrl || user.otherSocialUrl) && (
+              <Card className="hover:border-l-4 hover:border-l-indigo-500 transition-all duration-200">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <ExternalLink className="w-5 h-5 text-indigo-600" />
+                    Social Media
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {user.linkedinUrl && (
+                      <a 
+                        href={user.linkedinUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+                      >
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
+                          in
+                        </div>
+                        <span className="text-blue-700 dark:text-blue-300 font-medium">LinkedIn</span>
+                      </a>
+                    )}
+                    
+                    {user.facebookUrl && (
+                      <a 
+                        href={user.facebookUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+                      >
+                        <div className="w-8 h-8 bg-blue-800 rounded-lg flex items-center justify-center text-white font-bold">
+                          f
+                        </div>
+                        <span className="text-blue-700 dark:text-blue-300 font-medium">Facebook</span>
+                      </a>
+                    )}
+                    
+                    {user.instagramUrl && (
+                      <a 
+                        href={user.instagramUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-pink-50 dark:bg-pink-950 hover:bg-pink-100 dark:hover:bg-pink-900 transition-colors"
+                      >
+                        <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold">
+                          📷
+                        </div>
+                        <span className="text-pink-700 dark:text-pink-300 font-medium">Instagram</span>
+                      </a>
+                    )}
+                    
+                    {user.twitterUrl && (
+                      <a 
+                        href={user.twitterUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-sky-50 dark:bg-sky-950 hover:bg-sky-100 dark:hover:bg-sky-900 transition-colors"
+                      >
+                        <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center text-white font-bold">
+                          🐦
+                        </div>
+                        <span className="text-sky-700 dark:text-sky-300 font-medium">Twitter</span>
+                      </a>
+                    )}
+
+                    {user.githubUrl && (
+                      <a 
+                        href={user.githubUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-950 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+                      >
+                        <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center text-white font-bold">
+                          🐙
+                        </div>
+                        <span className="text-gray-700 dark:text-gray-300 font-medium">GitHub</span>
+                      </a>
+                    )}
+
+                    {user.youtubeUrl && (
+                      <a 
+                        href={user.youtubeUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 transition-colors"
+                      >
+                        <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold">
+                          ▶️
+                        </div>
+                        <span className="text-red-700 dark:text-red-300 font-medium">YouTube</span>
+                      </a>
+                    )}
+
+                    {user.tiktokUrl && (
+                      <a 
+                        href={user.tiktokUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-black dark:bg-gray-900 hover:bg-gray-800 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white font-bold">
+                          🎵
+                        </div>
+                        <span className="text-gray-800 dark:text-gray-200 font-medium">TikTok</span>
+                      </a>
+                    )}
+
+                    {user.behanceUrl && (
+                      <a 
+                        href={user.behanceUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+                      >
+                        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold">
+                          Be
+                        </div>
+                        <span className="text-blue-700 dark:text-blue-300 font-medium">Behance</span>
+                      </a>
+                    )}
+
+                    {user.dribbbleUrl && (
+                      <a 
+                        href={user.dribbbleUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-pink-50 dark:bg-pink-950 hover:bg-pink-100 dark:hover:bg-pink-900 transition-colors"
+                      >
+                        <div className="w-8 h-8 bg-pink-500 rounded-lg flex items-center justify-center text-white font-bold">
+                          🏀
+                        </div>
+                        <span className="text-pink-700 dark:text-pink-300 font-medium">Dribbble</span>
+                      </a>
+                    )}
+
+                    {user.otherSocialUrl && (
+                      <a 
+                        href={user.otherSocialUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-950 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+                      >
+                        <div className="w-8 h-8 bg-gray-500 rounded-lg flex items-center justify-center text-white font-bold">
+                          🔗
+                        </div>
+                        <span className="text-gray-700 dark:text-gray-300 font-medium">Other</span>
+                      </a>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -506,107 +722,6 @@ export default function UserProfilePage() {
               </Card>
             )}
 
-            {/* Social Links & Portfolio */}
-            {(user.email || user.portfolioUrl || user.linkedinUrl || user.facebookUrl || user.instagramUrl) && (
-              <Card className="hover:border-l-4 hover:border-l-purple-500 transition-all duration-200">
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <ExternalLink className="w-5 h-5 text-purple-600" />
-                    Links & Portfolio
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {user.email && (
-                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-lg hover:shadow-md transition-all duration-200">
-                        <div className="p-2 bg-blue-200 dark:bg-blue-800 rounded-lg">
-                          <Mail className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
-                          <a 
-                            href={`mailto:${user.email}`}
-                            className="block text-blue-600 dark:text-blue-400 hover:underline font-medium truncate max-w-48"
-                          >
-                            {user.email}
-                          </a>
-                        </div>
-                      </div>
-                    )}
-                    {user.portfolioUrl && (
-                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 rounded-lg hover:shadow-md transition-all duration-200">
-                        <div className="p-2 bg-purple-200 dark:bg-purple-800 rounded-lg">
-                          <ExternalLink className="w-4 h-4 text-purple-600" />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Portfolio</label>
-                          <a 
-                            href={user.portfolioUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="block text-purple-600 dark:text-purple-400 hover:underline font-medium truncate max-w-48"
-                          >
-                            {user.portfolioUrl.replace(/^https?:\/\//, '')}
-                          </a>
-                        </div>
-                      </div>
-                    )}
-                    {user.linkedinUrl && (
-                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-lg hover:shadow-md transition-all duration-200">
-                        <div className="p-2 bg-blue-200 dark:bg-blue-800 rounded-lg">
-                          <ExternalLink className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">LinkedIn</label>
-                          <a 
-                            href={user.linkedinUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="block text-blue-600 dark:text-blue-400 hover:underline font-medium truncate max-w-48"
-                          >
-                            {user.linkedinUrl.replace(/^https?:\/\//, '')}
-                          </a>
-                        </div>
-                      </div>
-                    )}
-                    {user.facebookUrl && (
-                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-lg hover:shadow-md transition-all duration-200">
-                        <div className="p-2 bg-blue-200 dark:bg-blue-800 rounded-lg">
-                          <ExternalLink className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Facebook</label>
-                          <a 
-                            href={user.facebookUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="block text-blue-600 dark:text-blue-400 hover:underline font-medium truncate max-w-48"
-                          >
-                            {user.facebookUrl.replace(/^https?:\/\//, '')}
-                          </a>
-                        </div>
-                      </div>
-                    )}
-                    {user.instagramUrl && (
-                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-pink-50 to-pink-100 dark:from-pink-950 dark:to-pink-900 rounded-lg hover:shadow-md transition-all duration-200">
-                        <div className="p-2 bg-pink-200 dark:bg-pink-800 rounded-lg">
-                          <ExternalLink className="w-4 h-4 text-pink-600" />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Instagram</label>
-                          <a 
-                            href={user.instagramUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="block text-pink-600 dark:text-pink-400 hover:underline font-medium truncate max-w-48"
-                          >
-                            {user.instagramUrl.replace(/^https?:\/\//, '')}
-                          </a>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </TabsContent>
 
           <TabsContent value="posts" className="space-y-6">

@@ -171,6 +171,12 @@ model users {
   linkedinUrl       String?
   twitterUrl        String?
   instagramUrl      String?
+  githubUrl         String?
+  youtubeUrl        String?
+  tiktokUrl         String?
+  behanceUrl        String?
+  dribbbleUrl       String?
+  otherSocialUrl    String?
   role              UserRole         @default(MEMBER)
   isVerified        Boolean          @default(false)
   isSuspended       Boolean          @default(false)

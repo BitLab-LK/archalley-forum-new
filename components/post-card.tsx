@@ -528,7 +528,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
             {shouldUseColoredBackground(post.content, !!post.images?.length) ? (
               <div
                 className={cn(
-                  "rounded-lg p-6 text-white text-center font-semibold leading-relaxed",
+                  "rounded-lg p-6 text-white text-center font-semibold leading-relaxed whitespace-pre-wrap",
                   getCategoryColorClass(post.category),
                   getTextSizeClass(post.content),
                 )}
@@ -672,7 +672,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                           <span className="ml-1 text-xs text-gray-600 dark:text-gray-400">{topComment.downvotes}</span>
                         </div>
                       )}
-                      <span>2d</span>
                     </div>
                   </div>
                 </div>

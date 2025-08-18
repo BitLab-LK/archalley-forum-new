@@ -67,6 +67,11 @@ export default withAuth(
             return true
           }
           
+          // Allow registration upload endpoint (for profile photos during registration)
+          if (req.nextUrl.pathname.startsWith("/api/upload/registration")) {
+            return true
+          }
+          
           // Require authentication for all other API routes
           return !!token
         }

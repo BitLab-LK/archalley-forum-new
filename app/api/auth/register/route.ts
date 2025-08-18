@@ -66,6 +66,69 @@ const registerSchema = z.object({
       return false
     }
   }, "Invalid Instagram URL"),
+  twitterUrl: z.string().nullable().optional().refine((url) => {
+    if (!url || url.trim() === '') return true
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }, "Invalid Twitter URL"),
+  githubUrl: z.string().nullable().optional().refine((url) => {
+    if (!url || url.trim() === '') return true
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }, "Invalid GitHub URL"),
+  youtubeUrl: z.string().nullable().optional().refine((url) => {
+    if (!url || url.trim() === '') return true
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }, "Invalid YouTube URL"),
+  tiktokUrl: z.string().nullable().optional().refine((url) => {
+    if (!url || url.trim() === '') return true
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }, "Invalid TikTok URL"),
+  behanceUrl: z.string().nullable().optional().refine((url) => {
+    if (!url || url.trim() === '') return true
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }, "Invalid Behance URL"),
+  dribbbleUrl: z.string().nullable().optional().refine((url) => {
+    if (!url || url.trim() === '') return true
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }, "Invalid Dribbble URL"),
+  otherSocialUrl: z.string().nullable().optional().refine((url) => {
+    if (!url || url.trim() === '') return true
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }, "Invalid social media URL"),
   profileImageUrl: z.string().nullable().optional().refine((url) => {
     if (!url || url.trim() === '') return true
     try {
@@ -177,7 +240,6 @@ export async function POST(request: NextRequest) {
       tokenType,
       scope,
       websiteUrl,
-      portfolioLinks,
       socialMediaLinks,
     } = registerSchema.parse(body)
 
@@ -192,6 +254,62 @@ export async function POST(request: NextRequest) {
       hashedPassword = await bcrypt.hash(password, 12)
     }
 
+    // Process social media links array into individual URL fields
+    console.log('🔗 Processing social media links:', socialMediaLinks)
+    let processedLinkedinUrl = linkedinUrl
+    let processedFacebookUrl = facebookUrl
+    let processedInstagramUrl = instagramUrl
+    let processedTwitterUrl: string | null = null
+    let processedGithubUrl: string | null = null
+    let processedYoutubeUrl: string | null = null
+    let processedTiktokUrl: string | null = null
+    let processedBehanceUrl: string | null = null
+    let processedDribbbleUrl: string | null = null
+    let processedOtherSocialUrl: string | null = null
+
+    if (socialMediaLinks && socialMediaLinks.length > 0) {
+      socialMediaLinks.forEach(link => {
+        const platform = link.platform.toLowerCase().replace(/[\s\/]/g, '') // Remove spaces and slashes
+        const url = link.url
+        console.log(`📱 Processing ${platform}: ${url}`)
+        
+        if (platform === 'linkedin' && url) {
+          processedLinkedinUrl = processedLinkedinUrl || url
+        } else if (platform === 'facebook' && url) {
+          processedFacebookUrl = processedFacebookUrl || url
+        } else if (platform === 'instagram' && url) {
+          processedInstagramUrl = processedInstagramUrl || url
+        } else if (platform === 'twitter' || platform === 'twitterx' && url) {
+          processedTwitterUrl = processedTwitterUrl || url
+        } else if (platform === 'github' && url) {
+          processedGithubUrl = processedGithubUrl || url
+        } else if (platform === 'youtube' && url) {
+          processedYoutubeUrl = processedYoutubeUrl || url
+        } else if (platform === 'tiktok' && url) {
+          processedTiktokUrl = processedTiktokUrl || url
+        } else if (platform === 'behance' && url) {
+          processedBehanceUrl = processedBehanceUrl || url
+        } else if (platform === 'dribbble' && url) {
+          processedDribbbleUrl = processedDribbbleUrl || url
+        } else if (platform === 'other' && url) {
+          processedOtherSocialUrl = processedOtherSocialUrl || url
+        }
+      })
+    }
+
+    console.log('🔗 Final processed URLs:', {
+      linkedin: processedLinkedinUrl,
+      facebook: processedFacebookUrl,
+      instagram: processedInstagramUrl,
+      twitter: processedTwitterUrl,
+      github: processedGithubUrl,
+      youtube: processedYoutubeUrl,
+      tiktok: processedTiktokUrl,
+      behance: processedBehanceUrl,
+      dribbble: processedDribbbleUrl,
+      other: processedOtherSocialUrl
+    })
+
     // Create user and OAuth account in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create user
@@ -199,28 +317,47 @@ export async function POST(request: NextRequest) {
         data: {
           id: crypto.randomUUID(),
           name: `${validatedFirstName} ${validatedLastName}`,
+          firstName: validatedFirstName,
+          lastName: validatedLastName,
           email: validatedEmail as string,
           phone: validatedPhoneNumber || null,
           phoneNumber: validatedPhoneNumber || null,
           password: hashedPassword,
-          company,
-          profession: profession || industry,
+          
+          // Professional fields stored separately
+          headline: headline || null,
+          skills: skills || [],
+          industry: industry || null,
+          country: country || null,
+          city: city || null,
+          company: company || null,
+          profession: profession || industry || null,
+          bio: bio || null, // Store bio separately, not concatenated
+          
+          // Location field for backward compatibility
           location: country && city ? `${city}, ${country}` : (city || country),
+          
+          // Profile image
           image: profileImageUrl || null,
-          bio: [
-            bio,
-            headline ? `Headline: ${headline}` : '',
-            skills && skills.length > 0 ? `Skills: ${skills.join(', ')}` : '',
-            websiteUrl ? `Website: ${websiteUrl}` : '',
-            portfolioLinks && portfolioLinks.length > 0 ? `Portfolio Links: ${portfolioLinks.join(', ')}` : '',
-            socialMediaLinks && socialMediaLinks.length > 0 ? `Social Media: ${socialMediaLinks.map(link => `${link.platform}: ${link.url}`).join(', ')}` : '',
-          ].filter(Boolean).join('\n\n'),
-          website: websiteUrl || portfolioUrl,
-          linkedinUrl,
-          instagramUrl: instagramUrl,
-          twitterUrl: facebookUrl,
+          
+          // URLs
+          portfolioUrl: portfolioUrl || websiteUrl || null,
+          website: websiteUrl || portfolioUrl || null,
+          linkedinUrl: processedLinkedinUrl || null,
+          facebookUrl: processedFacebookUrl || null,
+          instagramUrl: processedInstagramUrl || null,
+          twitterUrl: processedTwitterUrl || null,
+          // TODO: Add these fields after database migration
+          // githubUrl: processedGithubUrl || null,
+          // youtubeUrl: processedYoutubeUrl || null,
+          // tiktokUrl: processedTiktokUrl || null,
+          // behanceUrl: processedBehanceUrl || null,
+          // dribbbleUrl: processedDribbbleUrl || null,
+          // otherSocialUrl: processedOtherSocialUrl || null,
+          
+          // System fields
           role: 'MEMBER',
-          isVerified: isSocialRegistration ? true : false, // Social registrations are automatically verified
+          isVerified: isSocialRegistration ? true : false,
           updatedAt: new Date(),
         },
       })
@@ -240,28 +377,55 @@ export async function POST(request: NextRequest) {
         })
       }
 
+      // Create work experience entries
+      if (workExperience && workExperience.length > 0) {
+        for (const work of workExperience) {
+          if (work.jobTitle && work.company) {
+            await tx.workExperience.create({
+              data: {
+                id: crypto.randomUUID(),
+                userId: user.id,
+                jobTitle: work.jobTitle,
+                company: work.company,
+                startDate: new Date(work.startDate),
+                endDate: work.endDate ? new Date(work.endDate) : null,
+                isCurrent: work.isCurrent || false,
+                description: work.description || null,
+              }
+            })
+          }
+        }
+      }
+
+      // Create education entries
+      if (education && education.length > 0) {
+        for (const edu of education) {
+          if (edu.degree && edu.institution) {
+            await tx.education.create({
+              data: {
+                id: crypto.randomUUID(),
+                userId: user.id,
+                degree: edu.degree,
+                institution: edu.institution,
+                startDate: new Date(edu.startDate),
+                endDate: edu.endDate ? new Date(edu.endDate) : null,
+                isCurrent: edu.isCurrent || false,
+                description: edu.description || null,
+              }
+            })
+          }
+        }
+      }
+
       return user
     })
 
-    // Store work experience and education info in a comment or log for now
-    if (workExperience && workExperience.length > 0) {
-      // Future: Store in dedicated tables
-    }
-    
-    if (education && education.length > 0) {
-      // Future: Store in dedicated tables
-    }
-
-    // Log social registration info for monitoring
-    if (isSocialRegistration && provider) {
-      // Social registration completed successfully
-    }
-
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = result
-
     return NextResponse.json({ 
-      user: userWithoutPassword, 
+      user: {
+        id: result.id,
+        name: result.name,
+        email: result.email
+      }, 
       message: isSocialRegistration 
         ? `Profile completed successfully! You are now automatically logged in.`
         : "User created successfully. Enhanced profile features will be available after database migration.",

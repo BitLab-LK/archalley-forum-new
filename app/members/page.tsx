@@ -2,6 +2,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +29,7 @@ interface Member {
 export default function MembersPage() {
   const router = useRouter()
   const [members, setMembers] = useState<Member[]>([])
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -100,21 +102,18 @@ export default function MembersPage() {
     return matchesSearch && matchesProfession
   })
 
-  const sortedMembers = [...filteredMembers].sort((a, b) => {
-    switch (sortBy) {
-      case "name":
-        return a.name.localeCompare(b.name)
-      case "posts":
-        return b.posts - a.posts
-      case "upvotes":
-        return b.upvotes - a.upvotes
-      case "recent":
-        return new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime()
-      case "none":
-      default:
-        return 0 // No sorting - keep original order
+  // Ensure logged-in user is first, others random
+  let sortedMembers = filteredMembers;
+  if (user) {
+    const loggedUser = sortedMembers.find(m => m.id === user.id);
+    const otherMembers = sortedMembers.filter(m => m.id !== user.id);
+    // Shuffle other members
+    for (let i = otherMembers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [otherMembers[i], otherMembers[j]] = [otherMembers[j], otherMembers[i]];
     }
-  })
+    sortedMembers = loggedUser ? [loggedUser, ...otherMembers] : otherMembers;
+  }
 
   // Paginated members for display
   const paginatedMembers = sortedMembers.slice(0, page * ITEMS_PER_PAGE)
