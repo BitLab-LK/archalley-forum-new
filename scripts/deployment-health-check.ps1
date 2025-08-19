@@ -18,7 +18,7 @@ Write-Host ""
 Write-Host "1️⃣ Testing basic connectivity..." -ForegroundColor Blue
 try {
     $response = Invoke-WebRequest -Uri $env:DEPLOYMENT_URL -TimeoutSec 10 -ErrorAction Stop
-    Write-Host "✅ Site is accessible" -ForegroundColor Green
+    Write-Host "✅ Site is accessible (Status: $($response.StatusCode))" -ForegroundColor Green
 } catch {
     Write-Host "❌ Site is not accessible: $($_.Exception.Message)" -ForegroundColor Red
 }
@@ -69,6 +69,11 @@ Write-Host "5️⃣ Testing authentication system..." -ForegroundColor Blue
 try {
     $authResponse = Invoke-RestMethod -Uri "$env:DEPLOYMENT_URL/api/auth/session" -TimeoutSec 10
     Write-Host "✅ Authentication endpoint is working" -ForegroundColor Green
+    if ($authResponse.user) {
+        Write-Host "   👤 User session detected: $($authResponse.user.email)" -ForegroundColor Cyan
+    } else {
+        Write-Host "   🔓 No active user session (this is normal)" -ForegroundColor Yellow
+    }
 } catch {
     Write-Host "❌ Authentication endpoint failed: $($_.Exception.Message)" -ForegroundColor Red
 }
