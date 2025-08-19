@@ -1,121 +1,33 @@
-import { withAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 
-export default withAuth(
-  function middleware(req) {
-    // For API routes, check if authentication failed and return JSON error
-    if (req.nextUrl.pathname.startsWith("/api/") && !req.nextauth.token) {
-      // Check if this is an authenticated endpoint
-      const isProtectedEndpoint = 
-        (req.nextUrl.pathname.startsWith("/api/posts") && req.method === "POST") ||
-        req.nextUrl.pathname.startsWith("/api/upload") ||
-        req.nextUrl.pathname.startsWith("/api/users") ||
-        req.nextUrl.pathname.startsWith("/api/comments");
-      
-      if (isProtectedEndpoint) {
-        return new Response(
-          JSON.stringify({ 
-            error: "Unauthorized", 
-            message: "Authentication required" 
-          }),
-          {
-            status: 401,
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        )
-      }
-    }
+export function middleware(request: NextRequest) {
+  console.log('🔍 Middleware processing:', {
+    path: request.nextUrl.pathname,
+    method: request.method,
+    userAgent: request.headers.get('user-agent')?.substring(0, 50)
+  })
 
-    // Add security headers
-    const response = NextResponse.next()
-    
-    // Security headers
-    response.headers.set('X-Frame-Options', 'DENY')
-    response.headers.set('X-Content-Type-Options', 'nosniff')
-    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
-    
-    // Add CSP header in production
-    if (process.env.NODE_ENV === 'production') {
-      response.headers.set(
-        'Content-Security-Policy',
-        "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none';"
-      )
-    }
-    
-    return response
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        // Protect admin routes
-        if (req.nextUrl.pathname.startsWith("/admin")) {
-          return token?.role === "ADMIN"
-        }
-
-        // For API routes, require authentication except for GET requests to public endpoints
-        if (req.nextUrl.pathname.startsWith("/api/")) {
-          // Allow GET requests to posts (public)
-          if (req.nextUrl.pathname.startsWith("/api/posts") && req.method === "GET") {
-            return true
-          }
-          
-          // Allow POST requests to posts (authenticated users only - but allow through middleware)
-          if (req.nextUrl.pathname.startsWith("/api/posts") && req.method === "POST") {
-            return !!token
-          }
-          
-          // Allow GET requests to categories (public)
-          if (req.nextUrl.pathname.startsWith("/api/categories") && req.method === "GET") {
-            return true
-          }
-          
-          // Allow GET requests to users (public - for members page)
-          if (req.nextUrl.pathname.startsWith("/api/users") && req.method === "GET") {
-            return true
-          }
-          
-          // Allow GET requests to comments (needed for modal functionality)
-          if (req.nextUrl.pathname.startsWith("/api/comments") && req.method === "GET") {
-            return true
-          }
-          
-          // Allow debug endpoint
-          if (req.nextUrl.pathname.startsWith("/api/debug")) {
-            return true
-          }
-          
-          // Allow test endpoint
-          if (req.nextUrl.pathname.startsWith("/api/test")) {
-            return true
-          }
-          
-          // Allow health check
-          if (req.nextUrl.pathname.startsWith("/api/health")) {
-            return true
-          }
-          
-          // Allow auth endpoints
-          if (req.nextUrl.pathname.startsWith("/api/auth")) {
-            return true
-          }
-          
-          // Allow registration upload endpoint (for profile photos during registration)
-          if (req.nextUrl.pathname.startsWith("/api/upload/registration")) {
-            return true
-          }
-          
-          // Require authentication for all other API routes
-          return !!token
-        }
-
-        return true
-      },
-    },
+  // Add security headers to all responses
+  const response = NextResponse.next()
+  
+  // Security headers
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  
+  // Add CSP header in production
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none';"
+    )
   }
-)
+
+  console.log('✅ Middleware allowing request:', request.nextUrl.pathname)
+  return response
+}
 
 export const config = {
   matcher: [

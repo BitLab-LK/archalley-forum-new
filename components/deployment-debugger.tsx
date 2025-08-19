@@ -55,7 +55,36 @@ export default function DeploymentDebugger() {
       }
     }
 
-    // Test 4: Posts POST (should fail if not authenticated)
+    // Test 4: Simple POST test (should always work)
+    try {
+      const response = await fetch('/api/test/simple', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain'
+        },
+        body: 'test data'
+      })
+      
+      const responseText = await response.text()
+      let data
+      try {
+        data = JSON.parse(responseText)
+      } catch {
+        data = { rawResponse: responseText.substring(0, 500) }
+      }
+
+      testResults.simplePost = {
+        status: response.status,
+        data: data
+      }
+    } catch (error) {
+      testResults.simplePost = {
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+
+    // Test 5: Posts POST (should fail if not authenticated)
     try {
       const formData = new FormData()
       formData.append('content', 'Test post')
@@ -151,7 +180,8 @@ export default function DeploymentDebugger() {
               <li><strong>Auth Test:</strong> Should return 200 with session info</li>
               <li><strong>Categories Test:</strong> Should return 200 with categories list</li>
               <li><strong>Posts GET Test:</strong> Should return 200 with posts array</li>
-              <li><strong>Posts POST Test:</strong> Should return 401 if not logged in, or 201 if successful</li>
+              <li><strong>Simple POST Test:</strong> Should return 200 with success message</li>
+              <li><strong>Posts POST Test:</strong> Should return 401 if not logged in, or 201/400 if successful</li>
             </ul>
           </div>
         </CardContent>
