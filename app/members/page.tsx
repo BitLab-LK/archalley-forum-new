@@ -47,9 +47,9 @@ export default function MembersPage() {
     router.push(`/profile/${memberId}`)
   }
 
-  // Fetch members from API
+  // Fetch members from API with retry logic
   useEffect(() => {
-    async function fetchMembers() {
+    async function fetchMembers(retryCount = 0, maxRetries = 3) {
       try {
         setIsLoading(true)
         
@@ -58,8 +58,19 @@ export default function MembersPage() {
           ? `${window.location.origin}/api/users`
           : '/api/users'
         
-        console.log('🔍 Fetching members from:', apiUrl)
-        const response = await fetch(apiUrl)
+        console.log(`🔍 Fetching members from: ${apiUrl} (attempt ${retryCount + 1}/${maxRetries + 1})`)
+        
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+        
+        const response = await fetch(apiUrl, {
+          signal: controller.signal,
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        })
+        
+        clearTimeout(timeoutId)
         
         console.log('📡 Response status:', response.status)
         console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
@@ -67,6 +78,17 @@ export default function MembersPage() {
         if (!response.ok) {
           const errorText = await response.text()
           console.error('❌ Failed to fetch members:', response.status, errorText)
+          
+          // Check if it's a retryable error (503, 500, network issues)
+          const isRetryableError = response.status >= 500 || response.status === 503
+          
+          if (isRetryableError && retryCount < maxRetries) {
+            const retryDelay = Math.pow(2, retryCount) * 1000 // Exponential backoff
+            console.log(`🔄 Retrying in ${retryDelay}ms...`)
+            setTimeout(() => fetchMembers(retryCount + 1, maxRetries), retryDelay)
+            return
+          }
+          
           throw new Error(`Failed to fetch members: ${response.status} - ${errorText.substring(0, 100)}`)
         }
         
@@ -80,9 +102,38 @@ export default function MembersPage() {
         const data = await response.json()
         console.log('✅ Successfully fetched members:', data.users?.length || 0)
         setMembers(data.users || [])
+        setError(null) // Clear any previous errors
       } catch (err) {
         console.error('❌ Error fetching members:', err)
-        setError(err instanceof Error ? err.message : 'Failed to load members')
+        
+        // Check if it's a network error and we haven't exceeded retries
+        const isNetworkError = err instanceof Error && (
+          err.name === 'AbortError' ||
+          err.message.includes('fetch') ||
+          err.message.includes('network') ||
+          err.message.includes('connection')
+        )
+        
+        if (isNetworkError && retryCount < maxRetries) {
+          const retryDelay = Math.pow(2, retryCount) * 1000 // Exponential backoff
+          console.log(`🔄 Network error, retrying in ${retryDelay}ms...`)
+          setTimeout(() => fetchMembers(retryCount + 1, maxRetries), retryDelay)
+          return
+        }
+        
+        // Enhanced error messages
+        let errorMessage = 'Failed to load members'
+        if (err instanceof Error) {
+          if (err.message.includes('Database connection')) {
+            errorMessage = 'Database temporarily unavailable. Please try again in a moment.'
+          } else if (err.message.includes('timeout') || err.name === 'AbortError') {
+            errorMessage = 'Request timed out. Please check your connection and try again.'
+          } else {
+            errorMessage = err.message
+          }
+        }
+        
+        setError(errorMessage)
       } finally {
         setIsLoading(false)
       }

@@ -1,21 +1,33 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { prisma, ensureDbConnection, checkDbHealth } from "@/lib/prisma"
 
 export async function GET() {
   try {
-
-// Test database connection first
+    // Use the enhanced database connection handler
     try {
-      await prisma.$connect()
-      
+      await ensureDbConnection()
     } catch (dbError) {
-      console.error('❌ Database connection failed:', dbError)
+      console.error('❌ Database connection failed after retries:', dbError)
+      
+      // Get health check details
+      const healthCheck = await checkDbHealth()
+      
       return NextResponse.json(
         { 
           error: "Database connection failed",
-          details: dbError instanceof Error ? dbError.message : 'Unknown database error'
+          details: dbError instanceof Error ? dbError.message : 'Unknown database error',
+          suggestion: "This is usually a temporary issue with the database server. Please try again in a moment.",
+          timestamp: new Date().toISOString(),
+          healthCheck
         },
-        { status: 500 }
+        { 
+          status: 503, // Service Unavailable
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store',
+            'Retry-After': '30'
+          }
+        }
       )
     }
     
@@ -115,7 +127,7 @@ export async function GET() {
       }
     })
 
-return NextResponse.json({ 
+    return NextResponse.json({ 
       users: formattedUsers,
       metadata: {
         total: formattedUsers.length,
@@ -125,13 +137,34 @@ return NextResponse.json({
     })
   } catch (error) {
     console.error("❌ Error fetching users:", error)
+    
+    // Check if it's a database-related error
+    const isDbError = error instanceof Error && (
+      error.message.includes('database') ||
+      error.message.includes('connection') ||
+      error.message.includes('timeout') ||
+      error.message.includes('ECONNREFUSED') ||
+      error.message.includes('ETIMEDOUT')
+    )
+    
     return NextResponse.json(
       { 
-        error: "Failed to fetch users",
+        error: isDbError ? "Database connection issue" : "Failed to fetch users",
         details: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
+        suggestion: isDbError 
+          ? "The database server is experiencing connectivity issues. Please wait a moment and try again."
+          : "An unexpected error occurred. Please try again.",
+        timestamp: new Date().toISOString(),
+        retryable: isDbError
       },
-      { status: 500 }
+      { 
+        status: isDbError ? 503 : 500, // 503 Service Unavailable for DB issues
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+          ...(isDbError && { 'Retry-After': '30' })
+        }
+      }
     )
   } finally {
     // Ensure database connection is properly closed
