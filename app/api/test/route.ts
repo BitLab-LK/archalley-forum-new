@@ -9,7 +9,8 @@ export async function GET() {
         status: "ok",
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
-        message: "API routes are working"
+        message: "API routes are working",
+        version: "2025-08-19-v2" // Added version to force redeployment
       },
       { 
         status: 200,

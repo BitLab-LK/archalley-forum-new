@@ -23,13 +23,22 @@ const createPostSchema = z.object({
 })
 
 export async function POST(request: Request) {
+  // CRITICAL: Ensure we always return JSON with proper headers
+  const jsonHeaders = {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store'
+  }
+
   try {
     console.log("🚀 POST /api/posts - Starting request")
     
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       console.log("❌ Unauthorized request")
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json(
+        { error: "Unauthorized", message: "Please log in to create a post" }, 
+        { status: 401, headers: jsonHeaders }
+      )
     }
 
     console.log("✅ User authenticated:", session.user.email)
@@ -46,7 +55,7 @@ export async function POST(request: Request) {
           message: "The application is currently unable to connect to the database. Please try again later.",
           details: dbError instanceof Error ? dbError.message : "Database service is unavailable"
         },
-        { status: 503 }
+        { status: 503, headers: jsonHeaders }
       )
     }
 
@@ -62,7 +71,7 @@ export async function POST(request: Request) {
           message: "Failed to parse form data",
           details: parseError instanceof Error ? parseError.message : "Parse error"
         },
-        { status: 400 }
+        { status: 400, headers: jsonHeaders }
       )
     }
 
@@ -93,7 +102,7 @@ export async function POST(request: Request) {
           message: "Please check your input and try again",
           received: { content: !!content, categoryId: !!categoryId, isAnonymous, tags: !!tags }
         },
-        { status: 400 }
+        { status: 400, headers: jsonHeaders }
       )
     }
 
@@ -110,13 +119,13 @@ export async function POST(request: Request) {
         select: { id: true, name: true }
       })
 
-return NextResponse.json(
+      return NextResponse.json(
         { 
           error: "Category not found", 
           message: `The selected category "${data.categoryId}" does not exist`,
           availableCategories
         },
-        { status: 404 }
+        { status: 404, headers: jsonHeaders }
       )
     }
 
@@ -242,10 +251,7 @@ return NextResponse.json(
 
     return NextResponse.json(post, {
       status: 201,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store'
-      }
+      headers: jsonHeaders
     })
   } catch (error) {
     console.error("❌ Error creating post:", error)
@@ -280,9 +286,7 @@ return NextResponse.json(
         },
         { 
           status: 503,
-          headers: {
-            'Content-Type': 'application/json',
-          }
+          headers: jsonHeaders
         }
       )
     }
@@ -298,9 +302,7 @@ return NextResponse.json(
         },
         { 
           status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-          }
+          headers: jsonHeaders
         }
       )
     }
@@ -315,9 +317,7 @@ return NextResponse.json(
       },
       { 
         status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        headers: jsonHeaders
       }
     )
   } finally {
