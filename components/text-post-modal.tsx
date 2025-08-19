@@ -118,15 +118,8 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
     }
   }, [upvotes, downvotes, userVote, post.id, onVoteChange])
   
-  // Debug: Log when modal opens
   useEffect(() => {
-    if (open) {
-      console.log('📝 Text Modal opened:', {
-        postId: post.id,
-        propVotes: { up: post.upvotes, down: post.downvotes, userVote: post.userVote },
-        hookVotes: { up: upvotes, down: downvotes, userVote }
-      })
-    }
+    // Effect for modal open handling can be added here if needed
   }, [open, post.id])
   
   // Check if this is an image post
@@ -161,9 +154,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
     // Fetch both comments and post votes
     const fetchData = async () => {
       try {
-        // Add more explicit error handling for production debugging
         const commentsUrl = `/api/comments?postId=${post.id}`;
-        console.log('Fetching comments from:', commentsUrl);
         
         const commentsRes = await fetch(commentsUrl, {
           method: 'GET',
@@ -319,7 +310,7 @@ await handleVote(type)
     
     // Create optimistic comment for instant UI update
     const optimisticComment = {
-      id: `temp-${Date.now()}`, // Temporary ID
+      id: `comment-${Date.now()}`,
       content: commentInput.trim(),
       createdAt: new Date().toISOString(),
       parentId: null,
@@ -540,7 +531,7 @@ await handleVote(type)
     
     // Create optimistic reply for instant UI update
     const optimisticReply = {
-      id: `temp-${Date.now()}`,
+      id: `comment-${Date.now()}`,
       author: user?.name || "Anonymous",
       authorId: user?.id || "",
       authorImage: user?.image || "/placeholder-user.jpg", 

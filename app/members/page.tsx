@@ -58,7 +58,6 @@ export default function MembersPage() {
           ? `${window.location.origin}/api/users`
           : '/api/users'
         
-        console.log(`🔍 Fetching members from: ${apiUrl} (attempt ${retryCount + 1}/${maxRetries + 1})`)
         
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
@@ -72,9 +71,6 @@ export default function MembersPage() {
         
         clearTimeout(timeoutId)
         
-        console.log('📡 Response status:', response.status)
-        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
-        
         if (!response.ok) {
           const errorText = await response.text()
           console.error('❌ Failed to fetch members:', response.status, errorText)
@@ -84,7 +80,6 @@ export default function MembersPage() {
           
           if (isRetryableError && retryCount < maxRetries) {
             const retryDelay = Math.pow(2, retryCount) * 1000 // Exponential backoff
-            console.log(`🔄 Retrying in ${retryDelay}ms...`)
             setTimeout(() => fetchMembers(retryCount + 1, maxRetries), retryDelay)
             return
           }
@@ -100,7 +95,6 @@ export default function MembersPage() {
         }
         
         const data = await response.json()
-        console.log('✅ Successfully fetched members:', data.users?.length || 0)
         setMembers(data.users || [])
         setError(null) // Clear any previous errors
       } catch (err) {
@@ -116,7 +110,6 @@ export default function MembersPage() {
         
         if (isNetworkError && retryCount < maxRetries) {
           const retryDelay = Math.pow(2, retryCount) * 1000 // Exponential backoff
-          console.log(`🔄 Network error, retrying in ${retryDelay}ms...`)
           setTimeout(() => fetchMembers(retryCount + 1, maxRetries), retryDelay)
           return
         }

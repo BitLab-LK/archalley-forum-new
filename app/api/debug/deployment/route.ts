@@ -4,6 +4,36 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
 export async function GET() {
+  // In production, only allow authenticated admin users
+  if (process.env.NODE_ENV === "production") {
+    try {
+      const session = await getServerSession(authOptions)
+      if (!session?.user?.email) {
+        return NextResponse.json(
+          { error: "Authentication required" },
+          { status: 401 }
+        )
+      }
+      
+      // Check if user is admin (you can adjust this logic based on your admin setup)
+      const user = await prisma.users.findUnique({
+        where: { email: session.user.email }
+      })
+      
+      if (!user?.isVerified) {
+        return NextResponse.json(
+          { error: "Admin access required" },
+          { status: 403 }
+        )
+      }
+    } catch (error) {
+      return NextResponse.json(
+        { error: "Authentication failed" },
+        { status: 401 }
+      )
+    }
+  }
+
   try {
     const diagnostics = {
       timestamp: new Date().toISOString(),
