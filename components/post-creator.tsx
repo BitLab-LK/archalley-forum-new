@@ -244,9 +244,9 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
         setAiProgress(100)
         setAiStatus("Post created successfully!")
 
-        // Reset form
+        // Reset form - DON'T delete the uploaded files as they're now part of the post
         setContent("")
-        clearAllFiles() // Use the hook function to clear files
+        resetUpload() // Use resetUpload instead of clearAllFiles to avoid deleting blobs
         setSelectedTags([])
         setIsAnonymous(false)
         setAiProgress(0)
@@ -275,6 +275,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
         }
         
         setAiProgress(0)
+        // DON'T clear files on error - user might want to retry
       }
 
       // Reset form
@@ -441,7 +442,24 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
 
               {/* Uploaded Images Preview */}
               {hasFiles && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700">
+                      Uploaded Images ({uploadedFiles.length})
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={clearAllFiles}
+                      disabled={isUploading || isSubmitting}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Clear All
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {uploadedFiles.map((file, index) => (
                     <div key={index} className="relative group">
                       <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
@@ -468,6 +486,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
                       </div>
                     </div>
                   ))}
+                  </div>
                 </div>
               )}
             </div>

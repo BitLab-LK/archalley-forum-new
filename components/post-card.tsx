@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
-import Image from "next/image"
+import PostImage from "@/components/post-image"
 import PostModal from "./post-modal"
 import { PostBadges } from "./post-badges"
 
@@ -358,21 +358,28 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   const renderImages = useCallback((images: string[]) => {
     const count = images.length
     
+    // Helper function to render a single image with error handling
+    const renderSingleImage = (src: string, alt: string, className: string, sizes: string, index: number) => {
+      return (
+        <>
+          <PostImage
+            src={src}
+            alt={alt}
+            className={className}
+            fill
+            sizes={sizes}
+            priority={index === 0}
+            onClick={() => openModal(index)}
+          />
+        </>
+      )
+    }
+    
     if (count === 1) {
       return (
-        <div className="w-full flex justify-center items-center cursor-pointer" onClick={() => openModal(0)}>
+        <div className="w-full flex justify-center items-center">
           <div className="relative w-full h-[400px]">
-            <Image
-              src={images[0]}
-              alt="Post image"
-              className="object-contain rounded-lg"
-              fill
-              sizes="100vw"
-              priority
-              onError={(e) => {
-                console.error('❌ Image failed to load:', images[0], e)
-              }}
-            />
+            {renderSingleImage(images[0], "Post image", "object-contain rounded-lg", "100vw", 0)}
           </div>
         </div>
       )
@@ -384,16 +391,9 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
           {images.map((img, i) => (
             <div 
               key={i} 
-              className="relative w-1/2 aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden cursor-pointer max-h-[350px]" 
-              onClick={() => openModal(i)}
+              className="relative w-1/2 aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden max-h-[350px]" 
             >
-              <Image
-                src={img}
-                alt={`Post image ${i + 1}`}
-                className="object-cover w-full h-full"
-                fill
-                sizes="50vw"
-              />
+              {renderSingleImage(img, `Post image ${i + 1}`, "object-cover w-full h-full", "50vw", i)}
             </div>
           ))}
         </div>
@@ -403,13 +403,13 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     if (count === 3) {
       return (
         <div className="grid grid-cols-3 gap-2 mt-2 h-[350px]">
-          <div className="relative col-span-2 row-span-2 h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(0)}>
-            <Image src={images[0]} alt="Post image 1" className="object-cover w-full h-full" fill sizes="66vw" />
+          <div className="relative col-span-2 row-span-2 h-full rounded-lg overflow-hidden bg-gray-100">
+            {renderSingleImage(images[0], "Post image 1", "object-cover w-full h-full", "66vw", 0)}
           </div>
           <div className="flex flex-col gap-2 h-full">
             {[1, 2].map(i => (
-              <div key={i} className="relative flex-1 rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(i)}>
-                <Image src={images[i]} alt={`Post image ${i + 1}`} className="object-cover w-full h-full" fill sizes="33vw" />
+              <div key={i} className="relative flex-1 rounded-lg overflow-hidden bg-gray-100">
+                {renderSingleImage(images[i], `Post image ${i + 1}`, "object-cover w-full h-full", "33vw", i)}
               </div>
             ))}
           </div>
@@ -421,8 +421,8 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
       return (
         <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-2 h-[350px]">
           {images.map((img, i) => (
-            <div key={i} className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(i)}>
-              <Image src={img} alt={`Post image ${i + 1}`} className="object-cover w-full h-full" fill sizes="50vw" />
+            <div key={i} className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100">
+              {renderSingleImage(img, `Post image ${i + 1}`, "object-cover w-full h-full", "50vw", i)}
             </div>
           ))}
         </div>
@@ -433,13 +433,13 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     return (
       <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-2 h-[350px]">
         {images.slice(0, 3).map((img, i) => (
-          <div key={i} className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(i)}>
-            <Image src={img} alt={`Post image ${i + 1}`} className="object-cover w-full h-full" fill sizes="50vw" />
+          <div key={i} className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100">
+            {renderSingleImage(img, `Post image ${i + 1}`, "object-cover w-full h-full", "50vw", i)}
           </div>
         ))}
-        <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openModal(3)}>
-          <Image src={images[3]} alt="Post image 4" className="object-cover w-full h-full" fill sizes="50vw" />
-          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+        <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100">
+          {renderSingleImage(images[3], "Post image 4", "object-cover w-full h-full", "50vw", 3)}
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center pointer-events-none">
             <span className="text-white text-2xl font-bold">+{count - 4}</span>
           </div>
         </div>

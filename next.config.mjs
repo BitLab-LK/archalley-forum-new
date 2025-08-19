@@ -32,6 +32,8 @@ const nextConfig = {
     domains: [
       'localhost',
       'vnvpjdgzlsratzhmyiry.supabase.co',
+      'okxp5q9cgyoio1vt.public.blob.vercel-storage.com',
+      'vdatlalr25kbvq64.public.blob.vercel-storage.com',
     ],
     remotePatterns: [
       {
@@ -42,13 +44,19 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'vdatlalr25kbvq64.public.blob.vercel-storage.com',
+        hostname: '**.public.blob.vercel-storage.com',
         port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
-        hostname: '**.public.blob.vercel-storage.com',
+        hostname: 'okxp5q9cgyoio1vt.public.blob.vercel-storage.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'vdatlalr25kbvq64.public.blob.vercel-storage.com',
         port: '',
         pathname: '/**',
       }
