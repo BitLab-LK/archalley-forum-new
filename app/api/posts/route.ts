@@ -24,27 +24,47 @@ const createPostSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    console.log("🚀 POST /api/posts - Starting request")
+    
     const session = await getServerSession(authOptions)
     if (!session?.user) {
+      console.log("❌ Unauthorized request")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    console.log("✅ User authenticated:", session.user.email)
 
     // Test database connection first
     try {
       await prisma.$connect()
+      console.log("✅ Database connected")
     } catch (dbError) {
-      console.error("Database connection failed:", dbError)
+      console.error("❌ Database connection failed:", dbError)
       return NextResponse.json(
         { 
           error: "Database connection failed", 
           message: "The application is currently unable to connect to the database. Please try again later.",
-          details: "Database service is unavailable"
+          details: dbError instanceof Error ? dbError.message : "Database service is unavailable"
         },
         { status: 503 }
       )
     }
 
-    const formData = await request.formData()
+    let formData: FormData
+    try {
+      formData = await request.formData()
+      console.log("✅ FormData parsed successfully")
+    } catch (parseError) {
+      console.error("❌ Failed to parse FormData:", parseError)
+      return NextResponse.json(
+        { 
+          error: "Invalid request format", 
+          message: "Failed to parse form data",
+          details: parseError instanceof Error ? parseError.message : "Parse error"
+        },
+        { status: 400 }
+      )
+    }
 
     const content = formData.get("content") as string
     const categoryId = formData.get("categoryId") as string
@@ -226,33 +246,81 @@ return NextResponse.json(
     console.error("❌ Error details:", {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : undefined
+      name: error instanceof Error ? error.name : undefined,
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV
     })
+    
+    // Ensure we always disconnect from database in case of error
+    try {
+      await prisma.$disconnect()
+    } catch (disconnectError) {
+      console.error("❌ Failed to disconnect from database:", disconnectError)
+    }
     
     // Check if it's a database connection error
     if (error instanceof Error && (
       error.message.includes('database') || 
       error.message.includes('connection') ||
-      error.message.includes('P1001')
+      error.message.includes('P1001') ||
+      error.message.includes('timeout')
     )) {
       return NextResponse.json(
         { 
           error: "Database connection failed",
           message: "The application is currently unable to connect to the database. Please try again later.",
-          details: "Database service is unavailable"
+          details: error.message,
+          timestamp: new Date().toISOString()
         },
-        { status: 503 }
+        { 
+          status: 503,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
       )
     }
     
+    // Check if it's a validation error
+    if (error instanceof Error && error.message.includes('validation')) {
+      return NextResponse.json(
+        { 
+          error: "Validation failed",
+          message: "The provided data is invalid. Please check your input and try again.",
+          details: error.message,
+          timestamp: new Date().toISOString()
+        },
+        { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      )
+    }
+    
+    // Generic error response
     return NextResponse.json(
       { 
         error: "Failed to create post",
-        message: error instanceof Error ? error.message : "An unexpected error occurred",
-        details: error instanceof Error ? error.stack : undefined
+        message: "An unexpected error occurred while creating the post. Please try again.",
+        details: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString()
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
     )
+  } finally {
+    // Always ensure database is disconnected
+    try {
+      await prisma.$disconnect()
+    } catch (disconnectError) {
+      console.error("❌ Failed to disconnect from database in finally block:", disconnectError)
+    }
   }
 }
 

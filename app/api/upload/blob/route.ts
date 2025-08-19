@@ -262,12 +262,26 @@ const blob = await put(filename, buffer, {
       }, { status: 400 })
     }
   } catch (error) {
-    console.error("Upload error:", error)
+    console.error("❌ Upload error:", error)
+    console.error("❌ Upload error details:", {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV
+    })
+    
     return NextResponse.json({ 
       error: "Upload failed",
-      message: error instanceof Error ? error.message : "Failed to upload files",
-      details: error instanceof Error ? error.stack : undefined
-    }, { status: 500 })
+      message: "Failed to upload files. Please try again.",
+      details: error instanceof Error ? error.message : "Unknown error",
+      timestamp: new Date().toISOString()
+    }, { 
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
   }
 }
 

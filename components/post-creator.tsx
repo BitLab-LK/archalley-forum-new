@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth-context"
 import { useSidebar } from "@/lib/sidebar-context"
+import { DeploymentError, makeApiRequest, logDeploymentError } from "@/lib/deployment-error-handler"
 import { X, Loader2, Cloud } from "lucide-react"
 import Image from "next/image"
 import { Progress } from "@/components/ui/progress"
@@ -214,7 +215,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       formData.append('content', translatedContent || content.trim())
       formData.append('categoryId', categoryId)
       formData.append('isAnonymous', isAnonymous.toString())
-      formData.append('tags', JSON.stringify([...selectedTags, ...tags].slice(0, 5))) // Max 5 tags
+            formData.append("tags", JSON.stringify(selectedTags)) // Max 5 tags
       formData.append('originalLanguage', originalLanguage || 'English')
       formData.append('translatedContent', translatedContent || content.trim())
       
@@ -224,29 +225,57 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
         formData.append(`image_${index}_name`, file.name)
       })
 
-      const response = await fetch("/api/posts", {
-        method: "POST",
-        body: formData, // Send as FormData, not JSON
-      })
+      try {
+        console.log("🚀 Submitting post with data:", {
+          content: content.length,
+          categoryId,
+          hasImages: uploadedFiles.length > 0,
+          isAnonymous,
+          tags: selectedTags.length
+        })
 
-      if (!response.ok) {
-        const errorText = await response.text()
+        const response = await makeApiRequest("/api/posts", {
+          method: "POST",
+          body: formData, // Send as FormData, not JSON
+        })
+
+        console.log("✅ Post created successfully:", response)
+
+        setAiProgress(100)
+        setAiStatus("Post created successfully!")
+
+        // Reset form
+        setContent("")
+        clearAllFiles() // Use the hook function to clear files
+        setSelectedTags([])
+        setIsAnonymous(false)
+        setAiProgress(0)
+        setAiStatus("")
+
+        // Refresh the page to show the new post
+        window.location.reload()
+      } catch (error) {
+        console.error("❌ Failed to create post:", error)
         
-        let errorData: any = {}
-        try {
-          errorData = JSON.parse(errorText)
-        } catch {
-          // Could not parse error as JSON
+        if (error instanceof DeploymentError) {
+          logDeploymentError(error)
+          
+          // Provide specific error messages based on error type
+          if (error.details?.responseType === 'html') {
+            setAiStatus("Authentication error. Please refresh the page and try again.")
+          } else if (error.statusCode === 503) {
+            setAiStatus("Database connection issue. Please try again in a moment.")
+          } else if (error.statusCode === 401) {
+            setAiStatus("Please log in again and try posting.")
+          } else {
+            setAiStatus(error.message || "Failed to create post. Please try again.")
+          }
+        } else {
+          setAiStatus("Network error. Please check your connection and try again.")
         }
         
-        throw new Error(errorData?.message || errorData?.error || `Failed to create post (${response.status})`)
+        setAiProgress(0)
       }
-
-      // Parse the successful response
-      await response.json()
-
-      setAiProgress(100)
-      setAiStatus("Post created successfully!")
 
       // Reset form
       setContent("")

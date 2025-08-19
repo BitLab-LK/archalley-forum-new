@@ -37,6 +37,11 @@ export default withAuth(
             return true
           }
           
+          // Allow POST requests to posts (authenticated users only - but allow through middleware)
+          if (req.nextUrl.pathname.startsWith("/api/posts") && req.method === "POST") {
+            return !!token
+          }
+          
           // Allow GET requests to categories (public)
           if (req.nextUrl.pathname.startsWith("/api/categories") && req.method === "GET") {
             return true

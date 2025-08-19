@@ -11,7 +11,11 @@
     "seed:badges": "tsx scripts/seed-badges.ts",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate deploy",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "deploy:setup": "prisma db push && prisma generate",
+    "deploy:check": "powershell -ExecutionPolicy Bypass -File scripts/deployment-health-check.ps1",
+    "deploy:debug": "curl $DEPLOYMENT_URL/api/debug/deployment",
+    "deploy:health": "curl $DEPLOYMENT_URL/api/health"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.9.1",
