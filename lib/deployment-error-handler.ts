@@ -17,17 +17,6 @@ export async function handleApiResponse<T>(
 ): Promise<T> {
   const responseText = await response.text()
   
-  // Log response details for debugging
-  console.log('API Response Debug:', {
-    endpoint,
-    status: response.status,
-    statusText: response.statusText,
-    headers: Object.fromEntries(response.headers.entries()),
-    contentType: response.headers.get('content-type'),
-    responseLength: responseText.length,
-    responsePreview: responseText.substring(0, 200)
-  })
-
   // Check if response is HTML (common in deployment errors)
   if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
     throw new DeploymentError(

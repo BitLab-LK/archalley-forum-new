@@ -164,17 +164,12 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
           cache: 'no-cache'
         });
         
-        console.log('Comments response status:', commentsRes.status);
-        console.log('Comments response ok:', commentsRes.ok);
-        
         // Handle comments response
         if (commentsRes.ok) {
           const commentsData = await commentsRes.json();
-          console.log('Comments data received:', commentsData);
           
           if (Array.isArray(commentsData.comments)) {
             setComments(commentsData.comments);
-            console.log('Set comments count:', commentsData.comments.length);
             
             // Keep all replies collapsed by default (empty Set)
             setExpandedReplies(new Set<string>());

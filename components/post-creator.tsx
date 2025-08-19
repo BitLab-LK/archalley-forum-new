@@ -226,20 +226,10 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       })
 
       try {
-        console.log("🚀 Submitting post with data:", {
-          content: content.length,
-          categoryId,
-          hasImages: uploadedFiles.length > 0,
-          isAnonymous,
-          tags: selectedTags.length
-        })
-
-        const response = await makeApiRequest("/api/posts", {
+        await makeApiRequest("/api/posts", {
           method: "POST",
           body: formData, // Send as FormData, not JSON
         })
-
-        console.log("✅ Post created successfully:", response)
 
         setAiProgress(100)
         setAiStatus("Post created successfully!")

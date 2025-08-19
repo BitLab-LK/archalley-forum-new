@@ -28,8 +28,6 @@ export default function PostImage({
   const [retryCount, setRetryCount] = useState(0)
   const [useNativeImg, setUseNativeImg] = useState(false)
 
-  console.log('🔍 PostImage rendering:', { src, alt, imageError, isLoading, retryCount, useNativeImg })
-
   // Auto-retry once after 2 seconds if image fails to load
   useEffect(() => {
     if (imageError && retryCount === 0) {

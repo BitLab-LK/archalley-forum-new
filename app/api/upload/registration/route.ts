@@ -31,43 +31,29 @@ function sanitizeFilename(filename: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔍 Registration upload request received')
-    
     // Get client IP for rate limiting
     const ip = request.headers.get('x-forwarded-for') || 
                request.headers.get('x-real-ip') || 
                'unknown'
 
-    console.log('🌐 Client IP:', ip)
-
     // Check rate limit for registration uploads
     if (!checkRegistrationRateLimit(ip)) {
-      console.log('⚠️ Rate limit exceeded for IP:', ip)
       return NextResponse.json({ error: "Rate limit exceeded. Please try again later." }, { status: 429 })
     }
 
     const data = await request.formData()
     const files = data.getAll("images") as File[]
 
-    console.log('📁 Files received:', files.length)
-
     if (!files || files.length === 0) {
-      console.log('❌ No files uploaded')
       return NextResponse.json({ error: "No files uploaded" }, { status: 400 })
     }
 
     // Only allow 1 file for registration (profile picture)
     if (files.length > 1) {
-      console.log('❌ Too many files:', files.length)
       return NextResponse.json({ error: "Only 1 profile picture allowed for registration" }, { status: 400 })
     }
 
     const file = files[0]
-    console.log('📄 File details:', {
-      name: file.name,
-      size: file.size,
-      type: file.type
-    })
     
     // Stricter validation for registration uploads
     const maxSize = 2 * 1024 * 1024 // 2MB for registration
@@ -75,7 +61,6 @@ export async function POST(request: NextRequest) {
 
     // Validate file type
     if (!allowedTypes.includes(file.type)) {
-      console.log('❌ Invalid file type:', file.type)
       return NextResponse.json({ error: `Invalid file type: ${file.type}. Only JPEG, PNG, and WebP are allowed.` }, { status: 400 })
     }
 
@@ -89,12 +74,10 @@ export async function POST(request: NextRequest) {
     let sanitizedFilename = sanitizeFilename(file.name)
     let filename = `registration-${Date.now()}-${sanitizedFilename}`
 
-    console.log('🔄 Attempting to upload to Vercel Blob:', filename)
-
     try {
       // Check if BLOB_READ_WRITE_TOKEN is available
       if (!process.env.BLOB_READ_WRITE_TOKEN) {
-        console.error('❌ BLOB_READ_WRITE_TOKEN not found in environment variables')
+        console.error('BLOB_READ_WRITE_TOKEN not found in environment variables')
         return NextResponse.json({ error: "Blob storage not configured" }, { status: 500 })
       }
 
@@ -102,8 +85,6 @@ export async function POST(request: NextRequest) {
         access: 'public',
         contentType: file.type,
       })
-
-      console.log('✅ Upload successful:', blob.url)
 
       return NextResponse.json({
         images: [{
@@ -114,7 +95,7 @@ export async function POST(request: NextRequest) {
         }]
       })
     } catch (error) {
-      console.error("❌ Blob upload error:", error)
+      console.error("Blob upload error:", error)
       return NextResponse.json({ error: "Failed to upload to storage" }, { status: 500 })
     }
   } catch (error) {

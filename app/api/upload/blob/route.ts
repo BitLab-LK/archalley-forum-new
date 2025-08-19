@@ -123,7 +123,7 @@ const uploadPromises = files.map(async (file) => {
             }
           }
         } catch (err) {
-          console.error(`❌ Image processing error for ${file.name}:`, err)
+          console.error(`Image processing error for ${file.name}:`, err)
           // If processing fails, we'll continue with original file
         }
       }
@@ -167,7 +167,7 @@ const uploadPromises = files.map(async (file) => {
             
           }
         } catch (err) {
-          console.error(`❌ Final compression failed for ${file.name}:`, err)
+          console.error(`Final compression failed for ${file.name}:`, err)
         }
       }
 
@@ -190,10 +190,10 @@ const blob = await put(filename, buffer, {
           const testResponse = await fetch(blob.url, { method: 'HEAD' })
           
           if (!testResponse.ok) {
-            console.warn(`⚠️ Blob may not be immediately accessible: ${testResponse.status}`)
+            console.warn(`Blob may not be immediately accessible: ${testResponse.status}`)
           }
         } catch (testError) {
-          console.warn(`⚠️ Could not test blob accessibility:`, testError)
+          console.warn(`Could not test blob accessibility:`, testError)
         }
 
         return {
@@ -205,10 +205,7 @@ const blob = await put(filename, buffer, {
           downloadUrl: blob.downloadUrl
         }
       } catch (blobError) {
-        console.error(`❌ Blob upload failed for ${filename}:`)
-        console.error('Error details:', blobError)
-        console.error('Error message:', blobError instanceof Error ? blobError.message : 'Unknown error')
-        console.error('Error stack:', blobError instanceof Error ? blobError.stack : 'No stack trace')
+        console.error(`Blob upload failed for ${filename}:`, blobError)
         
         // Provide more specific error information
         let specificError = `Failed to upload ${filename} to blob storage`
@@ -262,14 +259,7 @@ const blob = await put(filename, buffer, {
       }, { status: 400 })
     }
   } catch (error) {
-    console.error("❌ Upload error:", error)
-    console.error("❌ Upload error details:", {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : undefined,
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV
-    })
+    console.error("Upload error:", error)
     
     return NextResponse.json({ 
       error: "Upload failed",
