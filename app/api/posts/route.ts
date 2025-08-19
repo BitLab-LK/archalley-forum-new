@@ -31,12 +31,28 @@ export async function POST(request: Request) {
 
   try {
     console.log("🚀 POST /api/posts - Starting request")
+    console.log("🔍 Request headers:", Object.fromEntries(request.headers.entries()))
     
     const session = await getServerSession(authOptions)
+    console.log("🔍 Session status:", {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userId: session?.user?.id,
+      userEmail: session?.user?.email
+    })
+    
     if (!session?.user) {
-      console.log("❌ Unauthorized request")
+      console.log("❌ Unauthorized request - no valid session")
       return NextResponse.json(
-        { error: "Unauthorized", message: "Please log in to create a post" }, 
+        { 
+          error: "Unauthorized", 
+          message: "Please log in to create a post",
+          debug: {
+            hasSession: !!session,
+            environment: process.env.NODE_ENV,
+            timestamp: new Date().toISOString()
+          }
+        }, 
         { status: 401, headers: jsonHeaders }
       )
     }

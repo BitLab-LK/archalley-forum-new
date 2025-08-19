@@ -2,7 +2,32 @@ import { withAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
 
 export default withAuth(
-  function middleware(_req) {
+  function middleware(req) {
+    // For API routes, check if authentication failed and return JSON error
+    if (req.nextUrl.pathname.startsWith("/api/") && !req.nextauth.token) {
+      // Check if this is an authenticated endpoint
+      const isProtectedEndpoint = 
+        (req.nextUrl.pathname.startsWith("/api/posts") && req.method === "POST") ||
+        req.nextUrl.pathname.startsWith("/api/upload") ||
+        req.nextUrl.pathname.startsWith("/api/users") ||
+        req.nextUrl.pathname.startsWith("/api/comments");
+      
+      if (isProtectedEndpoint) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Unauthorized", 
+            message: "Authentication required" 
+          }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        )
+      }
+    }
+
     // Add security headers
     const response = NextResponse.next()
     
