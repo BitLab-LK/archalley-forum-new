@@ -240,7 +240,13 @@ return NextResponse.json(
       // Don't fail the post creation if badge checking fails
     }
 
-    return NextResponse.json(post)
+    return NextResponse.json(post, {
+      status: 201,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store'
+      }
+    })
   } catch (error) {
     console.error("❌ Error creating post:", error)
     console.error("❌ Error details:", {

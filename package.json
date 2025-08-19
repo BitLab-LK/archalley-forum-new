@@ -13,7 +13,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "deploy:setup": "prisma db push && prisma generate",
-    "deploy:check": "powershell -ExecutionPolicy Bypass -File scripts/deployment-health-check.ps1"
+    "deploy:check": "powershell -ExecutionPolicy Bypass -File scripts/deployment-health-check.ps1",
+    "deploy:test": "powershell -ExecutionPolicy Bypass -File scripts/test-deployment-api.ps1"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.9.1",

@@ -62,6 +62,11 @@ export default withAuth(
             return true
           }
           
+          // Allow test endpoint
+          if (req.nextUrl.pathname.startsWith("/api/test")) {
+            return true
+          }
+          
           // Allow health check
           if (req.nextUrl.pathname.startsWith("/api/health")) {
             return true
