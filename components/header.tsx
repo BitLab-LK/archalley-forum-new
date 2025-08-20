@@ -37,15 +37,32 @@ export default function Header() {
 
   const handleSignOut = async () => {
     try {
-      // Use the configured signOut page from NextAuth
+      // In production, use the logout page for more reliable logout
+      if (process.env.NODE_ENV === 'production') {
+        window.location.href = "/auth/logout"
+        return
+      }
+
+      // For development, use the direct approach
+      await fetch('/api/auth/manual-logout', {
+        method: 'POST',
+        credentials: 'include',
+      })
+
       await signOut({ 
         callbackUrl: "/",
-        redirect: true
+        redirect: false
       })
+
+      window.location.href = "/"
     } catch (error) {
       console.error("Logout error:", error)
-      // Fallback: force redirect to home page
-      window.location.href = "/"
+      // Fallback: force complete logout
+      if (typeof window !== 'undefined') {
+        localStorage.clear()
+        sessionStorage.clear()
+        window.location.href = "/"
+      }
     }
   }
 

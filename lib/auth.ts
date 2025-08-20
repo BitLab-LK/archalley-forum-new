@@ -80,6 +80,10 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
+      // For logout, always redirect to home page
+      if (url.includes('signout') || url.includes('logout')) {
+        return baseUrl
+      }
       // Allows relative callback URLs
       if (url.startsWith("/")) return `${baseUrl}${url}`
       // Allows callback URLs on the same origin
@@ -184,7 +188,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/auth/register?tab=login", // Updated to use the register page with login tab
-    signOut: "/",  // Redirect to home page after sign out
+    signOut: "/auth/logout",  // Use custom logout page for better control
     error: "/auth/error", // Error code passed in query string as ?error=
   },
   events: {
@@ -201,13 +205,31 @@ export const authOptions: NextAuthOptions = {
   useSecureCookies: process.env.NODE_ENV === "production",
   cookies: {
     sessionToken: {
-      name: `next-auth.session-token`,
+      name: process.env.NODE_ENV === "production" ? "__Secure-next-auth.session-token" : "next-auth.session-token",
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
-        // Remove problematic domain configuration - let NextAuth handle it automatically
+        // Let NextAuth handle domain automatically
+      },
+    },
+    callbackUrl: {
+      name: process.env.NODE_ENV === "production" ? "__Secure-next-auth.callback-url" : "next-auth.callback-url",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+    csrfToken: {
+      name: process.env.NODE_ENV === "production" ? "__Host-next-auth.csrf-token" : "next-auth.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
       },
     },
   },
