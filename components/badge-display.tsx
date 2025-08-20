@@ -23,6 +23,13 @@ const levelColors = {
   PLATINUM: "bg-purple-100 text-purple-800 border-purple-300"
 }
 
+const fallbackIcons = {
+  BRONZE: "●",
+  SILVER: "◆", 
+  GOLD: "★",
+  PLATINUM: "♦"
+}
+
 const sizeClasses = {
   sm: "text-xs px-1.5 py-0.5",
   md: "text-sm px-2 py-1", 
@@ -57,7 +64,12 @@ export default function BadgeDisplay({
                 className={`${levelColors[badge.level as keyof typeof levelColors]} ${sizeClasses[size]} transition-all hover:scale-105 cursor-help`}
                 style={{ backgroundColor: badge.color + "20", borderColor: badge.color + "40" }}
               >
-                <span className="mr-1">{badge.icon}</span>
+                <span className="mr-1">
+                  {badge.icon && badge.icon !== '?' && badge.icon !== '�' 
+                    ? badge.icon 
+                    : fallbackIcons[badge.level as keyof typeof fallbackIcons] || "●"
+                  }
+                </span>
                 {showNames && <span>{badge.name}</span>}
               </Badge>
             </TooltipTrigger>

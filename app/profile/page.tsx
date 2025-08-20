@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,12 +14,42 @@ import { Edit, Camera, CheckCircle, MapPin, Calendar, LinkIcon } from "lucide-re
 import { useAuth } from "@/lib/auth-context"
 import { AuthGuard } from "@/components/auth-guard"
 import ActivityFeed from "@/components/activity-feed"
+import { PostBadges } from "@/components/post-badges"
+
+interface UserBadge {
+  id: string
+  badges: {
+    id: string
+    name: string
+    description: string
+    icon: string
+    color: string
+    level: string
+    type: string
+  }
+  earnedAt: Date
+}
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  const [userBadges, setUserBadges] = useState<UserBadge[]>([])
   const { user } = useAuth()
+
+  // Memoized badge transformation to prevent unnecessary re-renders
+  const transformedBadges = useMemo(() => 
+    userBadges.map(ub => ({
+      id: ub.badges.id,
+      name: ub.badges.name,
+      description: ub.badges.description,
+      icon: ub.badges.icon,
+      color: ub.badges.color,
+      level: ub.badges.level,
+      type: ub.badges.type
+    })), [userBadges]
+  )
+
   const [profileData, setProfileData] = useState({
     // Basic Information
     firstName: "",
@@ -67,12 +97,17 @@ export default function ProfilePage() {
       if (!user?.id) return
       
       try {
-        const response = await fetch(`/api/users/${user.id}`)
-        if (!response.ok) {
+        // Parallel API calls for better performance
+        const [profileResponse, badgesResponse] = await Promise.all([
+          fetch(`/api/users/${user.id}`),
+          fetch(`/api/badges/user/${user.id}`)
+        ])
+
+        if (!profileResponse.ok) {
           throw new Error("Failed to fetch user profile")
         }
         
-        const data = await response.json()
+        const data = await profileResponse.json()
         setProfileData({
           // Basic Information
           firstName: data.user.firstName || "",
@@ -112,9 +147,18 @@ export default function ProfilePage() {
             instagram: data.user.instagramUrl || "",
           },
         })
+
+        // Handle badges response in parallel
+        if (badgesResponse.ok) {
+          const badgesData = await badgesResponse.json()
+          setUserBadges(badgesData || [])
+        } else {
+          // console.error("Error fetching badges:", badgesError) // Removed for performance
+          setUserBadges([])
+        }
       } catch (err) {
         setError("Failed to load profile data")
-        console.error("Profile fetch error:", err)
+        // console.error("Profile fetch error:", err) // Removed for performance
       } finally {
         setIsLoading(false)
       }
@@ -123,7 +167,7 @@ export default function ProfilePage() {
     fetchUserProfile()
   }, [user?.id])
 
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = useCallback(async () => {
     if (!user?.id) return
 
     try {
@@ -171,9 +215,9 @@ export default function ProfilePage() {
       setIsEditing(false)
     } catch (err) {
       setError("Failed to update profile")
-      console.error("Profile update error:", err)
+      // console.error("Profile update error:", err) // Removed for performance
     }
-  }
+  }, [user?.id, profileData])
 
   if (isLoading) {
     return (
@@ -200,8 +244,8 @@ export default function ProfilePage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* Profile Header */}
-          <Card>
-            <CardContent className="p-6">
+          <Card className="bg-white border-yellow-200 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-8">
               <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
                 <div className="relative">
                   <Avatar className="w-24 h-24">
@@ -216,15 +260,29 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <h1 className="text-2xl font-bold">{profileData.name}</h1>
-                    {user?.isVerified && <CheckCircle className="w-6 h-6 text-blue-500" />}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <h1 className="text-2xl font-bold">{profileData.name}</h1>
+                      {user?.isVerified && <CheckCircle className="w-6 h-6 text-yellow-500" />}
+                    </div>
+                    {/* Only show "Public Profile" for admins viewing or when specified */}
+                    {(user?.role === 'ADMIN' || user?.isAdmin) && (
+                      <Badge variant="outline">Public Profile</Badge>
+                    )}
                   </div>
 
+                  {/* User Badges - Prominently displayed after name */}
+                  {userBadges.length > 0 && (
+                    <div className="mb-3">
+                      <PostBadges 
+                        badges={transformedBadges}
+                        maxDisplay={5}
+                        size="md"
+                      />
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
-                    <Badge variant="secondary" className="text-sm">
-                      {user?.rank || "New Member"}
-                    </Badge>
                     {profileData.location && (
                     <span className="flex items-center">
                       <MapPin className="w-4 h-4 mr-1" />
@@ -253,7 +311,14 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <Button onClick={() => setIsEditing(!isEditing)} variant={isEditing ? "secondary" : "default"}>
+                <Button 
+                  onClick={() => setIsEditing(!isEditing)} 
+                  variant={isEditing ? "secondary" : "default"}
+                  className={isEditing 
+                    ? "bg-gray-100 hover:bg-gray-200 text-gray-700" 
+                    : "bg-yellow-500 hover:bg-yellow-600 text-white shadow-md"
+                  }
+                >
                   <Edit className="w-4 h-4 mr-2" />
                   {isEditing ? "Cancel" : "Edit Profile"}
                 </Button>
@@ -263,19 +328,24 @@ export default function ProfilePage() {
 
           {/* Profile Content */}
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="posts">Posts</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-              <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 bg-yellow-50 border border-yellow-200">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-yellow-200 data-[state=active]:text-amber-800">Overview</TabsTrigger>
+              <TabsTrigger value="posts" className="data-[state=active]:bg-yellow-200 data-[state=active]:text-amber-800">Posts</TabsTrigger>
+              <TabsTrigger value="settings" className="data-[state=active]:bg-yellow-200 data-[state=active]:text-amber-800">Settings</TabsTrigger>
+              <TabsTrigger value="activity" className="data-[state=active]:bg-yellow-200 data-[state=active]:text-amber-800">Activity</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Basic Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Basic Information</CardTitle>
+                <Card className="bg-white border-yellow-100 shadow-md hover:shadow-lg hover:border-yellow-200 transition-all duration-300">
+                  <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b border-yellow-100">
+                    <CardTitle className="text-amber-800 flex items-center gap-2">
+                      <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <Edit className="w-4 h-4 text-amber-600" />
+                      </div>
+                      Basic Information
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {isEditing ? (
@@ -345,9 +415,14 @@ export default function ProfilePage() {
                 </Card>
 
                 {/* Professional Profile */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Professional Profile</CardTitle>
+                <Card className="bg-white border-yellow-100 shadow-md hover:shadow-lg hover:border-yellow-200 transition-all duration-300">
+                  <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b border-yellow-100">
+                    <CardTitle className="text-amber-800 flex items-center gap-2">
+                      <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <Calendar className="w-4 h-4 text-amber-600" />
+                      </div>
+                      Professional Profile
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {isEditing ? (
@@ -432,7 +507,7 @@ export default function ProfilePage() {
                           <Label className="text-sm font-medium">Skills</Label>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {profileData.skills.map((skill, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs">
+                              <Badge key={`skill-${index}`} variant="secondary" className="text-xs bg-yellow-100 text-amber-800 border border-yellow-300 hover:bg-yellow-200 transition-colors">
                                 {skill}
                               </Badge>
                             ))}
@@ -448,9 +523,14 @@ export default function ProfilePage() {
               {/* Portfolio & Social Links Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Portfolio/Website Links */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Portfolio & Links</CardTitle>
+                <Card className="bg-white border-yellow-100 shadow-md hover:shadow-lg hover:border-yellow-200 transition-all duration-300">
+                  <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b border-yellow-100">
+                    <CardTitle className="text-amber-800 flex items-center gap-2">
+                      <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <LinkIcon className="w-4 h-4 text-amber-600" />
+                      </div>
+                      Portfolio & Links
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {isEditing ? (
@@ -486,9 +566,14 @@ export default function ProfilePage() {
                 </Card>
 
                 {/* Social Media Profiles */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Social Media</CardTitle>
+                <Card className="bg-white border-yellow-100 shadow-md hover:shadow-lg hover:border-yellow-200 transition-all duration-300">
+                  <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b border-yellow-100">
+                    <CardTitle className="text-amber-800 flex items-center gap-2">
+                      <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <LinkIcon className="w-4 h-4 text-amber-600" />
+                      </div>
+                      Social Media
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {isEditing ? (
@@ -582,20 +667,25 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Work Experience */}
                   {profileData.workExperience?.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Work Experience</CardTitle>
+                    <Card className="bg-white border-yellow-100 shadow-md hover:shadow-lg hover:border-yellow-200 transition-all duration-300">
+                      <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b border-yellow-100">
+                        <CardTitle className="text-amber-800 flex items-center gap-2">
+                          <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <Calendar className="w-4 h-4 text-amber-600" />
+                          </div>
+                          Work Experience
+                        </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4">
+                      <CardContent className="space-y-4 bg-yellow-25">
                         {profileData.workExperience.map((exp, index) => (
-                          <div key={index} className="border-l-2 border-gray-200 pl-4 pb-4">
-                            <h4 className="font-semibold text-sm">{exp.jobTitle}</h4>
-                            <p className="text-sm text-gray-600">{exp.company}</p>
-                            <p className="text-xs text-gray-500">
+                          <div key={index} className="border-l-4 border-yellow-300 bg-yellow-50 rounded-r-lg pl-4 py-3 hover:bg-yellow-100 transition-colors duration-200">
+                            <h4 className="font-semibold text-sm text-amber-800">{exp.jobTitle}</h4>
+                            <p className="text-sm text-amber-700">{exp.company}</p>
+                            <p className="text-xs text-amber-600">
                               {exp.startDate} - {exp.isCurrent ? "Present" : exp.endDate}
                             </p>
                             {exp.description && (
-                              <p className="text-sm text-gray-600 mt-2">{exp.description}</p>
+                              <p className="text-sm text-amber-700 mt-2">{exp.description}</p>
                             )}
                           </div>
                         ))}
@@ -605,20 +695,25 @@ export default function ProfilePage() {
 
                   {/* Education */}
                   {profileData.education?.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Education</CardTitle>
+                    <Card className="bg-white border-yellow-100 shadow-md hover:shadow-lg hover:border-yellow-200 transition-all duration-300">
+                      <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b border-yellow-100">
+                        <CardTitle className="text-amber-800 flex items-center gap-2">
+                          <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <Calendar className="w-4 h-4 text-amber-600" />
+                          </div>
+                          Education
+                        </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4">
+                      <CardContent className="space-y-4 bg-yellow-25">
                         {profileData.education.map((edu, index) => (
-                          <div key={index} className="border-l-2 border-gray-200 pl-4 pb-4">
-                            <h4 className="font-semibold text-sm">{edu.degree}</h4>
-                            <p className="text-sm text-gray-600">{edu.institution}</p>
-                            <p className="text-xs text-gray-500">
+                          <div key={index} className="border-l-4 border-yellow-300 bg-yellow-50 rounded-r-lg pl-4 py-3 hover:bg-yellow-100 transition-colors duration-200">
+                            <h4 className="font-semibold text-sm text-amber-800">{edu.degree}</h4>
+                            <p className="text-sm text-amber-700">{edu.institution}</p>
+                            <p className="text-xs text-amber-600">
                               {edu.startDate} - {edu.isCurrent ? "Present" : edu.endDate}
                             </p>
                             {edu.description && (
-                              <p className="text-sm text-gray-600 mt-2">{edu.description}</p>
+                              <p className="text-sm text-amber-700 mt-2">{edu.description}</p>
                             )}
                           </div>
                         ))}
@@ -629,11 +724,11 @@ export default function ProfilePage() {
               )}
 
               {isEditing && (
-                <div className="flex justify-end space-x-4">
-                  <Button variant="outline" onClick={() => setIsEditing(false)}>
+                <div className="flex justify-end space-x-4 p-6 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <Button variant="outline" onClick={() => setIsEditing(false)} className="border-yellow-300 text-amber-700 hover:bg-yellow-100">
                     Cancel
                   </Button>
-                  <Button onClick={handleSaveProfile} style={{ backgroundColor: '#ffa500', borderColor: '#ffa500' }}>
+                  <Button onClick={handleSaveProfile} className="bg-yellow-500 hover:bg-yellow-600 text-white shadow-md">
                     Save Changes
                   </Button>
                 </div>
@@ -641,10 +736,15 @@ export default function ProfilePage() {
             </TabsContent>
 
             <TabsContent value="posts">
-              <Card>
-                <CardHeader>
-                  <CardTitle>My Posts</CardTitle>
-                  <CardDescription>All your forum posts and contributions</CardDescription>
+              <Card className="bg-white border-yellow-100 shadow-md hover:shadow-lg hover:border-yellow-200 transition-all duration-300">
+                <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b border-yellow-100">
+                  <CardTitle className="text-amber-800 flex items-center gap-2">
+                    <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                      <Edit className="w-4 h-4 text-amber-600" />
+                    </div>
+                    My Posts
+                  </CardTitle>
+                  <CardDescription className="text-amber-700">All your forum posts and contributions</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-center text-gray-500 py-8">Your posts will appear here</p>
@@ -653,10 +753,15 @@ export default function ProfilePage() {
             </TabsContent>
 
             <TabsContent value="settings">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Privacy Settings</CardTitle>
-                  <CardDescription>Manage your privacy and visibility preferences</CardDescription>
+              <Card className="bg-white border-yellow-100 shadow-md hover:shadow-lg hover:border-yellow-200 transition-all duration-300">
+                <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b border-yellow-100">
+                  <CardTitle className="text-amber-800 flex items-center gap-2">
+                    <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                      <Edit className="w-4 h-4 text-amber-600" />
+                    </div>
+                    Privacy Settings
+                  </CardTitle>
+                  <CardDescription className="text-amber-700">Manage your privacy and visibility preferences</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex items-center justify-between">

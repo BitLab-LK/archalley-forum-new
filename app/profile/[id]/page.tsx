@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,6 +12,21 @@ import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import PostCard from "@/components/post-card"
 import ActivityFeed from "@/components/activity-feed"
+import { PostBadges } from "@/components/post-badges"
+
+interface UserBadge {
+  id: string
+  badges: {
+    id: string
+    name: string
+    description: string
+    icon: string
+    color: string
+    level: string
+    type: string
+  }
+  earnedAt: Date
+}
 
 interface User {
   id: string
@@ -89,6 +104,7 @@ export default function UserProfilePage() {
   const { user: currentUser } = useAuth() // Get current logged-in user
   const [user, setUser] = useState<User | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
+  const [userBadges, setUserBadges] = useState<UserBadge[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -98,33 +114,46 @@ export default function UserProfilePage() {
   // Check if we're coming from an edit (to force refresh)
   const wasUpdated = searchParams.get('updated')
 
-  // Calculate total comments and votes for user's posts
-  const totalComments = posts.reduce((sum, post) => sum + post.comments, 0)
-  const totalUpvotes = posts.reduce((sum, post) => sum + post.upvotes, 0)
-  const totalDownvotes = posts.reduce((sum, post) => sum + post.downvotes, 0)
+  // Memoized badge transformation to prevent unnecessary re-renders
+  const transformedBadges = useMemo(() => 
+    userBadges.map(ub => ({
+      id: ub.badges.id,
+      name: ub.badges.name,
+      description: ub.badges.description,
+      icon: ub.badges.icon,
+      color: ub.badges.color,
+      level: ub.badges.level,
+      type: ub.badges.type
+    })), [userBadges]
+  )
 
-  // Handle post deletion
-  const handleDeletePost = async (postId: string) => {
-    setPosts(posts.filter(post => post.id !== postId))
-  }
+  // Memoized calculations to prevent unnecessary re-renders
+  const totalComments = useMemo(() => posts.reduce((sum, post) => sum + post.comments, 0), [posts])
+  const totalUpvotes = useMemo(() => posts.reduce((sum, post) => sum + post.upvotes, 0), [posts])
+  const totalDownvotes = useMemo(() => posts.reduce((sum, post) => sum + post.downvotes, 0), [posts])
+
+  // Optimized handlers with useCallback
+  const handleDeletePost = useCallback(async (postId: string) => {
+    setPosts(prevPosts => prevPosts.filter(post => post.id !== postId))
+  }, [])
 
   // Handle comment count changes - this will trigger recalculation of totals
-  const handleCommentCountChange = (postId: string, newCount: number) => {
-    setPosts(posts.map(post => 
+  const handleCommentCountChange = useCallback((postId: string, newCount: number) => {
+    setPosts(prevPosts => prevPosts.map(post => 
       post.id === postId 
         ? { ...post, comments: newCount }
         : post
     ))
-  }
+  }, [])
 
   // Handle vote changes - this will trigger recalculation of totals
-  const handleVoteChange = (postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => {
-    setPosts(posts.map(post => 
+  const handleVoteChange = useCallback((postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => {
+    setPosts(prevPosts => prevPosts.map(post => 
       post.id === postId 
         ? { ...post, upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
         : post
     ))
-  }
+  }, [])
 
   useEffect(() => {
     async function fetchUserProfile() {
@@ -148,12 +177,17 @@ export default function UserProfilePage() {
         }
 
         const userData = await response.json()
-        console.log('📸 User data fetched:', { id: userData.user?.id, image: userData.user?.image })
+        // console.log('📸 User data fetched:', { id: userData.user?.id, image: userData.user?.image }) // Removed for performance
         setUser(userData.user) // Extract user from the response object
 
-        // Fetch user's posts
+        // Fetch user's posts and badges in parallel for better performance
+        const [postsPromise, badgesPromise] = await Promise.all([
+          fetch(`/api/posts?authorId=${userId}${cacheBuster}`),
+          fetch(`/api/badges/user/${userId}${cacheBuster}`)
+        ])
+        
         try {
-          const postsResponse = await fetch(`/api/posts?authorId=${userId}${cacheBuster}`)
+          const postsResponse = postsPromise
           if (postsResponse.ok) {
             const postsContentType = postsResponse.headers.get('content-type')
             if (postsContentType && postsContentType.includes('application/json')) {
@@ -171,6 +205,21 @@ export default function UserProfilePage() {
         } catch (postsError) {
           console.warn('Error fetching posts:', postsError)
           setPosts([])
+        }
+
+        // Handle badges response
+        try {
+          const badgesResponse = badgesPromise
+          if (badgesResponse.ok) {
+            const badgesData = await badgesResponse.json()
+            setUserBadges(badgesData || [])
+          } else {
+            console.warn('Failed to fetch badges:', badgesResponse.status)
+            setUserBadges([])
+          }
+        } catch (badgesError) {
+          console.warn('Error fetching badges:', badgesError)
+          setUserBadges([])
         }
       } catch (err) {
         console.error('Error fetching user profile:', err)
@@ -247,7 +296,7 @@ export default function UserProfilePage() {
                   <div className="flex items-center gap-2">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{user.name}</h1>
                     {user.isVerified && (
-                      <CheckCircle className="w-6 h-6 text-blue-500" />
+                      <CheckCircle className="w-6 h-6 text-yellow-500" />
                     )}
                   </div>
                   
@@ -259,12 +308,23 @@ export default function UserProfilePage() {
                       </Button>
                     </Link>
                   )}
-                  {!isOwnProfile && (
+                  {!isOwnProfile && (currentUser?.role === 'ADMIN' || currentUser?.isAdmin) && (
                     <Badge variant="outline">
                       Public Profile
                     </Badge>
                   )}
                 </div>
+
+                {/* User Badges - Prominently displayed after name */}
+                {userBadges.length > 0 && (
+                  <div className="mb-3">
+                    <PostBadges 
+                      badges={transformedBadges}
+                      maxDisplay={5}
+                      size="md"
+                    />
+                  </div>
+                )}
 
                 {user.headline && (
                   <div className="flex items-center text-gray-500 dark:text-gray-400 mb-3">
@@ -274,9 +334,6 @@ export default function UserProfilePage() {
                 )}
 
                 <div className="flex items-center gap-4 mb-4">
-                  {user.rank && (
-                    <Badge variant="secondary">{user.rank}</Badge>
-                  )}
                   <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                     <Calendar className="w-4 h-4 mr-1" />
                     <span>Joined {user.joinDate}</span>
@@ -381,16 +438,6 @@ export default function UserProfilePage() {
                             : user.location || user.city || user.country || 'Not specified'
                           }
                         </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
-                        <Trophy className="w-4 h-4 text-yellow-600" />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Rank</label>
-                        <p className="text-gray-900 dark:text-white font-medium">{user.rank || 'New Member'}</p>
                       </div>
                     </div>
                   </div>

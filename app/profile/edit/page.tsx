@@ -200,7 +200,7 @@ export default function EditProfilePage() {
       setIsUploadingImage(true)
       await uploadFiles(Array.from(files))
     } catch (error) {
-      console.error('Upload error:', error)
+      // console.error('Upload error:', error) // Removed for production
     } finally {
       setIsUploadingImage(false)
     }
@@ -286,7 +286,7 @@ export default function EditProfilePage() {
         })
 
         if (!workResponse.ok) {
-          console.warn('Failed to update work experience')
+          // console.warn('Failed to update work experience') // Removed for production
         }
       }
 
@@ -301,7 +301,7 @@ export default function EditProfilePage() {
         })
 
         if (!educationResponse.ok) {
-          console.warn('Failed to update education')
+          // console.warn('Failed to update education') // Removed for production
         }
       }
 
@@ -311,11 +311,11 @@ export default function EditProfilePage() {
       })
 
       // Refresh the session to get updated user data
-      console.log('🔄 Refreshing session to update profile data...')
+      // console.log('🔄 Refreshing session to update profile data...') // Removed for production
       await update()
 
       // Navigate back to profile with cache busting
-      console.log('🔄 Navigating to profile page with updated data...')
+      // console.log('🔄 Navigating to profile page with updated data...') // Removed for production
       
       // Add a timestamp to force cache invalidation
       const timestamp = Date.now()
