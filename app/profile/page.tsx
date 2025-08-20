@@ -72,24 +72,12 @@ export default function ProfilePage() {
     facebookUrl: "",
     instagramUrl: "",
     
-    // Work Experience
+    // Work Experience & Education
     workExperience: [] as any[],
-    
-    // Education
     education: [] as any[],
     
-    // Legacy fields for backward compatibility
-    company: "",
-    profession: "",
-    location: "",
-    website: "",
-    phone: "",
+    // Settings
     profileVisibility: true,
-    socialLinks: {
-      linkedin: "",
-      twitter: "",
-      instagram: "",
-    },
   })
 
   useEffect(() => {
@@ -134,18 +122,8 @@ export default function ProfilePage() {
           workExperience: data.user.workExperience || [],
           education: data.user.education || [],
           
-          // Legacy fields for backward compatibility
-          company: data.user.company || "",
-          profession: data.user.profession || "",
-          location: data.user.location || "",
-          website: data.user.website || "",
-          phone: data.user.phone || "",
+          // Settings
           profileVisibility: data.user.profileVisibility ?? true,
-          socialLinks: {
-            linkedin: data.user.linkedinUrl || "",
-            twitter: data.user.twitterUrl || "",
-            instagram: data.user.instagramUrl || "",
-          },
         })
 
         // Handle badges response in parallel
@@ -153,12 +131,10 @@ export default function ProfilePage() {
           const badgesData = await badgesResponse.json()
           setUserBadges(badgesData || [])
         } else {
-          // console.error("Error fetching badges:", badgesError) // Removed for performance
           setUserBadges([])
         }
       } catch (err) {
         setError("Failed to load profile data")
-        // console.error("Profile fetch error:", err) // Removed for performance
       } finally {
         setIsLoading(false)
       }
@@ -177,7 +153,7 @@ export default function ProfilePage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          // Basic Information (name is combined from firstName + lastName)
+          // Basic Information
           firstName: profileData.firstName,
           lastName: profileData.lastName,
           name: `${profileData.firstName} ${profileData.lastName}`.trim(),
@@ -197,14 +173,8 @@ export default function ProfilePage() {
           facebookUrl: profileData.facebookUrl,
           instagramUrl: profileData.instagramUrl,
           
-          // Legacy fields for backward compatibility
-          company: profileData.company,
-          profession: profileData.profession,
-          location: `${profileData.city}${profileData.city && profileData.country ? ', ' : ''}${profileData.country}`.trim(),
-          website: profileData.portfolioUrl,
-          phone: profileData.phoneNumber,
+          // Settings
           profileVisibility: profileData.profileVisibility,
-          twitterUrl: profileData.socialLinks.twitter,
         }),
       })
 
@@ -215,7 +185,6 @@ export default function ProfilePage() {
       setIsEditing(false)
     } catch (err) {
       setError("Failed to update profile")
-      // console.error("Profile update error:", err) // Removed for performance
     }
   }, [user?.id, profileData])
 
@@ -283,10 +252,10 @@ export default function ProfilePage() {
                   )}
 
                   <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
-                    {profileData.location && (
+                    {(profileData.city || profileData.country) && (
                     <span className="flex items-center">
                       <MapPin className="w-4 h-4 mr-1" />
-                      {profileData.location}
+                      {[profileData.city, profileData.country].filter(Boolean).join(", ")}
                     </span>
                     )}
                     <span className="flex items-center">

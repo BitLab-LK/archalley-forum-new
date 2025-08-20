@@ -10,6 +10,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider 
       refetchInterval={5 * 60}
       refetchOnWindowFocus={true}
+      refetchWhenOffline={false}
     >
       <MantineProvider>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>

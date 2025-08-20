@@ -36,14 +36,17 @@ export default function Header() {
   }
 
   const handleSignOut = async () => {
-    // Ensure logout redirects to the correct URL (port 3000, not 3001)
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? window.location.origin 
-      : "http://localhost:3000"
-    
-    await signOut({ 
-      callbackUrl: baseUrl + "/"
-    })
+    try {
+      // Use the configured signOut page from NextAuth
+      await signOut({ 
+        callbackUrl: "/",
+        redirect: true
+      })
+    } catch (error) {
+      console.error("Logout error:", error)
+      // Fallback: force redirect to home page
+      window.location.href = "/"
+    }
   }
 
   const getRankColor = (rank: string) => {

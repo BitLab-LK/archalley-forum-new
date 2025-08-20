@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user: session?.user || null,
     isLoading,
-    isAuthenticated: !!session?.user,
+    isAuthenticated: !!session?.user && status === "authenticated",
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

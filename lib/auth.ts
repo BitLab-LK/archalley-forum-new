@@ -193,6 +193,7 @@ export const authOptions: NextAuthOptions = {
     },
     async signOut({ session, token }) {
       console.log('SignOut event:', { userEmail: session?.user?.email || token?.email })
+      // Clear any additional session data if needed
     },
   },
   // Security configurations
@@ -206,7 +207,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
-        domain: process.env.NODE_ENV === "production" ? process.env.NEXTAUTH_URL?.replace('https://', '.') : undefined,
+        // Remove problematic domain configuration - let NextAuth handle it automatically
       },
     },
   },
