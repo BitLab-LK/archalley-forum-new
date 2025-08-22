@@ -264,26 +264,106 @@ export default function UserProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* Back Button */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <Link href="/members">
-            <Button variant="ghost" className="mb-4">
+            <Button variant="ghost" className="mb-2 sm:mb-4">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Members
             </Button>
           </Link>
           {isOwnProfile && (
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               This is your profile. You can edit your information and manage your settings.
             </p>
           )}
         </div>
 
         {/* Profile Header */}
-        <Card className="mb-8">
-          <CardContent className="p-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+        <Card className="mb-4 sm:mb-8">
+          <CardContent className="p-3 sm:p-8">
+            {/* Mobile Layout - Stacked */}
+            <div className="block sm:hidden space-y-3">
+              {/* Header with Edit Button */}
+              <div className="flex items-start justify-between">
+                {/* Avatar + Name Section */}
+                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                  <Avatar className="w-12 h-12 flex-shrink-0">
+                    <AvatarImage src={user.image || "/placeholder-user.jpg"} alt={user.name} />
+                    <AvatarFallback className="text-sm">
+                      {user.name?.split(' ').map(n => n[0]).join('') || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center space-x-1 mb-1">
+                      <h1 className="text-base font-bold truncate">{user.name}</h1>
+                      {user.isVerified && (
+                        <CheckCircle className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+                      )}
+                    </div>
+                    {user.headline && (
+                      <p className="text-xs text-gray-600 truncate">{user.headline}</p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Edit Button */}
+                {isOwnProfile && (
+                  <Link href={`/profile/edit`}>
+                    <Button variant="outline" size="sm" className="ml-2 px-2 py-1 text-xs">
+                      <Edit className="w-3 h-3 mr-1" />
+                      Edit
+                    </Button>
+                  </Link>
+                )}
+                {!isOwnProfile && (currentUser?.role === 'ADMIN' || currentUser?.isAdmin) && (
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    Public
+                  </Badge>
+                )}
+              </div>
+
+              {/* Badges Row */}
+              {userBadges.length > 0 && (
+                <div className="flex justify-start">
+                  <PostBadges 
+                    badges={transformedBadges}
+                    maxDisplay={2}
+                    size="sm"
+                  />
+                </div>
+              )}
+
+              {/* Join Date */}
+              <div className="flex items-center text-xs text-gray-500">
+                <Calendar className="w-3 h-3 mr-1" />
+                <span>Joined {user.joinDate}</span>
+              </div>
+
+              {/* Stats Row */}
+              <div className="flex items-center justify-between text-xs">
+                <div className="text-center">
+                  <div className="font-bold text-sm">{posts.length}</div>
+                  <div className="text-gray-500">Posts</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-sm">{totalUpvotes}</div>
+                  <div className="text-gray-500">Upvotes</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-sm">{totalDownvotes}</div>
+                  <div className="text-gray-500">Downvotes</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-sm">{totalComments}</div>
+                  <div className="text-gray-500">Comments</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Layout - Original */}
+            <div className="hidden sm:flex sm:flex-col md:flex-row sm:items-start md:items-center sm:gap-6">
               <Avatar className="w-24 h-24">
                 <AvatarImage src={user.image || "/placeholder-user.jpg"} alt={user.name} />
                 <AvatarFallback className="text-2xl">
@@ -376,28 +456,30 @@ export default function UserProfilePage() {
 
         {/* Profile Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-4' : 'grid-cols-3'}`}>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="posts">Posts ({posts.length})</TabsTrigger>
-            {isOwnProfile && <TabsTrigger value="settings">Settings</TabsTrigger>}
-            <TabsTrigger value="activity">Activity</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-4' : 'grid-cols-3'} min-w-max sm:min-w-0`}>
+              <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+              <TabsTrigger value="posts" className="text-xs sm:text-sm">Posts ({posts.length})</TabsTrigger>
+              {isOwnProfile && <TabsTrigger value="settings" className="text-xs sm:text-sm">Settings</TabsTrigger>}
+              <TabsTrigger value="activity" className="text-xs sm:text-sm">Activity</TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-4 sm:space-y-6">
             {/* Professional Information */}
             <Card className="hover:border-l-4 hover:border-l-blue-500 transition-all duration-200">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Briefcase className="w-5 h-5 text-blue-600" />
+              <CardContent className="p-4 sm:p-6">
+                <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+                  <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                   Professional Information
                 </h3>
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-start gap-3">
                       <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                        <Briefcase className="w-4 h-4 text-blue-600" />
+                        <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Profession</label>
+                        <label className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Profession</label>
                         <p className="text-gray-900 dark:text-white font-medium">{user.profession || 'Not specified'}</p>
                       </div>
                     </div>

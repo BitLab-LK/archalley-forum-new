@@ -346,61 +346,63 @@ export default function EditProfilePage() {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
+          <div className="mb-4 sm:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 <Link href={`/profile/${user?.id}`}>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="self-start">
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back to Profile
                   </Button>
                 </Link>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Profile</h1>
-                  <p className="text-gray-600 dark:text-gray-400">Update your profile information</p>
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Edit Profile</h1>
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Update your profile information</p>
                 </div>
               </div>
             </div>
 
             {error && (
-              <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
-                <p className="text-red-800 dark:text-red-200">{error}</p>
+              <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+                <p className="text-sm sm:text-base text-red-800 dark:text-red-200">{error}</p>
               </div>
             )}
           </div>
 
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="basic">Basic Info</TabsTrigger>
-              <TabsTrigger value="professional">Professional</TabsTrigger>
-              <TabsTrigger value="experience">Experience</TabsTrigger>
-              <TabsTrigger value="education">Education</TabsTrigger>
-              <TabsTrigger value="social">Social Links</TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto mb-4 sm:mb-6">
+              <TabsList className="grid w-full grid-cols-5 min-w-max sm:min-w-0">
+                <TabsTrigger value="basic" className="text-xs sm:text-sm">Basic Info</TabsTrigger>
+                <TabsTrigger value="professional" className="text-xs sm:text-sm">Professional</TabsTrigger>
+                <TabsTrigger value="experience" className="text-xs sm:text-sm">Experience</TabsTrigger>
+                <TabsTrigger value="education" className="text-xs sm:text-sm">Education</TabsTrigger>
+                <TabsTrigger value="social" className="text-xs sm:text-sm">Social Links</TabsTrigger>
+              </TabsList>
+            </div>
 
             {/* Basic Information */}
-            <TabsContent value="basic" className="space-y-6">
+            <TabsContent value="basic" className="space-y-4 sm:space-y-6">
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="w-5 h-5" />
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
                     Basic Information
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-sm">
                     Update your basic personal information
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center gap-6">
-                    <Avatar className="w-20 h-20">
+                <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                    <Avatar className="w-16 h-16 sm:w-20 sm:h-20 mx-auto sm:mx-0">
                       <AvatarImage src={previewImage || profileData.image || "/placeholder-user.jpg"} alt={user?.name} />
-                      <AvatarFallback className="text-xl">
+                      <AvatarFallback className="text-lg sm:text-xl">
                         {user?.name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
+                    <div className="text-center sm:text-left">
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -413,8 +415,9 @@ export default function EditProfilePage() {
                         size="sm" 
                         onClick={triggerImageUpload}
                         disabled={isUploadingImage || isUploading}
+                        className="w-full sm:w-auto"
                       >
-                        <Camera className="w-4 h-4 mr-2" />
+                        <Camera className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                         {isUploadingImage || isUploading ? 'Uploading...' : 'Change Photo'}
                       </Button>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -423,48 +426,52 @@ export default function EditProfilePage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="firstName">First Name</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName" className="text-sm font-medium">First Name</Label>
                       <Input
                         id="firstName"
                         value={profileData.firstName}
                         onChange={(e) => handleInputChange('firstName', e.target.value)}
                         placeholder="Enter your first name"
+                        className="text-sm"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="lastName">Last Name</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName" className="text-sm font-medium">Last Name</Label>
                       <Input
                         id="lastName"
                         value={profileData.lastName}
                         onChange={(e) => handleInputChange('lastName', e.target.value)}
                         placeholder="Enter your last name"
+                        className="text-sm"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="name">Display Name</Label>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="name" className="text-sm font-medium">Display Name</Label>
                       <Input
                         id="name"
                         value={profileData.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
                         placeholder="Enter your display name"
+                        className="text-sm"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="phoneNumber">Phone Number</Label>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="phoneNumber" className="text-sm font-medium">Phone Number</Label>
                       <Input
                         id="phoneNumber"
                         value={profileData.phoneNumber}
                         onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                         placeholder="Enter your phone number"
+                        className="text-sm"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center mb-2">
-                      <Label htmlFor="bio">Bio</Label>
+                      <Label htmlFor="bio" className="text-sm font-medium">Bio</Label>
                       <span className={`text-xs font-medium ${getWordCountStatus(profileData.bio, 150).color}`}>
                         {countWords(profileData.bio)}/150 words
                       </span>
@@ -520,57 +527,61 @@ export default function EditProfilePage() {
             </TabsContent>
 
             {/* Professional Information */}
-            <TabsContent value="professional" className="space-y-6">
+            <TabsContent value="professional" className="space-y-4 sm:space-y-6">
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Briefcase className="w-5 h-5" />
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Briefcase className="w-4 h-4 sm:w-5 sm:h-5" />
                     Professional Information
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-sm">
                     Update your professional details and location
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="profession">Profession</Label>
+                <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="profession" className="text-sm font-medium">Profession</Label>
                       <Input
                         id="profession"
                         value={profileData.profession}
                         onChange={(e) => handleInputChange('profession', e.target.value)}
                         placeholder="e.g., Software Engineer"
+                        className="text-sm"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="company">Company</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="company" className="text-sm font-medium">Company</Label>
                       <Input
                         id="company"
                         value={profileData.company}
                         onChange={(e) => handleInputChange('company', e.target.value)}
                         placeholder="e.g., Tech Corp"
+                        className="text-sm"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="industry">Industry</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="industry" className="text-sm font-medium">Industry</Label>
                       <Input
                         id="industry"
                         value={profileData.industry}
                         onChange={(e) => handleInputChange('industry', e.target.value)}
                         placeholder="e.g., Information Technology"
+                        className="text-sm"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="headline">Professional Headline</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="headline" className="text-sm font-medium">Professional Headline</Label>
                       <Input
                         id="headline"
                         value={profileData.headline}
                         onChange={(e) => handleInputChange('headline', e.target.value)}
                         placeholder="e.g., Senior Developer at Tech Corp"
+                        className="text-sm"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="city">City</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="city" className="text-sm font-medium">City</Label>
                       <Input
                         id="city"
                         value={profileData.city}
@@ -878,13 +889,13 @@ export default function EditProfilePage() {
           </Tabs>
 
           {/* Fixed Save Button */}
-          <div className="sticky bottom-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 pt-4 mt-8">
-            <div className="flex justify-end gap-4">
-              <Link href={`/profile/${user?.id}`}>
-                <Button variant="outline">Cancel</Button>
+          <div className="sticky bottom-2 sm:bottom-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 pt-3 sm:pt-4 mt-4 sm:mt-8">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-4">
+              <Link href={`/profile/${user?.id}`} className="order-2 sm:order-1">
+                <Button variant="outline" className="w-full sm:w-auto text-sm">Cancel</Button>
               </Link>
-              <Button onClick={handleSave} disabled={isSaving}>
-                <Save className="w-4 h-4 mr-2" />
+              <Button onClick={handleSave} disabled={isSaving} className="order-1 sm:order-2 w-full sm:w-auto text-sm">
+                <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                 {isSaving ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
