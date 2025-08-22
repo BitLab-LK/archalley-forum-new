@@ -458,68 +458,80 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
         <Card className="shadow-sm border-0">
           <CardContent className="p-4">
           {/* Post Header */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
-                <AvatarFallback>{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className="font-semibold">{post.isAnonymous ? "Anonymous" : post.author.name}</span>
-                  {!post.isAnonymous && post.author.isVerified && (
-                    <CheckCircle className="w-4 h-4 text-blue-500" />
-                  )}
-                  {post.isPinned && <Pin className="w-4 h-4 text-primary" />}
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-500">
-                  {!post.isAnonymous && (
-                    <>
-                      {/* Rank badge removed to show only icons
-                      <Badge variant="secondary" className="text-xs">
-                        {post.author.rank}
-                      </Badge>
-                      */}
-                      {post.author.badges && post.author.badges.length > 0 && (
+          <div className="mb-4">
+            {/* Mobile: Stacked layout, Desktop: Side by side */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-3 sm:space-y-0">
+              {/* User Info Section */}
+              <div className="flex items-center space-x-3 min-w-0 flex-1">
+                <Avatar className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
+                  <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
+                  <AvatarFallback>{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  {/* Name and verification badges */}
+                  <div className="flex items-center space-x-1.5 mb-1">
+                    <span className="font-semibold text-sm sm:text-base truncate">
+                      {post.isAnonymous ? "Anonymous" : post.author.name}
+                    </span>
+                    {!post.isAnonymous && post.author.isVerified && (
+                      <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" />
+                    )}
+                    {post.isPinned && <Pin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />}
+                  </div>
+                  
+                  {/* Badges and time - responsive layout */}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                    {/* User badges */}
+                    {!post.isAnonymous && post.author.badges && post.author.badges.length > 0 && (
+                      <div className="flex-shrink-0">
                         <PostBadges 
                           badges={post.author.badges.map(b => b.badges)} 
                           maxDisplay={2} 
                           size="xs"
                         />
-                      )}
-                    </>
-                  )}
-                  <span>{post.timeAgo}</span>
+                      </div>
+                    )}
+                    {/* Time */}
+                    <span className="text-xs sm:text-sm text-gray-500">
+                      {post.timeAgo}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex items-center space-x-2">
-              <Badge className={cn("text-xs", `category-${post.category.toLowerCase()}`)}>
-                {post.category}
-              </Badge>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {canDelete && (
-                    <DropdownMenuItem
-                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                      onClick={handleDelete}
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      {isAdmin && !isAuthor ? "Delete Post (Admin)" : "Delete Post"}
+              {/* Category Badge - responsive positioning */}
+              <div className="flex items-center space-x-2">
+                <Badge className={cn(
+                  "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1", 
+                  `category-${post.category.toLowerCase()}`
+                )}>
+                  {post.category}
+                </Badge>
+                
+                {/* Options Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {canDelete && (
+                      <DropdownMenuItem
+                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                        onClick={handleDelete}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        {isAdmin && !isAuthor ? "Delete Post (Admin)" : "Delete Post"}
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem>
+                      <Flag className="w-4 h-4 mr-2" />
+                      Report Post
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem>
-                    <Flag className="w-4 h-4 mr-2" />
-                    Report Post
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
 
@@ -552,56 +564,60 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
           </div>
 
           {/* Post Actions */}
-          <div className="flex items-center justify-between pt-3 border-t">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 border-t space-y-2 sm:space-y-0">
+            {/* Mobile: Stacked layout, Desktop: Horizontal layout */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+              {/* Vote buttons group */}
+              <div className="flex items-center space-x-1 sm:space-x-2">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleCardVote("up")}
                   className={cn(
-                    "text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95",
+                    "text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95",
                     userVote === "up" && "text-primary",
                     isVoting && "opacity-70 cursor-not-allowed"
                   )}
                   disabled={isVoting}
                 >
-                  <ThumbsUp className={cn("w-4 h-4 mr-1 transition-transform duration-200", userVote === "up" && "scale-110")} />
-                  <span className="transition-all duration-200">{upvotes}</span>
+                  <ThumbsUp className={cn("w-3 h-3 sm:w-4 sm:h-4 mr-1 transition-transform duration-200", userVote === "up" && "scale-110")} />
+                  <span className="transition-all duration-200 text-xs sm:text-sm">{upvotes}</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleCardVote("down")}
                   className={cn(
-                    "text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-3 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95",
+                    "text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-2 sm:px-3 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95",
                     userVote === "down" && "text-red-500",
                     isVoting && "opacity-70 cursor-not-allowed"
                   )}
                   disabled={isVoting}
                 >
-                  <ThumbsDown className={cn("w-4 h-4 mr-1 transition-transform duration-200", userVote === "down" && "scale-110")} />
-                  <span className="transition-all duration-200">{downvotes}</span>
+                  <ThumbsDown className={cn("w-3 h-3 sm:w-4 sm:h-4 mr-1 transition-transform duration-200", userVote === "down" && "scale-110")} />
+                  <span className="transition-all duration-200 text-xs sm:text-sm">{downvotes}</span>
                 </Button>
               </div>
 
+              {/* Comments button */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => openModal(0)}
-                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3"
+                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3"
               >
-                <MessageCircle className="w-4 h-4 mr-1" />
-                {commentCount} Comments
+                <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <span className="text-xs sm:text-sm">{commentCount} Comments</span>
               </Button>
 
+              {/* Share button */}
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3"
+                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3"
               >
-                <Share2 className="w-4 h-4 mr-1" />
-                Share
+                <Share2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <span className="text-xs sm:text-sm">Share</span>
               </Button>
             </div>
           </div>
