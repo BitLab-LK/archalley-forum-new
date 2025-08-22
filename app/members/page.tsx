@@ -214,18 +214,18 @@ export default function MembersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Community Members</h1>
-          <p className="text-gray-600 dark:text-gray-400">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <div className="mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">Community Members</h1>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
             Connect with architects, designers, and construction professionals
           </p>
         </div>
 
         {/* Search and Filter */}
-        <Card className="mb-8">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4">
+        <Card className="mb-4 sm:mb-8">
+          <CardContent className="p-3 sm:p-6">
+            <div className="flex flex-col gap-3 sm:gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input 
@@ -235,60 +235,66 @@ export default function MembersPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Select value={professionFilter} onValueChange={setProfessionFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Filter by profession" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Professions</SelectItem>
-                  <SelectItem value="architect">Architect</SelectItem>
-                  <SelectItem value="interior-designer">Interior Designer</SelectItem>
-                  <SelectItem value="construction-manager">Construction Manager</SelectItem>
-                  <SelectItem value="urban-planner">Urban Planner</SelectItem>
-                  <SelectItem value="civil-engineer">Civil Engineer</SelectItem>
-                  <SelectItem value="landscape-architect">Landscape Architect</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Default</SelectItem>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="posts">Most Posts</SelectItem>
-                  <SelectItem value="upvotes">Most Upvotes</SelectItem>
-                  <SelectItem value="recent">Recently Joined</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <Select value={professionFilter} onValueChange={setProfessionFilter}>
+                  <SelectTrigger className="w-full sm:w-48">
+                    <SelectValue placeholder="Filter by profession" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Professions</SelectItem>
+                    <SelectItem value="architect">Architect</SelectItem>
+                    <SelectItem value="interior-designer">Interior Designer</SelectItem>
+                    <SelectItem value="construction-manager">Construction Manager</SelectItem>
+                    <SelectItem value="urban-planner">Urban Planner</SelectItem>
+                    <SelectItem value="civil-engineer">Civil Engineer</SelectItem>
+                    <SelectItem value="landscape-architect">Landscape Architect</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-full sm:w-48">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Default</SelectItem>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="posts">Most Posts</SelectItem>
+                    <SelectItem value="upvotes">Most Upvotes</SelectItem>
+                    <SelectItem value="recent">Recently Joined</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Loading State */}
         {isLoading && (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <span className="ml-2 text-gray-600 dark:text-gray-400">Loading members...</span>
+          <div className="flex justify-center items-center py-8 sm:py-12">
+            <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-blue-600" />
+            <span className="ml-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">Loading members...</span>
           </div>
         )}
 
         {/* Error State */}
         {error && (
-          <Card className="mb-8">
-            <CardContent className="p-6">
+          <Card className="mb-4 sm:mb-8">
+            <CardContent className="p-4 sm:p-6">
               <div className="text-center text-red-600 dark:text-red-400">
-                <h3 className="text-lg font-semibold mb-2">Unable to Load Members</h3>
-                <p className="mb-4">{error}</p>
-                <div className="flex justify-center gap-4">
+                <h3 className="text-base sm:text-lg font-semibold mb-2">Unable to Load Members</h3>
+                <p className="mb-4 text-sm sm:text-base">{error}</p>
+                <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
                   <Button 
                     variant="outline" 
+                    size="sm"
                     onClick={() => window.location.reload()}
+                    className="w-full sm:w-auto"
                   >
                     Reload Page
                   </Button>
                   <Button 
                     variant="outline"
+                    size="sm"
+                    className="w-full sm:w-auto"
                     onClick={async () => {
                       try {
                         setError(null)
@@ -331,8 +337,8 @@ export default function MembersPage() {
           <>
             {sortedMembers.length === 0 ? (
               <Card>
-                <CardContent className="p-8 text-center">
-                  <p className="text-gray-600 dark:text-gray-400">
+                <CardContent className="p-4 sm:p-8 text-center">
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                     {searchTerm || professionFilter !== "all" 
                       ? "No members found matching your criteria." 
                       : "No members found."}
@@ -341,12 +347,12 @@ export default function MembersPage() {
               </Card>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                   {paginatedMembers.map((member) => (
                   <Card key={member.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start space-x-4">
-                        <Avatar className="w-16 h-16">
+                    <CardContent className="p-3 sm:p-6">
+                      <div className="flex items-start space-x-3 sm:space-x-4">
+                        <Avatar className="w-12 h-12 sm:w-16 sm:h-16">
                           <AvatarImage src={member.avatar || "/placeholder-user.jpg"} />
                           <AvatarFallback>
                             {member.name?.split(' ').map(n => n[0]).join('') || 'U'}
@@ -354,40 +360,41 @@ export default function MembersPage() {
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2 mb-1">
-                            <h3 className="font-semibold text-lg truncate">{member.name}</h3>
-                            {member.isVerified && <CheckCircle className="w-5 h-5 text-yellow-500 flex-shrink-0" />}
+                            <h3 className="font-semibold text-base sm:text-lg truncate">{member.name}</h3>
+                            {member.isVerified && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500 flex-shrink-0" />}
                           </div>
-                          <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
+                          <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-1 sm:mb-2">
                             {member.profession || 'Professional'}
                           </p>
-                          <p className="text-gray-500 text-sm mb-3">
+                          <p className="text-gray-500 text-xs sm:text-sm mb-2 sm:mb-3">
                             {member.company || 'Independent'}
                           </p>
 
                           {member.location && (
-                            <div className="flex items-center text-sm text-gray-500 mb-3">
-                              <MapPin className="w-4 h-4 mr-1" />
+                            <div className="flex items-center text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">
+                              <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                               <span className="truncate">{member.location}</span>
                             </div>
                           )}
 
-                          <Badge variant="secondary" className="mb-3">
+                          <Badge variant="secondary" className="mb-2 sm:mb-3 text-xs">
                             {member.rank}
                           </Badge>
 
-                          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          <div className="flex justify-between text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-4">
                             <span>{member.posts} posts</span>
                             <span>{member.upvotes} upvotes</span>
                           </div>
 
-                          <div className="flex items-center text-xs text-gray-500 mb-4">
+                          <div className="flex items-center text-xs text-gray-500 mb-3 sm:mb-4">
                             <Calendar className="w-3 h-3 mr-1" />
                             <span>Joined {member.joinDate}</span>
                           </div>
 
                           <Button 
                             variant="outline" 
-                            className="w-full"
+                            size="sm"
+                            className="w-full text-xs sm:text-sm"
                             onClick={() => handleViewProfile(member.id)}
                           >
                             View Profile
@@ -401,22 +408,22 @@ export default function MembersPage() {
 
                 {/* Infinite Scroll Trigger */}
                 {hasMore && (
-                  <div ref={loadMoreRef} className="flex justify-center py-8">
+                  <div ref={loadMoreRef} className="flex justify-center py-6 sm:py-8">
                     {isLoadingMore ? (
                       <div className="flex items-center space-x-2">
-                        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                        <span className="text-gray-600 dark:text-gray-400">Loading more members...</span>
+                        <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-blue-600" />
+                        <span className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Loading more members...</span>
                       </div>
                     ) : (
-                      <div className="text-gray-400 text-sm">Scroll down to load more</div>
+                      <div className="text-gray-400 text-xs sm:text-sm">Scroll down to load more</div>
                     )}
                   </div>
                 )}
 
                 {/* End of results message */}
                 {!hasMore && paginatedMembers.length > ITEMS_PER_PAGE && (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 dark:text-gray-400">
+                  <div className="text-center py-6 sm:py-8">
+                    <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
                       You've seen all {paginatedMembers.length} members
                     </p>
                   </div>

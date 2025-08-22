@@ -191,8 +191,8 @@ function HomePageContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
             <PostCreator onPostCreated={async () => {
@@ -204,27 +204,27 @@ function HomePageContent() {
             }} />
 
             {isLoading ? (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
-                    <div className="flex items-center space-x-4 mb-4">
-                      <Skeleton className="h-12 w-12 rounded-full" />
+                  <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow">
+                    <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
+                      <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-full" />
                       <div className="space-y-2">
-                        <Skeleton className="h-4 w-[200px]" />
-                        <Skeleton className="h-3 w-[150px]" />
+                        <Skeleton className="h-3 sm:h-4 w-[150px] sm:w-[200px]" />
+                        <Skeleton className="h-2 sm:h-3 w-[100px] sm:w-[150px]" />
                       </div>
                     </div>
-                    <Skeleton className="h-24 w-full mb-4" />
+                    <Skeleton className="h-16 sm:h-24 w-full mb-3 sm:mb-4" />
                     <div className="flex justify-between">
-                      <Skeleton className="h-8 w-[100px]" />
-                      <Skeleton className="h-8 w-[100px]" />
+                      <Skeleton className="h-6 sm:h-8 w-[80px] sm:w-[100px]" />
+                      <Skeleton className="h-6 sm:h-8 w-[80px] sm:w-[100px]" />
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
                   {posts.map((post: Post) => (
                     <PostCard 
                       key={post.id} 
@@ -246,28 +246,31 @@ function HomePageContent() {
               ))}
             </div>
 
-            {/* Pagination */}
+            {/* Pagination - Mobile Optimized */}
                 {pagination.pages > 1 && (
-            <div className="flex justify-center mt-8">
-                    <nav className="flex items-center space-x-2">
+            <div className="flex justify-center mt-6 sm:mt-8 px-2">
+                    <nav className="flex items-center space-x-1 sm:space-x-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handlePageChange(pagination.currentPage - 1)}
                         disabled={pagination.currentPage === 1}
+                        className="text-xs sm:text-sm px-2 sm:px-3"
                       >
-                  Previous
+                  <span className="hidden sm:inline">Previous</span>
+                  <span className="sm:hidden">Prev</span>
                       </Button>
                       
                       {getPaginationRange().map((page, i) => (
                         page === "..." ? (
-                          <span key={`ellipsis-${i}`} className="px-2">...</span>
+                          <span key={`ellipsis-${i}`} className="px-1 sm:px-2 text-xs sm:text-sm">...</span>
                         ) : (
                           <Button
                             key={page}
                             variant={pagination.currentPage === page ? "default" : "outline"}
                             size="sm"
                             onClick={() => handlePageChange(page as number)}
+                            className="text-xs sm:text-sm min-w-[32px] sm:min-w-[40px] px-2 sm:px-3"
                           >
                             {page}
                           </Button>
@@ -279,8 +282,10 @@ function HomePageContent() {
                         size="sm"
                         onClick={() => handlePageChange(pagination.currentPage + 1)}
                         disabled={pagination.currentPage === pagination.pages}
+                        className="text-xs sm:text-sm px-2 sm:px-3"
                       >
-                  Next
+                  <span className="hidden sm:inline">Next</span>
+                  <span className="sm:hidden">Next</span>
                       </Button>
               </nav>
             </div>
@@ -289,8 +294,8 @@ function HomePageContent() {
             )}
           </div>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
+          {/* Sidebar - Hidden on mobile, shown as overlay or separate tab */}
+          <div className="hidden lg:block lg:col-span-1">
             <Sidebar />
           </div>
         </div>
@@ -303,29 +308,29 @@ function HomePageContent() {
 function HomePageLoading() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
           <div className="lg:col-span-2">
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
-                  <div className="flex items-center space-x-4 mb-4">
-                    <Skeleton className="h-12 w-12 rounded-full" />
+                <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow">
+                  <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
+                    <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-full" />
                     <div className="space-y-2">
-                      <Skeleton className="h-4 w-[200px]" />
-                      <Skeleton className="h-3 w-[150px]" />
+                      <Skeleton className="h-3 sm:h-4 w-[150px] sm:w-[200px]" />
+                      <Skeleton className="h-2 sm:h-3 w-[100px] sm:w-[150px]" />
                     </div>
                   </div>
-                  <Skeleton className="h-24 w-full mb-4" />
+                  <Skeleton className="h-16 sm:h-24 w-full mb-3 sm:mb-4" />
                   <div className="flex justify-between">
-                    <Skeleton className="h-8 w-[100px]" />
-                    <Skeleton className="h-8 w-[100px]" />
+                    <Skeleton className="h-6 sm:h-8 w-[80px] sm:w-[100px]" />
+                    <Skeleton className="h-6 sm:h-8 w-[80px] sm:w-[100px]" />
                   </div>
                 </div>
               ))}
             </div>
           </div>
-          <div className="lg:col-span-1">
+          <div className="hidden lg:block lg:col-span-1">
             <Sidebar />
           </div>
         </div>

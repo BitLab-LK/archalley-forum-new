@@ -215,119 +215,173 @@ export default function ProfilePage() {
           {/* Profile Header */}
           <Card className="bg-white border-gray-100 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardContent className="p-3 sm:p-8">
-              <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-6">
-                {/* Avatar and Basic Info - Mobile Layout */}
-                <div className="flex items-start space-x-3 sm:flex-col sm:items-start sm:space-x-0">
-                  <div className="relative flex-shrink-0">
-                    <Avatar className="w-14 h-14 sm:w-24 sm:h-24">
-                      <AvatarImage src={user?.image || "/placeholder.svg"} alt={profileData.name} />
-                      <AvatarFallback className="text-base sm:text-2xl">{profileData.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    {isEditing && (
-                    <Button size="icon" variant="secondary" className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-8 sm:h-8 rounded-full">
-                      <Camera className="w-2.5 h-2.5 sm:w-4 sm:h-4" />
-                    </Button>
-                    )}
-                  </div>
-
-                  {/* Mobile Name and Basic Info */}
-                  <div className="flex-1 min-w-0 sm:hidden">
-                    <div className="flex items-center space-x-1.5 mb-1">
-                      <h1 className="text-lg font-bold truncate">{profileData.name}</h1>
-                      {user?.isVerified && <CheckCircle className="w-4 h-4 text-yellow-500 flex-shrink-0" />}
-                    </div>
-                    {profileData.headline && (
-                      <p className="text-xs text-gray-600 mb-1 line-clamp-1">{profileData.headline}</p>
-                    )}
-                    {/* Mobile badges */}
-                    {userBadges.length > 0 && (
-                      <div className="mb-2">
-                        <PostBadges 
-                          badges={transformedBadges}
-                          maxDisplay={2}
-                          size="sm"
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Main Content Area */}
-                <div className="flex-1 min-w-0">
-                  {/* Desktop title and badges */}
-                  <div className="hidden sm:block">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <h1 className="text-2xl font-bold">{profileData.name}</h1>
-                        {user?.isVerified && <CheckCircle className="w-6 h-6 text-yellow-500" />}
-                      </div>
-                      {(user?.role === 'ADMIN' || user?.isAdmin) && (
-                        <Badge variant="outline">Public Profile</Badge>
-                      )}
-                    </div>
-
-                    {userBadges.length > 0 && (
-                      <div className="mb-3">
-                        <PostBadges 
-                          badges={transformedBadges}
-                          maxDisplay={5}
-                          size="md"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Location and Join Date */}
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">
-                    {(profileData.city || profileData.country) && (
-                    <span className="flex items-center">
-                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
-                      <span className="truncate">{[profileData.city, profileData.country].filter(Boolean).join(", ")}</span>
-                    </span>
-                    )}
-                    <span className="flex items-center">
-                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
-                      <span className="hidden sm:inline">Member since </span>
-                      <span className="sm:hidden">Joined </span>
-                      {new Date(user?.createdAt || "").toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        year: 'numeric' 
-                      })}
-                    </span>
-                  </div>
-
-                  {/* Bio - Only show on desktop or when significant content */}
-                  {profileData.bio && (
-                  <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-none">{profileData.bio}</p>
-                  )}
-
-                  {/* Stats - Compact mobile layout */}
-                  <div className="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 sm:mb-0">
-                    <div className="text-center">
-                      <div className="font-bold text-sm sm:text-lg">{user?._count?.posts || 0}</div>
-                      <div className="text-gray-500 text-xs sm:text-sm">Posts</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-bold text-sm sm:text-lg">{user?._count?.comments || 0}</div>
-                      <div className="text-gray-500 text-xs sm:text-sm">Comments</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Edit Button - Mobile optimized */}
-                <div className="flex sm:block">
+              {/* Mobile Layout - Stacked */}
+              <div className="block sm:hidden space-y-3">
+                {/* Header with Edit Button in absolute top-right */}
+                <div className="relative">
+                  {/* Edit Button - Absolute top-right */}
                   <Button 
                     onClick={() => setIsEditing(!isEditing)} 
                     variant={isEditing ? "secondary" : "default"}
                     size="sm"
-                    className={`w-full sm:w-auto text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2 ${isEditing 
+                    className={`absolute top-0 right-0 px-2 py-1 text-xs z-10 ${isEditing 
                       ? "bg-gray-100 hover:bg-gray-200 text-gray-700" 
                       : "bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
                     }`}
                   >
-                    <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-                    <span className="hidden xs:inline">{isEditing ? "Cancel" : "Edit"}</span>
-                    <span className="xs:hidden">{isEditing ? "✕" : "✏️"}</span>
+                    <User className="w-3 h-3 mr-1" />
+                    {isEditing ? "Cancel" : "Edit"}
+                  </Button>
+                  
+                  {/* Avatar + Name Row */}
+                  <div className="flex items-center space-x-3 pr-16">
+                    <div className="relative flex-shrink-0">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src={user?.image || "/placeholder.svg"} alt={profileData.name} />
+                        <AvatarFallback className="text-sm">{profileData.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      {isEditing && (
+                      <Button size="icon" variant="secondary" className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full">
+                        <Camera className="w-2 h-2" />
+                      </Button>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center space-x-1 mb-1">
+                        <h1 className="text-base font-bold truncate">{profileData.name}</h1>
+                        {user?.isVerified && <CheckCircle className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />}
+                      </div>
+                      {profileData.headline && (
+                        <p className="text-xs text-gray-600 truncate">{profileData.headline}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Badges Row */}
+                {userBadges.length > 0 && (
+                  <div className="flex justify-start">
+                    <PostBadges 
+                      badges={transformedBadges}
+                      maxDisplay={2}
+                      size="sm"
+                    />
+                  </div>
+                )}
+
+                {/* Second Row: Location and Date */}
+                <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
+                  {(profileData.city || profileData.country) && (
+                  <span className="flex items-center">
+                    <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                    <span className="truncate">{[profileData.city, profileData.country].filter(Boolean).join(", ")}</span>
+                  </span>
+                  )}
+                  <span className="flex items-center">
+                    <Calendar className="w-3 h-3 mr-1 flex-shrink-0" />
+                    Joined {new Date(user?.createdAt || "").toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      year: 'numeric' 
+                    })}
+                  </span>
+                </div>
+
+                {/* Third Row: Stats */}
+                <div className="flex items-center gap-4 text-xs">
+                  <div className="text-center">
+                    <div className="font-bold text-sm">{user?._count?.posts || 0}</div>
+                    <div className="text-gray-500">Posts</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold text-sm">{user?._count?.comments || 0}</div>
+                    <div className="text-gray-500">Comments</div>
+                  </div>
+                </div>
+
+                {/* Bio if present */}
+                {profileData.bio && (
+                  <p className="text-xs text-gray-700 line-clamp-2">{profileData.bio}</p>
+                )}
+              </div>
+
+              {/* Desktop Layout - Original */}
+              <div className="hidden sm:flex sm:flex-row sm:space-y-0 sm:space-x-6">
+                <div className="flex items-center space-x-4 sm:flex-col sm:items-start sm:space-x-0">
+                  <div className="relative flex-shrink-0">
+                    <Avatar className="w-24 h-24">
+                      <AvatarImage src={user?.image || "/placeholder.svg"} alt={profileData.name} />
+                      <AvatarFallback className="text-2xl">{profileData.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    {isEditing && (
+                    <Button size="icon" variant="secondary" className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full">
+                      <Camera className="w-4 h-4" />
+                    </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <h1 className="text-2xl font-bold">{profileData.name}</h1>
+                      {user?.isVerified && <CheckCircle className="w-6 h-6 text-yellow-500" />}
+                    </div>
+                    {(user?.role === 'ADMIN' || user?.isAdmin) && (
+                      <Badge variant="outline">Public Profile</Badge>
+                    )}
+                  </div>
+
+                  {userBadges.length > 0 && (
+                    <div className="mb-3">
+                      <PostBadges 
+                        badges={transformedBadges}
+                        maxDisplay={5}
+                        size="md"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    {(profileData.city || profileData.country) && (
+                    <span className="flex items-center">
+                      <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
+                      <span>{[profileData.city, profileData.country].filter(Boolean).join(", ")}</span>
+                    </span>
+                    )}
+                    <span className="flex items-center">
+                      <Calendar className="w-4 h-4 mr-1 flex-shrink-0" />
+                      Member since {new Date(user?.createdAt || "").toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  {profileData.bio && (
+                  <p className="text-base text-gray-700 dark:text-gray-300 mb-4">{profileData.bio}</p>
+                  )}
+
+                  <div className="flex items-center gap-6 text-sm">
+                    <div className="text-center">
+                      <div className="font-bold text-lg">{user?._count?.posts || 0}</div>
+                      <div className="text-gray-500">Posts</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-bold text-lg">{user?._count?.comments || 0}</div>
+                      <div className="text-gray-500">Comments</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex">
+                  <Button 
+                    onClick={() => setIsEditing(!isEditing)} 
+                    variant={isEditing ? "secondary" : "default"}
+                    size="sm"
+                    className={`${isEditing 
+                      ? "bg-gray-100 hover:bg-gray-200 text-gray-700" 
+                      : "bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
+                    }`}
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    {isEditing ? "Cancel" : "Edit Profile"}
                   </Button>
                 </div>
               </div>

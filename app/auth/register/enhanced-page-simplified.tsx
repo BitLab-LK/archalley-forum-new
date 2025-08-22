@@ -674,18 +674,18 @@ export default function SimplifiedEnhancedRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-4 sm:py-12 px-2 sm:px-4 lg:px-8">
       <Card className="w-full max-w-2xl">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center" style={{ color: '#ffa500' }}>
+        <CardHeader className="space-y-1 p-4 sm:p-6">
+          <CardTitle className="text-xl sm:text-2xl font-bold text-center" style={{ color: '#ffa500' }}>
             {activeTab === "login" ? "Archalley Forum" : "Join Archalley Forum"}
           </CardTitle>
-          <CardDescription className="text-center">
+          <CardDescription className="text-center text-sm sm:text-base">
             Professional Networking for Construction & Related Industries
           </CardDescription>
         </CardHeader>
         
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
@@ -704,37 +704,40 @@ export default function SimplifiedEnhancedRegisterPage() {
               )}
               
               {/* Social Login */}
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <Button
                   variant={searchParams.get('provider') === 'google' ? "default" : "outline"}
-                  className={`w-full ${searchParams.get('provider') === 'google' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
+                  className={`w-full text-sm sm:text-base ${searchParams.get('provider') === 'google' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
                   type="button"
                   onClick={() => handleSocialLogin("google")}
                   disabled={isLoading}
+                  size="sm"
                 >
-                  <Mail className="mr-2 h-4 w-4" />
+                  <Mail className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   Login with Google
                   {searchParams.get('provider') === 'google' && <span className="ml-2">👈</span>}
                 </Button>
                 <Button
                   variant={searchParams.get('provider') === 'facebook' ? "default" : "outline"}
-                  className={`w-full ${searchParams.get('provider') === 'facebook' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
+                  className={`w-full text-sm sm:text-base ${searchParams.get('provider') === 'facebook' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
                   type="button"
                   onClick={() => handleSocialLogin("facebook")}
                   disabled={isLoading}
+                  size="sm"
                 >
-                  <Facebook className="mr-2 h-4 w-4" />
+                  <Facebook className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   Login with Facebook
                   {searchParams.get('provider') === 'facebook' && <span className="ml-2">👈</span>}
                 </Button>
                 <Button
                   variant={searchParams.get('provider') === 'linkedin' ? "default" : "outline"}
-                  className={`w-full ${searchParams.get('provider') === 'linkedin' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
+                  className={`w-full text-sm sm:text-base ${searchParams.get('provider') === 'linkedin' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
                   type="button"
                   onClick={() => handleSocialLogin("linkedin")}
                   disabled={isLoading}
+                  size="sm"
                 >
-                  <Linkedin className="mr-2 h-4 w-4" />
+                  <Linkedin className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   Login with LinkedIn
                   {searchParams.get('provider') === 'linkedin' && <span className="ml-2">👈</span>}
                 </Button>
