@@ -19,6 +19,7 @@ import { useAuth } from "@/lib/auth-context"
 import PostImage from "@/components/post-image"
 import PostModal from "./post-modal"
 import { PostBadges } from "./post-badges"
+import ShareDropdown from "./share-dropdown"
 
 interface PostCardProps {
   post: {
@@ -611,14 +612,12 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
               </Button>
 
               {/* Share button */}
-              <Button
+              <ShareDropdown 
+                post={post}
                 variant="ghost"
                 size="sm"
                 className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3"
-              >
-                <Share2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                <span className="text-xs sm:text-sm">Share</span>
-              </Button>
+              />
             </div>
           </div>
 

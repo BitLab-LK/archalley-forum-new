@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils"
 import { useGlobalVoteState } from "@/lib/vote-sync"
 import { activityEventManager } from "@/lib/activity-events"
 import { useAuth } from "@/lib/auth-context"
+import ShareDropdown from "./share-dropdown"
 
 // Types
 interface Comment {
@@ -921,8 +922,8 @@ await handleVote(type)
   if (!open || !hasImages) return null
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 p-4">
-      <div className="relative h-[85vh] min-h-[600px] max-h-[800px] w-full max-w-7xl flex flex-col md:flex-row bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80">
+      <div className="relative h-[90vh] min-h-[600px] max-h-[800px] w-full max-w-7xl mx-4 flex flex-col md:flex-row bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden">
         {/* Left: Image Carousel */}
         <div className="flex-1 flex items-center justify-center bg-black relative min-h-[400px]">
           {hasImages && (
@@ -968,35 +969,35 @@ await handleVote(type)
 
         {/* Right: Facebook-style Post Content */}
         <div className="w-full md:w-[450px] lg:w-[550px] xl:w-[550px] flex flex-col bg-white dark:bg-gray-900 h-full max-h-[800px]">
-          {/* Header - Fixed */}
-          <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          {/* Header - Compact */}
+          <div className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
+              <Avatar className="h-9 w-9">
                 <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
                 <AvatarFallback className="bg-orange-500 text-white">{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
               </Avatar>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
                     {post.isAnonymous ? "Anonymous" : post.author.name}
                   </h3>
                   {!post.isAnonymous && post.author.isVerified && (
-                    <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
-                      <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <div className="w-3.5 h-3.5 bg-orange-500 rounded-full flex items-center justify-center">
+                      <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     </div>
                   )}
                   {!post.isAnonymous && post.author.rank && (
                     <span className={cn(
-                      "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
+                      "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium",
                       getRankColor(post.author.rank)
                     )}>
                       {formatRank(post.author.rank)}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                   <span>{post.timeAgo}</span>
                   <span>•</span>
                   <Globe className="w-3 h-3" />
@@ -1005,9 +1006,9 @@ await handleVote(type)
             </div>
             <button 
               onClick={onClose} 
-              className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-100 active:scale-95"
+              className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-100 active:scale-95"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -1015,9 +1016,9 @@ await handleVote(type)
 
           {/* Scrollable Content Area */}
           <div className="flex-1 overflow-y-auto min-h-0">
-            {/* Post Content */}
-            <div className="p-6 border-b border-gray-100 dark:border-gray-700">
-              <p className="text-gray-900 dark:text-white text-[16px] leading-relaxed whitespace-pre-line break-words mb-4">
+            {/* Post Content - Reduced padding */}
+            <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+              <p className="text-gray-900 dark:text-white text-[15px] leading-relaxed whitespace-pre-line break-words mb-3">
                 {post.content}
               </p>
               
@@ -1096,13 +1097,12 @@ await handleVote(type)
                   <MessageCircle className="w-5 h-5" />
                   <span>Comment</span>
                 </button>
-                <button 
-                  onClick={handleShare} 
+                <ShareDropdown 
+                  post={post}
+                  variant="ghost"
                   className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95"
-                >
-                  <Share2 className="w-5 h-5" />
-                  <span>Share</span>
-                </button>
+                  showLabel={true}
+                />
               </div>
             </div>
 
