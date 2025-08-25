@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Globe, Trash2, MoreHorizontal } from "lucide-react"
+import { ThumbsUp, ThumbsDown, MessageCircle, Globe, Trash2, MoreHorizontal } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { cn } from "@/lib/utils"
 import { useGlobalVoteState } from "@/lib/vote-sync"
@@ -886,7 +886,14 @@ await handleVote(type)
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80">
+    <div 
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose()
+        }
+      }}
+    >
       <div className={cn(
         "relative bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden flex flex-col",
         hasImages ? "w-full max-w-[1000px] h-[90vh] max-h-[800px]" : "w-full max-w-[520px] h-[90vh] max-h-[700px] mx-4"
@@ -1063,7 +1070,7 @@ await handleVote(type)
                   <ShareDropdown 
                     post={post}
                     variant="ghost"
-                    className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95"
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
                     showLabel={true}
                   />
                 </div>

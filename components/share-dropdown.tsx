@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { shareService, ShareMethod } from "@/lib/share-service"
@@ -152,20 +153,25 @@ export default function ShareDropdown({
           variant={variant} 
           size={size} 
           className={cn(
-            "transition-colors duration-200",
+            "transition-colors duration-200 relative z-[1001]",
             className
           )}
+          onClick={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+          }}
         >
           <Share2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
           {showLabel && <span className="text-xs sm:text-sm">Share</span>}
         </Button>
       </DropdownMenuTrigger>
       
-      <DropdownMenuContent 
-        align="end" 
-        className="w-56 p-1"
-        sideOffset={5}
-      >
+      <DropdownMenuPortal>
+        <DropdownMenuContent 
+          align="end" 
+          className="w-56 p-1 z-[1100] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl"
+          sideOffset={5}
+        >
         <div className="px-2 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
           Share this post
         </div>
@@ -213,6 +219,7 @@ export default function ShareDropdown({
           Share analytics are tracked
         </div>
       </DropdownMenuContent>
+      </DropdownMenuPortal>
     </DropdownMenu>
   )
 }

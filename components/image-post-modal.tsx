@@ -6,7 +6,6 @@ import {
   ThumbsUp, 
   ThumbsDown, 
   MessageCircle, 
-  Share2, 
   ChevronLeft, 
   ChevronRight, 
   Trash2, 
@@ -303,15 +302,6 @@ export default function ImagePostModal({
   const handleCommentClick = () => {
     commentInputRef.current?.focus()
     commentInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-  }
-
-  const handleShare = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.origin + "/posts/" + post.id)
-      alert("Post link copied to clipboard!")
-    } catch {
-      alert("Failed to copy link")
-    }
   }
 
   const handleDebouncedVote = async (type: "up" | "down") => {
@@ -1100,7 +1090,7 @@ await handleVote(type)
                 <ShareDropdown 
                   post={post}
                   variant="ghost"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
                   showLabel={true}
                 />
               </div>
