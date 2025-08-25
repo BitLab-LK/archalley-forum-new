@@ -6,6 +6,7 @@ import { Providers } from "@/components/providers"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { BadgeNotificationHandler } from "@/components/badge-notifications"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -31,6 +32,7 @@ export default function RootLayout({
             <main className="flex-1 pb-20 md:pb-0">{children}</main>
             <Footer />
             <BadgeNotificationHandler />
+            <Toaster />
           </div>
         </Providers>
       </body>
