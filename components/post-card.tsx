@@ -451,13 +451,13 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   return (
     <>
       <div className={cn(
-        "transition-all duration-700 ease-in-out overflow-hidden",
+        "transition-all duration-700 ease-in-out",
         isDeleting 
-          ? "max-h-0 opacity-0 -mb-4 transform scale-95" 
-          : "max-h-[2000px] opacity-100 mb-4 transform scale-100"
+          ? "max-h-0 opacity-0 -mb-4 transform scale-95 overflow-hidden" 
+          : "max-h-[2000px] opacity-100 mb-4 transform scale-100 overflow-visible"
       )}>
-        <Card className="shadow-sm border-0">
-          <CardContent className="p-4">
+        <Card className="shadow-sm border-0 overflow-visible">
+          <CardContent className="p-4 overflow-visible">
           {/* Post Header */}
           <div className="mb-4">
             {/* Mobile: Stacked layout, Desktop: Side by side */}
@@ -567,9 +567,9 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
           {/* Post Actions */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 border-t space-y-2 sm:space-y-0">
             {/* Mobile: Stacked layout, Desktop: Horizontal layout */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide">
               {/* Vote buttons group */}
-              <div className="flex items-center space-x-1 sm:space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -605,7 +605,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                 variant="ghost"
                 size="sm"
                 onClick={() => openModal(0)}
-                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3"
+                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3 flex-shrink-0"
               >
                 <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                 <span className="text-xs sm:text-sm">{commentCount} Comments</span>
@@ -616,7 +616,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                 post={post}
                 variant="ghost"
                 size="sm"
-                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3"
+                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3 flex-shrink-0"
               />
             </div>
           </div>

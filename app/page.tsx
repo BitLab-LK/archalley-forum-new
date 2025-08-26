@@ -194,7 +194,7 @@ function HomePageContent() {
       <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 overflow-visible">
             <PostCreator onPostCreated={async () => {
               try {
                 await fetchPosts(1) // Always go to first page for new posts
@@ -224,7 +224,7 @@ function HomePageContent() {
               </div>
             ) : (
               <>
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-3 sm:space-y-4 overflow-visible">
                   {posts.map((post: Post) => (
                     <PostCard 
                       key={post.id} 
