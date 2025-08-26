@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { 
-  Share2, 
+  Share2,
   Copy, 
   Twitter, 
   Facebook, 
@@ -10,17 +10,8 @@ import {
   MessageCircle, 
   Mail, 
   Send,
-  Check,
-  Smartphone
+  Check
 } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuPortal,
-} from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { shareService, ShareMethod } from "@/lib/share-service"
 import { cn } from "@/lib/utils"
@@ -37,9 +28,9 @@ interface ShareDropdownProps {
 export default function ShareDropdown({ 
   post, 
   className, 
-  variant = "ghost", 
+  variant = "ghost",
   size = "sm",
-  showLabel = true 
+  showLabel = true
 }: ShareDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [copiedRecently, setCopiedRecently] = useState(false)
@@ -79,26 +70,15 @@ export default function ShareDropdown({
         duration: 3000,
       })
     }
-    
-    setIsOpen(false)
   }
 
   const shareOptions = [
-    // Native sharing (if available)
-    ...(shareService.isNativeShareAvailable() ? [{
-      method: 'native' as ShareMethod,
-      label: 'Share via device',
-      icon: Smartphone,
-      description: 'Use device sharing options'
-    }] : []),
-    
     // Always available options
     {
       method: 'copy' as ShareMethod,
       label: copiedRecently ? 'Copied!' : 'Copy link',
       icon: copiedRecently ? Check : Copy,
-      description: 'Copy link to clipboard',
-      highlight: true
+      color: copiedRecently ? 'text-green-600' : 'text-gray-600'
     },
     
     // Social media options
@@ -106,120 +86,98 @@ export default function ShareDropdown({
       method: 'whatsapp' as ShareMethod,
       label: 'WhatsApp',
       icon: MessageCircle,
-      description: 'Share on WhatsApp',
       color: 'text-green-600'
     },
     {
       method: 'twitter' as ShareMethod,
       label: 'Twitter',
       icon: Twitter,
-      description: 'Share on Twitter',
       color: 'text-blue-500'
     },
     {
       method: 'facebook' as ShareMethod,
       label: 'Facebook',
       icon: Facebook,
-      description: 'Share on Facebook',
       color: 'text-blue-600'
     },
     {
       method: 'linkedin' as ShareMethod,
       label: 'LinkedIn',
       icon: Linkedin,
-      description: 'Share on LinkedIn',
       color: 'text-blue-700'
     },
     {
       method: 'telegram' as ShareMethod,
       label: 'Telegram',
       icon: Send,
-      description: 'Share on Telegram',
       color: 'text-sky-500'
     },
     {
       method: 'email' as ShareMethod,
       label: 'Email',
       icon: Mail,
-      description: 'Share via email',
       color: 'text-gray-600'
     }
   ]
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger asChild>
+    <div className={cn("relative inline-flex items-center gap-1", className)}>
+      {/* Share Button */}
+      {!isOpen && (
         <Button 
           variant={variant} 
           size={size} 
-          className={cn(
-            "transition-colors duration-200 relative z-[1001]",
-            className
-          )}
+          className="transition-colors duration-200 relative z-[1001]"
           onClick={(e) => {
             e.stopPropagation()
             e.preventDefault()
+            setIsOpen(true)
           }}
         >
           <Share2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
           {showLabel && <span className="text-xs sm:text-sm">Share</span>}
         </Button>
-      </DropdownMenuTrigger>
+      )}
       
-      <DropdownMenuPortal>
-        <DropdownMenuContent 
-          align="end" 
-          className="w-56 p-1 z-[1100] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl"
-          sideOffset={5}
-        >
-        <div className="px-2 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
-          Share this post
-        </div>
-        <DropdownMenuSeparator />
-        
-        {shareOptions.map((option, index) => (
-          <div key={option.method}>
-            <DropdownMenuItem
-              onClick={() => handleShare(option.method)}
+      {/* Share Options (shown when opened) */}
+      {isOpen && (
+        <div className="flex items-center gap-1 animate-in fade-in slide-in-from-left-2 duration-200">
+          {shareOptions.map((option) => (
+            <Button
+              key={option.method}
+              variant="ghost"
+              size={size}
               className={cn(
-                "flex items-center gap-3 py-2.5 px-2 cursor-pointer transition-colors",
-                "hover:bg-gray-50 dark:hover:bg-gray-800",
-                option.highlight && "bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-md my-1",
-                copiedRecently && option.method === 'copy' && "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
+                "p-1.5 h-auto transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-700",
+                option.color
               )}
+              onClick={(e) => {
+                e.stopPropagation()
+                e.preventDefault()
+                handleShare(option.method)
+                setIsOpen(false)
+              }}
+              title={option.label}
             >
-              <option.icon 
-                className={cn(
-                  "w-4 h-4 flex-shrink-0",
-                  option.color || "text-gray-600 dark:text-gray-400",
-                  copiedRecently && option.method === 'copy' && "text-green-600 dark:text-green-400"
-                )} 
-              />
-              <div className="flex flex-col">
-                <span className="font-medium text-sm">
-                  {option.label}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {option.description}
-                </span>
-              </div>
-            </DropdownMenuItem>
-            
-            {/* Separator after native/copy options */}
-            {((option.method === 'native' && shareService.isNativeShareAvailable()) || 
-              (option.method === 'copy' && !shareService.isNativeShareAvailable())) && 
-              index < shareOptions.length - 1 && (
-              <DropdownMenuSeparator />
-            )}
-          </div>
-        ))}
-        
-        <DropdownMenuSeparator />
-        <div className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400">
-          Share analytics are tracked
+              <option.icon className="w-3 h-3 sm:w-4 sm:h-4" />
+            </Button>
+          ))}
+          {/* Close button */}
+          <Button
+            variant="ghost"
+            size={size}
+            className="p-1.5 h-auto transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              setIsOpen(false)
+            }}
+            title="Close"
+          >
+            ×
+          </Button>
         </div>
-      </DropdownMenuContent>
-      </DropdownMenuPortal>
-    </DropdownMenu>
+      )}
+    </div>
   )
 }
