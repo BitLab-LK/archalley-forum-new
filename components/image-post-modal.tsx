@@ -23,6 +23,8 @@ import { cn } from "@/lib/utils"
 import { useGlobalVoteState } from "@/lib/vote-sync"
 import { activityEventManager } from "@/lib/activity-events"
 import { useAuth } from "@/lib/auth-context"
+import { useToast } from "@/hooks/use-toast"
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
 import ShareDropdown from "./share-dropdown"
 
 // Types
@@ -101,6 +103,8 @@ export default function ImagePostModal({
   const lastVoteClickTime = useRef<number>(0) // Debounce vote clicks
   const previousCommentCount = useRef<number>(0) // Track previous comment count
   const { user } = useAuth()
+  const { toast } = useToast()
+  const { confirm } = useConfirmDialog()
   
   // Effect to update comment count whenever comments change
   useEffect(() => {
@@ -203,7 +207,11 @@ export default function ImagePostModal({
   // Handle vote action with smooth animation and global sync
   const handleVote = async (type: "up" | "down") => {
     if (!user) {
-      alert("Please log in to vote on posts")
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to vote on posts",
+        variant: "destructive"
+      })
       return
     }
     
@@ -292,7 +300,11 @@ export default function ImagePostModal({
         userVote: userVote
       })
       
-      alert('Failed to vote. Please try again.')
+      toast({
+        title: "Vote Failed",
+        description: "Failed to vote. Please try again.",
+        variant: "destructive"
+      })
     } finally {
       setIsVoting(false)
     }
@@ -878,7 +890,15 @@ await handleVote(type)
   }
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!confirm("Are you sure you want to delete this comment?")) return
+    const confirmed = await confirm({
+      title: "Delete Comment",
+      description: "Are you sure you want to delete this comment? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      variant: "destructive"
+    })
+    
+    if (!confirmed) return
     
     try {
       const response = await fetch(`/api/comments/${commentId}`, {
@@ -901,11 +921,19 @@ await handleVote(type)
         })
       } else {
         console.error("Failed to delete comment:", response.status)
-        alert("Failed to delete comment. Please try again.")
+        toast({
+          title: "Delete Failed",
+          description: "Failed to delete comment. Please try again.",
+          variant: "destructive"
+        })
       }
     } catch (error) {
       console.error("Error deleting comment:", error)
-      alert("An error occurred while deleting the comment. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting the comment. Please try again.",
+        variant: "destructive"
+      })
     }
   }
 
@@ -1092,6 +1120,7 @@ await handleVote(type)
                   variant="ghost"
                   className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
                   showLabel={true}
+                  context="modal"
                 />
               </div>
             </div>

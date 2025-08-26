@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Users, MessageSquare, TrendingUp, Eye, Edit, Trash2, Save } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -84,6 +85,7 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const { user } = useAuth()
+  const { confirm } = useConfirmDialog()
   const router = useRouter()
 
   useEffect(() => {
@@ -174,7 +176,15 @@ export default function AdminDashboard() {
   }
 
   const handleUserDelete = async (userId: string) => {
-    if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+    const confirmed = await confirm({
+      title: "Delete User",
+      description: "Are you sure you want to delete this user? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      variant: "destructive"
+    })
+    
+    if (!confirmed) {
       return
     }
 

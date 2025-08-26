@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/lib/auth-context"
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
 import { useSidebar } from "@/lib/sidebar-context"
 import { toast } from "sonner"
 
@@ -60,6 +61,7 @@ function HomePageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { user } = useAuth()
+  const { confirm } = useConfirmDialog()
   const { refreshAll } = useSidebar() // For refreshing sidebar on post deletion
 
   const fetchPosts = async (page: number = 1) => {
@@ -231,9 +233,17 @@ function HomePageContent() {
                       post={post} 
                       onDelete={
                         user && (user.id === post.author.id || user.role === "ADMIN")
-                          ? () => {
+                          ? async () => {
                               // Create a delete function that includes animation trigger
-                              if (!confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
+                              const confirmed = await confirm({
+                                title: "Delete Post",
+                                description: "Are you sure you want to delete this post? This action cannot be undone.",
+                                confirmText: "Delete",
+                                cancelText: "Cancel",
+                                variant: "destructive"
+                              })
+                              
+                              if (!confirmed) {
                                 return
                               }
                               handleDeletePost(post.id)

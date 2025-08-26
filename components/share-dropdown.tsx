@@ -10,7 +10,8 @@ import {
   MessageCircle, 
   Mail, 
   Send,
-  Check
+  Check,
+  MoreHorizontal
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { shareService, ShareMethod } from "@/lib/share-service"
@@ -38,6 +39,7 @@ export default function ShareDropdown({
   const [copiedRecently, setCopiedRecently] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('top')
   const [dropdownCoords, setDropdownCoords] = useState<{x: number, y: number} | null>(null)
+  const [showMoreOptions, setShowMoreOptions] = useState(false)
   const { toast } = useToast()
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -60,7 +62,7 @@ export default function ShareDropdown({
   // Calculate dropdown position when opened
   useEffect(() => {
     if (isOpen && dropdownRef.current) {
-      // Small delay to ensure DOM is ready for accurate positioning
+      // Function to calculate position
       const calculatePosition = () => {
         const rect = dropdownRef.current!.getBoundingClientRect()
         const spaceAbove = rect.top
@@ -70,7 +72,8 @@ export default function ShareDropdown({
         setDropdownPosition(useTop ? 'top' : 'bottom')
         
         // Always set coordinates for consistent positioning
-        const dropdownWidth = 280
+        const isMobile = window.innerWidth < 768 // Mobile breakpoint
+        const dropdownWidth = 320 // Fixed width for desktop dropdown
         const buttonCenter = rect.left + (rect.width / 2)
         
         // Separate positioning for homepage vs modal
@@ -82,9 +85,17 @@ export default function ShareDropdown({
           y = rect.top - 45  // Always 45px above the button regardless of space
           setDropdownPosition('top') // Force top position for modal
         } else {
-          // Homepage positioning: more near and more left
-          x = buttonCenter - (dropdownWidth / 2) -150  // More left (was -50, now -80)
-          y = useTop ? rect.top + 80 : rect.bottom + 2   // Very close to button
+          // Homepage positioning: simple and clean for desktop
+          if (isMobile) {
+            // Mobile positioning is not used since we use bottom sheet
+            x = 0
+            y = 0
+          } else {
+            // Desktop: position above and slightly to the left
+            x = buttonCenter - (dropdownWidth / 2) - 60  // Slight left offset for better UX
+            y = rect.top - 16   // Close to button with some breathing room
+            setDropdownPosition('top')
+          }
         }
         
         // Ensure dropdown doesn't go off screen
@@ -95,11 +106,42 @@ export default function ShareDropdown({
         setDropdownCoords({ x: finalX, y })
       }
       
-      // Calculate immediately and also after a small delay for stability
+      // Calculate immediately
       calculatePosition()
-      const timeoutId = setTimeout(calculatePosition, 10)
       
-      return () => clearTimeout(timeoutId)
+      // Add scroll listener to recalculate position on scroll (with basic throttling)
+      let scrollTimeout: ReturnType<typeof setTimeout> | null = null
+      const handleScroll = () => {
+        // Clear existing timeout
+        if (scrollTimeout) {
+          clearTimeout(scrollTimeout)
+        }
+        
+        // Set new timeout for throttling
+        scrollTimeout = setTimeout(() => {
+          calculatePosition()
+        }, 10) // Throttle to every 10ms for smooth repositioning
+      }
+      
+      // Add both window and document scroll listeners to catch all scroll events
+      window.addEventListener('scroll', handleScroll, true) // Use capture phase
+      document.addEventListener('scroll', handleScroll, true)
+      
+      // Also add resize listener in case window size changes
+      window.addEventListener('resize', handleScroll)
+      
+      // Cleanup function
+      return () => {
+        // Clear timeout
+        if (scrollTimeout) {
+          clearTimeout(scrollTimeout)
+        }
+        
+        // Remove event listeners
+        window.removeEventListener('scroll', handleScroll, true)
+        document.removeEventListener('scroll', handleScroll, true)
+        window.removeEventListener('resize', handleScroll)
+      }
     } else {
       // Clear coordinates when closed
       setDropdownCoords(null)
@@ -199,74 +241,199 @@ export default function ShareDropdown({
     }
   ]
 
-  // On mobile, show only the most important share options to prevent wrapping
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
-  const displayedOptions = isMobile ? shareOptions.slice(0, 4) : shareOptions
+  // On mobile, show all share options in the bottom sheet
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768 // Use same breakpoint
+  const displayedOptions = isMobile ? shareOptions.slice(0, 6) : shareOptions // Show 6 main options on mobile
 
   return (
     <div ref={dropdownRef} className={cn("relative inline-flex items-center", className)}>
-      {/* Share Options (shown when opened) - positioned dynamically */}
-      {isOpen && dropdownCoords && (
+      {/* Share Options - Facebook-style modal/dropdown */}
+      {isOpen && (
         <>
-          {/* Backdrop for mobile */}
-          <div className="fixed inset-0 z-[1001] md:hidden" onClick={() => setIsOpen(false)} />
-          
-          {/* Fixed positioning dropdown */}
-          <div 
-            className="fixed flex items-center gap-1 animate-in fade-in duration-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 shadow-xl whitespace-nowrap z-[99999]"
-            style={{
-              left: dropdownCoords.x,
-              top: dropdownCoords.y,
-            }}
-          >
-            {/* Arrow pointing to share button */}
-            <div className={cn(
-              "absolute left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-l-transparent border-r-transparent",
-              dropdownPosition === 'top' 
-                ? "top-full border-t-[6px] border-t-gray-200 dark:border-t-gray-700" 
-                : "bottom-full border-b-[6px] border-b-gray-200 dark:border-b-gray-700"
-            )}></div>
-            <div className={cn(
-              "absolute left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[5px] border-r-[5px] border-l-transparent border-r-transparent",
-              dropdownPosition === 'top' 
-                ? "top-full border-t-[5px] border-t-white dark:border-t-gray-800 -mt-px" 
-                : "bottom-full border-b-[5px] border-b-white dark:border-b-gray-800 -mb-px"
-            )}></div>
-            
-            {displayedOptions.map((option) => (
-              <Button
-                key={option.method}
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  "p-2 h-8 w-8 transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0 rounded-md",
-                  option.color
-                )}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
-                  handleShare(option.method)
+          {/* Mobile: Full-screen overlay with bottom sheet */}
+          {isMobile ? (
+            <>
+              {/* Backdrop */}
+              <div 
+                className="fixed inset-0 bg-black/50 z-[99998] animate-in fade-in duration-300" 
+                onClick={() => setIsOpen(false)} 
+              />
+              
+              {/* Bottom Sheet Modal */}
+              <div className="fixed bottom-0 left-0 right-0 z-[99999] animate-in slide-in-from-bottom duration-300 ease-out">
+                <div className="bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl border-t border-gray-200 dark:border-gray-700 max-h-[80vh] overflow-hidden">
+                  {/* Handle bar */}
+                  <div className="flex justify-center py-4">
+                    <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                  </div>
+                  
+                  {/* Header */}
+                  <div className="px-6 pb-4 border-b border-gray-100 dark:border-gray-800">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Share post</h3>
+                  </div>
+                  
+                  {/* Share options grid */}
+                  <div className="p-6 pb-8">
+                    <div className="grid grid-cols-3 gap-6">
+                      {displayedOptions.map((option) => (
+                        <button
+                          key={option.method}
+                          className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 active:scale-95"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            e.preventDefault()
+                            handleShare(option.method)
+                            setIsOpen(false)
+                          }}
+                        >
+                          <div className={cn(
+                            "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg",
+                            option.color === 'text-green-600' ? 'bg-green-500 text-white' :
+                            option.color === 'text-blue-500' ? 'bg-blue-500 text-white' :
+                            option.color === 'text-blue-600' ? 'bg-blue-600 text-white' :
+                            option.color === 'text-blue-700' ? 'bg-blue-700 text-white' :
+                            option.color === 'text-sky-500' ? 'bg-sky-500 text-white' :
+                            'bg-gray-600 text-white'
+                          )}>
+                            <option.icon className="w-8 h-8" />
+                          </div>
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100 text-center leading-tight">
+                            {option.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Cancel button */}
+                    <button
+                      onClick={() => setIsOpen(false)}
+                      className="w-full mt-6 py-4 px-6 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-2xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 text-lg"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Desktop: Inline horizontal icons */
+            dropdownCoords && (
+              <>
+                {/* Backdrop for click outside */}
+                <div className="fixed inset-0 z-[1000]" onClick={() => {
                   setIsOpen(false)
-                }}
-                title={option.label}
-              >
-                <option.icon className="w-4 h-4" />
-              </Button>
-            ))}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="p-2 h-8 w-8 transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 flex-shrink-0 rounded-md"
-              onClick={(e) => {
-                e.stopPropagation()
-                e.preventDefault()
-                setIsOpen(false)
-              }}
-              title="Close"
-            >
-              <span className="text-lg leading-none">×</span>
-            </Button>
-          </div>
+                  setShowMoreOptions(false)
+                }} />
+                
+                {/* Desktop inline dropdown */}
+                <div 
+                  className="fixed animate-in fade-in zoom-in-95 duration-200 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl z-[99999] p-3"
+                  style={{
+                    left: dropdownCoords.x,
+                    top: dropdownCoords.y,
+                  }}
+                >
+                  {/* Arrow pointing to share button */}
+                  <div className={cn(
+                    "absolute left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-l-transparent border-r-transparent",
+                    dropdownPosition === 'top' 
+                      ? "top-full border-t-[8px] border-t-gray-200 dark:border-t-gray-700" 
+                      : "bottom-full border-b-[8px] border-b-gray-200 dark:border-b-gray-700"
+                  )}></div>
+                  <div className={cn(
+                    "absolute left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-l-transparent border-r-transparent",
+                    dropdownPosition === 'top' 
+                      ? "top-full border-t-[7px] border-t-white dark:border-t-gray-900 -mt-px" 
+                      : "bottom-full border-b-[7px] border-b-white dark:border-b-gray-900 -mb-px"
+                  )}></div>
+                  
+                  {/* Inline share options */}
+                  <div className="flex items-center gap-2">
+                    {/* Show first 4 options or all if expanded */}
+                    {(showMoreOptions ? shareOptions : shareOptions.slice(0, 4)).map((option) => (
+                      <button
+                        key={option.method}
+                        className="group flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 min-w-[60px]"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          e.preventDefault()
+                          handleShare(option.method)
+                          setIsOpen(false)
+                          setShowMoreOptions(false)
+                        }}
+                        title={option.label}
+                      >
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200",
+                          option.color === 'text-green-600' ? 'bg-green-100 dark:bg-green-900 group-hover:bg-green-500 group-hover:text-white' :
+                          option.color === 'text-blue-500' ? 'bg-blue-100 dark:bg-blue-900 group-hover:bg-blue-500 group-hover:text-white' :
+                          option.color === 'text-blue-600' ? 'bg-blue-100 dark:bg-blue-900 group-hover:bg-blue-600 group-hover:text-white' :
+                          option.color === 'text-blue-700' ? 'bg-blue-100 dark:bg-blue-900 group-hover:bg-blue-700 group-hover:text-white' :
+                          option.color === 'text-sky-500' ? 'bg-sky-100 dark:bg-sky-900 group-hover:bg-sky-500 group-hover:text-white' :
+                          'bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-600 group-hover:text-white',
+                          "group-hover:scale-110"
+                        )}>
+                          <option.icon className={cn(
+                            "w-4 h-4 transition-colors duration-200",
+                            option.color,
+                            "group-hover:text-white"
+                          )} />
+                        </div>
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-200 text-center leading-tight">
+                          {option.method === 'copy' ? 'Copy' :
+                           option.method === 'whatsapp' ? 'WhatsApp' :
+                           option.method === 'twitter' ? 'Twitter' :
+                           option.method === 'facebook' ? 'Facebook' :
+                           option.method === 'linkedin' ? 'LinkedIn' :
+                           option.method === 'telegram' ? 'Telegram' :
+                           'Email'}
+                        </span>
+                      </button>
+                    ))}
+                    
+                    {/* More/Less toggle button - only show if there are more than 4 options */}
+                    {shareOptions.length > 4 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          e.preventDefault()
+                          setShowMoreOptions(!showMoreOptions)
+                        }}
+                        className="group flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 min-w-[60px]"
+                        title={showMoreOptions ? "Show less" : "Show more"}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 flex items-center justify-center transition-all duration-200 group-hover:scale-110">
+                          {showMoreOptions ? (
+                            <span className="text-lg leading-none font-semibold text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-200">−</span>
+                          ) : (
+                            <MoreHorizontal className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-200" />
+                          )}
+                        </div>
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-200 text-center leading-tight">
+                          {showMoreOptions ? 'Less' : 'More'}
+                        </span>
+                      </button>
+                    )}
+                    
+                    {/* Close button */}
+                    <button
+                      onClick={() => {
+                        setIsOpen(false)
+                        setShowMoreOptions(false)
+                      }}
+                      className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 min-w-[60px] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                      title="Close"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200">
+                        <span className="text-lg leading-none font-semibold">×</span>
+                      </div>
+                      <span className="text-xs font-medium text-center">Close</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )
+          )}
         </>
       )}
       

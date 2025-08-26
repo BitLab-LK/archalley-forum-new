@@ -16,6 +16,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
+import { useToast } from "@/hooks/use-toast"
 import PostImage from "@/components/post-image"
 import PostModal from "./post-modal"
 import { PostBadges } from "./post-badges"
@@ -64,7 +66,7 @@ interface PostCardProps {
       userVote?: "up" | "down"
     }
   }
-  onDelete?: () => void
+  onDelete?: () => void | Promise<void>
   onCommentCountChange?: (postId: string, newCount: number) => void
   onVoteChange?: (postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => void
   onTopCommentVoteChange?: (postId: string, topComment: { id: string, author: string, content: string, upvotes: number, downvotes: number, isBestAnswer: boolean, userVote?: "up" | "down" } | null) => void
@@ -104,6 +106,8 @@ const shouldUseColoredBackground = (content: string, hasImages: boolean): boolea
 
 const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, onVoteChange, onTopCommentVoteChange }: PostCardProps) {
   const { user, isLoading } = useAuth()
+  const { confirm } = useConfirmDialog()
+  const { toast } = useToast()
   
   // Memoized computed values
   const isAuthor = useMemo(() => user?.id === post.author.id, [user?.id, post.author.id])
@@ -184,11 +188,20 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     setIsDeleting(true)
     
     if (onDelete) {
-      onDelete()
+      await onDelete()
+      setIsDeleting(false)
       return
     }
     
-    if (!confirm("Are you sure you want to delete this post?")) {
+    const confirmed = await confirm({
+      title: "Delete Post",
+      description: "Are you sure you want to delete this post? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      variant: "destructive"
+    })
+    
+    if (!confirmed) {
       setIsDeleting(false)
       return
     }
@@ -230,7 +243,11 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   // Simple, direct vote handler that actually works
   const handleVote = useCallback(async (type: "up" | "down") => {
     if (!user) {
-      alert("Please log in to vote on posts")
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to vote on posts",
+        variant: "destructive"
+      })
       return
     }
     
@@ -315,9 +332,17 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
       
       // Check if it's a network error
       if (error instanceof TypeError && errorMessage === 'Failed to fetch') {
-        alert('Network error: Unable to connect to server. Please check if the development server is running.')
+        toast({
+          title: "Network Error",
+          description: "Unable to connect to server. Please check if the development server is running.",
+          variant: "destructive"
+        })
       } else {
-        alert(`Failed to vote: ${errorMessage || 'Unknown error'}`)
+        toast({
+          title: "Vote Failed",
+          description: errorMessage || 'Unknown error',
+          variant: "destructive"
+        })
       }
       
       // Rollback on error using global state
