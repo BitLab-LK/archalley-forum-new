@@ -83,6 +83,16 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
   const { confirm } = useConfirmDialog()
   const { toast } = useToast()
   
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+      return () => {
+        document.body.style.overflow = 'unset'
+      }
+    }
+  }, [open])
+  
   // Effect to update comment count whenever comments change
   useEffect(() => {
     const totalComments = comments.reduce((total, comment) => {
@@ -907,7 +917,19 @@ await handleVote(type)
 
   return (
     <div 
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80"
+      className="modal-backdrop fixed inset-0 z-[99999] flex items-center justify-center bg-black/80"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 99999,
+        margin: 0,
+        padding: 0
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose()

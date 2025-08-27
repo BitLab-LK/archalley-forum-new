@@ -98,6 +98,16 @@ export default function ImagePostModal({
   const [loading, setLoading] = useState(false)
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
   
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+      return () => {
+        document.body.style.overflow = 'unset'
+      }
+    }
+  }, [open])
+  
   // Refs and hooks
   const commentInputRef = useRef<HTMLInputElement>(null)
   const lastVoteClickTime = useRef<number>(0) // Debounce vote clicks
@@ -940,7 +950,21 @@ await handleVote(type)
   if (!open || !hasImages) return null
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80">
+    <div 
+      className="modal-backdrop fixed inset-0 z-[99999] flex items-center justify-center bg-black/80"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 99999,
+        margin: 0,
+        padding: 0
+      }}
+    >
       <div className="relative h-[90vh] min-h-[600px] max-h-[800px] w-full max-w-7xl mx-4 flex flex-col md:flex-row bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden">
         {/* Left: Image Carousel */}
         <div className="flex-1 flex items-center justify-center bg-black relative min-h-[400px]">
