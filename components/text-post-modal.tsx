@@ -91,6 +91,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
         document.body.style.overflow = 'unset'
       }
     }
+    return undefined
   }, [open])
   
   // Effect to update comment count whenever comments change
@@ -133,10 +134,6 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
     }
   }, [upvotes, downvotes, userVote, post.id, onVoteChange])
   
-  useEffect(() => {
-    // Effect for modal open handling can be added here if needed
-  }, [open, post.id])
-  
   // Check if this is an image post
   const hasImages = post.images && post.images.length > 0
 
@@ -154,7 +151,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
   }
 
   useEffect(() => {
-    if (!open) return
+    if (!open) return undefined
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose()
     }
@@ -164,7 +161,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
 
   // Fetch comments when modal opens
   useEffect(() => {
-    if (!open) return
+    if (!open) return undefined
     
     // Fetch both comments and post votes
     const fetchData = async () => {
@@ -204,6 +201,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
     };
     
     fetchData();
+    return undefined
   }, [open, post.id])
 
   // Vote handler with real-time synchronization

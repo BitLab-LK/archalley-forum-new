@@ -149,16 +149,16 @@ export default function ShareDropdown({
     }
   ]
 
-  // On mobile, show all share options in the bottom sheet
+  // On mobile, show more share options in the bottom sheet (4-column grid allows for 8 items)
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768 // Use same breakpoint
-  const displayedOptions = isMobile ? shareOptions.slice(0, 6) : shareOptions // Show 6 main options on mobile
+  const displayedOptions = isMobile ? shareOptions.slice(0, 8) : shareOptions // Show 8 main options on mobile for 4-column layout
 
   return (
     <div ref={dropdownRef} className={cn("relative inline-flex items-center", className)}>
       {/* Share Options - Facebook-style modal/dropdown */}
       {isOpen && (
         <>
-          {/* Mobile: Full-screen overlay with bottom sheet */}
+          {/* Mobile: Full-screen overlay with bottom sheet - More compact */}
           {isMobile ? (
             <>
               {/* Backdrop */}
@@ -167,26 +167,26 @@ export default function ShareDropdown({
                 onClick={() => setIsOpen(false)} 
               />
               
-              {/* Bottom Sheet Modal */}
+              {/* Bottom Sheet Modal - More compact */}
               <div className="fixed bottom-0 left-0 right-0 z-[99999] animate-in slide-in-from-bottom duration-300 ease-out">
-                <div className="bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl border-t border-gray-200 dark:border-gray-700 max-h-[80vh] overflow-hidden">
-                  {/* Handle bar */}
-                  <div className="flex justify-center py-4">
-                    <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                <div className="bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl border-t border-gray-200 dark:border-gray-700 max-h-[75vh] overflow-hidden">
+                  {/* Handle bar - smaller */}
+                  <div className="flex justify-center py-3">
+                    <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
                   </div>
                   
-                  {/* Header */}
-                  <div className="px-6 pb-4 border-b border-gray-100 dark:border-gray-800">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Share post</h3>
+                  {/* Header - more compact */}
+                  <div className="px-5 pb-3 border-b border-gray-100 dark:border-gray-800">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Share post</h3>
                   </div>
                   
-                  {/* Share options grid */}
-                  <div className="p-6 pb-8">
-                    <div className="grid grid-cols-3 gap-6">
+                  {/* Share options grid - more compact */}
+                  <div className="p-4 pb-6">
+                    <div className="grid grid-cols-4 gap-4">
                       {displayedOptions.map((option) => (
                         <button
                           key={option.method}
-                          className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 active:scale-95"
+                          className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 active:scale-95"
                           onClick={(e) => {
                             e.stopPropagation()
                             e.preventDefault()
@@ -195,7 +195,7 @@ export default function ShareDropdown({
                           }}
                         >
                           <div className={cn(
-                            "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg",
+                            "w-12 h-12 rounded-xl flex items-center justify-center shadow-sm",
                             option.color === 'text-green-600' ? 'bg-green-500 text-white' :
                             option.color === 'text-blue-500' ? 'bg-blue-500 text-white' :
                             option.color === 'text-blue-600' ? 'bg-blue-600 text-white' :
@@ -203,19 +203,19 @@ export default function ShareDropdown({
                             option.color === 'text-sky-500' ? 'bg-sky-500 text-white' :
                             'bg-gray-600 text-white'
                           )}>
-                            <option.icon className="w-8 h-8" />
+                            <option.icon className="w-6 h-6" />
                           </div>
-                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100 text-center leading-tight">
+                          <span className="text-xs font-medium text-gray-900 dark:text-gray-100 text-center leading-tight">
                             {option.label}
                           </span>
                         </button>
                       ))}
                     </div>
                     
-                    {/* Cancel button */}
+                    {/* Cancel button - more compact */}
                     <button
                       onClick={() => setIsOpen(false)}
-                      className="w-full mt-6 py-4 px-6 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-2xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 text-lg"
+                      className="w-full mt-4 py-3 px-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 text-base"
                     >
                       Cancel
                     </button>

@@ -106,6 +106,7 @@ export default function ImagePostModal({
         document.body.style.overflow = 'unset'
       }
     }
+    return undefined
   }, [open])
   
   // Refs and hooks
@@ -167,14 +168,13 @@ export default function ImagePostModal({
 
   // Fetch comments when modal opens
   useEffect(() => {
-    if (!open) return
+    if (!open) return undefined
     
     setLoading(true)
     
     const fetchComments = async () => {
       try {
         const commentsUrl = `/api/comments?postId=${post.id}`;
-        console.log('ImageModal: Fetching comments from:', commentsUrl);
         
         const res = await fetch(commentsUrl, {
           method: 'GET',
@@ -184,9 +184,6 @@ export default function ImagePostModal({
           cache: 'no-cache'
         });
         
-        console.log('ImageModal: Comments response status:', res.status);
-        console.log('ImageModal: Comments response ok:', res.ok);
-        
         if (!res.ok) {
           const errorText = await res.text();
           console.error('ImageModal: Comments fetch failed:', res.status, errorText);
@@ -194,11 +191,9 @@ export default function ImagePostModal({
         }
         
         const data = await res.json();
-        console.log('ImageModal: Comments data received:', data);
         
         if (Array.isArray(data.comments)) {
           setComments(data.comments);
-          console.log('ImageModal: Set comments count:', data.comments.length);
         } else {
           console.warn('ImageModal: Comments data is not an array:', data);
           setComments([]);
@@ -212,6 +207,7 @@ export default function ImagePostModal({
     };
     
     fetchComments();
+    return undefined
   }, [open, post.id])
 
   // Handle vote action with smooth animation and global sync
@@ -762,7 +758,7 @@ await handleVote(type)
 
   // Keyboard navigation
   useEffect(() => {
-    if (!open) return
+    if (!open) return undefined
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") setCarouselIndex(i => (i > 0 ? i - 1 : images.length - 1))
       if (e.key === "ArrowRight") setCarouselIndex(i => (i < images.length - 1 ? i + 1 : 0))
