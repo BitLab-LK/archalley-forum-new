@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Camera, CheckCircle, MapPin, Calendar, LinkIcon, Settings, Briefcase, GraduationCap, Globe, FileText } from "lucide-react"
+import { User, Camera, CheckCircle, MapPin, Calendar, LinkIcon, Settings, Briefcase, GraduationCap, Globe, FileText, Shield, Share2 } from "lucide-react"
+import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { AuthGuard } from "@/components/auth-guard"
 import ActivityFeed from "@/components/activity-feed"
@@ -876,23 +877,63 @@ export default function ProfilePage() {
                       <Settings className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl font-semibold text-slate-900">Privacy Settings</CardTitle>
-                      <p className="text-sm text-slate-600">Manage your privacy and visibility preferences</p>
+                      <CardTitle className="text-xl font-semibold text-slate-900">Account Settings</CardTitle>
+                      <p className="text-sm text-slate-600">Manage your profile and account preferences</p>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100 hover:border-gray-200 transition-all duration-200">
-                    <div>
-                      <Label className="text-base font-medium text-slate-900">Profile Visibility</Label>
-                      <p className="text-sm text-slate-600 mt-1">Make your profile visible in the public directory</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Link href="/profile/edit">
+                      <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-blue-50 hover:border-blue-200">
+                        <User className="w-5 h-5" />
+                        <span className="text-sm">Edit Profile</span>
+                      </Button>
+                    </Link>
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-green-50 hover:border-green-200" 
+                            onClick={() => window.location.href = '/profile/edit?tab=account'}>
+                      <Settings className="w-5 h-5" />
+                      <span className="text-sm">Account Settings</span>
+                    </Button>
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-purple-50 hover:border-purple-200"
+                            onClick={() => window.location.href = '/profile/edit?tab=connected'}>
+                      <LinkIcon className="w-5 h-5" />
+                      <span className="text-sm">Connected Accounts</span>
+                    </Button>
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-orange-50 hover:border-orange-200"
+                            onClick={() => window.location.href = '/profile/edit?tab=privacy'}>
+                      <Shield className="w-5 h-5" />
+                      <span className="text-sm">Privacy & Security</span>
+                    </Button>
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-indigo-50 hover:border-indigo-200"
+                            onClick={() => window.location.href = '/profile/edit?tab=professional'}>
+                      <Briefcase className="w-5 h-5" />
+                      <span className="text-sm">Professional Info</span>
+                    </Button>
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-red-50 hover:border-red-200"
+                            onClick={() => window.location.href = '/profile/edit?tab=experience'}>
+                      <GraduationCap className="w-5 h-5" />
+                      <span className="text-sm">Experience & Education</span>
+                    </Button>
+                  </div>
+                  
+                  <div className="mt-8 pt-6 border-t border-gray-200">
+                    <h4 className="text-md font-medium mb-4 text-slate-900">Quick Actions</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Button variant="ghost" className="w-full justify-start" 
+                              onClick={() => window.location.href = '/profile/edit?tab=personal'}>
+                        <Camera className="w-4 h-4 mr-2" />
+                        Change Profile Picture
+                      </Button>
+                      <Button variant="ghost" className="w-full justify-start"
+                              onClick={() => {
+                                navigator.clipboard.writeText(window.location.origin + `/profile/${user?.id}`)
+                                // Add toast notification here if available
+                              }}>
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Share Profile
+                      </Button>
                     </div>
-                    <Switch
-                      checked={profileData.profileVisibility}
-                      onCheckedChange={(checked) => setProfileData({ ...profileData, profileVisibility: checked })}
-                      disabled={!isEditing}
-                      className="data-[state=checked]:bg-slate-900"
-                    />
                   </div>
                 </CardContent>
               </Card>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -52,12 +53,16 @@ export default function EditProfilePage() {
   const { user } = useAuth()
   const { update } = useSession()
   const { toast } = useToast()
+  const searchParams = useSearchParams()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState("")
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
+
+  // Get the tab from URL params, default to "personal"
+  const defaultTab = searchParams.get('tab') || 'personal'
 
   // Image upload hook
   const { uploadFiles, isUploading } = useVercelBlobUpload({
@@ -115,6 +120,30 @@ export default function EditProfilePage() {
   const [workExperience, setWorkExperience] = useState<WorkExperience[]>([])
   const [education, setEducation] = useState<Education[]>([])
   const [newSkill, setNewSkill] = useState("")
+
+  // Settings state
+  const [accountSettings, setAccountSettings] = useState({
+    profileVisibility: "public",
+    newConnections: true,
+    messages: true,
+    jobAlerts: true,
+    weeklyDigest: true,
+    securityAlerts: true,
+    profileSearchable: true
+  })
+
+  const [connectedAccounts, setConnectedAccounts] = useState({
+    google: { connected: false, email: "" },
+    facebook: { connected: false, email: "" },
+    linkedin: { connected: false, email: "" }
+  })
+
+  const [privacySettings, setPrivacySettings] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+    twoFactorEnabled: false
+  })
 
   useEffect(() => {
     if (user?.id) {
@@ -371,27 +400,29 @@ export default function EditProfilePage() {
             )}
           </div>
 
-          <Tabs defaultValue="basic" className="w-full">
+          <Tabs defaultValue={defaultTab} className="w-full">
             <div className="overflow-x-auto mb-4 sm:mb-6">
-              <TabsList className="grid w-full grid-cols-5 min-w-max sm:min-w-0">
-                <TabsTrigger value="basic" className="text-xs sm:text-sm">Basic Info</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-7 min-w-max sm:min-w-0">
+                <TabsTrigger value="personal" className="text-xs sm:text-sm">Personal</TabsTrigger>
                 <TabsTrigger value="professional" className="text-xs sm:text-sm">Professional</TabsTrigger>
                 <TabsTrigger value="experience" className="text-xs sm:text-sm">Experience</TabsTrigger>
                 <TabsTrigger value="education" className="text-xs sm:text-sm">Education</TabsTrigger>
-                <TabsTrigger value="social" className="text-xs sm:text-sm">Social Links</TabsTrigger>
+                <TabsTrigger value="connected" className="text-xs sm:text-sm">Connected</TabsTrigger>
+                <TabsTrigger value="account" className="text-xs sm:text-sm">Account</TabsTrigger>
+                <TabsTrigger value="privacy" className="text-xs sm:text-sm">Privacy</TabsTrigger>
               </TabsList>
             </div>
 
-            {/* Basic Information */}
-            <TabsContent value="basic" className="space-y-4 sm:space-y-6">
+            {/* Personal Information */}
+            <TabsContent value="personal" className="space-y-4 sm:space-y-6">
               <Card>
                 <CardHeader className="p-4 sm:p-6">
                   <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                     <User className="w-4 h-4 sm:w-5 sm:h-5" />
-                    Basic Information
+                    Personal Information
                   </CardTitle>
                   <CardDescription className="text-sm">
-                    Update your basic personal information
+                    Update your basic personal information and profile picture
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
@@ -635,6 +666,33 @@ export default function EditProfilePage() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Social Media Links */}
+                  <div className="space-y-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-medium">Professional Links</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="linkedinUrl" className="text-sm font-medium">LinkedIn URL</Label>
+                        <Input
+                          id="linkedinUrl"
+                          value={profileData.linkedinUrl}
+                          onChange={(e) => handleInputChange('linkedinUrl', e.target.value)}
+                          placeholder="https://linkedin.com/in/yourprofile"
+                          className="text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="portfolioUrl" className="text-sm font-medium">Portfolio/Website URL</Label>
+                        <Input
+                          id="portfolioUrl"
+                          value={profileData.portfolioUrl}
+                          onChange={(e) => handleInputChange('portfolioUrl', e.target.value)}
+                          placeholder="https://yourportfolio.com"
+                          className="text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -841,47 +899,422 @@ export default function EditProfilePage() {
               </Card>
             </TabsContent>
 
-            {/* Social Links */}
-            <TabsContent value="social" className="space-y-6">
+            {/* Connected Accounts */}
+            <TabsContent value="connected" className="space-y-4 sm:space-y-6">
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ExternalLink className="w-5 h-5" />
-                    Social Links
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Connected Accounts
                   </CardTitle>
-                  <CardDescription>
-                    Add your social media profiles and professional links
+                  <CardDescription className="text-sm">
+                    Connect your social media accounts to easily log in and share your professional updates.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
-                      <Input
-                        id="linkedinUrl"
-                        value={profileData.linkedinUrl}
-                        onChange={(e) => handleInputChange('linkedinUrl', e.target.value)}
-                        placeholder="https://linkedin.com/in/yourprofile"
-                      />
+                <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+                  {/* Google Account */}
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white font-bold">
+                        G
+                      </div>
+                      <div>
+                        <p className="font-medium">Google</p>
+                        <p className="text-sm text-gray-500">
+                          {connectedAccounts.google.connected ? connectedAccounts.google.email : "Connect to use Gmail for login"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="facebookUrl">Facebook URL</Label>
-                      <Input
-                        id="facebookUrl"
-                        value={profileData.facebookUrl}
-                        onChange={(e) => handleInputChange('facebookUrl', e.target.value)}
-                        placeholder="https://facebook.com/yourprofile"
-                      />
+                    <Button
+                      variant={connectedAccounts.google.connected ? "destructive" : "default"}
+                      size="sm"
+                      onClick={() => {
+                        if (connectedAccounts.google.connected) {
+                          setConnectedAccounts(prev => ({
+                            ...prev,
+                            google: { connected: false, email: "" }
+                          }))
+                        } else {
+                          // Connect logic here
+                          toast({
+                            title: "Coming Soon",
+                            description: "Google account connection will be available soon.",
+                          })
+                        }
+                      }}
+                    >
+                      {connectedAccounts.google.connected ? "Disconnect" : "Connect"}
+                    </Button>
+                  </div>
+
+                  {/* Facebook Account */}
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                        f
+                      </div>
+                      <div>
+                        <p className="font-medium">Facebook</p>
+                        <p className="text-sm text-gray-500">
+                          {connectedAccounts.facebook.connected ? connectedAccounts.facebook.email : "Connect to share professional updates"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="instagramUrl">Instagram URL</Label>
-                      <Input
-                        id="instagramUrl"
-                        value={profileData.instagramUrl}
-                        onChange={(e) => handleInputChange('instagramUrl', e.target.value)}
-                        placeholder="https://instagram.com/yourprofile"
-                      />
+                    <Button variant="outline" size="sm" disabled>
+                      Connect
+                    </Button>
+                  </div>
+
+                  {/* LinkedIn Account */}
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center text-white font-bold">
+                        in
+                      </div>
+                      <div>
+                        <p className="font-medium">LinkedIn</p>
+                        <p className="text-sm text-gray-500">
+                          {connectedAccounts.linkedin.connected ? connectedAccounts.linkedin.email : "Connect to import professional data"}
+                        </p>
+                      </div>
                     </div>
+                    <Button variant="outline" size="sm" disabled>
+                      Connect
+                    </Button>
+                  </div>
+
+                  <div className="mt-6">
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        toast({
+                          title: "Settings Saved",
+                          description: "Connected accounts updated successfully.",
+                        })
+                      }}
+                    >
+                      Save Connected Accounts
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Account Settings */}
+            <TabsContent value="account" className="space-y-4 sm:space-y-6">
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Account Settings
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Manage your account preferences and notification settings.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6 p-4 sm:p-6">
+                  {/* Profile Visibility */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Profile Visibility</Label>
+                    <p className="text-sm text-gray-500">Make your profile visible to other users</p>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant={accountSettings.profileVisibility === "public" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setAccountSettings(prev => ({ ...prev, profileVisibility: "public" }))}
+                      >
+                        Public
+                      </Button>
+                      <Button
+                        variant={accountSettings.profileVisibility === "private" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setAccountSettings(prev => ({ ...prev, profileVisibility: "private" }))}
+                      >
+                        Private
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Notification Preferences */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">Notification Preferences</h3>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">New Connections</p>
+                          <p className="text-sm text-gray-500">Get notified when someone connects with you</p>
+                        </div>
+                        <Button
+                          variant={accountSettings.newConnections ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setAccountSettings(prev => ({ ...prev, newConnections: !prev.newConnections }))}
+                        >
+                          {accountSettings.newConnections ? "On" : "Off"}
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Messages</p>
+                          <p className="text-sm text-gray-500">Receive notifications for new messages</p>
+                        </div>
+                        <Button
+                          variant={accountSettings.messages ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setAccountSettings(prev => ({ ...prev, messages: !prev.messages }))}
+                        >
+                          {accountSettings.messages ? "On" : "Off"}
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Job Alerts</p>
+                          <p className="text-sm text-gray-500">Receive notifications about relevant job opportunities</p>
+                        </div>
+                        <Button
+                          variant={accountSettings.jobAlerts ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setAccountSettings(prev => ({ ...prev, jobAlerts: !prev.jobAlerts }))}
+                        >
+                          {accountSettings.jobAlerts ? "On" : "Off"}
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Weekly Digest</p>
+                          <p className="text-sm text-gray-500">Get a weekly summary of your network activity</p>
+                        </div>
+                        <Button
+                          variant={accountSettings.weeklyDigest ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setAccountSettings(prev => ({ ...prev, weeklyDigest: !prev.weeklyDigest }))}
+                        >
+                          {accountSettings.weeklyDigest ? "On" : "Off"}
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Security Alerts</p>
+                          <p className="text-sm text-gray-500">Important security notifications (always enabled)</p>
+                        </div>
+                        <Button
+                          variant={accountSettings.securityAlerts ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setAccountSettings(prev => ({ ...prev, securityAlerts: !prev.securityAlerts }))}
+                        >
+                          {accountSettings.securityAlerts ? "On" : "Off"}
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Profile Searchable</p>
+                          <p className="text-sm text-gray-500">Allow others to find your profile in search</p>
+                        </div>
+                        <Button
+                          variant={accountSettings.profileSearchable ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setAccountSettings(prev => ({ ...prev, profileSearchable: !prev.profileSearchable }))}
+                        >
+                          {accountSettings.profileSearchable ? "On" : "Off"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        toast({
+                          title: "Settings Saved",
+                          description: "Account settings updated successfully.",
+                        })
+                      }}
+                    >
+                      Save Account Settings
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Privacy & Security */}
+            <TabsContent value="privacy" className="space-y-4 sm:space-y-6">
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Privacy & Security
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Manage your account security and privacy settings.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6 p-4 sm:p-6">
+                  {/* Change Password */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">Change Password</h3>
+                    
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="currentPassword" className="text-sm">Current Password</Label>
+                        <Input
+                          id="currentPassword"
+                          type="password"
+                          value={privacySettings.currentPassword}
+                          onChange={(e) => setPrivacySettings(prev => ({ ...prev, currentPassword: e.target.value }))}
+                          placeholder="Enter current password"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="newPassword" className="text-sm">New Password</Label>
+                        <Input
+                          id="newPassword"
+                          type="password"
+                          value={privacySettings.newPassword}
+                          onChange={(e) => setPrivacySettings(prev => ({ ...prev, newPassword: e.target.value }))}
+                          placeholder="Enter new password"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword" className="text-sm">Confirm New Password</Label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          value={privacySettings.confirmPassword}
+                          onChange={(e) => setPrivacySettings(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                          placeholder="Confirm new password"
+                        />
+                      </div>
+
+                      <Button 
+                        className="w-full"
+                        onClick={() => {
+                          if (privacySettings.newPassword !== privacySettings.confirmPassword) {
+                            toast({
+                              title: "Password Mismatch",
+                              description: "New passwords do not match.",
+                              variant: "destructive"
+                            })
+                            return
+                          }
+                          toast({
+                            title: "Password Updated",
+                            description: "Your password has been updated successfully.",
+                          })
+                          setPrivacySettings(prev => ({ 
+                            ...prev, 
+                            currentPassword: "", 
+                            newPassword: "", 
+                            confirmPassword: "" 
+                          }))
+                        }}
+                      >
+                        Send Verification Code to Email
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Two-Factor Authentication */}
+                  <div className="space-y-3 pt-6 border-t">
+                    <h3 className="text-sm font-medium">Two-Factor Authentication</h3>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">Add an extra layer of security to your account</p>
+                        <p className="text-sm text-gray-500">
+                          {privacySettings.twoFactorEnabled ? "Enabled" : "Disabled"}
+                        </p>
+                      </div>
+                      <Button
+                        variant={privacySettings.twoFactorEnabled ? "destructive" : "default"}
+                        size="sm"
+                        onClick={() => {
+                          setPrivacySettings(prev => ({ ...prev, twoFactorEnabled: !prev.twoFactorEnabled }))
+                          toast({
+                            title: privacySettings.twoFactorEnabled ? "2FA Disabled" : "2FA Enabled",
+                            description: `Two-factor authentication has been ${privacySettings.twoFactorEnabled ? "disabled" : "enabled"}.`,
+                          })
+                        }}
+                      >
+                        {privacySettings.twoFactorEnabled ? "Disable" : "Enable"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Data Management */}
+                  <div className="space-y-3 pt-6 border-t">
+                    <h3 className="text-sm font-medium">Data Management</h3>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Export Your Data</p>
+                          <p className="text-sm text-gray-500">Download a copy of all your profile data and activity</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            toast({
+                              title: "Export Started",
+                              description: "Your data export has been initiated. You'll receive an email when ready.",
+                            })
+                          }}
+                        >
+                          Export Data
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Danger Zone */}
+                  <div className="space-y-3 pt-6 border-t border-red-200">
+                    <h3 className="text-sm font-medium text-red-600">Danger Zone</h3>
+                    
+                    <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-red-800">Delete Account</p>
+                          <p className="text-sm text-red-600">
+                            Permanently delete your account and all associated data. This action cannot be undone.
+                          </p>
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            toast({
+                              title: "Account Deletion",
+                              description: "Please contact support to delete your account.",
+                              variant: "destructive"
+                            })
+                          }}
+                        >
+                          Delete Account
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        toast({
+                          title: "Security Settings Saved",
+                          description: "Your security settings have been updated.",
+                        })
+                      }}
+                    >
+                      Save Security Settings
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

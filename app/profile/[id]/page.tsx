@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MapPin, Calendar, CheckCircle, ArrowLeft, Edit, MessageCircle, Phone, Mail, Building, Briefcase, GraduationCap, ExternalLink, Users, Trophy } from "lucide-react"
+import { MapPin, Calendar, CheckCircle, ArrowLeft, Edit, MessageCircle, Phone, Mail, Building, Briefcase, GraduationCap, ExternalLink, Users, Trophy, User, LinkIcon, Shield, Camera, Share2 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import PostCard from "@/components/post-card"
@@ -981,22 +981,56 @@ export default function UserProfilePage() {
             <TabsContent value="settings" className="space-y-6">
               <Card>
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Profile Settings</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <Button variant="outline" className="w-full">
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Profile Information
+                  <h3 className="text-lg font-semibold mb-6">Account Settings</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Link href="/profile/edit">
+                      <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-blue-50 hover:border-blue-200">
+                        <Edit className="w-5 h-5" />
+                        <span className="text-sm">Edit Profile</span>
                       </Button>
-                    </div>
-                    <div>
-                      <Button variant="outline" className="w-full">
+                    </Link>
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-green-50 hover:border-green-200" 
+                            onClick={() => window.location.href = '/profile/edit?tab=account'}>
+                      <User className="w-5 h-5" />
+                      <span className="text-sm">Account Settings</span>
+                    </Button>
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-purple-50 hover:border-purple-200"
+                            onClick={() => window.location.href = '/profile/edit?tab=connected'}>
+                      <LinkIcon className="w-5 h-5" />
+                      <span className="text-sm">Connected Accounts</span>
+                    </Button>
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-orange-50 hover:border-orange-200"
+                            onClick={() => window.location.href = '/profile/edit?tab=privacy'}>
+                      <Shield className="w-5 h-5" />
+                      <span className="text-sm">Privacy & Security</span>
+                    </Button>
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-indigo-50 hover:border-indigo-200"
+                            onClick={() => window.location.href = '/profile/edit?tab=professional'}>
+                      <Briefcase className="w-5 h-5" />
+                      <span className="text-sm">Professional Info</span>
+                    </Button>
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-red-50 hover:border-red-200"
+                            onClick={() => window.location.href = '/profile/edit?tab=experience'}>
+                      <GraduationCap className="w-5 h-5" />
+                      <span className="text-sm">Experience & Education</span>
+                    </Button>
+                  </div>
+                  
+                  <div className="mt-8 pt-6 border-t">
+                    <h4 className="text-md font-medium mb-4">Quick Actions</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Button variant="ghost" className="w-full justify-start" 
+                              onClick={() => window.location.href = '/profile/edit?tab=personal'}>
+                        <Camera className="w-4 h-4 mr-2" />
                         Change Profile Picture
                       </Button>
-                    </div>
-                    <div>
-                      <Button variant="outline" className="w-full">
-                        Privacy Settings
+                      <Button variant="ghost" className="w-full justify-start"
+                              onClick={() => {
+                                navigator.clipboard.writeText(window.location.origin + `/profile/${user?.id}`)
+                                // Add toast notification here if available
+                              }}>
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Share Profile
                       </Button>
                     </div>
                   </div>
