@@ -908,84 +908,222 @@ export default function EditProfilePage() {
                     Connected Accounts
                   </CardTitle>
                   <CardDescription className="text-sm">
-                    Connect your social media accounts to easily log in and share your professional updates.
+                    Connect your social media accounts to easily sign in and share your professional updates.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
-                  {/* Google Account */}
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white font-bold">
-                        G
-                      </div>
-                      <div>
-                        <p className="font-medium">Google</p>
-                        <p className="text-sm text-gray-500">
-                          {connectedAccounts.google.connected ? connectedAccounts.google.email : "Connect to use Gmail for login"}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant={connectedAccounts.google.connected ? "destructive" : "default"}
-                      size="sm"
-                      onClick={() => {
-                        if (connectedAccounts.google.connected) {
-                          setConnectedAccounts(prev => ({
-                            ...prev,
-                            google: { connected: false, email: "" }
-                          }))
-                        } else {
-                          // Connect logic here
-                          toast({
-                            title: "Coming Soon",
-                            description: "Google account connection will be available soon.",
-                          })
-                        }
-                      }}
-                    >
-                      {connectedAccounts.google.connected ? "Disconnect" : "Connect"}
-                    </Button>
-                  </div>
+                  {/* Connected Accounts List */}
+                  {(connectedAccounts.google.connected || connectedAccounts.facebook.connected || connectedAccounts.linkedin.connected) && (
+                    <div className="space-y-3">
+                      {/* Google - Connected */}
+                      {connectedAccounts.google.connected && (
+                        <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white font-bold">
+                              G
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">Google</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {connectedAccounts.google.email || "user@google.com"}
+                              </p>
+                              <p className="text-xs text-gray-500">Connected Aug 28, 2025</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-full font-medium">
+                              Active
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-gray-600 hover:text-red-600 border-gray-300"
+                              onClick={() => {
+                                setConnectedAccounts(prev => ({
+                                  ...prev,
+                                  google: { connected: false, email: "" }
+                                }))
+                                toast({
+                                  title: "Account Disconnected",
+                                  description: "Google account has been disconnected successfully.",
+                                })
+                              }}
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Disconnect
+                            </Button>
+                          </div>
+                        </div>
+                      )}
 
-                  {/* Facebook Account */}
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                        f
-                      </div>
-                      <div>
-                        <p className="font-medium">Facebook</p>
-                        <p className="text-sm text-gray-500">
-                          {connectedAccounts.facebook.connected ? connectedAccounts.facebook.email : "Connect to share professional updates"}
-                        </p>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm" disabled>
-                      Connect
-                    </Button>
-                  </div>
+                      {/* Facebook - Connected */}
+                      {connectedAccounts.facebook.connected && (
+                        <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                              f
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">Facebook</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {connectedAccounts.facebook.email || "user@facebook.com"}
+                              </p>
+                              <p className="text-xs text-gray-500">Connected Aug 28, 2025</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-full font-medium">
+                              Active
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-gray-600 hover:text-red-600 border-gray-300"
+                              onClick={() => {
+                                setConnectedAccounts(prev => ({
+                                  ...prev,
+                                  facebook: { connected: false, email: "" }
+                                }))
+                                toast({
+                                  title: "Account Disconnected",
+                                  description: "Facebook account has been disconnected successfully.",
+                                })
+                              }}
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Disconnect
+                            </Button>
+                          </div>
+                        </div>
+                      )}
 
-                  {/* LinkedIn Account */}
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center text-white font-bold">
-                        in
-                      </div>
-                      <div>
-                        <p className="font-medium">LinkedIn</p>
-                        <p className="text-sm text-gray-500">
-                          {connectedAccounts.linkedin.connected ? connectedAccounts.linkedin.email : "Connect to import professional data"}
-                        </p>
-                      </div>
+                      {/* LinkedIn - Connected */}
+                      {connectedAccounts.linkedin.connected && (
+                        <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center text-white font-bold">
+                              in
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">LinkedIn</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {connectedAccounts.linkedin.email || "user@linkedin.com"}
+                              </p>
+                              <p className="text-xs text-gray-500">Connected Aug 28, 2025</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-full font-medium">
+                              Active
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-gray-600 hover:text-red-600 border-gray-300"
+                              onClick={() => {
+                                setConnectedAccounts(prev => ({
+                                  ...prev,
+                                  linkedin: { connected: false, email: "" }
+                                }))
+                                toast({
+                                  title: "Account Disconnected",
+                                  description: "LinkedIn account has been disconnected successfully.",
+                                })
+                              }}
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Disconnect
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <Button variant="outline" size="sm" disabled>
-                      Connect
-                    </Button>
+                  )}
+
+                  {/* Connect New Account Section */}
+                  <div className="space-y-3">
+                    <h3 className="font-medium text-gray-900 dark:text-white">Connect New Account</h3>
+                    <div className="flex flex-wrap gap-3">
+                      {/* Google Connect Button */}
+                      {!connectedAccounts.google.connected && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2 border-red-200 hover:border-red-300 hover:bg-red-50"
+                          onClick={() => {
+                            // Simulate Google OAuth connection
+                            setConnectedAccounts(prev => ({
+                              ...prev,
+                              google: { connected: true, email: "user@google.com" }
+                            }))
+                            toast({
+                              title: "Account Connected",
+                              description: "Google account connected successfully.",
+                            })
+                          }}
+                        >
+                          <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                            G
+                          </div>
+                          Google
+                        </Button>
+                      )}
+
+                      {/* Facebook Connect Button */}
+                      {!connectedAccounts.facebook.connected && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50"
+                          onClick={() => {
+                            // Simulate Facebook OAuth connection
+                            setConnectedAccounts(prev => ({
+                              ...prev,
+                              facebook: { connected: true, email: "user@facebook.com" }
+                            }))
+                            toast({
+                              title: "Account Connected",
+                              description: "Facebook account connected successfully.",
+                            })
+                          }}
+                        >
+                          <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                            f
+                          </div>
+                          Facebook
+                        </Button>
+                      )}
+
+                      {/* LinkedIn Connect Button */}
+                      {!connectedAccounts.linkedin.connected && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50"
+                          onClick={() => {
+                            // Simulate LinkedIn OAuth connection
+                            setConnectedAccounts(prev => ({
+                              ...prev,
+                              linkedin: { connected: true, email: "user@linkedin.com" }
+                            }))
+                            toast({
+                              title: "Account Connected",
+                              description: "LinkedIn account connected successfully.",
+                            })
+                          }}
+                        >
+                          <div className="w-4 h-4 bg-blue-700 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                            in
+                          </div>
+                          LinkedIn
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="mt-6">
                     <Button 
-                      className="w-full"
+                      className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                       onClick={() => {
                         toast({
                           title: "Settings Saved",
