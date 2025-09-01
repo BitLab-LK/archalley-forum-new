@@ -26,24 +26,31 @@ interface TrendingPost {
 }
 
 interface TopContributor {
+  id: string
   name: string
-  badge: string
-  posts: number
   avatar: string
+  isVerified: boolean
+  totalPosts: number
+  totalComments: number
+  totalContributions: number
+  totalUpvotes: number
+  contributionScore: number
+  badge: {
+    name: string
+    icon: string
+    color: string
+    level: string
+    type: string
+  } | null
 }
-
-const topContributors: TopContributor[] = [
-  { name: "Sarah Chen", badge: "Community Expert", posts: 156, avatar: "/placeholder.svg?height=32&width=32" },
-  { name: "Mike Johnson", badge: "Top Contributor", posts: 134, avatar: "/placeholder.svg?height=32&width=32" },
-  { name: "Alex Rivera", badge: "Visual Storyteller", posts: 98, avatar: "/placeholder.svg?height=32&width=32" },
-  { name: "Emma Davis", badge: "Valued Responder", posts: 87, avatar: "/placeholder.svg?height=32&width=32" },
-]
 
 export default function Sidebar() {
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [trendingPosts, setTrendingPosts] = useState<TrendingPost[]>([])
   const [isTrendingLoading, setIsTrendingLoading] = useState(true)
+  const [topContributors, setTopContributors] = useState<TopContributor[]>([])
+  const [isContributorsLoading, setIsContributorsLoading] = useState(true)
   
   // Use sidebar context for real-time updates
   const { categoriesKey, trendingKey } = useSidebar()
@@ -168,6 +175,43 @@ export default function Sidebar() {
     return () => clearTimeout(timeoutId)
   }, [trendingKey]) // Re-fetch when trendingKey changes
 
+  // Fetch top contributors
+  useEffect(() => {
+    const fetchTopContributors = async () => {
+      setIsContributorsLoading(true)
+      try {
+        const response = await fetch('/api/contributors/top', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-cache',
+        })
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('Failed to fetch top contributors:', response.status, errorText)
+          throw new Error(`Failed to fetch top contributors: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        setTopContributors(data)
+        
+      } catch (error) {
+        console.error('Error fetching top contributors:', error)
+        setTopContributors([])
+      } finally {
+        setIsContributorsLoading(false)
+      }
+    }
+
+    const timeoutId = setTimeout(() => {
+      fetchTopContributors()
+    }, 150)
+
+    return () => clearTimeout(timeoutId)
+  }, []) // Fetch once on mount
+
   return (
     <div className="space-y-6">
       {/* Categories */}
@@ -263,39 +307,79 @@ export default function Sidebar() {
       {/* Top Contributors */}
       <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-green-50/30 dark:from-gray-900 dark:to-green-900/10">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center space-x-2 text-lg font-semibold">
-            <div className="p-1.5 rounded-lg bg-green-100 dark:bg-green-900/30">
-              <Users className="w-4 h-4 text-green-600 dark:text-green-400" />
+          <CardTitle className="flex items-center justify-between text-lg font-semibold">
+            <div className="flex items-center space-x-2">
+              <div className="p-1.5 rounded-lg bg-green-100 dark:bg-green-900/30">
+                <Users className="w-4 h-4 text-green-600 dark:text-green-400" />
+              </div>
+              <span className="text-gray-900 dark:text-gray-100">Top Contributors</span>
             </div>
-            <span className="text-gray-900 dark:text-gray-100">Top Contributors</span>
+            {isContributorsLoading && (
+              <div className="w-4 h-4 border-2 border-green-200 border-t-green-600 rounded-full animate-spin" />
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 pt-0">
-          {topContributors.map((contributor, index) => (
-            <div key={contributor.name} className="group flex items-center space-x-3 p-3 rounded-xl bg-white/60 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800/60 transition-all duration-200 cursor-pointer hover:shadow-sm border border-gray-100 dark:border-gray-800 hover:border-green-200 dark:hover:border-green-800">
-              <div className="relative">
-                <Avatar className="w-10 h-10 ring-2 ring-white dark:ring-gray-800 group-hover:ring-green-200 dark:group-hover:ring-green-800 transition-all">
-                  <AvatarImage src={contributor.avatar || "/placeholder.svg"} />
-                  <AvatarFallback className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold">{contributor.name[0]}</AvatarFallback>
-                </Avatar>
-                {index < 3 && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-white">{index + 1}</span>
-                  </div>
-                )}
+          {isContributorsLoading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="group flex items-center space-x-3 p-3 rounded-xl bg-white/60 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
+                <div className="relative">
+                  <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1" />
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-2/3" />
+                </div>
+                <div className="text-right">
+                  <div className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1" />
+                  <div className="h-3 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate group-hover:text-green-700 dark:group-hover:text-green-300 transition-colors">{contributor.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{contributor.badge}</p>
+            ))
+          ) : topContributors.length === 0 ? (
+            <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-6 italic">No contributors found.</div>
+          ) : (
+            topContributors.map((contributor, index) => (
+              <div key={contributor.id} className="group flex items-center space-x-3 p-3 rounded-xl bg-white/60 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800/60 transition-all duration-200 cursor-pointer hover:shadow-sm border border-gray-100 dark:border-gray-800 hover:border-green-200 dark:hover:border-green-800">
+                <div className="relative">
+                  <Avatar className="w-10 h-10 ring-2 ring-white dark:ring-gray-800 group-hover:ring-green-200 dark:group-hover:ring-green-800 transition-all">
+                    <AvatarImage src={contributor.avatar || "/placeholder.svg"} />
+                    <AvatarFallback className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold">
+                      {contributor.name ? contributor.name[0].toUpperCase() : 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  {index < 3 && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center">
+                      <span className="text-xs font-bold text-white">{index + 1}</span>
+                    </div>
+                  )}
+                  {contributor.isVerified && (
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-xs text-white">✓</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate group-hover:text-green-700 dark:group-hover:text-green-300 transition-colors">
+                    {contributor.name || 'Anonymous'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 group-hover:bg-green-100 dark:group-hover:bg-green-900/30 transition-colors">
+                    {contributor.totalContributions}
+                  </Badge>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    {contributor.totalPosts} posts · {contributor.totalComments} comments
+                  </p>
+                  {contributor.totalUpvotes > 0 && (
+                    <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                      ↑ {contributor.totalUpvotes} upvotes
+                    </p>
+                  )}
+                </div>
               </div>
-              <div className="text-right">
-                <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 group-hover:bg-green-100 dark:group-hover:bg-green-900/30 transition-colors">
-                  {contributor.posts}
-                </Badge>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">posts</p>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
     </div>

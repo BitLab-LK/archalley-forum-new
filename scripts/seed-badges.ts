@@ -9,7 +9,7 @@ const BADGE_DEFINITIONS = [
     id: 'first-post',
     name: 'First Steps',
     description: 'Posted your first contribution to the community',
-    icon: '�', // Modern star for first achievement
+    icon: '⭐', // Modern star for first achievement
     color: '#10B981',
     type: BadgeType.ACTIVITY,
     level: BadgeLevel.BRONZE,
@@ -71,7 +71,7 @@ const BADGE_DEFINITIONS = [
     id: 'community-voice',
     name: 'Community Voice',
     description: 'Made 500 thoughtful comments',
-    icon: '�', // Broadcasting/signal icon
+    icon: '📢', // Broadcasting/signal icon
     color: '#F59E0B',
     type: BadgeType.ENGAGEMENT,
     level: BadgeLevel.GOLD,
@@ -187,7 +187,7 @@ const BADGE_DEFINITIONS = [
     id: 'guru',
     name: 'Guru',
     description: 'Provided 100 helpful answers',
-    icon: '�', // Brain for wisdom/knowledge
+    icon: '🧠', // Brain for wisdom/knowledge
     color: '#8B5CF6',
     type: BadgeType.ACHIEVEMENT,
     level: BadgeLevel.GOLD,
@@ -199,7 +199,7 @@ const BADGE_DEFINITIONS = [
     id: 'trending',
     name: 'Trending',
     description: 'Created a post with significant engagement',
-    icon: '�', // Chart trending up
+    icon: '📈', // Chart trending up
     color: '#EF4444',
     type: BadgeType.QUALITY,
     level: BadgeLevel.SILVER,
