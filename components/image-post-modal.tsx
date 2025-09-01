@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import Image from "next/image"
+import PostImage from "./post-image"
 import { 
   ThumbsUp, 
   ThumbsDown, 
@@ -968,13 +968,13 @@ await handleVote(type)
             <div className="w-full h-full flex items-center justify-center relative">
               <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
                 <div className="w-full h-full transition-transform duration-500 ease-in-out flex items-center justify-center">
-                  <Image
+                  <PostImage
                     src={images[carouselIndex]}
                     alt={`Post image ${carouselIndex + 1}`}
                     className="object-contain w-full h-full"
-                    width={800}
-                    height={1200}
+                    sizes="100vw"
                     priority
+                    enableDownload={true}
                   />
                 </div>
                 {/* Navigation Arrows */}

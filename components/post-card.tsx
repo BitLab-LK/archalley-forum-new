@@ -396,6 +396,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
             sizes={sizes}
             priority={index === 0}
             onClick={() => openModal(index)}
+            enableDownload={true}
           />
         </>
       )

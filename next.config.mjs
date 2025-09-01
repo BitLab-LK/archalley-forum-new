@@ -61,7 +61,7 @@ const nextConfig = {
         pathname: '/**',
       }
     ],
-    formats: ['image/webp', 'image/avif'],
+    formats: ['image/webp'],
     minimumCacheTTL: 60,
     dangerouslyAllowSVG: false,
     unoptimized: false,
