@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { ImageIcon, Download } from "lucide-react"
+import { ImageIcon } from "lucide-react"
 
 interface PostImageProps {
   src: string
@@ -17,29 +17,6 @@ interface PostImageProps {
   enableDownload?: boolean
 }
 
-// Function to force download the image in WebP format
-const downloadImageAsWebP = async (src: string, filename: string) => {
-  try {
-    // Fetch the image
-    const response = await fetch(src)
-    const blob = await response.blob()
-    
-    // Create download link
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename.replace(/\.[^/.]+$/, '.webp') // Ensure .webp extension
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
-  } catch (error) {
-    console.error('Failed to download image:', error)
-    // Fallback to opening in new tab
-    window.open(src, '_blank')
-  }
-}
-
 export default function PostImage({ 
   src, 
   alt, 
@@ -50,33 +27,15 @@ export default function PostImage({
   sizes, 
   priority = false,
   onClick,
-  enableDownload = false
+  enableDownload = false // Kept for API compatibility but not used
 }: PostImageProps) {
   const [imageError, setImageError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [retryCount, setRetryCount] = useState(0)
   const [useNativeImg, setUseNativeImg] = useState(false)
-  const [showContextMenu, setShowContextMenu] = useState(false)
-  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 })
 
-  // Handle right-click context menu
-  const handleContextMenu = (e: React.MouseEvent) => {
-    if (enableDownload) {
-      e.preventDefault()
-      setContextMenuPosition({ x: e.clientX, y: e.clientY })
-      setShowContextMenu(true)
-    }
-  }
-
-  // Close context menu when clicking elsewhere
-  useEffect(() => {
-    const handleClickOutside = () => setShowContextMenu(false)
-    if (showContextMenu) {
-      document.addEventListener('click', handleClickOutside)
-      return () => document.removeEventListener('click', handleClickOutside)
-    }
-    return undefined
-  }, [showContextMenu])
+  // Suppress unused variable warning
+  void enableDownload
 
   // Auto-retry once after 2 seconds if image fails to load
   useEffect(() => {
@@ -124,17 +83,6 @@ export default function PostImage({
             >
               Open Direct
             </button>
-            {enableDownload && (
-              <button 
-                className="text-xs text-purple-500 underline"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  downloadImageAsWebP(src, alt || 'image')
-                }}
-              >
-                Download WebP
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -156,7 +104,6 @@ export default function PostImage({
             alt={alt}
             className={`absolute inset-0 w-full h-full object-cover ${className} ${onClick ? 'cursor-pointer' : ''}`}
             onClick={onClick}
-            onContextMenu={handleContextMenu}
             onError={(e) => {
               console.error('❌ Native img failed to load:', src, e)
               setImageError(true)
@@ -188,7 +135,6 @@ export default function PostImage({
             alt={alt}
             className={`${className} ${onClick ? 'cursor-pointer' : ''}`}
             onClick={onClick}
-            onContextMenu={handleContextMenu}
             onError={(e) => {
               console.error('❌ Native img failed to load:', src, e)
               setImageError(true)
@@ -229,7 +175,6 @@ export default function PostImage({
         priority={priority}
         unoptimized={true} // Add this to bypass Next.js optimization
         onClick={onClick}
-        onContextMenu={handleContextMenu}
         onError={(e) => {
           console.error('❌ Next.js Image failed to load:', src, e)
           console.error('❌ Error details:', {
@@ -250,28 +195,6 @@ export default function PostImage({
           setIsLoading(true)
         }}
       />
-      
-      {/* Custom Context Menu */}
-      {showContextMenu && enableDownload && (
-        <div 
-          className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-2 min-w-[150px]"
-          style={{ 
-            left: `${contextMenuPosition.x}px`, 
-            top: `${contextMenuPosition.y}px` 
-          }}
-        >
-          <button
-            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-            onClick={() => {
-              downloadImageAsWebP(src, alt || 'image')
-              setShowContextMenu(false)
-            }}
-          >
-            <Download className="w-4 h-4" />
-            Download as WebP
-          </button>
-        </div>
-      )}
     </>
   )
 }
