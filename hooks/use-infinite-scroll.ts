@@ -47,7 +47,18 @@ export function useInfiniteScroll<T>({
     setError(null)
 
     try {
-      const result = await fetchFunction(page)
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
+      const result = await Promise.race([
+        fetchFunction(page),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 30000)
+        )
+      ])
+
+      clearTimeout(timeoutId)
       
       if (page === 1) {
         // Initial load or refresh
@@ -61,7 +72,22 @@ export function useInfiniteScroll<T>({
       setTotal(result.total)
       setPage(prevPage => prevPage + 1)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load data')
+      console.error('Load more error:', err)
+      
+      // Handle different types of errors
+      if (err instanceof Error) {
+        if (err.message.includes('timeout') || err.message.includes('Request timeout')) {
+          setError('Loading is taking longer than expected. Please check your connection and try again.')
+        } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+          setError('Network error. Please check your connection and try again.')
+        } else {
+          setError(err.message)
+        }
+      } else {
+        setError('Failed to load data. Please try again.')
+      }
+      
+      // Don't increment page on error
     } finally {
       setLoading(false)
       loadingRef.current = false

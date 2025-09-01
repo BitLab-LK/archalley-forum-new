@@ -12,19 +12,7 @@ export function InfiniteScrollSentinel({
   hasMore 
 }: InfiniteScrollSentinelProps) {
   if (!hasMore) {
-    return (
-      <div className="flex justify-center items-center py-12 animate-slideInUp">
-        <div className="text-center">
-          <div className="text-4xl mb-2 animate-bounce-gentle">🎉</div>
-          <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-            You've reached the end!
-          </span>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-            Come back later for more posts
-          </p>
-        </div>
-      </div>
-    )
+    return null // Simply don't show anything when there are no more posts
   }
 
   return (

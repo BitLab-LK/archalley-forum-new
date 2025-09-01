@@ -47,26 +47,71 @@ function HomePageContent() {
   const { confirm } = useConfirmDialog()
   const { refreshAll } = useSidebar() // For refreshing sidebar on post deletion
 
-  // Fetch function for infinite scroll
+  // Fetch function for infinite scroll with retry logic
   const fetchPosts = useCallback(async (page: number) => {
-    try {
-      const response = await fetch(`/api/posts?page=${page}&limit=10`)
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch posts: ${response.status}`)
+    const maxRetries = 3
+    let lastError: Error | null = null
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Fetching posts - Page: ${page}, Attempt: ${attempt}`)
+        
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 20000) // 20 second timeout
+
+        const response = await fetch(`/api/posts?page=${page}&limit=10`, {
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        clearTimeout(timeoutId)
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+        
+        const result = await response.json()
+        
+        // Validate response structure
+        if (!result.posts || !Array.isArray(result.posts)) {
+          throw new Error('Invalid response format')
+        }
+
+        console.log(`Posts loaded successfully - Page: ${page}, Count: ${result.posts.length}`)
+        
+        return {
+          data: result.posts,
+          hasMore: result.pagination?.currentPage < result.pagination?.pages || false,
+          total: result.pagination?.total || result.posts.length
+        }
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown error')
+        console.warn(`Fetch attempt ${attempt} failed:`, lastError.message)
+
+        // Don't retry on certain errors
+        if (lastError.message.includes('HTTP 4') || lastError.message.includes('Unauthorized')) {
+          break
+        }
+
+        // Wait before retry (exponential backoff)
+        if (attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000) // Max 5 seconds
+          console.log(`Retrying in ${delay}ms...`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
       }
-      
-      const result = await response.json()
-      
-      return {
-        data: result.posts,
-        hasMore: result.pagination.currentPage < result.pagination.pages,
-        total: result.pagination.total
-      }
-    } catch (error) {
-      toast.error("Failed to load posts")
-      throw error
     }
+
+    // All retries failed
+    if (lastError) {
+      console.error('All fetch attempts failed:', lastError.message)
+      toast.error(`Failed to load posts: ${lastError.message}`)
+      throw lastError
+    }
+
+    throw new Error('Failed to load posts after multiple attempts')
   }, [])
 
   const {
@@ -143,12 +188,27 @@ function HomePageContent() {
               refresh()
             }} />
 
-            {/* Error state */}
+            {/* Error state with retry button */}
             {error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
-                <p className="text-red-800 dark:text-red-200 text-sm">
-                  Failed to load posts. Please try refreshing the page.
-                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-red-800 dark:text-red-200 text-sm font-medium mb-1">
+                      Failed to load posts
+                    </p>
+                    <p className="text-red-600 dark:text-red-300 text-xs">
+                      {error}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      refresh()
+                    }}
+                    className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
               </div>
             )}
 
