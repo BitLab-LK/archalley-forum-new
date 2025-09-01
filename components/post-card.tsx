@@ -18,7 +18,7 @@ import {
 import { useAuth } from "@/lib/auth-context"
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
 import { useToast } from "@/hooks/use-toast"
-import PostImage from "@/components/post-image"
+import PostImage from "@/components/simple-post-image"
 import PostModal from "./post-modal"
 import { PostBadges } from "./post-badges"
 import ShareDropdown from "./share-dropdown"

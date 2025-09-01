@@ -971,6 +971,8 @@ await handleVote(type)
                   <PostImage
                     src={images[carouselIndex]}
                     alt={`Post image ${carouselIndex + 1}`}
+                    width={800}
+                    height={600}
                     className="object-contain w-full h-full"
                     sizes="100vw"
                     priority
