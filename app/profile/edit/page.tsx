@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -49,7 +49,8 @@ const getWordCountStatus = (text: string, limit: number = 150) => {
   return { status: 'normal', color: 'text-gray-600' }
 }
 
-export default function EditProfilePage() {
+// Inner component that uses useSearchParams
+function EditProfileContent() {
   const { user } = useAuth()
   const { update } = useSession()
   const { toast } = useToast()
@@ -1527,5 +1528,21 @@ export default function EditProfilePage() {
         </main>
       </div>
     </AuthGuard>
+  )
+}
+
+// Main export component with Suspense boundary
+export default function EditProfilePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading profile editor...</p>
+        </div>
+      </div>
+    }>
+      <EditProfileContent />
+    </Suspense>
   )
 }
