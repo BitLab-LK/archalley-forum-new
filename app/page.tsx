@@ -107,7 +107,7 @@ function HomePageContent() {
     // All retries failed
     if (lastError) {
       console.error('All fetch attempts failed:', lastError.message)
-      toast.error(`Failed to load posts: ${lastError.message}`)
+      // Removed toast error to prevent repetitive error messages
       throw lastError
     }
 
