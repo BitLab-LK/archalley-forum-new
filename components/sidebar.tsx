@@ -26,24 +26,21 @@ interface TrendingPost {
 }
 
 interface TopContributor {
+  id: string
   name: string
-  badge: string
+  rank: string
   posts: number
   avatar: string
+  isVerified?: boolean
 }
-
-const topContributors: TopContributor[] = [
-  { name: "Sarah Chen", badge: "Community Expert", posts: 156, avatar: "/placeholder.svg?height=32&width=32" },
-  { name: "Mike Johnson", badge: "Top Contributor", posts: 134, avatar: "/placeholder.svg?height=32&width=32" },
-  { name: "Alex Rivera", badge: "Visual Storyteller", posts: 98, avatar: "/placeholder.svg?height=32&width=32" },
-  { name: "Emma Davis", badge: "Valued Responder", posts: 87, avatar: "/placeholder.svg?height=32&width=32" },
-]
 
 export default function Sidebar() {
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [trendingPosts, setTrendingPosts] = useState<TrendingPost[]>([])
   const [isTrendingLoading, setIsTrendingLoading] = useState(true)
+  const [topContributors, setTopContributors] = useState<TopContributor[]>([])
+  const [isContributorsLoading, setIsContributorsLoading] = useState(true)
   
   // Use sidebar context for real-time updates
   const { categoriesKey, trendingKey } = useSidebar()
@@ -168,6 +165,64 @@ export default function Sidebar() {
     return () => clearTimeout(timeoutId)
   }, [trendingKey]) // Re-fetch when trendingKey changes
 
+  // Fetch top contributors
+  useEffect(() => {
+    const fetchTopContributors = async () => {
+      setIsContributorsLoading(true)
+      try {
+        const response = await fetch('/api/users/top-contributors?limit=4', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-cache',
+        })
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('Failed to fetch top contributors:', response.status, errorText)
+          throw new Error(`Failed to fetch top contributors: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        setTopContributors(data.contributors || [])
+        
+      } catch (error) {
+        console.error('Error fetching top contributors:', error)
+        // Set empty array instead of keeping old data
+        setTopContributors([])
+      } finally {
+        setIsContributorsLoading(false)
+      }
+    }
+
+    // Add a small delay to prevent race conditions after logout
+    const timeoutId = setTimeout(() => {
+      fetchTopContributors()
+    }, 150)
+
+    return () => clearTimeout(timeoutId)
+  }, [trendingKey]) // Re-fetch when trendingKey changes
+
+  // Helper function to format rank display
+  const formatRank = (rank: string) => {
+    return rank.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Get rank color based on rank level
+  const getRankColor = (rank: string) => {
+    const rankColors = {
+      'NEW_MEMBER': 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200',
+      'CONVERSATION_STARTER': 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-green-200',
+      'RISING_STAR': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200',
+      'VISUAL_STORYTELLER': 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 border-purple-200',
+      'VALUED_RESPONDER': 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-blue-200',
+      'COMMUNITY_EXPERT': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 border-indigo-200',
+      'TOP_CONTRIBUTOR': 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300 border-orange-200',
+    };
+    return rankColors[rank as keyof typeof rankColors] || rankColors.NEW_MEMBER;
+  };
+
   return (
     <div className="space-y-6">
       {/* Categories */}
@@ -277,46 +332,89 @@ export default function Sidebar() {
       {/* Top Contributors */}
       <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-green-50/30 dark:from-gray-900 dark:to-green-900/10 transform animate-slideInUp" style={{ animationDelay: '400ms' }}>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center space-x-2 text-lg font-semibold">
-            <div className="p-1.5 rounded-lg bg-green-100 dark:bg-green-900/30">
-              <Users className="w-4 h-4 text-green-600 dark:text-green-400" />
+          <CardTitle className="flex items-center justify-between text-lg font-semibold">
+            <div className="flex items-center space-x-2">
+              <div className="p-1.5 rounded-lg bg-green-100 dark:bg-green-900/30">
+                <Users className={cn("w-4 h-4 text-green-600 dark:text-green-400", isContributorsLoading && "animate-pulse")} />
+              </div>
+              <span className="text-gray-900 dark:text-gray-100">Top Contributors</span>
             </div>
-            <span className="text-gray-900 dark:text-gray-100">Top Contributors</span>
+            {isContributorsLoading && (
+              <div className="w-4 h-4 border-2 border-green-200 border-t-green-600 rounded-full animate-spin" />
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 pt-0">
-          {topContributors.map((contributor, index) => (
-            <div 
-              key={contributor.name} 
-              className="group flex items-center space-x-3 p-3 rounded-xl bg-white/60 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800/60 transition-all duration-200 cursor-pointer hover:shadow-sm border border-gray-100 dark:border-gray-800 hover:border-green-200 dark:hover:border-green-800 transform animate-slideInUp"
-              style={{
-                animationDelay: `${index * 120}ms`,
-                animationFillMode: 'both'
-              }}
-            >
-              <div className="relative">
-                <Avatar className="w-10 h-10 ring-2 ring-white dark:ring-gray-800 group-hover:ring-green-200 dark:group-hover:ring-green-800 transition-all">
-                  <AvatarImage src={contributor.avatar || "/placeholder.svg"} />
-                  <AvatarFallback className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold">{contributor.name[0]}</AvatarFallback>
-                </Avatar>
-                {index < 3 && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-white">{index + 1}</span>
-                  </div>
-                )}
+          {isContributorsLoading ? (
+            // Loading skeleton
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="group flex items-center space-x-3 p-3 rounded-xl animate-pulse">
+                <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20" />
+                </div>
+                <div className="text-right space-y-1">
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-8" />
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-6" />
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate group-hover:text-green-700 dark:group-hover:text-green-300 transition-colors">{contributor.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{contributor.badge}</p>
+            ))
+          ) : topContributors.length === 0 ? (
+            <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-6 italic">No contributors found.</div>
+          ) : (
+            topContributors.map((contributor, index) => (
+              <div 
+                key={contributor.id} 
+                className="group flex items-center space-x-3 p-3 rounded-xl bg-white/60 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800/60 transition-all duration-200 cursor-pointer hover:shadow-sm border border-gray-100 dark:border-gray-800 hover:border-green-200 dark:hover:border-green-800 transform animate-slideInUp"
+                style={{
+                  animationDelay: `${index * 120}ms`,
+                  animationFillMode: 'both'
+                }}
+              >
+                <div className="relative">
+                  <Avatar className="w-10 h-10 ring-2 ring-white dark:ring-gray-800 group-hover:ring-green-200 dark:group-hover:ring-green-800 transition-all">
+                    <AvatarImage src={contributor.avatar || "/placeholder-user.jpg"} />
+                    <AvatarFallback className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold">
+                      {contributor.name[0]?.toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  {index < 3 && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center">
+                      <span className="text-xs font-bold text-white">{index + 1}</span>
+                    </div>
+                  )}
+                  {contributor.isVerified && (
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
+                      <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate group-hover:text-green-700 dark:group-hover:text-green-300 transition-colors">
+                    {contributor.name}
+                  </p>
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-xs mt-1 px-2 py-0.5",
+                      getRankColor(contributor.rank)
+                    )}
+                  >
+                    {formatRank(contributor.rank)}
+                  </Badge>
+                </div>
+                <div className="text-right">
+                  <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 group-hover:bg-green-100 dark:group-hover:bg-green-900/30 transition-colors">
+                    {contributor.posts}
+                  </Badge>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">posts</p>
+                </div>
               </div>
-              <div className="text-right">
-                <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 group-hover:bg-green-100 dark:group-hover:bg-green-900/30 transition-colors">
-                  {contributor.posts}
-                </Badge>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">posts</p>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
       
