@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback, Suspense } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -98,21 +98,6 @@ interface Post {
 }
 
 export default function UserProfilePage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading user profile...</p>
-        </div>
-      </div>
-    }>
-      <UserProfileContent />
-    </Suspense>
-  )
-}
-
-function UserProfileContent() {
   const params = useParams()
   const searchParams = useSearchParams()
   const userId = params.id as string
