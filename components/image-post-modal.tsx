@@ -98,6 +98,26 @@ export default function ImagePostModal({
   const [loading, setLoading] = useState(false)
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
   
+  // Generate descriptive alt text based on post content
+  const generateAltText = (imageIndex: number): string => {
+    // Clean post content for filename (remove special characters, limit length)
+    const cleanContent = post.content
+      .replace(/[^\w\s-]/g, '') // Remove special characters except hyphens and underscores
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .toLowerCase()
+      .substring(0, 50) // Limit to 50 characters
+      .replace(/-+$/, '') // Remove trailing hyphens
+    
+    const authorName = post.author.name.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').toLowerCase()
+    const categoryName = post.category.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').toLowerCase()
+    
+    if (post.images && post.images.length === 1) {
+      return `${cleanContent}-by-${authorName}-${categoryName}-post`
+    } else {
+      return `${cleanContent}-image-${imageIndex + 1}-by-${authorName}-${categoryName}-post`
+    }
+  }
+  
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (open) {
@@ -970,7 +990,9 @@ await handleVote(type)
                 <div className="w-full h-full transition-transform duration-500 ease-in-out flex items-center justify-center">
                   <PostImage
                     src={images[carouselIndex]}
-                    alt={`Post image ${carouselIndex + 1}`}
+                    alt={generateAltText(carouselIndex)}
+                    width={800}
+                    height={600}
                     className="object-contain w-full h-full"
                     sizes="100vw"
                     priority

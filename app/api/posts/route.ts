@@ -360,34 +360,55 @@ function getMimeType(filename: string): string {
 }
 
 export async function GET(request: NextRequest) {
+  // Add response headers for better caching and performance
+  const headers = {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=59'
+  }
+
   try {
-    // Test database connection first
+    console.log("🚀 GET /api/posts - Starting request")
+    
+    // Test database connection first with timeout
     try {
-      await prisma.$connect()
+      console.log("🔍 Testing database connection...")
+      const connectionTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Database connection timeout')), 10000)
+      )
+      
+      await Promise.race([
+        prisma.$connect(),
+        connectionTimeout
+      ])
+      console.log("✅ Database connection successful")
     } catch (dbError) {
-      console.error("Database connection failed in GET:", dbError)
+      console.error("❌ Database connection failed in GET:", dbError)
       return NextResponse.json(
         { 
           error: "Database connection failed", 
           message: "The application is currently unable to connect to the database. Please try again later.",
-          details: "Database service is unavailable"
+          details: "Database service is unavailable",
+          timestamp: new Date().toISOString()
         },
-        { status: 503 }
+        { status: 503, headers }
       )
     }
 
     // Get session for user vote information
     const session = await getServerSession(authOptions)
+    console.log("🔍 Session loaded, user:", session?.user?.email || 'anonymous')
     
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get("page") || "1")
-    const limit = parseInt(searchParams.get("limit") || "10")
+    const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 50) // Max 50 items per page
     const categoryId = searchParams.get("category")
     const authorId = searchParams.get("authorId")
     const sortBy = searchParams.get("sortBy") || "createdAt"
     const sortOrder = searchParams.get("sortOrder") || "desc"
 
-const skip = (page - 1) * limit
+    console.log("📊 Query params:", { page, limit, categoryId, authorId, sortBy, sortOrder })
+
+    const skip = (page - 1) * limit
 
     // Build the where clause
     const where: any = {}
@@ -395,71 +416,104 @@ const skip = (page - 1) * limit
     if (authorId) where.authorId = authorId
 
     try {
-      // Get posts with related data
-      const posts = await prisma.post.findMany({
-        where,
-        include: {
-          users: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
-              userBadges: {
-                take: 3, // Only get top 3 badges
-                include: {
-                  badges: true
-                },
-                orderBy: {
-                  earnedAt: 'desc'
+      console.log("🔍 Starting database queries...")
+      
+      // Wrap all database operations in a timeout
+      const queryTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Database query timeout')), 25000) // 25 second timeout
+      )
+
+      const dbOperations = async () => {
+        // Get posts with related data
+        console.log("📝 Fetching posts...")
+        const posts = await prisma.post.findMany({
+          where,
+          include: {
+            users: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+                userBadges: {
+                  take: 3, // Only get top 3 badges
+                  include: {
+                    badges: true
+                  },
+                  orderBy: {
+                    earnedAt: 'desc'
+                  }
                 }
-              }
+              },
+            },
+            categories: true,
+            _count: {
+              select: {
+                Comment: true,
+              },
             },
           },
-          categories: true,
-          _count: {
-            select: {
-              Comment: true,
-            },
+          // Only use orderBy if not sorting by upvotes
+          ...(sortBy !== "upvotes" && { orderBy: { [sortBy]: sortOrder } }),
+          skip: sortBy !== "upvotes" ? skip : 0, // We'll handle skip/limit after sorting by upvotes
+          take: sortBy !== "upvotes" ? limit : undefined,
+        })
+
+        console.log(`📊 Found ${posts.length} posts`)
+
+        // Get total count for pagination
+        console.log("🔢 Getting total count...")
+        const total = await prisma.post.count({ where })
+
+        console.log(`📈 Total posts: ${total}`)
+
+        // Get vote counts for all posts in a single efficient query
+        console.log("🗳️ Fetching vote counts...")
+        const voteCounts = await prisma.votes.groupBy({
+          by: ['postId', 'type'],
+          where: {
+            postId: {
+              in: posts.map(post => post.id)
+            }
           },
-        },
-        // Only use orderBy if not sorting by upvotes
-        ...(sortBy !== "upvotes" && { orderBy: { [sortBy]: sortOrder } }),
-        skip: sortBy !== "upvotes" ? skip : 0, // We'll handle skip/limit after sorting by upvotes
-        take: sortBy !== "upvotes" ? limit : undefined,
-      })
+          _count: true
+        })
 
-      // Get total count for pagination
-      const total = await prisma.post.count({ where })
+        // Get attachments for all posts
+        console.log("📎 Fetching attachments...")
+        const attachments = await prisma.attachments.findMany({
+          where: {
+            postId: {
+              in: posts.map(post => post.id)
+            }
+          },
+          select: {
+            postId: true,
+            url: true,
+            filename: true,
+            mimeType: true,
+          },
+        })
 
-// Get vote counts for all posts in a single efficient query
-      const voteCounts = await prisma.votes.groupBy({
-        by: ['postId', 'type'],
-        where: {
-          postId: {
-            in: posts.map(post => post.id)
-          }
-        },
-        _count: true
-      })
+        return { posts, total, voteCounts, attachments }
+      }
 
-      // Get attachments for all posts
-      const attachments = await prisma.attachments.findMany({
-        where: {
-          postId: {
-            in: posts.map(post => post.id)
-          }
-        },
-        select: {
-          postId: true,
-          url: true,
-          filename: true,
-          mimeType: true,
-        },
-      })
+      const dbResults = await Promise.race([
+        dbOperations(),
+        queryTimeout
+      ]) as {
+        posts: any[]
+        total: number
+        voteCounts: any[]
+        attachments: any[]
+      }
+
+      const { posts, total, voteCounts, attachments } = dbResults
+
+      console.log("✅ Database queries completed successfully")
 
       // Get top comment for each post (most upvoted)
       const topComments = await Promise.all(
-        posts.map(async (post) => {
+        posts.map(async (post: any) => {
           const comments = await prisma.comment.findMany({
             where: { postId: post.id },
             include: {
@@ -543,7 +597,7 @@ const skip = (page - 1) * limit
 
       // Create a map of top comments by post ID
       const topCommentMap = new Map<string, any>()
-      topComments.forEach(comment => {
+      topComments.forEach((comment: any) => {
         if (comment) {
           topCommentMap.set(comment.postId, {
             author: comment.author,
@@ -557,7 +611,7 @@ const skip = (page - 1) * limit
 
       // Group attachments by postId and clean blob URLs
       const attachmentMap = new Map<string, string[]>()
-      attachments.forEach(attachment => {
+      attachments.forEach((attachment: any) => {
         const existing = attachmentMap.get(attachment.postId) || []
         // Clean blob URLs by removing download parameter
         let cleanUrl = attachment.url
@@ -571,11 +625,11 @@ const skip = (page - 1) * limit
       // Transform vote counts into a more usable format
       const voteCountMap = new Map<string, { upvotes: number; downvotes: number }>()
       
-      posts.forEach(post => {
+      posts.forEach((post: any) => {
         voteCountMap.set(post.id, { upvotes: 0, downvotes: 0 })
       })
 
-      voteCounts.forEach(vote => {
+      voteCounts.forEach((vote: any) => {
         if (vote.postId) {
           const existing = voteCountMap.get(vote.postId) || { upvotes: 0, downvotes: 0 }
           if (vote.type === 'UP') {
@@ -594,7 +648,7 @@ const skip = (page - 1) * limit
           where: {
             userId: session.user.id,
             postId: {
-              in: posts.map(post => post.id)
+              in: posts.map((post: any) => post.id)
             }
           },
           select: {
@@ -611,7 +665,7 @@ const skip = (page - 1) * limit
       }
 
       // Transform the data to match the frontend format
-      let transformedPosts = posts.map((post) => {
+      let transformedPosts = posts.map((post: any) => {
         const voteCount = voteCountMap.get(post.id) || { upvotes: 0, downvotes: 0 }
         const userVote = userVoteMap.get(post.id)?.toLowerCase() || null // Include user vote
         const images = attachmentMap.get(post.id) || []
@@ -645,7 +699,7 @@ const skip = (page - 1) * limit
 
       // If sorting by upvotes, sort in JS and apply skip/limit
       if (sortBy === "upvotes") {
-        transformedPosts = transformedPosts.sort((a, b) => {
+        transformedPosts = transformedPosts.sort((a: any, b: any) => {
           if (sortOrder === "asc") {
             return a.upvotes - b.upvotes
           } else {

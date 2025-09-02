@@ -317,7 +317,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
 
   if (!isAuthenticated) {
     return (
-      <Card className="w-full mb-6 transform animate-slideInUp" style={{ animationDelay: '0ms' }}>
+      <Card className="w-full mb-6">
         <CardContent className="p-6">
           <div className="text-center">
             <p className="text-gray-600">Please sign in to create a post.</p>
@@ -328,7 +328,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
   }
 
   return (
-    <Card className="w-full mb-6 transform animate-slideInUp" style={{ animationDelay: '0ms' }}>
+    <Card className="w-full mb-6">
       <CardContent className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <Avatar className="h-10 w-10">
@@ -510,24 +510,6 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
           </div>
         </form>
       </CardContent>
-      
-      {/* Add CSS animations */}
-      <style jsx>{`
-        @keyframes slideInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-slideInUp {
-          animation: slideInUp 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-      `}</style>
     </Card>
   )
 }
