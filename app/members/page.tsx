@@ -17,6 +17,7 @@ interface Member {
   id: string
   name: string
   profession: string | null
+  professions: string[] | null
   company: string | null
   location: string | null
   rank: string
@@ -162,7 +163,10 @@ export default function MembersPage() {
                          (member.company && member.company.toLowerCase().includes(searchTerm.toLowerCase()))
     
     const matchesProfession = professionFilter === "all" || 
-                             (member.profession && member.profession.toLowerCase().replace(' ', '-') === professionFilter)
+                             (member.profession && member.profession.toLowerCase().replace(' ', '-') === professionFilter) ||
+                             (member.professions && member.professions.some(prof => 
+                               prof.toLowerCase().replace(' ', '-') === professionFilter
+                             ))
     
     return matchesSearch && matchesProfession
   })
@@ -384,9 +388,33 @@ export default function MembersPage() {
                             <h3 className="font-semibold text-base sm:text-lg truncate">{member.name}</h3>
                             {member.isVerified && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500 flex-shrink-0" />}
                           </div>
-                          <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-1 sm:mb-2">
-                            {member.profession || 'Professional'}
-                          </p>
+                          <div className="mb-1 sm:mb-2">
+                            {member.professions && member.professions.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {member.professions.slice(0, 2).map((profession, index) => (
+                                  <Badge 
+                                    key={index} 
+                                    variant="secondary" 
+                                    className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                  >
+                                    {profession}
+                                  </Badge>
+                                ))}
+                                {member.professions.length > 2 && (
+                                  <Badge 
+                                    variant="outline" 
+                                    className="px-2 py-0.5 text-xs text-gray-500"
+                                  >
+                                    +{member.professions.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
+                                {member.profession || 'Professional'}
+                              </p>
+                            )}
+                          </div>
                           <p className="text-gray-500 text-xs sm:text-sm mb-2 sm:mb-3">
                             {member.company || 'Independent'}
                           </p>

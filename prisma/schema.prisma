@@ -196,6 +196,7 @@ model users {
   firstName         String?
   headline          String?
   industry          String?
+  professions       String[]         @default([])
   lastName          String?
   phoneNumber       String?
   portfolioUrl      String?

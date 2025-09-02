@@ -142,6 +142,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       // Professional Profile
       headline: user.headline,
       skills: user.skills,
+      professions: user.professions,
       industry: user.industry,
       country: user.country,
       city: user.city,

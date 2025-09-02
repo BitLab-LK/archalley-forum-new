@@ -47,6 +47,7 @@ export async function GET() {
         image: true,
         company: true,
         profession: true,
+        professions: true,
         location: true,
         // Privacy fields
         profilePhotoPrivacy: true,
@@ -140,6 +141,7 @@ export async function GET() {
         id: user.id,
         name: user.name || 'Anonymous User',
         profession: user.profession,
+        professions: user.professions,
         company: user.company,
         location: user.location,
         rank: primaryBadge?.name || 'Member',

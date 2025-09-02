@@ -193,6 +193,7 @@ export default function SimplifiedEnhancedRegisterPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null)
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null)
   const [socialProfileImage, setSocialProfileImage] = useState<string>("")
   
   // Privacy Settings
@@ -204,7 +205,7 @@ export default function SimplifiedEnhancedRegisterPage() {
   const [headline, setHeadline] = useState("")
   const [skills, setSkills] = useState<string[]>([])
   const [skillInput, setSkillInput] = useState("")
-  const [industry, setIndustry] = useState("")
+  const [professions, setProfessions] = useState<string[]>([])
   const [country, setCountry] = useState("")
   const [city, setCity] = useState("")
   const [bio, setBio] = useState("")
@@ -257,20 +258,66 @@ export default function SimplifiedEnhancedRegisterPage() {
     scope?: string
   }>({})
 
-  const industries = [
-    "Architecture",
-    "Interior Design", 
-    "Urban Planning",
-    "Construction Management",
-    "Civil Engineering",
-    "Structural Engineering",
-    "Landscape Architecture",
-    "Project Management",
-    "Real Estate Development",
-    "Building Information Modeling (BIM)",
-    "Sustainable Design",
-    "Heritage Conservation",
-    "Other"
+  // Cleanup effect for profile photo preview URL
+  useEffect(() => {
+    return () => {
+      if (profilePhotoPreview) {
+        URL.revokeObjectURL(profilePhotoPreview)
+      }
+    }
+  }, [profilePhotoPreview])
+
+  const professionsList = [
+    "3D Visualizer",
+    "Acoustic Consultant",
+    "Animator / Motion Graphics Designer",
+    "Architect",
+    "BIM Modeler",
+    "Branding Consultant",
+    "Carpenter",
+    "Civil Engineer",
+    "Contractor",
+    "Draughtsman",
+    "Electrician",
+    "Electrical Engineer",
+    "Elevator Technician",
+    "Environmental Engineer",
+    "Fabricator",
+    "Façade Engineer",
+    "Fire Consultant",
+    "Furniture Designer",
+    "Geotechnical Engineer",
+    "Graphic Designer",
+    "Green Building Consultant",
+    "HVAC Technician",
+    "Interior Designer",
+    "Landscape Architect",
+    "Machine Operator",
+    "Mason",
+    "Marketing Specialist",
+    "Materials Engineer",
+    "Mechanical Engineer",
+    "MEP Engineer",
+    "Painter",
+    "Photographer",
+    "Plumber",
+    "Plumbing Engineer",
+    "Procurement Specialist",
+    "Product Designer",
+    "Project Manager",
+    "Quantity Surveyor",
+    "Safety Officer (HSE)",
+    "Site Supervisor",
+    "Smart Building Consultant",
+    "Social Media Manager",
+    "Structural Engineer",
+    "Surveyor",
+    "Technical Officer",
+    "Tile Setter",
+    "Urban Planner",
+    "Videographer",
+    "Welder",
+    "Lighting Consultant"
   ]
 
   const countries = [
@@ -309,6 +356,16 @@ export default function SimplifiedEnhancedRegisterPage() {
 
   const removeSkill = (skillToRemove: string) => {
     setSkills(skills.filter(skill => skill !== skillToRemove))
+  }
+
+  const addProfession = (profession: string) => {
+    if (profession && !professions.includes(profession)) {
+      setProfessions([...professions, profession])
+    }
+  }
+
+  const removeProfession = (professionToRemove: string) => {
+    setProfessions(professions.filter(prof => prof !== professionToRemove))
   }
 
   const addPortfolioLink = () => {
@@ -496,7 +553,7 @@ export default function SimplifiedEnhancedRegisterPage() {
         password: isSocialRegistration ? undefined : password, // Don't send password for social registration
         headline,
         skills,
-        industry,
+        professions,
         country,
         city,
         bio,
@@ -900,10 +957,20 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email">Email Address</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="m@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={isLoading}
+                      className="flex-1"
+                    />
                     <Select value={emailPrivacy} onValueChange={setEmailPrivacy}>
-                      <SelectTrigger className="w-[140px] h-8">
+                      <SelectTrigger className="w-[140px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -913,22 +980,21 @@ export default function SimplifiedEnhancedRegisterPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="m@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                  <Label htmlFor="phoneNumber">Phone Number</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="phoneNumber"
+                      placeholder="+1 (555) 123-4567"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      disabled={isLoading}
+                      className="flex-1"
+                    />
                     <Select value={phonePrivacy} onValueChange={setPhonePrivacy}>
-                      <SelectTrigger className="w-[140px] h-8">
+                      <SelectTrigger className="w-[140px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -938,13 +1004,6 @@ export default function SimplifiedEnhancedRegisterPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Input
-                    id="phoneNumber"
-                    placeholder="+1 (555) 123-4567"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    disabled={isLoading}
-                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -975,20 +1034,39 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="profilePhoto">Profile Photo</Label>
-                    <Select value={profilePhotoPrivacy} onValueChange={setProfilePhotoPrivacy}>
-                      <SelectTrigger className="w-[140px] h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="EVERYONE">Everyone</SelectItem>
-                        <SelectItem value="MEMBERS_ONLY">Members Only</SelectItem>
-                        <SelectItem value="ONLY_ME">Only Me</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center space-x-2">
+                  <Label htmlFor="profilePhoto">Profile Photo</Label>
+                  <div className="flex items-center gap-3">
+                    {/* Image Preview Circle */}
+                    <div className="relative shrink-0">
+                      <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
+                        {profilePhotoPreview ? (
+                          <img 
+                            src={profilePhotoPreview} 
+                            alt="Profile preview" 
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                        ) : (
+                          <Upload className="h-6 w-6 text-gray-400" />
+                        )}
+                      </div>
+                      {profilePhotoPreview && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfilePhoto(null)
+                            setProfilePhotoPreview(null)
+                            // Reset the file input
+                            const fileInput = document.getElementById('profilePhoto') as HTMLInputElement
+                            if (fileInput) fileInput.value = ''
+                          }}
+                          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* Button and Privacy Dropdown */}
                     <Input
                       id="profilePhoto"
                       type="file"
@@ -1001,22 +1079,40 @@ export default function SimplifiedEnhancedRegisterPage() {
                           type: file.type
                         } : 'No file')
                         setProfilePhoto(file)
+                        
+                        // Create preview URL
+                        if (file) {
+                          const previewUrl = URL.createObjectURL(file)
+                          setProfilePhotoPreview(previewUrl)
+                        } else {
+                          setProfilePhotoPreview(null)
+                        }
                       }}
                       disabled={isLoading}
                       className="hidden"
                     />
+                    
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => document.getElementById('profilePhoto')?.click()}
                       disabled={isLoading}
+                      className="flex-1"
                     >
                       <Upload className="mr-2 h-4 w-4" />
-                      Choose File
+                      {profilePhoto ? 'Change Photo' : 'Choose Photo'}
                     </Button>
-                    <span className="text-sm text-muted-foreground">
-                      {profilePhoto ? `✅ ${profilePhoto.name} (${(profilePhoto.size / 1024).toFixed(1)}KB)` : "No file chosen"}
-                    </span>
+                    
+                    <Select value={profilePhotoPrivacy} onValueChange={setProfilePhotoPrivacy}>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EVERYONE">Everyone</SelectItem>
+                        <SelectItem value="MEMBERS_ONLY">Members Only</SelectItem>
+                        <SelectItem value="ONLY_ME">Only Me</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -1139,19 +1235,42 @@ export default function SimplifiedEnhancedRegisterPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="industry">Industry/Field of Work</Label>
-                      <Select value={industry} onValueChange={setIndustry} disabled={isLoading}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an industry" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {industries.map((ind) => (
-                            <SelectItem key={ind} value={ind}>
-                              {ind}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="professions">Profession(s)</Label>
+                      <div className="space-y-2">
+                        <Select onValueChange={addProfession} disabled={isLoading}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select profession(s)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {professionsList
+                              .filter(prof => !professions.includes(prof))
+                              .map((profession) => (
+                                <SelectItem key={profession} value={profession}>
+                                  {profession}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        {/* Display selected professions */}
+                        {professions.length > 0 && (
+                          <div className="flex flex-wrap gap-2 p-2 border rounded-md bg-gray-50 dark:bg-gray-800">
+                            {professions.map((profession) => (
+                              <Badge key={profession} variant="secondary" className="flex items-center gap-1">
+                                {profession}
+                                <button
+                                  type="button"
+                                  onClick={() => removeProfession(profession)}
+                                  className="ml-1 text-gray-500 hover:text-gray-700"
+                                  disabled={isLoading}
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </button>
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

@@ -20,7 +20,7 @@ const registerSchema = z.object({
   }, "Password must be at least 6 characters"),
   headline: z.string().nullable().optional(),
   skills: z.array(z.string()).nullable().optional(),
-  industry: z.string().nullable().optional(),
+  professions: z.array(z.string()).nullable().optional(),
   country: z.string().nullable().optional(),
   city: z.string().nullable().optional(),
   company: z.string().nullable().optional(),
@@ -224,11 +224,10 @@ export async function POST(request: NextRequest) {
       password,
       headline,
       skills,
-      industry,
+      professions,
       country,
       city,
       company,
-      profession,
       bio,
       portfolioUrl,
       linkedinUrl,
@@ -334,11 +333,11 @@ export async function POST(request: NextRequest) {
           // Professional fields stored separately
           headline: headline || null,
           skills: skills || [],
-          industry: industry || null,
+          professions: professions || [],
           country: country || null,
           city: city || null,
           company: company || null,
-          profession: profession || industry || null,
+          profession: professions?.[0] || null, // Use first profession for backward compatibility
           bio: bio || null, // Store bio separately, not concatenated
           
           // Location field for backward compatibility

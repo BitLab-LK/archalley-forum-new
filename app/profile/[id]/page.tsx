@@ -35,6 +35,7 @@ interface User {
   email?: string
   image?: string
   profession?: string
+  professions?: string[]
   company?: string
   location?: string
   rank?: string
@@ -504,9 +505,25 @@ export default function UserProfilePage() {
                       <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
                         <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
                       </div>
-                      <div>
-                        <label className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Profession</label>
-                        <p className="text-gray-900 dark:text-white font-medium">{user.profession || 'Not specified'}</p>
+                      <div className="flex-1">
+                        <label className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Profession(s)</label>
+                        {user.professions && user.professions.length > 0 ? (
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {user.professions.map((profession, index) => (
+                              <Badge 
+                                key={index} 
+                                variant="secondary" 
+                                className="px-3 py-1 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 dark:from-blue-900 dark:to-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700 hover:shadow-md transition-all duration-200"
+                              >
+                                {profession}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-gray-900 dark:text-white font-medium mt-1">
+                            {user.profession || 'Not specified'}
+                          </p>
+                        )}
                       </div>
                     </div>
                     

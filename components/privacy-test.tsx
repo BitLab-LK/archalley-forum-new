@@ -1,7 +1,6 @@
 // Test component to verify privacy settings behavior
 "use client"
 
-import { useState } from "react"
 import { shouldShowField, type PrivacyContext, type PrivacyLevel } from "@/lib/privacy-utils"
 
 interface TestScenario {
