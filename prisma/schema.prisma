@@ -168,6 +168,12 @@ model users {
   website           String?
   phone             String?
   profileVisibility Boolean          @default(true)
+  
+  // Privacy Settings
+  emailPrivacy      PrivacyLevel     @default(MEMBERS_ONLY)
+  phonePrivacy      PrivacyLevel     @default(ONLY_ME)
+  profilePhotoPrivacy PrivacyLevel   @default(EVERYONE)
+  
   linkedinUrl       String?
   twitterUrl        String?
   instagramUrl      String?
@@ -327,4 +333,10 @@ enum UserRole {
 enum VoteType {
   UP
   DOWN
+}
+
+enum PrivacyLevel {
+  EVERYONE
+  MEMBERS_ONLY
+  ONLY_ME
 }

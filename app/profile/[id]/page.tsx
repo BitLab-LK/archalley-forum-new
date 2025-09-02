@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MapPin, Calendar, CheckCircle, ArrowLeft, Edit, MessageCircle, Phone, Mail, Building, Briefcase, GraduationCap, ExternalLink, Users, Trophy, User, LinkIcon, Shield, Camera, Share2 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
+import { shouldShowField, type PrivacyContext } from "@/lib/privacy-utils"
 import PostCard from "@/components/post-card"
 import ActivityFeed from "@/components/activity-feed"
 import { PostBadges } from "@/components/post-badges"
@@ -42,6 +43,11 @@ interface User {
   joinDate: string
   isVerified: boolean
   bio?: string
+  
+  // Privacy settings
+  emailPrivacy?: "EVERYONE" | "MEMBERS_ONLY" | "ONLY_ME"
+  phonePrivacy?: "EVERYONE" | "MEMBERS_ONLY" | "ONLY_ME"
+  profilePhotoPrivacy?: "EVERYONE" | "MEMBERS_ONLY" | "ONLY_ME"
   
   // Additional comprehensive fields
   firstName?: string
@@ -110,6 +116,26 @@ export default function UserProfilePage() {
 
   // Check if the current user is viewing their own profile
   const isOwnProfile = currentUser?.id === userId
+
+  // Privacy context for checking field visibility
+  const privacyContext: PrivacyContext = {
+    isOwnProfile,
+    viewerIsAuthenticated: !!currentUser,
+    viewerIsMember: true
+  }
+
+  // Helper function to get profile image source based on privacy
+  const getProfileImageSource = () => {
+    if (!user?.image) return "/placeholder-user.jpg"
+    
+    // Check if profile photo should be visible
+    const showProfilePhoto = shouldShowField(
+      user.profilePhotoPrivacy || "EVERYONE",
+      privacyContext
+    )
+    
+    return showProfilePhoto ? user.image : "/placeholder-user.jpg"
+  }
 
   // Check if we're coming from an edit (to force refresh)
   const wasUpdated = searchParams.get('updated')
@@ -290,7 +316,7 @@ export default function UserProfilePage() {
                 {/* Avatar + Name Section */}
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
                   <Avatar className="w-12 h-12 flex-shrink-0">
-                    <AvatarImage src={user.image || "/placeholder-user.jpg"} alt={user.name} />
+                    <AvatarImage src={getProfileImageSource()} alt={user.name} />
                     <AvatarFallback className="text-sm">
                       {user.name?.split(' ').map(n => n[0]).join('') || 'U'}
                     </AvatarFallback>
@@ -365,7 +391,7 @@ export default function UserProfilePage() {
             {/* Desktop Layout - Original */}
             <div className="hidden sm:flex sm:flex-col md:flex-row sm:items-start md:items-center sm:gap-6">
               <Avatar className="w-24 h-24">
-                <AvatarImage src={user.image || "/placeholder-user.jpg"} alt={user.name} />
+                <AvatarImage src={getProfileImageSource()} alt={user.name} />
                 <AvatarFallback className="text-2xl">
                   {user.name?.split(' ').map(n => n[0]).join('') || 'U'}
                 </AvatarFallback>
@@ -570,25 +596,39 @@ export default function UserProfilePage() {
                   Contact Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {isOwnProfile && user.email && (
+                  {user.email && shouldShowField(user.emailPrivacy || "EVERYONE", privacyContext) && (
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
                         <Mail className="w-4 h-4 text-blue-600" />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
+                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          Email
+                          {isOwnProfile && user.emailPrivacy && user.emailPrivacy !== "EVERYONE" && (
+                            <span className="ml-1 text-xs text-gray-400">
+                              ({user.emailPrivacy === "MEMBERS_ONLY" ? "Members Only" : "Private"})
+                            </span>
+                          )}
+                        </label>
                         <p className="text-gray-900 dark:text-white font-medium">{user.email}</p>
                       </div>
                     </div>
                   )}
                   
-                  {(user.phoneNumber || user.phone) && (
+                  {(user.phoneNumber || user.phone) && shouldShowField(user.phonePrivacy || "MEMBERS_ONLY", privacyContext) && (
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-green-50 dark:bg-green-950 rounded-lg">
                         <Phone className="w-4 h-4 text-green-600" />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Phone</label>
+                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          Phone
+                          {isOwnProfile && user.phonePrivacy && user.phonePrivacy !== "EVERYONE" && (
+                            <span className="ml-1 text-xs text-gray-400">
+                              ({user.phonePrivacy === "MEMBERS_ONLY" ? "Members Only" : "Private"})
+                            </span>
+                          )}
+                        </label>
                         <p className="text-gray-900 dark:text-white font-medium">{user.phoneNumber || user.phone}</p>
                       </div>
                     </div>

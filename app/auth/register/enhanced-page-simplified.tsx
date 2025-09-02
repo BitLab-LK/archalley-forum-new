@@ -195,6 +195,11 @@ export default function SimplifiedEnhancedRegisterPage() {
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null)
   const [socialProfileImage, setSocialProfileImage] = useState<string>("")
   
+  // Privacy Settings
+  const [emailPrivacy, setEmailPrivacy] = useState("EVERYONE")
+  const [phonePrivacy, setPhonePrivacy] = useState("MEMBERS_ONLY")
+  const [profilePhotoPrivacy, setProfilePhotoPrivacy] = useState("EVERYONE")
+  
   // Professional Profile
   const [headline, setHeadline] = useState("")
   const [skills, setSkills] = useState<string[]>([])
@@ -503,6 +508,10 @@ export default function SimplifiedEnhancedRegisterPage() {
         education: education.filter(edu => edu.degree && edu.institution),
         isSocialRegistration,
         provider,
+        // Privacy settings
+        emailPrivacy,
+        phonePrivacy,
+        profilePhotoPrivacy,
         // Include OAuth data for account linking
         ...(isSocialRegistration && oauthData.provider ? {
           providerAccountId: oauthData.providerAccountId,
@@ -891,7 +900,19 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Select value={emailPrivacy} onValueChange={setEmailPrivacy}>
+                      <SelectTrigger className="w-[140px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EVERYONE">Everyone</SelectItem>
+                        <SelectItem value="MEMBERS_ONLY">Members Only</SelectItem>
+                        <SelectItem value="ONLY_ME">Only Me</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <Input
                     id="email"
                     type="email"
@@ -904,7 +925,19 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Phone Number</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                    <Select value={phonePrivacy} onValueChange={setPhonePrivacy}>
+                      <SelectTrigger className="w-[140px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EVERYONE">Everyone</SelectItem>
+                        <SelectItem value="MEMBERS_ONLY">Members Only</SelectItem>
+                        <SelectItem value="ONLY_ME">Only Me</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <Input
                     id="phoneNumber"
                     placeholder="+1 (555) 123-4567"
@@ -942,7 +975,19 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="profilePhoto">Profile Photo</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="profilePhoto">Profile Photo</Label>
+                    <Select value={profilePhotoPrivacy} onValueChange={setProfilePhotoPrivacy}>
+                      <SelectTrigger className="w-[140px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EVERYONE">Everyone</SelectItem>
+                        <SelectItem value="MEMBERS_ONLY">Members Only</SelectItem>
+                        <SelectItem value="ONLY_ME">Only Me</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="flex items-center space-x-2">
                     <Input
                       id="profilePhoto"

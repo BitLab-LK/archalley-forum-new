@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { put } from '@vercel/blob'
-import { generateSecureImageFilename, getExtensionFromMimeType, generateDisplayFilename } from "@/lib/utils"
+import { generateSecureImageFilename, getExtensionFromMimeType } from "@/lib/utils"
 
 // Rate limiting map for unauthenticated uploads
 const registrationUploadAttempts = new Map<string, { count: number; resetTime: number }>()

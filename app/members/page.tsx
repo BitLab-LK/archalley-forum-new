@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useAuth } from "@/lib/auth-context"
+import { shouldShowField, type PrivacyContext } from "@/lib/privacy-utils"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -24,6 +25,7 @@ interface Member {
   joinDate: string
   isVerified: boolean
   avatar: string | null
+  profilePhotoPrivacy?: string | null
 }
 
 export default function MembersPage() {
@@ -42,6 +44,25 @@ export default function MembersPage() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   
   const ITEMS_PER_PAGE = 12
+
+  // Helper function to get profile image source based on privacy
+  const getProfileImageSource = (member: Member) => {
+    if (!member.avatar) return "/placeholder-user.jpg"
+    
+    const privacyContext: PrivacyContext = {
+      isOwnProfile: user?.id === member.id,
+      viewerIsAuthenticated: !!user,
+      viewerIsMember: true
+    }
+    
+    // Check if profile photo should be visible
+    const showProfilePhoto = shouldShowField(
+      member.profilePhotoPrivacy as "EVERYONE" | "MEMBERS_ONLY" | "ONLY_ME" || "EVERYONE",
+      privacyContext
+    )
+    
+    return showProfilePhoto ? member.avatar : "/placeholder-user.jpg"
+  }
 
   const handleViewProfile = (memberId: string) => {
     router.push(`/profile/${memberId}`)
@@ -353,7 +374,7 @@ export default function MembersPage() {
                     <CardContent className="p-3 sm:p-6">
                       <div className="flex items-start space-x-3 sm:space-x-4">
                         <Avatar className="w-12 h-12 sm:w-16 sm:h-16">
-                          <AvatarImage src={member.avatar || "/placeholder-user.jpg"} />
+                          <AvatarImage src={getProfileImageSource(member)} />
                           <AvatarFallback>
                             {member.name?.split(' ').map(n => n[0]).join('') || 'U'}
                           </AvatarFallback>

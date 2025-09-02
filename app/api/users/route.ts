@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import { prisma, ensureDbConnection, checkDbHealth } from "@/lib/prisma"
 
 export async function GET() {
   try {
+    // Get current session to determine viewer context
+    const session = await getServerSession(authOptions)
+    const viewerIsAuthenticated = !!session?.user
+    const viewerIsMember = true // Assuming all authenticated users are members
+
     // Use the enhanced database connection handler
     try {
       await ensureDbConnection()
@@ -41,6 +48,8 @@ export async function GET() {
         company: true,
         profession: true,
         location: true,
+        // Privacy fields
+        profilePhotoPrivacy: true,
         userBadges: {
           include: {
             badges: true
@@ -66,8 +75,22 @@ export async function GET() {
       },
     })
 
-// Filter by profileVisibility after fetching to handle cases where the field might be null
+    // Filter by profileVisibility after fetching to handle cases where the field might be null
     const publicUsers = users.filter(user => user.profileVisibility !== false)
+
+    // Helper function to check if profile photo should be visible
+    const shouldShowProfilePhoto = (profilePhotoPrivacy: string | null) => {
+      switch (profilePhotoPrivacy) {
+        case "EVERYONE":
+          return true
+        case "MEMBERS_ONLY":
+          return viewerIsAuthenticated && viewerIsMember
+        case "ONLY_ME":
+          return false // Never show in members list, even to the owner (for privacy)
+        default:
+          return true // Default to visible for compatibility
+      }
+    }
 
 // Create a map of user ID to total upvotes
     const upvoteMap = new Map<string, number>()
@@ -107,6 +130,12 @@ export async function GET() {
     // Transform the data to match the members page format
     const formattedUsers = publicUsers.map(user => {
       const primaryBadge = user.userBadges?.[0]?.badges // Get the most recent badge
+      
+      // Determine avatar based on privacy settings
+      const avatarUrl = shouldShowProfilePhoto(user.profilePhotoPrivacy) 
+        ? user.image 
+        : null // Use null instead of placeholder - let frontend handle placeholder
+      
       return {
         id: user.id,
         name: user.name || 'Anonymous User',
@@ -123,7 +152,9 @@ export async function GET() {
           year: 'numeric' 
         }),
         isVerified: user.isVerified || false,
-        avatar: user.image,
+        avatar: avatarUrl,
+        // Include privacy settings for frontend logic
+        profilePhotoPrivacy: user.profilePhotoPrivacy,
       }
     })
 

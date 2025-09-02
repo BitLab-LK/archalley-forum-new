@@ -103,18 +103,41 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     // Check if the current user is viewing their own profile for conditional data
     const isOwnProfile = session?.user?.id === user.id
+    const viewerIsAuthenticated = !!session?.user
+    const viewerIsMember = true // Assuming all authenticated users are members
+
+    // Helper function to check privacy
+    const shouldShowField = (privacy: string | null) => {
+      if (isOwnProfile) return true // Owner always sees their fields
+      
+      switch (privacy) {
+        case "EVERYONE":
+          return true
+        case "MEMBERS_ONLY":
+          return viewerIsAuthenticated && viewerIsMember
+        case "ONLY_ME":
+          return false
+        default:
+          return true // Default to visible for compatibility
+      }
+    }
 
     // Transform the data to match the profile page format
     const formattedUser = {
       id: user.id,
       name: user.name || 'Anonymous User',
-      email: isOwnProfile ? user.email : undefined, // Only include email for own profile
+      email: shouldShowField(user.emailPrivacy) ? user.email : undefined,
       image: user.image,
+      
+      // Privacy settings (always include for the frontend to know the settings)
+      emailPrivacy: user.emailPrivacy,
+      phonePrivacy: user.phonePrivacy,
+      profilePhotoPrivacy: user.profilePhotoPrivacy,
       
       // Basic Information
       firstName: user.firstName,
       lastName: user.lastName,
-      phoneNumber: user.phoneNumber,
+      phoneNumber: shouldShowField(user.phonePrivacy) ? user.phoneNumber : undefined,
       
       // Professional Profile
       headline: user.headline,
@@ -147,7 +170,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       company: user.company,
       location: user.location,
       website: user.website,
-      phone: user.phone,
+      phone: shouldShowField(user.phonePrivacy) ? user.phone : undefined,
       twitterUrl: user.twitterUrl,
       
       // System fields

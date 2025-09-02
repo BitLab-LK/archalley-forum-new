@@ -175,6 +175,10 @@ const registerSchema = z.object({
     platform: z.string(),
     url: z.string(),
   })).nullable().optional(),
+  // Privacy settings
+  emailPrivacy: z.enum(["EVERYONE", "MEMBERS_ONLY", "ONLY_ME"]).optional().default("EVERYONE"),
+  phonePrivacy: z.enum(["EVERYONE", "MEMBERS_ONLY", "ONLY_ME"]).optional().default("MEMBERS_ONLY"),
+  profilePhotoPrivacy: z.enum(["EVERYONE", "MEMBERS_ONLY", "ONLY_ME"]).optional().default("EVERYONE"),
 })
 
 export async function POST(request: NextRequest) {
@@ -241,6 +245,9 @@ export async function POST(request: NextRequest) {
       scope,
       websiteUrl,
       socialMediaLinks,
+      emailPrivacy,
+      phonePrivacy,
+      profilePhotoPrivacy,
     } = registerSchema.parse(body)
 
     // Validate password for non-social registration
@@ -354,6 +361,11 @@ export async function POST(request: NextRequest) {
           // behanceUrl: processedBehanceUrl || null,
           // dribbbleUrl: processedDribbbleUrl || null,
           // otherSocialUrl: processedOtherSocialUrl || null,
+          
+          // Privacy settings
+          emailPrivacy: emailPrivacy || "EVERYONE",
+          phonePrivacy: phonePrivacy || "MEMBERS_ONLY", 
+          profilePhotoPrivacy: profilePhotoPrivacy || "EVERYONE",
           
           // System fields
           role: 'MEMBER',
