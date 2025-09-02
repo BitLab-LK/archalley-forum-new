@@ -384,26 +384,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   const renderImages = useCallback((images: string[]) => {
     const count = images.length
     
-    // Generate descriptive alt text based on post content
-    const generateAltText = (imageIndex: number): string => {
-      // Clean post content for filename (remove special characters, limit length)
-      const cleanContent = post.content
-        .replace(/[^\w\s-]/g, '') // Remove special characters except hyphens and underscores
-        .replace(/\s+/g, '-') // Replace spaces with hyphens
-        .toLowerCase()
-        .substring(0, 50) // Limit to 50 characters
-        .replace(/-+$/, '') // Remove trailing hyphens
-      
-      const authorName = post.author.name.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').toLowerCase()
-      const categoryName = post.category.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').toLowerCase()
-      
-      if (count === 1) {
-        return `${cleanContent}-by-${authorName}-${categoryName}-post`
-      } else {
-        return `${cleanContent}-image-${imageIndex + 1}-by-${authorName}-${categoryName}-post`
-      }
-    }
-    
     // Helper function to render a single image with error handling
     const renderSingleImage = (src: string, alt: string, className: string, sizes: string, index: number) => {
       return (
@@ -426,7 +406,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
       return (
         <div className="w-full flex justify-center items-center">
           <div className="relative w-full h-[400px]">
-            {renderSingleImage(images[0], generateAltText(0), "object-contain rounded-lg", "100vw", 0)}
+            {renderSingleImage(images[0], "Post image", "object-contain rounded-lg", "100vw", 0)}
           </div>
         </div>
       )
@@ -440,7 +420,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
               key={i} 
               className="relative w-1/2 aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden max-h-[350px]" 
             >
-              {renderSingleImage(img, generateAltText(i), "object-cover w-full h-full", "50vw", i)}
+              {renderSingleImage(img, `Post image ${i + 1}`, "object-cover w-full h-full", "50vw", i)}
             </div>
           ))}
         </div>
@@ -451,12 +431,12 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
       return (
         <div className="grid grid-cols-3 gap-2 mt-2 h-[350px]">
           <div className="relative col-span-2 row-span-2 h-full rounded-lg overflow-hidden bg-gray-100">
-            {renderSingleImage(images[0], generateAltText(0), "object-cover w-full h-full", "66vw", 0)}
+            {renderSingleImage(images[0], "Post image 1", "object-cover w-full h-full", "66vw", 0)}
           </div>
           <div className="flex flex-col gap-2 h-full">
             {[1, 2].map(i => (
               <div key={i} className="relative flex-1 rounded-lg overflow-hidden bg-gray-100">
-                {renderSingleImage(images[i], generateAltText(i), "object-cover w-full h-full", "33vw", i)}
+                {renderSingleImage(images[i], `Post image ${i + 1}`, "object-cover w-full h-full", "33vw", i)}
               </div>
             ))}
           </div>
@@ -469,7 +449,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
         <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-2 h-[350px]">
           {images.map((img, i) => (
             <div key={i} className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100">
-              {renderSingleImage(img, generateAltText(i), "object-cover w-full h-full", "50vw", i)}
+              {renderSingleImage(img, `Post image ${i + 1}`, "object-cover w-full h-full", "50vw", i)}
             </div>
           ))}
         </div>
@@ -481,11 +461,11 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
       <div className="grid grid-cols-2 grid-rows-2 gap-2 mt-2 h-[350px]">
         {images.slice(0, 3).map((img, i) => (
           <div key={i} className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100">
-            {renderSingleImage(img, generateAltText(i), "object-cover w-full h-full", "50vw", i)}
+            {renderSingleImage(img, `Post image ${i + 1}`, "object-cover w-full h-full", "50vw", i)}
           </div>
         ))}
         <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-100">
-          {renderSingleImage(images[3], generateAltText(3), "object-cover w-full h-full", "50vw", 3)}
+          {renderSingleImage(images[3], "Post image 4", "object-cover w-full h-full", "50vw", 3)}
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center pointer-events-none">
             <span className="text-white text-2xl font-bold">+{count - 4}</span>
           </div>
