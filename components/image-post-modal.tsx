@@ -101,13 +101,9 @@ export default function ImagePostModal({
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (open) {
-      // Instead of completely hiding overflow, just add some padding to account for scrollbar
-      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
       document.body.style.overflow = 'hidden'
-      document.body.style.paddingRight = `${scrollBarWidth}px`
       return () => {
         document.body.style.overflow = 'unset'
-        document.body.style.paddingRight = '0px'
       }
     }
     return undefined
@@ -951,7 +947,7 @@ await handleVote(type)
 
   return (
     <div 
-      className="modal-backdrop fixed inset-0 z-[99999] bg-black"
+      className="modal-backdrop fixed inset-0 z-[99999] flex items-center justify-center bg-black/80"
       style={{
         position: 'fixed',
         top: 0,
@@ -964,97 +960,82 @@ await handleVote(type)
         margin: 0,
         padding: 0
       }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose()
-        }
-      }}
     >
-      <div className="relative h-full w-full flex flex-col lg:flex-row bg-white dark:bg-gray-900 overflow-hidden">
+      <div className="relative h-[90vh] min-h-[600px] max-h-[800px] w-full max-w-7xl mx-4 flex flex-col md:flex-row bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden">
         {/* Left: Image Carousel */}
-        <div className="flex-1 bg-black relative flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center bg-black relative min-h-[400px]">
           {hasImages && (
-            <div className="relative w-full h-full flex items-center justify-center p-4">
-              <PostImage
-                src={images[carouselIndex]}
-                alt={`Post image ${carouselIndex + 1}`}
-                className="object-contain w-full h-full"
-                sizes="(max-width: 1024px) 100vw, 70vw"
-                priority
-                enableDownload={true}
-                width={1200}
-                height={800}
-              />
-              
-              {/* Navigation Arrows */}
-              {images.length > 1 && (
-                <>
-                  <button
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-3 transition-all duration-150 active:scale-95 z-20"
-                    onClick={() => setCarouselIndex(i => (i > 0 ? i - 1 : images.length - 1))}
-                  >
-                    <ChevronLeft className="w-6 h-6" />
-                  </button>
-                  <button
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-3 transition-all duration-150 active:scale-95 z-20"
-                    onClick={() => setCarouselIndex(i => (i < images.length - 1 ? i + 1 : 0))}
-                  >
-                    <ChevronRight className="w-6 h-6" />
-                  </button>
-                </>
-              )}
-              
-              {/* Image Counter */}
-              {images.length > 1 && (
-                <div className="absolute top-4 right-4 bg-black/60 text-white px-3 py-2 rounded-full text-sm font-medium z-20">
-                  {carouselIndex + 1} / {images.length}
+            <div className="w-full h-full flex items-center justify-center relative">
+              <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+                <div className="w-full h-full transition-transform duration-500 ease-in-out flex items-center justify-center">
+                  <PostImage
+                    src={images[carouselIndex]}
+                    alt={`Post image ${carouselIndex + 1}`}
+                    className="object-contain w-full h-full"
+                    sizes="100vw"
+                    priority
+                    enableDownload={true}
+                  />
                 </div>
-              )}
-              
-              {/* Close button overlay for mobile */}
-              <button 
-                onClick={onClose} 
-                className="absolute top-4 left-4 lg:hidden w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-all duration-150 active:scale-95 z-20"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+                {/* Navigation Arrows */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all duration-150 active:scale-95"
+                      onClick={() => setCarouselIndex(i => (i > 0 ? i - 1 : images.length - 1))}
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </button>
+                    <button
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all duration-150 active:scale-95"
+                      onClick={() => setCarouselIndex(i => (i < images.length - 1 ? i + 1 : 0))}
+                    >
+                      <ChevronRight className="w-6 h-6" />
+                    </button>
+                  </>
+                )}
+                {/* Image Counter */}
+                {images.length > 1 && (
+                  <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                    {carouselIndex + 1} / {images.length}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Right: Post Content Sidebar */}
-        <div className="w-full lg:w-[420px] xl:w-[480px] flex flex-col bg-white dark:bg-gray-900 h-full border-l border-gray-200 dark:border-gray-700">
-          {/* Header */}
-          <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <Avatar className="h-10 w-10 flex-shrink-0">
+        {/* Right: Facebook-style Post Content */}
+        <div className="w-full md:w-[450px] lg:w-[550px] xl:w-[550px] flex flex-col bg-white dark:bg-gray-900 h-full max-h-[800px]">
+          {/* Header - Compact */}
+          <div className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-9 w-9">
                 <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
                 <AvatarFallback className="bg-orange-500 text-white">{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
               </Avatar>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
                     {post.isAnonymous ? "Anonymous" : post.author.name}
                   </h3>
                   {!post.isAnonymous && post.author.isVerified && (
-                    <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <div className="w-3.5 h-3.5 bg-orange-500 rounded-full flex items-center justify-center">
+                      <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     </div>
                   )}
                   {!post.isAnonymous && post.author.rank && (
                     <span className={cn(
-                      "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium flex-shrink-0",
+                      "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium",
                       getRankColor(post.author.rank)
                     )}>
                       {formatRank(post.author.rank)}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                   <span>{post.timeAgo}</span>
                   <span>•</span>
                   <Globe className="w-3 h-3" />
@@ -1063,9 +1044,9 @@ await handleVote(type)
             </div>
             <button 
               onClick={onClose} 
-              className="hidden lg:flex w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-150 active:scale-95 z-10 flex-shrink-0"
+              className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-100 active:scale-95"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -1073,13 +1054,13 @@ await handleVote(type)
 
           {/* Scrollable Content Area */}
           <div className="flex-1 overflow-y-auto min-h-0">
-            {/* Post Content */}
-            <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-              <p className="text-gray-900 dark:text-white text-base leading-relaxed whitespace-pre-line break-words mb-4">
+            {/* Post Content - Reduced padding */}
+            <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+              <p className="text-gray-900 dark:text-white text-[15px] leading-relaxed whitespace-pre-line break-words mb-3">
                 {post.content}
               </p>
               
-              {/* Category Tag */}
+              {/* Category Tag (subtle) */}
               {post.category && (
                 <div className="mb-4">
                   <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
@@ -1088,76 +1069,77 @@ await handleVote(type)
                 </div>
               )}
               
-              {/* Engagement Stats */}
+              {/* Stats */}
               <div className="flex items-center justify-between pt-3 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-4">
                   {(upvotes > 0 || downvotes > 0) && (
-                    <span className="flex items-center gap-2">
-                      <div className="flex items-center -space-x-1">
+                    <span className="flex items-center gap-1">
+                      <div className="flex items-center">
                         {upvotes > 0 && (
-                          <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900">
+                          <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
                             <ThumbsUp className="w-3 h-3 text-white" />
                           </div>
                         )}
                         {downvotes > 0 && (
-                          <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900">
+                          <div className={cn(
+                            "w-5 h-5 bg-red-500 rounded-full flex items-center justify-center",
+                            upvotes > 0 && "-ml-1"
+                          )}>
                             <ThumbsDown className="w-3 h-3 text-white" />
                           </div>
                         )}
                       </div>
-                      <span className="font-medium">
+                      <span>
                         {(upvotes || 0) + (downvotes || 0)}
                       </span>
                     </span>
                   )}
                 </div>
                 {commentCount > 0 && (
-                  <span className="font-medium">{commentCount} comments</span>
+                  <span>{commentCount} comments</span>
                 )}
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-3 py-2 z-10">
+            {/* Action Buttons - Sticky */}
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 py-1 z-10">
               <div className="flex items-center justify-between gap-1">
                 <button 
                   onClick={() => handleDebouncedVote("up")} 
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2.5 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-150 font-medium active:scale-95",
+                    "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 font-medium active:scale-95",
                     userVote === "up" 
                       ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950" 
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   )}
                 >
                   <ThumbsUp className="w-5 h-5" />
-                  <span className="hidden sm:inline">Like</span>
                   {upvotes > 0 && <span className="text-sm">({upvotes})</span>}
                 </button>
                 <button 
                   onClick={() => handleDebouncedVote("down")} 
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2.5 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-150 font-medium active:scale-95",
+                    "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 font-medium active:scale-95",
                     userVote === "down" 
                       ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950" 
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   )}
                 >
                   <ThumbsDown className="w-5 h-5" />
-                  <span className="hidden sm:inline">Dislike</span>
                   {downvotes > 0 && <span className="text-sm">({downvotes})</span>}
                 </button>
                 <button 
                   onClick={handleCommentClick} 
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-150 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95"
                 >
                   <MessageCircle className="w-5 h-5" />
-                  <span className="hidden sm:inline">Comment</span>
+                  <span>Comment</span>
                 </button>
                 <ShareDropdown 
                   post={post}
                   variant="ghost"
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-150 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
-                  showLabel={false}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
+                  showLabel={true}
                   context="modal"
                 />
               </div>

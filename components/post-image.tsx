@@ -9,8 +9,6 @@ interface PostImageProps {
   alt: string
   className?: string
   fill?: boolean
-  width?: number
-  height?: number
   sizes?: string
   priority?: boolean
   onClick?: () => void
@@ -45,8 +43,6 @@ export default function PostImage({
   alt, 
   className = "", 
   fill = false, 
-  width,
-  height,
   sizes, 
   priority = false,
   onClick,
@@ -212,7 +208,7 @@ export default function PostImage({
 
   // Try Next.js Image first
   return (
-    <div className={fill ? "relative w-full h-full" : "relative"}>
+    <div className="relative">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400"></div>
@@ -223,8 +219,6 @@ export default function PostImage({
         alt={alt}
         className={`${className} ${onClick ? 'cursor-pointer' : ''}`}
         fill={fill}
-        width={!fill ? width : undefined}
-        height={!fill ? height : undefined}
         sizes={sizes}
         priority={priority}
         unoptimized={true} // Add this to bypass Next.js optimization
