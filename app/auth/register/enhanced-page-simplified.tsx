@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback, Suspense } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -64,21 +64,6 @@ const getWordCountStatus = (text: string, limit: number = 150) => {
 }
 
 export default function SimplifiedEnhancedRegisterPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading registration page...</p>
-        </div>
-      </div>
-    }>
-      <SimplifiedEnhancedRegisterContent />
-    </Suspense>
-  )
-}
-
-function SimplifiedEnhancedRegisterContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("register")
