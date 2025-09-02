@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { NextRequest } from "next/server"
+import { cleanupPostBlobs } from "@/lib/utils"
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ postId: string }> }) {
   try {
@@ -68,7 +69,16 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
     console.log("✅ Authorization passed, deleting post...")
 
-    // Delete related data first (foreign key constraints)
+    // Clean up Vercel Blob files before deleting database records
+    try {
+      await cleanupPostBlobs(postId)
+    } catch (blobError) {
+      console.warn("⚠️ Blob cleanup failed, continuing with database deletion:", blobError)
+      // Continue with database deletion even if blob cleanup fails
+      // This prevents database inconsistency
+    }
+
+    // Delete related data from database (foreign key constraints)
     await prisma.$transaction([
       // Delete votes first
       prisma.votes.deleteMany({
@@ -78,7 +88,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
       prisma.comment.deleteMany({
         where: { postId: postId }
       }),
-      // Delete attachments
+      // Delete attachments (database records)
       prisma.attachments.deleteMany({
         where: { postId: postId }
       }),
