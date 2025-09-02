@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, Suspense } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -49,8 +49,7 @@ const getWordCountStatus = (text: string, limit: number = 150) => {
   return { status: 'normal', color: 'text-gray-600' }
 }
 
-// Component that uses useSearchParams
-function EditProfileContent() {
+export default function EditProfilePage() {
   const { user } = useAuth()
   const { update } = useSession()
   const { toast } = useToast()
@@ -1528,41 +1527,5 @@ function EditProfileContent() {
         </main>
       </div>
     </AuthGuard>
-  )
-}
-
-// Loading fallback component
-function EditProfileLoading() {
-  return (
-    <AuthGuard>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <main className="max-w-4xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div className="animate-pulse">
-              <div className="h-8 w-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            </div>
-          </div>
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 animate-pulse">
-              <div className="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-              <div className="space-y-4">
-                <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded"></div>
-                <div className="h-4 w-3/4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                <div className="h-4 w-1/2 bg-gray-200 dark:bg-gray-700 rounded"></div>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    </AuthGuard>
-  )
-}
-
-// Main page component with Suspense boundary
-export default function EditProfilePage() {
-  return (
-    <Suspense fallback={<EditProfileLoading />}>
-      <EditProfileContent />
-    </Suspense>
   )
 }
