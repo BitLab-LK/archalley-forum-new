@@ -31,11 +31,14 @@ export function InfiniteScrollSentinel({
           {/* Loading text with typing effect */}
           <div className="text-center">
             <span className="text-sm text-gray-600 dark:text-gray-400 font-medium animate-pulse">
-              Loading
+              Loading more posts
               <span className="animate-bounce inline-block ml-1">.</span>
               <span className="animate-bounce inline-block" style={{ animationDelay: '0.2s' }}>.</span>
               <span className="animate-bounce inline-block" style={{ animationDelay: '0.4s' }}>.</span>
             </span>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              Hang tight, we're fetching fresh content
+            </p>
           </div>
 
           {/* Loading progress dots */}
