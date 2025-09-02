@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { put, del } from '@vercel/blob'
+import { generateSecureImageFilename, getExtensionFromMimeType, generateDisplayFilename } from "@/lib/utils"
 
 // Rate limiting map (in production, use Redis or similar)
 const uploadAttempts = new Map<string, { count: number; resetTime: number }>()
@@ -21,15 +22,6 @@ function checkRateLimit(userId: string): boolean {
   
   userAttempts.count++
   return true
-}
-
-function sanitizeFilename(filename: string): string {
-  // Remove any path traversal attempts and special characters
-  return filename
-    .replace(/[^a-zA-Z0-9.-]/g, '_')
-    .replace(/\.{2,}/g, '.')
-    .replace(/^\.+|\.+$/g, '')
-    .substring(0, 100) // Limit length
 }
 
 export async function POST(request: NextRequest) {
@@ -61,7 +53,7 @@ export async function POST(request: NextRequest) {
     const maxDimensions = parseInt(process.env.UPLOAD_MAX_DIMENSIONS || "2048") // 2048px default
     const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"]
 
-const uploadPromises = files.map(async (file) => {
+const uploadPromises = files.map(async (file, index) => {
       // Validate file type
       if (!allowedTypes.includes(file.type)) {
         throw new Error(`Invalid file type for ${file.name}: ${file.type}`)
@@ -69,9 +61,9 @@ const uploadPromises = files.map(async (file) => {
 
       let buffer = Buffer.from(await file.arrayBuffer()) as Buffer
       let outputMime = "image/webp"
-      let sanitizedFilename = sanitizeFilename(file.name)
-      let filenameBase = `${Date.now()}-${sanitizedFilename}`.replace(/\.[^.]+$/, "")
-      let filename = `${filenameBase}.webp`
+      
+      // Generate secure filename - short and clean
+      let filename = generateSecureImageFilename(getExtensionFromMimeType("image/webp"))
       let processed = false
 
       // Always process images that are too large or not in optimal format
@@ -102,9 +94,12 @@ const uploadPromises = files.map(async (file) => {
           if (webpBuffer.length <= maxSize) {
             buffer = webpBuffer as Buffer
             processed = true
+            // Keep the WebP filename as generated
             
           } else {
             // If WebP still too large, try JPEG
+            outputMime = "image/jpeg"
+            filename = generateSecureImageFilename(getExtensionFromMimeType("image/jpeg"))
             
             quality = 85
             let jpgBuffer = await sharpImg.jpeg({ quality }).toBuffer()
@@ -116,10 +111,7 @@ const uploadPromises = files.map(async (file) => {
             
             if (jpgBuffer.length <= maxSize) {
               buffer = jpgBuffer as Buffer
-              outputMime = "image/jpeg"
-              filename = `${filenameBase}.jpg`
               processed = true
-              
             }
           }
         } catch (err) {
@@ -150,7 +142,10 @@ const uploadPromises = files.map(async (file) => {
           
           sharpImg = sharpImg.resize(targetWidth, targetHeight, { withoutEnlargement: true })
           
-          // Try very low quality compression
+          // Try very low quality compression with JPEG
+          outputMime = "image/jpeg"
+          filename = generateSecureImageFilename(getExtensionFromMimeType("image/jpeg"))
+          
           let quality = 50
           let compressedBuffer = await sharpImg.jpeg({ quality }).toBuffer()
           
@@ -161,10 +156,7 @@ const uploadPromises = files.map(async (file) => {
           
           if (compressedBuffer.length <= maxSize) {
             buffer = compressedBuffer as Buffer
-            outputMime = "image/jpeg"
-            filename = `${filenameBase}.jpg`
             processed = true
-            
           }
         } catch (err) {
           console.error(`Final compression failed for ${file.name}:`, err)
@@ -178,14 +170,13 @@ const uploadPromises = files.map(async (file) => {
 
       try {
         // Upload to Vercel Blob
-
-const blob = await put(filename, buffer, {
+        const blob = await put(filename, buffer, {
           access: 'public',
           addRandomSuffix: true, // Avoid filename conflicts
           cacheControlMaxAge: 60 * 60 * 24 * 30, // Cache for 30 days
         })
 
-// Test if the blob is immediately accessible
+        // Test if the blob is immediately accessible
         try {
           const testResponse = await fetch(blob.url, { method: 'HEAD' })
           
@@ -198,7 +189,7 @@ const blob = await put(filename, buffer, {
 
         return {
           url: blob.url, // Use regular URL for display, not downloadUrl
-          name: file.name,
+          name: generateDisplayFilename(outputMime, files.length > 1 ? index : undefined), // User-friendly name for downloads
           size: buffer.length,
           type: outputMime,
           pathname: blob.pathname,
@@ -208,7 +199,7 @@ const blob = await put(filename, buffer, {
         console.error(`Blob upload failed for ${filename}:`, blobError)
         
         // Provide more specific error information
-        let specificError = `Failed to upload ${filename} to blob storage`
+        let specificError = `Failed to upload to blob storage`
         if (blobError instanceof Error) {
           if (blobError.message.includes('unauthorized') || blobError.message.includes('403')) {
             specificError = `Authentication failed for blob storage. Please check your BLOB_READ_WRITE_TOKEN.`

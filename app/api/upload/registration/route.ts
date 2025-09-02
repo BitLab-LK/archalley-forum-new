@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { put } from '@vercel/blob'
+import { generateSecureImageFilename, getExtensionFromMimeType, generateDisplayFilename } from "@/lib/utils"
 
 // Rate limiting map for unauthenticated uploads
 const registrationUploadAttempts = new Map<string, { count: number; resetTime: number }>()
@@ -19,14 +20,6 @@ function checkRegistrationRateLimit(ip: string): boolean {
   
   attempts.count++
   return true
-}
-
-function sanitizeFilename(filename: string): string {
-  return filename
-    .replace(/[^a-zA-Z0-9.-]/g, '_')
-    .replace(/\.{2,}/g, '.')
-    .replace(/^\.+|\.+$/g, '')
-    .substring(0, 100)
 }
 
 export async function POST(request: NextRequest) {
@@ -71,8 +64,9 @@ export async function POST(request: NextRequest) {
     }
 
     let buffer = Buffer.from(await file.arrayBuffer())
-    let sanitizedFilename = sanitizeFilename(file.name)
-    let filename = `registration-${Date.now()}-${sanitizedFilename}`
+    
+    // Generate short secure filename for registration
+    let filename = `profile_${generateSecureImageFilename(getExtensionFromMimeType(file.type)).replace('img_', '')}`
 
     try {
       // Check if BLOB_READ_WRITE_TOKEN is available
@@ -91,7 +85,7 @@ export async function POST(request: NextRequest) {
           url: blob.url,
           filename: filename,
           size: buffer.length,
-          originalName: file.name
+          originalName: 'profile' + getExtensionFromMimeType(file.type) // Clean name for user downloads
         }]
       })
     } catch (error) {
