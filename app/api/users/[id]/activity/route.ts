@@ -27,18 +27,11 @@ export async function GET(
 ) {
   
   try {
+    console.log("🔍 Activity API called")
     const session = await getServerSession(authOptions)
     
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get("page") || "1")
-    const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 20) // Cap at 20
-    const offset = (page - 1) * limit
-
     const { id: userId } = await params
+    console.log(`🎯 Fetching activities for user: ${userId}`)
 
     // Check if requesting user can view this profile
     const targetUser = await prisma.users.findUnique({
@@ -52,21 +45,39 @@ export async function GET(
     })
 
     if (!targetUser) {
+      console.log(`❌ User not found: ${userId}`)
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
+    
+    console.log(`✅ Target user found: ${targetUser.name}`)
 
     // Allow access if:
-    // 1. User is viewing their own profile
-    // 2. Target profile is public
-    // 3. Requester is admin
-    const canView = 
-      session.user.id === userId || 
-      targetUser.profileVisibility || 
-      session.user.role === "ADMIN"
+    // 1. User is viewing their own profile (requires session)
+    // 2. Target profile is public (no session required)
+    // 3. Requester is admin (requires session)
+    const isOwnProfile = session?.user?.id === userId
+    const isAdmin = session?.user?.role === "ADMIN"
+    const isPublicProfile = targetUser.profileVisibility
+    
+    const canView = isOwnProfile || isPublicProfile || isAdmin
 
     if (!canView) {
-      return NextResponse.json({ error: "Profile is private" }, { status: 403 })
+      console.log(`❌ Access denied: Profile is private and user not authenticated`)
+      return NextResponse.json({ error: "This profile is private. Please log in to view." }, { status: 403 })
     }
+    
+    // If it's a private profile and no session, require authentication
+    if (!isPublicProfile && !session?.user?.id) {
+      console.log(`❌ Authentication required for private profile`)
+      return NextResponse.json({ error: "Please log in to view this profile" }, { status: 401 })
+    }
+    
+    console.log(`✅ Access granted, fetching activities...`)
+
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get("page") || "1")
+    const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 20) // Cap at 20
+    const offset = (page - 1) * limit
 
     // Get user activities - improved approach with proper chronological ordering
     const activities: Activity[] = []
@@ -215,6 +226,8 @@ export async function GET(
       ...activity,
       timeAgo: getTimeAgo(activity.createdAt)
     }))
+    
+    console.log(`✅ Returning ${activitiesWithTimeAgo.length} activities`)
 
     return NextResponse.json({
       activities: activitiesWithTimeAgo,
@@ -239,7 +252,11 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error("Error fetching user activity:", error)
+    console.error("❌ Error fetching user activity:", error)
+    console.error("Error details:", {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

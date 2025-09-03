@@ -105,31 +105,68 @@ activityEventManager.subscribe(userId, handleActivityEvent)
 
   const fetchActivities = async (pageNum = 1, isRefresh = false) => {
     try {
+      console.log(`🔄 Fetching activities for user ${userId}, page ${pageNum}`)
+      
+      if (!userId) {
+        throw new Error("User ID is required")
+      }
       
       if (!isRefresh) setLoading(true)
       if (isRefresh) setIsRefreshing(true)
       
-      const response = await fetch(`/api/users/${userId}/activity?page=${pageNum}&limit=10&t=${Date.now()}`)
+      const url = `/api/users/${userId}/activity?page=${pageNum}&limit=10&t=${Date.now()}`
+      console.log(`📡 API URL: ${url}`)
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies for authentication
+      })
+      
+      console.log(`📊 Response status: ${response.status}`)
       
       if (!response.ok) {
-        throw new Error("Failed to fetch activities")
+        const errorText = await response.text()
+        console.error(`❌ API Error ${response.status}:`, errorText)
+        
+        if (response.status === 401) {
+          throw new Error("Please log in to view activities")
+        } else if (response.status === 403) {
+          throw new Error("This profile is private")
+        } else if (response.status === 404) {
+          throw new Error("User not found")
+        } else {
+          throw new Error(`Server error (${response.status}): ${response.statusText}`)
+        }
       }
       
       const data = await response.json()
+      console.log(`✅ Activities fetched:`, {
+        totalActivities: data.activities?.length || 0,
+        pagination: data.pagination,
+        user: data.user
+      })
 
-if (pageNum === 1) {
-        setActivities(data.activities)
-        
+      if (pageNum === 1) {
+        setActivities(data.activities || [])
       } else {
-        setActivities(prev => [...prev, ...data.activities])
-        
+        setActivities(prev => [...prev, ...(data.activities || [])])
       }
       
-      setHasMore(data.pagination.hasMore)
+      setHasMore(data.pagination?.hasMore || false)
       setPage(pageNum)
+      setError("") // Clear any previous errors
     } catch (err) {
       console.error(`❌ Failed to fetch activities for user ${userId}:`, err)
-      setError(err instanceof Error ? err.message : "Failed to load activities")
+      const errorMessage = err instanceof Error ? err.message : "Failed to load activities"
+      setError(errorMessage)
+      
+      // Set empty activities on error to prevent infinite loading
+      if (pageNum === 1) {
+        setActivities([])
+      }
     } finally {
       setLoading(false)
       setIsRefreshing(false)
@@ -226,8 +263,22 @@ if (pageNum === 1) {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center text-red-600">
-            <p>Error loading activities: {error}</p>
+          <div className="text-center space-y-3">
+            <div className="text-red-600">
+              <p className="font-medium">⚠️ Unable to load activities</p>
+              <p className="text-sm text-gray-600 mt-1">{error}</p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                setError("")
+                fetchActivities(1)
+              }}
+              className="mt-3"
+            >
+              Try Again
+            </Button>
           </div>
         </CardContent>
       </Card>

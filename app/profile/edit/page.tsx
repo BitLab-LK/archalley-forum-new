@@ -474,14 +474,14 @@ export default function EditProfilePage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fade-in">
         <main className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
           {/* Header */}
-          <div className="mb-4 sm:mb-8">
+          <div className="mb-4 sm:mb-8 animate-fade-in-up animate-delay-100">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 <Link href={`/profile/${user?.id}`}>
-                  <Button variant="ghost" size="sm" className="self-start">
+                  <Button variant="ghost" size="sm" className="self-start smooth-transition hover-lift">
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back to Profile
                   </Button>
@@ -494,28 +494,28 @@ export default function EditProfilePage() {
             </div>
 
             {error && (
-              <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+              <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 animate-fade-in-up animate-delay-200">
                 <p className="text-sm sm:text-base text-red-800 dark:text-red-200">{error}</p>
               </div>
             )}
           </div>
 
-          <Tabs defaultValue={defaultTab} className="w-full">
+          <Tabs defaultValue={defaultTab} className="w-full animate-fade-in-up animate-delay-300">
             <div className="overflow-x-auto mb-4 sm:mb-6">
-              <TabsList className="grid w-full grid-cols-7 min-w-max sm:min-w-0">
-                <TabsTrigger value="personal" className="text-xs sm:text-sm">Personal</TabsTrigger>
-                <TabsTrigger value="professional" className="text-xs sm:text-sm">Professional</TabsTrigger>
-                <TabsTrigger value="experience" className="text-xs sm:text-sm">Experience</TabsTrigger>
-                <TabsTrigger value="education" className="text-xs sm:text-sm">Education</TabsTrigger>
-                <TabsTrigger value="connected" className="text-xs sm:text-sm">Connected</TabsTrigger>
-                <TabsTrigger value="account" className="text-xs sm:text-sm">Account</TabsTrigger>
-                <TabsTrigger value="privacy" className="text-xs sm:text-sm">Privacy</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-7 min-w-max sm:min-w-0 smooth-transition hover-lift">
+                <TabsTrigger value="personal" className="text-xs sm:text-sm smooth-transition">Personal</TabsTrigger>
+                <TabsTrigger value="professional" className="text-xs sm:text-sm smooth-transition">Professional</TabsTrigger>
+                <TabsTrigger value="experience" className="text-xs sm:text-sm smooth-transition">Experience</TabsTrigger>
+                <TabsTrigger value="education" className="text-xs sm:text-sm smooth-transition">Education</TabsTrigger>
+                <TabsTrigger value="connected" className="text-xs sm:text-sm smooth-transition">Connected</TabsTrigger>
+                <TabsTrigger value="account" className="text-xs sm:text-sm smooth-transition">Account</TabsTrigger>
+                <TabsTrigger value="privacy" className="text-xs sm:text-sm smooth-transition">Privacy</TabsTrigger>
               </TabsList>
             </div>
 
             {/* Personal Information */}
             <TabsContent value="personal" className="space-y-4 sm:space-y-6">
-              <Card>
+              <Card className="smooth-transition hover-lift animate-scale-in animate-delay-400">
                 <CardHeader className="p-4 sm:p-6">
                   <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                     <User className="w-4 h-4 sm:w-5 sm:h-5" />

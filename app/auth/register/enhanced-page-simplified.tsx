@@ -708,11 +708,11 @@ export default function SimplifiedEnhancedRegisterPage() {
     const isSocialRegistration = !!provider
 
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 animate-fade-in">
+        <Card className="w-full max-w-md animate-scale-in animate-delay-100">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
-              <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
+              <CheckCircle className="mx-auto h-12 w-12 text-green-500 animate-pulse-glow" />
               <h2 className="text-2xl font-bold">Account Created!</h2>
               {isSocialRegistration ? (
                 <div className="space-y-4">
@@ -740,28 +740,28 @@ export default function SimplifiedEnhancedRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-4 sm:py-12 px-2 sm:px-4 lg:px-8">
-      <Card className="w-full max-w-2xl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-4 sm:py-12 px-2 sm:px-4 lg:px-8 animate-fade-in">
+      <Card className="w-full max-w-2xl animate-scale-in animate-delay-100">
         <CardHeader className="space-y-1 p-4 sm:p-6">
-          <CardTitle className="text-xl sm:text-2xl font-bold text-center" style={{ color: '#ffa500' }}>
+          <CardTitle className="text-xl sm:text-2xl font-bold text-center animate-fade-in-up animate-delay-200" style={{ color: '#ffa500' }}>
             {activeTab === "login" ? "Archalley Forum" : "Join Archalley Forum"}
           </CardTitle>
-          <CardDescription className="text-center text-sm sm:text-base">
+          <CardDescription className="text-center text-sm sm:text-base animate-fade-in-up animate-delay-300">
             Professional Networking for Construction & Related Industries
           </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full animate-fade-in-up animate-delay-400">
+            <TabsList className="grid w-full grid-cols-2 smooth-transition hover-lift">
+              <TabsTrigger value="login" className="smooth-transition">Login</TabsTrigger>
+              <TabsTrigger value="register" className="smooth-transition">Register</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="login" className="space-y-6">
+            <TabsContent value="login" className="space-y-6 animate-fade-in-up animate-delay-500">
               {/* Success Message */}
               {message && (
-                <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/50">
+                <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/50 animate-fade-in-up animate-delay-600">
                   <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                   <AlertDescription className="text-green-700 dark:text-green-300">
                     {message}
@@ -770,10 +770,10 @@ export default function SimplifiedEnhancedRegisterPage() {
               )}
               
               {/* Social Login */}
-              <div className="space-y-2 sm:space-y-3">
+              <div className="space-y-2 sm:space-y-3 animate-fade-in-up animate-delay-700">
                 <Button
                   variant={searchParams.get('provider') === 'google' ? "default" : "outline"}
-                  className={`w-full text-sm sm:text-base ${searchParams.get('provider') === 'google' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
+                  className={`w-full text-sm sm:text-base smooth-transition hover-lift ${searchParams.get('provider') === 'google' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
                   type="button"
                   onClick={() => handleSocialLogin("google")}
                   disabled={isLoading}
@@ -785,7 +785,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </Button>
                 <Button
                   variant={searchParams.get('provider') === 'facebook' ? "default" : "outline"}
-                  className={`w-full text-sm sm:text-base ${searchParams.get('provider') === 'facebook' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
+                  className={`w-full text-sm sm:text-base smooth-transition hover-lift ${searchParams.get('provider') === 'facebook' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
                   type="button"
                   onClick={() => handleSocialLogin("facebook")}
                   disabled={isLoading}
@@ -797,7 +797,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </Button>
                 <Button
                   variant={searchParams.get('provider') === 'linkedin' ? "default" : "outline"}
-                  className={`w-full text-sm sm:text-base ${searchParams.get('provider') === 'linkedin' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
+                  className={`w-full text-sm sm:text-base smooth-transition hover-lift ${searchParams.get('provider') === 'linkedin' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
                   type="button"
                   onClick={() => handleSocialLogin("linkedin")}
                   disabled={isLoading}
@@ -819,7 +819,7 @@ export default function SimplifiedEnhancedRegisterPage() {
               </div>
 
               {/* Email Login Form */}
-              <form onSubmit={handleLogin} className="space-y-4">
+              <form onSubmit={handleLogin} className="space-y-4 animate-fade-in-up animate-delay-800">
                 <div className="space-y-2">
                   <Label htmlFor="loginEmail">Email Address</Label>
                   <Input
@@ -830,13 +830,14 @@ export default function SimplifiedEnhancedRegisterPage() {
                     onChange={(e) => setLoginEmail(e.target.value)}
                     required
                     disabled={isLoading}
+                    className="smooth-transition focus:scale-105"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="loginPassword">Password</Label>
-                    <Button variant="link" className="px-0 font-normal text-sm h-auto" asChild>
+                    <Button variant="link" className="px-0 font-normal text-sm h-auto smooth-transition hover-lift" asChild>
                       <Link href="/auth/forgot-password">Forgot Password?</Link>
                     </Button>
                   </div>
@@ -847,12 +848,13 @@ export default function SimplifiedEnhancedRegisterPage() {
                     onChange={(e) => setLoginPassword(e.target.value)}
                     required
                     disabled={isLoading}
+                    className="smooth-transition focus:scale-105"
                   />
                 </div>
 
                 <Button 
                   type="submit" 
-                  className="w-full" 
+                  className="w-full smooth-transition hover-lift" 
                   disabled={isLoading}
                   style={{ backgroundColor: '#ffa500', borderColor: '#ffa500' }}
                 >
@@ -861,19 +863,19 @@ export default function SimplifiedEnhancedRegisterPage() {
               </form>
             </TabsContent>
             
-            <TabsContent value="register" className="space-y-6">
+            <TabsContent value="register" className="space-y-6 animate-fade-in-up animate-delay-500">
               {error && (
-                <Alert variant="destructive">
+                <Alert variant="destructive" className="animate-fade-in-up animate-delay-600">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
 
               {/* Social Registration */}
-              <div className="space-y-3">
+              <div className="space-y-3 animate-fade-in-up animate-delay-700">
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className="w-full smooth-transition hover-lift"
                   type="button"
                   onClick={() => handleSocialLogin("google")}
                   disabled={isLoading}
@@ -883,7 +885,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className="w-full smooth-transition hover-lift"
                   type="button"
                   onClick={() => handleSocialLogin("facebook")}
                   disabled={isLoading}
@@ -893,7 +895,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className="w-full smooth-transition hover-lift"
                   type="button"
                   onClick={() => handleSocialLogin("linkedin")}
                   disabled={isLoading}
@@ -912,12 +914,12 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in-up animate-delay-800">
                 {/* Social Registration Indicator */}
                 {searchParams.get('provider') && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 animate-fade-in-up animate-delay-900">
                     <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center smooth-transition hover:scale-110">
                         {searchParams.get('provider') === 'google' && <Mail className="h-4 w-4 text-white" />}
                         {searchParams.get('provider') === 'facebook' && <Facebook className="h-4 w-4 text-white" />}
                         {searchParams.get('provider') === 'linkedin' && <Linkedin className="h-4 w-4 text-white" />}
@@ -931,7 +933,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                 )}
 
                 {/* Registration Form Fields */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4 animate-fade-in-up animate-delay-1000">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
                     <Input
@@ -941,6 +943,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                       onChange={(e) => setFirstName(e.target.value)}
                       required
                       disabled={isLoading}
+                      className="smooth-transition focus:scale-105"
                     />
                   </div>
                   <div className="space-y-2">
@@ -952,11 +955,12 @@ export default function SimplifiedEnhancedRegisterPage() {
                       onChange={(e) => setLastName(e.target.value)}
                       required
                       disabled={isLoading}
+                      className="smooth-transition focus:scale-105"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 animate-fade-in-up animate-delay-1100">
                   <Label htmlFor="email">Email Address</Label>
                   <div className="flex gap-2">
                     <Input
@@ -967,10 +971,10 @@ export default function SimplifiedEnhancedRegisterPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       disabled={isLoading}
-                      className="flex-1"
+                      className="flex-1 smooth-transition focus:scale-105"
                     />
                     <Select value={emailPrivacy} onValueChange={setEmailPrivacy}>
-                      <SelectTrigger className="w-[140px]">
+                      <SelectTrigger className="w-[140px] smooth-transition hover:scale-105">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

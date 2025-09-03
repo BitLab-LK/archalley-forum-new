@@ -263,10 +263,10 @@ export default function UserProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center animate-fade-in">
+        <div className="text-center animate-scale-in animate-delay-100">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading profile...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400 animate-fade-in-up animate-delay-200">Loading profile...</p>
         </div>
       </div>
     )
@@ -274,12 +274,12 @@ export default function UserProfilePage() {
 
   if (error || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Profile Not Found</h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">{error || 'This user profile does not exist.'}</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center animate-fade-in">
+        <div className="text-center animate-scale-in animate-delay-100">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 animate-fade-in-up animate-delay-200">Profile Not Found</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6 animate-fade-in-up animate-delay-300">{error || 'This user profile does not exist.'}</p>
           <Link href="/members">
-            <Button>
+            <Button className="smooth-transition hover-lift animate-fade-in-up animate-delay-400">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Members
             </Button>
@@ -290,12 +290,12 @@ export default function UserProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fade-in">
       <main className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* Back Button */}
-        <div className="mb-4 sm:mb-6">
+        <div className="mb-4 sm:mb-6 animate-fade-in-up animate-delay-100">
           <Link href="/members">
-            <Button variant="ghost" className="mb-2 sm:mb-4">
+            <Button variant="ghost" className="mb-2 sm:mb-4 smooth-transition hover-lift">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Members
             </Button>
@@ -308,7 +308,7 @@ export default function UserProfilePage() {
         </div>
 
         {/* Profile Header */}
-        <Card className="mb-4 sm:mb-8">
+        <Card className="mb-4 sm:mb-8 smooth-transition hover-lift animate-fade-in-up animate-delay-200">
           <CardContent className="p-3 sm:p-8">
             {/* Mobile Layout - Stacked */}
             <div className="block sm:hidden space-y-3">
@@ -316,7 +316,7 @@ export default function UserProfilePage() {
               <div className="flex items-start justify-between">
                 {/* Avatar + Name Section */}
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <Avatar className="w-12 h-12 flex-shrink-0">
+                  <Avatar className="w-12 h-12 flex-shrink-0 smooth-transition hover:scale-110">
                     <AvatarImage src={getProfileImageSource()} alt={user.name} />
                     <AvatarFallback className="text-sm">
                       {user.name?.split(' ').map(n => n[0]).join('') || 'U'}
@@ -338,14 +338,14 @@ export default function UserProfilePage() {
                 {/* Edit Button */}
                 {isOwnProfile && (
                   <Link href={`/profile/edit`}>
-                    <Button variant="outline" size="sm" className="ml-2 px-2 py-1 text-xs">
+                    <Button variant="outline" size="sm" className="ml-2 px-2 py-1 text-xs smooth-transition hover-lift">
                       <Edit className="w-3 h-3 mr-1" />
                       Edit
                     </Button>
                   </Link>
                 )}
                 {!isOwnProfile && (currentUser?.role === 'ADMIN' || currentUser?.isAdmin) && (
-                  <Badge variant="outline" className="ml-2 text-xs">
+                  <Badge variant="outline" className="ml-2 text-xs smooth-transition hover:scale-105">
                     Public
                   </Badge>
                 )}
@@ -391,7 +391,7 @@ export default function UserProfilePage() {
 
             {/* Desktop Layout - Original */}
             <div className="hidden sm:flex sm:flex-col md:flex-row sm:items-start md:items-center sm:gap-6">
-              <Avatar className="w-24 h-24">
+              <Avatar className="w-24 h-24 smooth-transition hover:scale-110">
                 <AvatarImage src={getProfileImageSource()} alt={user.name} />
                 <AvatarFallback className="text-2xl">
                   {user.name?.split(' ').map(n => n[0]).join('') || 'U'}
@@ -482,28 +482,28 @@ export default function UserProfilePage() {
         </Card>
 
         {/* Profile Tabs */}
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs defaultValue="overview" className="w-full animate-fade-in-up animate-delay-300">
           <div className="overflow-x-auto">
-            <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-4' : 'grid-cols-3'} min-w-max sm:min-w-0`}>
-              <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
-              <TabsTrigger value="posts" className="text-xs sm:text-sm">Posts ({posts.length})</TabsTrigger>
-              {isOwnProfile && <TabsTrigger value="settings" className="text-xs sm:text-sm">Settings</TabsTrigger>}
-              <TabsTrigger value="activity" className="text-xs sm:text-sm">Activity</TabsTrigger>
+            <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-4' : 'grid-cols-3'} min-w-max sm:min-w-0 smooth-transition hover-lift`}>
+              <TabsTrigger value="overview" className="text-xs sm:text-sm smooth-transition">Overview</TabsTrigger>
+              <TabsTrigger value="posts" className="text-xs sm:text-sm smooth-transition">Posts ({posts.length})</TabsTrigger>
+              {isOwnProfile && <TabsTrigger value="settings" className="text-xs sm:text-sm smooth-transition">Settings</TabsTrigger>}
+              <TabsTrigger value="activity" className="text-xs sm:text-sm smooth-transition">Activity</TabsTrigger>
             </TabsList>
           </div>
 
           <TabsContent value="overview" className="space-y-4 sm:space-y-6">
             {/* Professional Information */}
-            <Card className="hover:border-l-4 hover:border-l-blue-500 transition-all duration-200">
+            <Card className="hover:border-l-4 hover:border-l-slate-500 transition-all duration-200 smooth-transition hover-lift animate-scale-in animate-delay-400">
               <CardContent className="p-4 sm:p-6">
                 <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                  <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600" />
                   Professional Information
                 </h3>
                   <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-start gap-3">
-                      <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                        <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
+                      <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                        <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 text-slate-600" />
                       </div>
                       <div className="flex-1">
                         <label className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Profession(s)</label>
@@ -513,7 +513,7 @@ export default function UserProfilePage() {
                               <Badge 
                                 key={index} 
                                 variant="secondary" 
-                                className="px-3 py-1 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 dark:from-blue-900 dark:to-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700 hover:shadow-md transition-all duration-200"
+                                className="px-3 py-1 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:shadow-md transition-all duration-200"
                               >
                                 {profession}
                               </Badge>
@@ -529,8 +529,8 @@ export default function UserProfilePage() {
                     
                     {user.company && (
                       <div className="flex items-start gap-3">
-                        <div className="p-2 bg-green-50 dark:bg-green-950 rounded-lg">
-                          <Building className="w-4 h-4 text-green-600" />
+                        <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                          <Building className="w-4 h-4 text-slate-600" />
                         </div>
                         <div>
                           <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Company</label>
@@ -541,8 +541,8 @@ export default function UserProfilePage() {
                     
                     {user.industry && (
                       <div className="flex items-start gap-3">
-                        <div className="p-2 bg-purple-50 dark:bg-purple-950 rounded-lg">
-                          <Building className="w-4 h-4 text-purple-600" />
+                        <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                          <Building className="w-4 h-4 text-slate-600" />
                         </div>
                         <div>
                           <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Industry</label>
@@ -552,8 +552,8 @@ export default function UserProfilePage() {
                     )}
 
                     <div className="flex items-start gap-3">
-                      <div className="p-2 bg-orange-50 dark:bg-orange-950 rounded-lg">
-                        <MapPin className="w-4 h-4 text-orange-600" />
+                      <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                        <MapPin className="w-4 h-4 text-slate-600" />
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Location</label>
@@ -571,10 +571,10 @@ export default function UserProfilePage() {
 
             {/* Skills Section */}
             {user.skills && user.skills.length > 0 && (
-              <Card className="border-l-4 border-l-orange-500">
+              <Card className="hover:border-l-4 hover:border-l-slate-500 transition-all duration-200 smooth-transition hover-lift animate-scale-in animate-delay-500">
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Trophy className="w-5 h-5 text-orange-600" />
+                    <Trophy className="w-5 h-5 text-slate-600" />
                     Skills & Expertise
                   </h3>
                   <div className="flex flex-wrap gap-3">
@@ -582,7 +582,7 @@ export default function UserProfilePage() {
                       <Badge 
                         key={index} 
                         variant="secondary" 
-                        className="px-4 py-2 bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 dark:from-orange-900 dark:to-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700 hover:shadow-md transition-all duration-200"
+                        className="px-4 py-2 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:shadow-md transition-all duration-200 smooth-transition hover:scale-105"
                       >
                         {skill}
                       </Badge>
@@ -594,10 +594,10 @@ export default function UserProfilePage() {
 
             {/* About/Bio Section */}
             {user.bio && (
-              <Card className="hover:border-l-4 hover:border-l-green-500 transition-all duration-200">
+              <Card className="hover:border-l-4 hover:border-l-slate-500 transition-all duration-200 smooth-transition hover-lift animate-scale-in animate-delay-600">
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Users className="w-5 h-5 text-green-600" />
+                    <Users className="w-5 h-5 text-slate-600" />
                     About
                   </h3>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{user.bio}</p>
@@ -606,17 +606,17 @@ export default function UserProfilePage() {
             )}
 
             {/* Contact Information */}
-            <Card className="hover:border-l-4 hover:border-l-blue-500 transition-all duration-200">
+            <Card className="hover:border-l-4 hover:border-l-slate-500 transition-all duration-200">
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-blue-600" />
+                  <Mail className="w-5 h-5 text-slate-600" />
                   Contact Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {user.email && shouldShowField(user.emailPrivacy || "EVERYONE", privacyContext) && (
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                        <Mail className="w-4 h-4 text-blue-600" />
+                      <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                        <Mail className="w-4 h-4 text-slate-600" />
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -634,8 +634,8 @@ export default function UserProfilePage() {
                   
                   {(user.phoneNumber || user.phone) && shouldShowField(user.phonePrivacy || "MEMBERS_ONLY", privacyContext) && (
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-50 dark:bg-green-950 rounded-lg">
-                        <Phone className="w-4 h-4 text-green-600" />
+                      <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                        <Phone className="w-4 h-4 text-slate-600" />
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -656,16 +656,16 @@ export default function UserProfilePage() {
 
             {/* Links & Portfolio */}
             {(user.portfolioUrl || user.website) && (
-              <Card className="hover:border-l-4 hover:border-l-purple-500 transition-all duration-200">
+              <Card className="hover:border-l-4 hover:border-l-slate-500 transition-all duration-200">
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <ExternalLink className="w-5 h-5 text-purple-600" />
+                    <ExternalLink className="w-5 h-5 text-slate-600" />
                     Links & Portfolio
                   </h3>
                   <div className="grid grid-cols-1 gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-purple-50 dark:bg-purple-950 rounded-lg">
-                        <ExternalLink className="w-4 h-4 text-purple-600" />
+                      <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                        <ExternalLink className="w-4 h-4 text-slate-600" />
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Website/Portfolio</label>
@@ -704,15 +704,15 @@ export default function UserProfilePage() {
                         href={user.linkedinUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="group flex items-center gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-300"
+                        className="group flex items-center gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-300"
                       >
-                        <div className="w-11 h-11 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+                        <div className="w-11 h-11 bg-slate-600 rounded-lg flex items-center justify-center shadow-sm">
                           <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                           </svg>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">LinkedIn</h4>
+                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">LinkedIn</h4>
                           <p className="text-xs text-gray-500 dark:text-gray-400">Professional Network</p>
                         </div>
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -748,15 +748,15 @@ export default function UserProfilePage() {
                         href={user.behanceUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="group flex items-center gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-300"
+                        className="group flex items-center gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-300"
                       >
-                        <div className="w-11 h-11 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+                        <div className="w-11 h-11 bg-slate-600 rounded-lg flex items-center justify-center shadow-sm">
                           <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M6.938 4.503c.702 0 1.34.06 1.92.188.577.13 1.07.33 1.485.61.41.28.733.65.96 1.12.225.47.34 1.05.34 1.73 0 .74-.17 1.36-.507 1.86-.34.5-.8.9-1.385 1.19.906.26 1.576.72 2.022 1.37.448.66.673 1.45.673 2.38 0 .75-.13 1.39-.41 1.93-.28.55-.67 1-1.16 1.35-.48.348-1.05.6-1.67.76-.62.16-1.25.24-1.92.24h-4.5v-14.728h4.16zm-1.003 6.928h1.234c.473 0 .865-.12 1.172-.36.31-.24.46-.613.46-1.12 0-.583-.17-.96-.51-1.12-.34-.17-.813-.25-1.41-.25h-.946v2.85zm0 2.853v3.448h1.333c.43 0 .795-.086 1.095-.26.3-.174.45-.5.45-1.05 0-.384-.07-.666-.21-.85-.14-.18-.33-.31-.58-.39-.25-.08-.54-.12-.88-.12-.22 0-.43-.005-.63-.018-.2-.01-.38-.04-.54-.06v-.7h-.035zm8.538-9.781v14.728h-2.95v-14.728h2.95zm7.322 1.055c-.914-.607-1.98-.91-3.2-.91-1.22 0-2.286.303-3.2.91-.914.607-1.37 1.573-1.37 2.898 0 1.325.456 2.29 1.37 2.898.914.607 1.98.91 3.2.91 1.22 0 2.286-.303 3.2-.91.914-.607 1.37-1.573 1.37-2.898 0-1.325-.456-2.29-1.37-2.898zm-3.2 6.17c-.914 0-1.664-.304-2.25-.91-.586-.607-.88-1.39-.88-2.35 0-.96.294-1.743.88-2.35.586-.606 1.336-.91 2.25-.91.914 0 1.664.304 2.25.91.586.607.88 1.39.88 2.35 0 .96-.294 1.743-.88 2.35-.586.606-1.336.91-2.25.91z"/>
                           </svg>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">Behance</h4>
+                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">Behance</h4>
                           <p className="text-xs text-gray-500 dark:text-gray-400">Creative Portfolio</p>
                         </div>
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -770,15 +770,15 @@ export default function UserProfilePage() {
                         href={user.dribbbleUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="group flex items-center gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-pink-300 dark:hover:border-pink-600 hover:bg-pink-50 dark:hover:bg-pink-950/30 transition-all duration-300"
+                        className="group flex items-center gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-300"
                       >
-                        <div className="w-11 h-11 bg-pink-500 rounded-lg flex items-center justify-center shadow-sm">
+                        <div className="w-11 h-11 bg-slate-600 rounded-lg flex items-center justify-center shadow-sm">
                           <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 24C5.385 24 0 18.615 0 12S5.385 0 12 0s12 5.385 12 12-5.385 12-12 12zm10.12-10.358c-.35-.11-3.17-.953-6.384-.438 1.34 3.684 1.887 6.684 1.992 7.308 2.3-1.555 3.936-4.02 4.395-6.87zm-6.115 7.808c-.153-.9-.75-4.032-2.19-7.77l-.066.02c-5.79 2.015-7.86 6.025-8.04 6.4 1.73 1.358 3.92 2.166 6.29 2.166 1.42 0 2.77-.29 4-.816zm-11.62-2.58c.232-.4 3.045-5.055 8.332-6.765.135-.045.27-.084.405-.12-.26-.585-.54-1.167-.832-1.72C7.17 11.775 2.206 11.71 1.756 11.7l-.004.312c0 2.633.998 5.037 2.634 6.855zm-2.42-8.955c.46.008 4.683.026 9.477-1.248-1.698-3.018-3.53-5.558-3.8-5.928-2.868 1.35-5.01 3.99-5.676 7.17zM9.6 2.052c.282.38 2.145 2.914 3.822 6 3.645-1.365 5.19-3.44 5.373-3.702-1.81-1.61-4.19-2.586-6.795-2.586-.825 0-1.63.1-2.4.285zm10.335 3.483c-.218.29-1.935 2.493-5.724 4.04.24.49.47.985.68 1.486.08.18.15.36.22.53 3.41-.43 6.8.26 7.14.33-.02-2.42-.88-4.64-2.31-6.38z"/>
                           </svg>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm group-hover:text-pink-700 dark:group-hover:text-pink-300 transition-colors">Dribbble</h4>
+                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">Dribbble</h4>
                           <p className="text-xs text-gray-500 dark:text-gray-400">Design Showcase</p>
                         </div>
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -792,15 +792,15 @@ export default function UserProfilePage() {
                         href={user.twitterUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="group flex items-center gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-sky-300 dark:hover:border-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/30 transition-all duration-300"
+                        className="group flex items-center gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-300"
                       >
-                        <div className="w-11 h-11 bg-sky-500 rounded-lg flex items-center justify-center shadow-sm">
+                        <div className="w-11 h-11 bg-slate-600 rounded-lg flex items-center justify-center shadow-sm">
                           <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                           </svg>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm group-hover:text-sky-700 dark:group-hover:text-sky-300 transition-colors">Twitter / X</h4>
+                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">Twitter / X</h4>
                           <p className="text-xs text-gray-500 dark:text-gray-400">Social Network</p>
                         </div>
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -814,15 +814,15 @@ export default function UserProfilePage() {
                         href={user.facebookUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="group flex items-center gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-300"
+                        className="group flex items-center gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-300"
                       >
-                        <div className="w-11 h-11 bg-blue-700 rounded-lg flex items-center justify-center shadow-sm">
+                        <div className="w-11 h-11 bg-slate-600 rounded-lg flex items-center justify-center shadow-sm">
                           <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                           </svg>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">Facebook</h4>
+                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">Facebook</h4>
                           <p className="text-xs text-gray-500 dark:text-gray-400">Social Network</p>
                         </div>
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -858,15 +858,15 @@ export default function UserProfilePage() {
                         href={user.youtubeUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="group flex items-center gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-red-300 dark:hover:border-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-300"
+                        className="group flex items-center gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-300"
                       >
-                        <div className="w-11 h-11 bg-red-600 rounded-lg flex items-center justify-center shadow-sm">
+                        <div className="w-11 h-11 bg-slate-600 rounded-lg flex items-center justify-center shadow-sm">
                           <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                           </svg>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm group-hover:text-red-700 dark:group-hover:text-red-300 transition-colors">YouTube</h4>
+                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">YouTube</h4>
                           <p className="text-xs text-gray-500 dark:text-gray-400">Video Content</p>
                         </div>
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">

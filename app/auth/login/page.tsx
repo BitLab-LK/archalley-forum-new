@@ -11,10 +11,10 @@ export default function LoginRedirect() {
   }, [router])
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-      <div className="text-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center animate-fade-in">
+      <div className="text-center animate-scale-in animate-delay-100">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-4 text-muted-foreground">Redirecting to login...</p>
+        <p className="mt-4 text-muted-foreground animate-fade-in-up animate-delay-200">Redirecting to login...</p>
       </div>
     </div>
   )

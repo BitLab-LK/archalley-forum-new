@@ -190,18 +190,21 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center min-h-screen animate-fade-in">
+        <div className="text-center animate-scale-in animate-delay-100">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground animate-fade-in-up animate-delay-200">Loading profile...</p>
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="max-w-md w-full">
+      <div className="flex items-center justify-center min-h-screen animate-fade-in">
+        <Card className="max-w-md w-full animate-scale-in animate-delay-100">
           <CardContent className="pt-6">
-            <div className="text-center text-red-500">{error}</div>
+            <div className="text-center text-red-500 animate-fade-in-up animate-delay-200">{error}</div>
           </CardContent>
         </Card>
       </div>
@@ -210,10 +213,10 @@ export default function ProfilePage() {
 
   return (
     <AuthGuard>
-      <main className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
+      <main className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8 animate-fade-in">
         <div className="space-y-4 sm:space-y-6">
           {/* Profile Header */}
-          <Card className="bg-white border-gray-100 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-white border-gray-100 shadow-lg hover:shadow-xl transition-all duration-300 smooth-transition hover-lift animate-fade-in-up animate-delay-100">
             <CardContent className="p-3 sm:p-8">
               {/* Mobile Layout - Stacked */}
               <div className="block sm:hidden space-y-3">
@@ -224,7 +227,7 @@ export default function ProfilePage() {
                     onClick={() => setIsEditing(!isEditing)} 
                     variant={isEditing ? "secondary" : "default"}
                     size="sm"
-                    className={`absolute top-0 right-0 px-2 py-1 text-xs z-10 ${isEditing 
+                    className={`absolute top-0 right-0 px-2 py-1 text-xs z-10 smooth-transition hover-lift ${isEditing 
                       ? "bg-gray-100 hover:bg-gray-200 text-gray-700" 
                       : "bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
                     }`}
@@ -236,12 +239,12 @@ export default function ProfilePage() {
                   {/* Avatar + Name Row */}
                   <div className="flex items-center space-x-3 pr-16">
                     <div className="relative flex-shrink-0">
-                      <Avatar className="w-12 h-12">
+                      <Avatar className="w-12 h-12 smooth-transition hover:scale-110">
                         <AvatarImage src={user?.image || "/placeholder.svg"} alt={profileData.name} />
                         <AvatarFallback className="text-sm">{profileData.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
                       </Avatar>
                       {isEditing && (
-                      <Button size="icon" variant="secondary" className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full">
+                      <Button size="icon" variant="secondary" className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full smooth-transition hover-lift">
                         <Camera className="w-2 h-2" />
                       </Button>
                       )}
@@ -308,12 +311,12 @@ export default function ProfilePage() {
               <div className="hidden sm:flex sm:flex-row sm:space-y-0 sm:space-x-6">
                 <div className="flex items-center space-x-4 sm:flex-col sm:items-start sm:space-x-0">
                   <div className="relative flex-shrink-0">
-                    <Avatar className="w-24 h-24">
+                    <Avatar className="w-24 h-24 smooth-transition hover:scale-110">
                       <AvatarImage src={user?.image || "/placeholder.svg"} alt={profileData.name} />
                       <AvatarFallback className="text-2xl">{profileData.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     {isEditing && (
-                    <Button size="icon" variant="secondary" className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full">
+                    <Button size="icon" variant="secondary" className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full smooth-transition hover-lift">
                       <Camera className="w-4 h-4" />
                     </Button>
                     )}
@@ -375,7 +378,7 @@ export default function ProfilePage() {
                     onClick={() => setIsEditing(!isEditing)} 
                     variant={isEditing ? "secondary" : "default"}
                     size="sm"
-                    className={`${isEditing 
+                    className={`smooth-transition hover-lift ${isEditing 
                       ? "bg-gray-100 hover:bg-gray-200 text-gray-700" 
                       : "bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
                     }`}
@@ -389,23 +392,23 @@ export default function ProfilePage() {
           </Card>
 
           {/* Profile Content */}
-          <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
+          <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6 animate-fade-in-up animate-delay-200">
             <div className="overflow-x-auto">
-              <TabsList className="grid w-full grid-cols-4 bg-gray-50 border border-gray-200 min-w-max sm:min-w-0">
-                <TabsTrigger value="overview" className="data-[state=active]:bg-slate-900 data-[state=active]:text-white text-xs sm:text-sm">Overview</TabsTrigger>
-                <TabsTrigger value="posts" className="data-[state=active]:bg-slate-900 data-[state=active]:text-white text-xs sm:text-sm">Posts</TabsTrigger>
-                <TabsTrigger value="settings" className="data-[state=active]:bg-slate-900 data-[state=active]:text-white text-xs sm:text-sm">Settings</TabsTrigger>
-                <TabsTrigger value="activity" className="data-[state=active]:bg-slate-900 data-[state=active]:text-white text-xs sm:text-sm">Activity</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 bg-gray-50 border border-gray-200 min-w-max sm:min-w-0 smooth-transition hover-lift">
+                <TabsTrigger value="overview" className="data-[state=active]:bg-slate-900 data-[state=active]:text-white text-xs sm:text-sm smooth-transition">Overview</TabsTrigger>
+                <TabsTrigger value="posts" className="data-[state=active]:bg-slate-900 data-[state=active]:text-white text-xs sm:text-sm smooth-transition">Posts</TabsTrigger>
+                <TabsTrigger value="settings" className="data-[state=active]:bg-slate-900 data-[state=active]:text-white text-xs sm:text-sm smooth-transition">Settings</TabsTrigger>
+                <TabsTrigger value="activity" className="data-[state=active]:bg-slate-900 data-[state=active]:text-white text-xs sm:text-sm smooth-transition">Activity</TabsTrigger>
               </TabsList>
             </div>
 
             <TabsContent value="overview" className="space-y-4 sm:space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 animate-fade-in-up animate-delay-300">
                 {/* Basic Information */}
-                <Card className="group bg-white border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
+                <Card className="group bg-white border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden smooth-transition hover-lift animate-scale-in animate-delay-400">
                   <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-100 p-4 sm:p-6">
                     <CardTitle className="text-slate-900 flex items-center gap-3 text-base sm:text-lg">
-                      <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-sm">
+                      <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-sm smooth-transition hover:scale-110">
                         <User className="w-5 h-5 text-white" />
                       </div>
                       <div>
@@ -482,10 +485,10 @@ export default function ProfilePage() {
                 </Card>
 
                 {/* Professional Profile */}
-                <Card className="group bg-white border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
+                <Card className="group bg-white border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden smooth-transition hover-lift animate-scale-in animate-delay-500">
                   <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-100 p-4 sm:p-6">
                     <CardTitle className="text-slate-900 flex items-center gap-3 text-base sm:text-lg">
-                      <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-sm">
+                      <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-sm smooth-transition hover:scale-110">
                         <Briefcase className="w-5 h-5 text-white" />
                       </div>
                       <div>
@@ -591,12 +594,12 @@ export default function ProfilePage() {
               </div>
 
               {/* Portfolio & Social Links Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 animate-fade-in-up animate-delay-600">
                 {/* Portfolio/Website Links */}
-                <Card className="group bg-white border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
+                <Card className="group bg-white border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden smooth-transition hover-lift animate-scale-in animate-delay-700">
                   <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-100 p-4 sm:p-6">
                     <CardTitle className="text-slate-900 flex items-center gap-3 text-base sm:text-lg">
-                      <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-sm">
+                      <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-sm smooth-transition hover:scale-110">
                         <Globe className="w-5 h-5 text-white" />
                       </div>
                       <div>
@@ -639,10 +642,10 @@ export default function ProfilePage() {
                 </Card>
 
                 {/* Social Media Profiles */}
-                <Card className="group bg-white border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
+                <Card className="group bg-white border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden smooth-transition hover-lift animate-scale-in animate-delay-800">
                   <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-100 p-4 sm:p-6">
                     <CardTitle className="text-slate-900 flex items-center gap-3 text-base sm:text-lg">
-                      <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-sm">
+                      <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-sm smooth-transition hover:scale-110">
                         <LinkIcon className="w-5 h-5 text-white" />
                       </div>
                       <div>
@@ -740,13 +743,13 @@ export default function ProfilePage() {
 
               {/* Work Experience & Education */}
               {(profileData.workExperience?.length > 0 || profileData.education?.length > 0) && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 animate-fade-in-up animate-delay-900">
                   {/* Work Experience */}
                   {profileData.workExperience?.length > 0 && (
-                    <Card className="group bg-white border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
+                    <Card className="group bg-white border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden smooth-transition hover-lift animate-scale-in animate-delay-1000">
                       <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-100 p-4 sm:p-6">
                         <CardTitle className="text-slate-900 flex items-center gap-3 text-base sm:text-lg">
-                          <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-sm">
+                          <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-sm smooth-transition hover:scale-110">
                             <Briefcase className="w-5 h-5 text-white" />
                           </div>
                           <div>
@@ -780,10 +783,10 @@ export default function ProfilePage() {
 
                   {/* Education */}
                   {profileData.education?.length > 0 && (
-                    <Card className="group bg-white border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
+                    <Card className="group bg-white border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden smooth-transition hover-lift animate-scale-in animate-delay-1100">
                       <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-100 p-4 sm:p-6">
                         <CardTitle className="text-slate-900 flex items-center gap-3 text-base sm:text-lg">
-                          <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-sm">
+                          <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-sm smooth-transition hover:scale-110">
                             <GraduationCap className="w-5 h-5 text-white" />
                           </div>
                           <div>
@@ -818,19 +821,19 @@ export default function ProfilePage() {
               )}
 
               {isEditing && (
-                <Card className="bg-white border border-gray-100 shadow-md">
+                <Card className="bg-white border border-gray-100 shadow-md animate-fade-in-up animate-delay-1200">
                   <CardContent className="p-4 sm:p-6">
                     <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
                       <Button 
                         variant="outline" 
                         onClick={() => setIsEditing(false)} 
-                        className="w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+                        className="w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 smooth-transition hover-lift"
                       >
                         Cancel
                       </Button>
                       <Button 
                         onClick={handleSaveProfile} 
-                        className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                        className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 smooth-transition hover-lift"
                       >
                         Save Changes
                       </Button>
@@ -841,10 +844,10 @@ export default function ProfilePage() {
             </TabsContent>
 
             <TabsContent value="posts">
-              <Card className="bg-white border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300">
+              <Card className="bg-white border border-gray-100 shadow-md hover:shadow-lg transition-all duration-300 animate-fade-in-up animate-delay-300">
                 <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-100 p-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center smooth-transition hover:scale-110">
                       <FileText className="w-5 h-5 text-white" />
                     </div>
                     <div>
@@ -884,32 +887,32 @@ export default function ProfilePage() {
                 <CardContent className="p-6 space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <Link href="/profile/edit">
-                      <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-blue-50 hover:border-blue-200">
+                      <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-slate-50 hover:border-slate-200">
                         <User className="w-5 h-5" />
                         <span className="text-sm">Edit Profile</span>
                       </Button>
                     </Link>
-                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-green-50 hover:border-green-200" 
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-slate-50 hover:border-slate-200" 
                             onClick={() => window.location.href = '/profile/edit?tab=account'}>
                       <Settings className="w-5 h-5" />
                       <span className="text-sm">Account Settings</span>
                     </Button>
-                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-purple-50 hover:border-purple-200"
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-slate-50 hover:border-slate-200"
                             onClick={() => window.location.href = '/profile/edit?tab=connected'}>
                       <LinkIcon className="w-5 h-5" />
                       <span className="text-sm">Connected Accounts</span>
                     </Button>
-                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-orange-50 hover:border-orange-200"
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-slate-50 hover:border-slate-200"
                             onClick={() => window.location.href = '/profile/edit?tab=privacy'}>
                       <Shield className="w-5 h-5" />
                       <span className="text-sm">Privacy & Security</span>
                     </Button>
-                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-indigo-50 hover:border-indigo-200"
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-slate-50 hover:border-slate-200"
                             onClick={() => window.location.href = '/profile/edit?tab=professional'}>
                       <Briefcase className="w-5 h-5" />
                       <span className="text-sm">Professional Info</span>
                     </Button>
-                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-red-50 hover:border-red-200"
+                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-slate-50 hover:border-slate-200"
                             onClick={() => window.location.href = '/profile/edit?tab=experience'}>
                       <GraduationCap className="w-5 h-5" />
                       <span className="text-sm">Experience & Education</span>
