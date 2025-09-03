@@ -215,7 +215,7 @@ export default function Sidebar() {
   return (
     <div className="space-y-6">
       {/* Categories */}
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50">
+      <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50 smooth-transition hover-lift animate-fade-in-up animate-delay-100">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between text-lg font-semibold">
             <div className="flex items-center space-x-2">
@@ -242,9 +242,9 @@ export default function Sidebar() {
               </div>
             ))
           ) : (
-            categories.map((category) => {
+            categories.map((category, index) => {
               return (
-                <div key={category.id} className={`group flex items-center justify-between rounded-xl p-3 transition-all duration-200 cursor-pointer border border-transparent ${getCategoryLightColor(category.name)}`}>
+                <div key={category.id} className={`group flex items-center justify-between rounded-xl p-3 transition-all duration-200 cursor-pointer border border-transparent ${getCategoryLightColor(category.name)} smooth-transition hover-lift animate-fade-in animate-delay-${Math.min((index + 2) * 100, 600)}`}>
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full ${getCategoryDotColor(category.name)} ring-2 ring-white dark:ring-gray-800 group-hover:scale-110 transition-transform`} />
                     <span className="text-sm font-medium">{category.name}</span>
@@ -257,7 +257,7 @@ export default function Sidebar() {
       </Card>
 
       {/* Trending Posts */}
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-orange-50/30 dark:from-gray-900 dark:to-orange-900/10">
+      <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-orange-50/30 dark:from-gray-900 dark:to-orange-900/10 smooth-transition hover-lift animate-fade-in-up animate-delay-200">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between text-lg font-semibold">
             <div className="flex items-center space-x-2">
@@ -305,7 +305,7 @@ export default function Sidebar() {
       </Card>
 
       {/* Top Contributors */}
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-green-50/30 dark:from-gray-900 dark:to-green-900/10">
+      <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-green-50/30 dark:from-gray-900 dark:to-green-900/10 smooth-transition hover-lift animate-fade-in-up animate-delay-300">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between text-lg font-semibold">
             <div className="flex items-center space-x-2">

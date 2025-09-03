@@ -481,7 +481,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
           ? "max-h-0 opacity-0 -mb-4 transform scale-95 overflow-hidden" 
           : "max-h-[2000px] opacity-100 mb-4 transform scale-100 overflow-visible"
       )}>
-        <Card className="shadow-sm border-0 overflow-visible">
+        <Card className="shadow-sm border-0 overflow-visible smooth-transition hover-lift">
           <CardContent className="p-4 overflow-visible">
           {/* Post Header */}
           <div className="mb-4">

@@ -327,7 +327,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
   }
 
   return (
-    <Card className="w-full mb-6">
+    <Card className="w-full mb-6 smooth-transition hover-lift animate-scale-in">
       <CardContent className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <Avatar className="h-10 w-10">

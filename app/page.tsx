@@ -192,23 +192,23 @@ function HomePageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fade-in">
       <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 overflow-visible">
-            <PostCreator onPostCreated={async () => {
-              try {
-                await fetchPosts(1) // Always go to first page for new posts
-              } catch (error) {
-                // Error handling for post refresh
-              }
-            }} />
-
-            {isLoading ? (
-              <div className="space-y-3 sm:space-y-4">
+          {/* Main Content - Loads immediately */}
+          <div className="lg:col-span-2 overflow-visible animate-fade-in">
+            <div className="animate-fade-in">
+              <PostCreator onPostCreated={async () => {
+                try {
+                  await fetchPosts(1) // Always go to first page for new posts
+                } catch (error) {
+                  // Error handling for post refresh
+                }
+              }} />
+            </div>            {isLoading ? (
+              <div className="space-y-3 sm:space-y-4 animate-fade-in">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow">
+                  <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow hover-lift animate-shimmer">
                     <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
                       <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-full" />
                       <div className="space-y-2">
@@ -226,12 +226,15 @@ function HomePageContent() {
               </div>
             ) : (
               <>
-            <div className="space-y-3 sm:space-y-4 overflow-visible">
+            <div className="space-y-3 sm:space-y-4 overflow-visible animate-fade-in">
                   {posts.map((post: Post) => (
-                    <PostCard 
-                      key={post.id} 
-                      post={post} 
-                      onDelete={
+                    <div 
+                      key={post.id}
+                      className="hover-lift smooth-transition"
+                    >
+                      <PostCard 
+                        post={post} 
+                        onDelete={
                         user && (user.id === post.author.id || user.role === "ADMIN")
                           ? async () => {
                               // Create a delete function that includes animation trigger
@@ -253,22 +256,23 @@ function HomePageContent() {
                       onCommentCountChange={handleCommentCountChange}
                       onVoteChange={handleVoteChange}
                     />
-              ))}
-            </div>
+                    </div>
+                  ))}
+                </div>
 
-            {/* Pagination - Mobile Optimized */}
+                {/* Pagination - Mobile Optimized */}
                 {pagination.pages > 1 && (
-            <div className="flex justify-center mt-6 sm:mt-8 px-2">
+                  <div className="flex justify-center mt-6 sm:mt-8 px-2 animate-fade-in">
                     <nav className="flex items-center space-x-1 sm:space-x-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handlePageChange(pagination.currentPage - 1)}
                         disabled={pagination.currentPage === 1}
-                        className="text-xs sm:text-sm px-2 sm:px-3"
+                        className="text-xs sm:text-sm px-2 sm:px-3 smooth-transition hover-lift"
                       >
-                  <span className="hidden sm:inline">Previous</span>
-                  <span className="sm:hidden">Prev</span>
+                        <span className="hidden sm:inline">Previous</span>
+                        <span className="sm:hidden">Prev</span>
                       </Button>
                       
                       {getPaginationRange().map((page, i) => (
@@ -280,7 +284,7 @@ function HomePageContent() {
                             variant={pagination.currentPage === page ? "default" : "outline"}
                             size="sm"
                             onClick={() => handlePageChange(page as number)}
-                            className="text-xs sm:text-sm min-w-[32px] sm:min-w-[40px] px-2 sm:px-3"
+                            className="text-xs sm:text-sm min-w-[32px] sm:min-w-[40px] px-2 sm:px-3 smooth-transition hover-lift"
                           >
                             {page}
                           </Button>
@@ -292,20 +296,20 @@ function HomePageContent() {
                         size="sm"
                         onClick={() => handlePageChange(pagination.currentPage + 1)}
                         disabled={pagination.currentPage === pagination.pages}
-                        className="text-xs sm:text-sm px-2 sm:px-3"
+                        className="text-xs sm:text-sm px-2 sm:px-3 smooth-transition hover-lift"
                       >
-                  <span className="hidden sm:inline">Next</span>
-                  <span className="sm:hidden">Next</span>
+                        <span className="hidden sm:inline">Next</span>
+                        <span className="sm:hidden">Next</span>
                       </Button>
-              </nav>
-            </div>
+                    </nav>
+                  </div>
                 )}
               </>
             )}
           </div>
 
           {/* Sidebar - Hidden on mobile, shown as overlay or separate tab */}
-          <div className="hidden lg:block lg:col-span-1">
+          <div className="hidden lg:block lg:col-span-1 animate-fade-in">
             <Sidebar />
           </div>
         </div>
@@ -317,13 +321,13 @@ function HomePageContent() {
 // Loading fallback component
 function HomePageLoading() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fade-in">
       <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 animate-fade-in">
             <div className="space-y-3 sm:space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow">
+                <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow animate-shimmer hover-lift">
                   <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
                     <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-full" />
                     <div className="space-y-2">
@@ -340,7 +344,7 @@ function HomePageLoading() {
               ))}
             </div>
           </div>
-          <div className="hidden lg:block lg:col-span-1">
+          <div className="hidden lg:block lg:col-span-1 animate-fade-in">
             <Sidebar />
           </div>
         </div>

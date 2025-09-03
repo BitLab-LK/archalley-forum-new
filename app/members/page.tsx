@@ -238,9 +238,9 @@ export default function MembersPage() {
   }, [loadMore, hasMore, isLoadingMore])
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fade-in">
       <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
-        <div className="mb-4 sm:mb-8">
+        <div className="mb-4 sm:mb-8 animate-fade-in-up animate-delay-100">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">Community Members</h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
             Connect with architects, designers, and construction professionals
@@ -248,21 +248,21 @@ export default function MembersPage() {
         </div>
 
         {/* Search and Filter */}
-        <Card className="mb-4 sm:mb-8">
+        <Card className="mb-4 sm:mb-8 smooth-transition hover-lift animate-scale-in animate-delay-200">
           <CardContent className="p-3 sm:p-6">
             <div className="flex flex-col gap-3 sm:gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input 
                   placeholder="Search members by name or company..." 
-                  className="pl-10"
+                  className="pl-10 smooth-transition focus:scale-105"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <Select value={professionFilter} onValueChange={setProfessionFilter}>
-                  <SelectTrigger className="w-full sm:w-48">
+                  <SelectTrigger className="w-full sm:w-48 smooth-transition hover:scale-105">
                     <SelectValue placeholder="Filter by profession" />
                   </SelectTrigger>
                   <SelectContent>
@@ -276,7 +276,7 @@ export default function MembersPage() {
                   </SelectContent>
                 </Select>
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full sm:w-48">
+                  <SelectTrigger className="w-full sm:w-48 smooth-transition hover:scale-105">
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>
@@ -294,7 +294,7 @@ export default function MembersPage() {
 
         {/* Loading State */}
         {isLoading && (
-          <div className="flex justify-center items-center py-8 sm:py-12">
+          <div className="flex justify-center items-center py-8 sm:py-12 animate-fade-in animate-delay-300">
             <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-blue-600" />
             <span className="ml-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">Loading members...</span>
           </div>
@@ -302,7 +302,7 @@ export default function MembersPage() {
 
         {/* Error State */}
         {error && (
-          <Card className="mb-4 sm:mb-8">
+          <Card className="mb-4 sm:mb-8 animate-fade-in-up animate-delay-300">
             <CardContent className="p-4 sm:p-6">
               <div className="text-center text-red-600 dark:text-red-400">
                 <h3 className="text-base sm:text-lg font-semibold mb-2">Unable to Load Members</h3>
@@ -361,7 +361,7 @@ export default function MembersPage() {
         {!isLoading && !error && (
           <>
             {sortedMembers.length === 0 ? (
-              <Card>
+              <Card className="animate-fade-in-up animate-delay-400">
                 <CardContent className="p-4 sm:p-8 text-center">
                   <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                     {searchTerm || professionFilter !== "all" 
@@ -372,12 +372,15 @@ export default function MembersPage() {
               </Card>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-                  {paginatedMembers.map((member) => (
-                  <Card key={member.id} className="hover:shadow-lg transition-shadow">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 animate-fade-in-up animate-delay-400">
+                  {paginatedMembers.map((member, index) => (
+                  <Card 
+                    key={member.id} 
+                    className={`hover:shadow-lg transition-shadow smooth-transition hover-lift animate-slide-in-up animate-delay-${Math.min(500 + (index * 50), 1000)}`}
+                  >
                     <CardContent className="p-3 sm:p-6">
                       <div className="flex items-start space-x-3 sm:space-x-4">
-                        <Avatar className="w-12 h-12 sm:w-16 sm:h-16">
+                        <Avatar className="w-12 h-12 sm:w-16 sm:h-16 smooth-transition hover:scale-110">
                           <AvatarImage src={getProfileImageSource(member)} />
                           <AvatarFallback>
                             {member.name?.split(' ').map(n => n[0]).join('') || 'U'}
@@ -386,7 +389,7 @@ export default function MembersPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2 mb-1">
                             <h3 className="font-semibold text-base sm:text-lg truncate">{member.name}</h3>
-                            {member.isVerified && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500 flex-shrink-0" />}
+                            {member.isVerified && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500 flex-shrink-0 animate-pulse-glow" />}
                           </div>
                           <div className="mb-1 sm:mb-2">
                             {member.professions && member.professions.length > 0 ? (
@@ -395,7 +398,7 @@ export default function MembersPage() {
                                   <Badge 
                                     key={index} 
                                     variant="secondary" 
-                                    className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                    className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 smooth-transition hover:scale-105"
                                   >
                                     {profession}
                                   </Badge>
@@ -443,7 +446,7 @@ export default function MembersPage() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            className="w-full text-xs sm:text-sm"
+                            className="w-full text-xs sm:text-sm smooth-transition hover-lift"
                             onClick={() => handleViewProfile(member.id)}
                           >
                             View Profile
@@ -457,21 +460,21 @@ export default function MembersPage() {
 
                 {/* Infinite Scroll Trigger */}
                 {hasMore && (
-                  <div ref={loadMoreRef} className="flex justify-center py-6 sm:py-8">
+                  <div ref={loadMoreRef} className="flex justify-center py-6 sm:py-8 animate-fade-in">
                     {isLoadingMore ? (
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 animate-pulse-glow">
                         <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-blue-600" />
                         <span className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Loading more members...</span>
                       </div>
                     ) : (
-                      <div className="text-gray-400 text-xs sm:text-sm">Scroll down to load more</div>
+                      <div className="text-gray-400 text-xs sm:text-sm animate-fade-in">Scroll down to load more</div>
                     )}
                   </div>
                 )}
 
                 {/* End of results message */}
                 {!hasMore && paginatedMembers.length > ITEMS_PER_PAGE && (
-                  <div className="text-center py-6 sm:py-8">
+                  <div className="text-center py-6 sm:py-8 animate-fade-in-up">
                     <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
                       You've seen all {paginatedMembers.length} members
                     </p>
