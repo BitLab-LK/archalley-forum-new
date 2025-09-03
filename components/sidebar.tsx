@@ -244,7 +244,11 @@ export default function Sidebar() {
           ) : (
             categories.map((category, index) => {
               return (
-                <div key={category.id} className={`group flex items-center justify-between rounded-xl p-3 transition-all duration-200 cursor-pointer border border-transparent ${getCategoryLightColor(category.name)} smooth-transition hover-lift animate-fade-in animate-delay-${Math.min((index + 2) * 100, 600)}`}>
+                <div 
+                  key={category.id} 
+                  className={`group flex items-center justify-between rounded-xl p-3 transition-all duration-200 cursor-pointer border border-transparent ${getCategoryLightColor(category.name)} smooth-transition hover-lift animate-slide-in-up`}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full ${getCategoryDotColor(category.name)} ring-2 ring-white dark:ring-gray-800 group-hover:scale-110 transition-transform`} />
                     <span className="text-sm font-medium">{category.name}</span>
@@ -283,10 +287,14 @@ export default function Sidebar() {
               </div>
             ))
           ) : trendingPosts.length === 0 ? (
-            <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-6 italic">No trending posts found.</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-6 italic animate-fade-in">No trending posts found.</div>
           ) : (
-            trendingPosts.map((post) => (
-              <div key={post.id} className="group p-4 rounded-xl bg-white/60 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800/60 transition-all duration-200 cursor-pointer hover:shadow-sm border border-gray-100 dark:border-gray-800 hover:border-orange-200 dark:hover:border-orange-800">
+            trendingPosts.map((post, index) => (
+              <div 
+                key={post.id} 
+                className="group p-4 rounded-xl bg-white/60 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800/60 transition-all duration-200 cursor-pointer hover:shadow-sm border border-gray-100 dark:border-gray-800 hover:border-orange-200 dark:hover:border-orange-800 animate-slide-in-up hover-lift smooth-transition"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
                 <h4 className="text-sm font-medium line-clamp-2 text-gray-800 dark:text-gray-200 group-hover:text-orange-700 dark:group-hover:text-orange-300 transition-colors">{post.content}</h4>
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
                   <span className="flex items-center space-x-1">
@@ -337,10 +345,14 @@ export default function Sidebar() {
               </div>
             ))
           ) : topContributors.length === 0 ? (
-            <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-6 italic">No contributors found.</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-6 italic animate-fade-in">No contributors found.</div>
           ) : (
             topContributors.map((contributor, index) => (
-              <div key={contributor.id} className="group flex items-center space-x-3 p-3 rounded-xl bg-white/60 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800/60 transition-all duration-200 cursor-pointer hover:shadow-sm border border-gray-100 dark:border-gray-800 hover:border-green-200 dark:hover:border-green-800">
+              <div 
+                key={contributor.id} 
+                className="group flex items-center space-x-3 p-3 rounded-xl bg-white/60 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800/60 transition-all duration-200 cursor-pointer hover:shadow-sm border border-gray-100 dark:border-gray-800 hover:border-green-200 dark:hover:border-green-800 animate-slide-in-up hover-lift smooth-transition"
+                style={{ animationDelay: `${index * 80}ms` }}
+              >
                 <div className="relative">
                   <Avatar className="w-10 h-10 ring-2 ring-white dark:ring-gray-800 group-hover:ring-green-200 dark:group-hover:ring-green-800 transition-all">
                     <AvatarImage src={contributor.avatar || "/placeholder.svg"} />

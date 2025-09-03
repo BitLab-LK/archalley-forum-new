@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
 import PostImage from "./post-image"
 import { 
   ThumbsUp, 
@@ -760,12 +761,22 @@ await handleVote(type)
   useEffect(() => {
     if (!open) return undefined
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") setCarouselIndex(i => (i > 0 ? i - 1 : images.length - 1))
-      if (e.key === "ArrowRight") setCarouselIndex(i => (i < images.length - 1 ? i + 1 : 0))
-      if (e.key === "Escape") onClose()
+      if (e.key === "ArrowLeft") {
+        e.preventDefault()
+        setCarouselIndex(i => (i > 0 ? i - 1 : images.length - 1))
+      }
+      if (e.key === "ArrowRight") {
+        e.preventDefault()
+        setCarouselIndex(i => (i < images.length - 1 ? i + 1 : 0))
+      }
+      if (e.key === "Escape") {
+        e.preventDefault()
+        e.stopPropagation()
+        onClose()
+      }
     }
-    window.addEventListener("keydown", handleKey)
-    return () => window.removeEventListener("keydown", handleKey)
+    window.addEventListener("keydown", handleKey, { capture: true })
+    return () => window.removeEventListener("keydown", handleKey, { capture: true })
   }, [open, images.length, onClose])
 
   const handleCommentVote = async (commentId: string, voteType: "up" | "down") => {
@@ -945,25 +956,33 @@ await handleVote(type)
 
   if (!open || !hasImages) return null
 
-  return (
+  const modalContent = (
     <div 
-      className="modal-backdrop fixed inset-0 z-[99999] flex items-center justify-center bg-black/80"
-      style={{
+      className="fixed bg-black/80 backdrop-blur-sm z-[99999] animate-in fade-in-0 duration-200 flex items-center justify-center p-2"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          e.stopPropagation()
+          onClose()
+        }
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      style={{ 
         position: 'fixed',
-        top: 0,
+        top: '64px', // Space for navigation bar (adjust this value based on your nav height)
         left: 0,
         right: 0,
         bottom: 0,
-        width: '100vw',
-        height: '100vh',
         zIndex: 99999,
-        margin: 0,
-        padding: 0
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
       }}
     >
-      <div className="relative h-[90vh] min-h-[600px] max-h-[800px] w-full max-w-7xl mx-4 flex flex-col md:flex-row bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden">
-        {/* Left: Image Carousel */}
-        <div className="flex-1 flex items-center justify-center bg-black relative min-h-[400px]">
+      <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden animate-in slide-in-from-bottom-2 zoom-in-95 duration-300 w-full h-full max-w-5xl max-h-[calc(100vh-120px)] flex flex-col md:flex-row mx-auto my-auto">
+        {/* Left: Image Carousel - Reduced sizing */}
+        <div className="flex-1 bg-black relative min-h-[250px] md:min-h-full max-h-[50vh] md:max-h-full">
           {hasImages && (
             <div className="w-full h-full flex items-center justify-center relative">
               <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
@@ -971,10 +990,10 @@ await handleVote(type)
                   <PostImage
                     src={images[carouselIndex]}
                     alt={`Post image ${carouselIndex + 1}`}
-                    width={800}
-                    height={600}
-                    className="object-contain w-full h-full"
-                    sizes="100vw"
+                    width={750}
+                    height={500}
+                    className="object-contain w-full h-full max-w-full max-h-full"
+                    sizes="(max-width: 768px) 100vw, 55vw"
                     priority
                     enableDownload={true}
                   />
@@ -1007,10 +1026,10 @@ await handleVote(type)
           )}
         </div>
 
-        {/* Right: Facebook-style Post Content */}
-        <div className="w-full md:w-[450px] lg:w-[550px] xl:w-[550px] flex flex-col bg-white dark:bg-gray-900 h-full max-h-[800px]">
-          {/* Header - Compact */}
-          <div className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
+        {/* Right: Facebook-style Post Content - Increased width */}
+        <div className="w-full md:w-[320px] lg:w-[380px] xl:w-[420px] flex flex-col bg-white dark:bg-gray-900 h-full border-l border-gray-200 dark:border-gray-700">
+          {/* Header - More Compact */}
+          <div className="flex-shrink-0 flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3">
               <Avatar className="h-9 w-9">
                 <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
@@ -1056,15 +1075,15 @@ await handleVote(type)
 
           {/* Scrollable Content Area */}
           <div className="flex-1 overflow-y-auto min-h-0">
-            {/* Post Content - Reduced padding */}
+            {/* Post Content - Better spacing */}
             <div className="p-3 border-b border-gray-100 dark:border-gray-700">
-              <p className="text-gray-900 dark:text-white text-[15px] leading-relaxed whitespace-pre-line break-words mb-3">
+              <p className="text-gray-900 dark:text-white text-sm leading-relaxed whitespace-pre-line break-words mb-2.5">
                 {post.content}
               </p>
               
               {/* Category Tag (subtle) */}
               {post.category && (
-                <div className="mb-4">
+                <div className="mb-3">
                   <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                     #{post.category}
                   </span>
@@ -1072,7 +1091,7 @@ await handleVote(type)
               )}
               
               {/* Stats */}
-              <div className="flex items-center justify-between pt-3 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex items-center justify-between pt-2.5 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-4">
                   {(upvotes > 0 || downvotes > 0) && (
                     <span className="flex items-center gap-1">
@@ -1148,7 +1167,7 @@ await handleVote(type)
             </div>
 
             {/* Comments Section */}
-            <div className="px-4 py-3 space-y-3">
+            <div className="px-3 py-3 space-y-3">
               {loading ? (
                 <div className="flex justify-center py-4">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
@@ -1166,8 +1185,8 @@ await handleVote(type)
             </div>
           </div>
 
-          {/* Comment Input - Fixed at bottom */}
-          <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
+          {/* Comment Input - Fixed at bottom with better spacing */}
+          <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
             <div className="flex items-center gap-3">
               <Avatar className="h-8 w-8 flex-shrink-0">
                 <AvatarImage src={user?.image || "/placeholder-user.jpg"} />
@@ -1207,4 +1226,7 @@ await handleVote(type)
       </div>
     </div>
   )
+
+  // Use portal to render modal at document body level to ensure it covers entire homepage
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
+import { createPortal } from "react-dom"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThumbsUp, ThumbsDown, MessageCircle, Globe, Trash2, MoreHorizontal } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
@@ -153,10 +154,14 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
   useEffect(() => {
     if (!open) return undefined
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose()
+      if (e.key === "Escape") {
+        e.preventDefault()
+        e.stopPropagation()
+        onClose()
+      }
     }
-    window.addEventListener("keydown", handleKey)
-    return () => window.removeEventListener("keydown", handleKey)
+    window.addEventListener("keydown", handleKey, { capture: true })
+    return () => window.removeEventListener("keydown", handleKey, { capture: true })
   }, [open, onClose])
 
   // Fetch comments when modal opens
@@ -896,9 +901,9 @@ await handleVote(type)
               </div>
             )}
 
-            {/* Nested Replies - Compact Facebook style with smooth transitions */}
+            {/* Nested Replies - Compact Facebook style */}
             {hasReplies && isExpanded && (
-              <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-800 animate-in slide-in-from-top-1 duration-150">
+              <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-800">
                 <div className="space-y-2">
                   {comment.replies.map((reply: any) => renderComment(reply, depth + 1))}
                 </div>
@@ -913,30 +918,33 @@ await handleVote(type)
   // Early return after all hooks are declared
   if (!open) return null
 
-  return (
+  const modalContent = (
     <div 
-      className="modal-backdrop fixed inset-0 z-[99999] flex items-center justify-center bg-black/80"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: '100vw',
-        height: '100vh',
-        zIndex: 99999,
-        margin: 0,
-        padding: 0
-      }}
+      className="fixed bg-black/80 backdrop-blur-sm z-[99999] animate-in fade-in-0 duration-200 flex items-center justify-center p-2"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
+          e.stopPropagation()
           onClose()
         }
       }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      style={{ 
+        position: 'fixed',
+        top: '64px', // Space for navigation bar (adjust this value based on your nav height)
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 99999,
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}
     >
       <div className={cn(
-        "relative bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden flex flex-col",
-        hasImages ? "w-full max-w-[1000px] h-[90vh] max-h-[800px]" : "w-full max-w-[520px] h-[90vh] max-h-[700px] mx-4"
+        "relative bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-2 zoom-in-95 duration-300 mx-auto my-auto",
+        hasImages ? "w-full max-w-3xl h-full max-h-[calc(100vh-120px)] md:flex-row" : "w-full max-w-2xl max-h-[calc(100vh-120px)] min-h-[60vh]"
       )}>
         {hasImages ? (
           // Image post layout - Facebook style with image on left, content on right
@@ -988,9 +996,9 @@ await handleVote(type)
             </div>
 
             {/* Right side - Content and Comments */}
-            <div className="w-[400px] flex flex-col bg-white dark:bg-gray-900 relative z-[1001]">
+            <div className="w-full md:w-[240px] lg:w-[280px] xl:w-[320px] flex flex-col bg-white dark:bg-gray-900 relative z-[1001]">
               {/* Header */}
-              <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex-shrink-0 flex items-center justify-between p-2.5 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
@@ -1028,7 +1036,7 @@ await handleVote(type)
 
               {/* Post Content */}
               {post.content && (
-                <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex-shrink-0 p-2.5 border-b border-gray-200 dark:border-gray-700">
                   <p className="text-gray-900 dark:text-white text-[15px] leading-relaxed whitespace-pre-line">
                     {post.content}
                   </p>
@@ -1078,7 +1086,7 @@ await handleVote(type)
                   <button 
                     onClick={() => handleDebouncedVote("up")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ease-in-out font-medium transform hover:scale-105 active:scale-95",
+                      "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 font-medium",
                       userVote === "up" 
                         ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950" 
                         : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white",
@@ -1086,13 +1094,13 @@ await handleVote(type)
                     )}
                     disabled={isVoting}
                   >
-                    <ThumbsUp className={cn("w-5 h-5 transition-transform duration-200", userVote === "up" && "scale-110")} />
-                    {upvotes > 0 && <span className="text-sm transition-all duration-200">({upvotes})</span>}
+                    <ThumbsUp className={cn("w-5 h-5", userVote === "up" && "scale-110")} />
+                    {upvotes > 0 && <span className="text-sm">({upvotes})</span>}
                   </button>
                   <button 
                     onClick={() => handleDebouncedVote("down")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ease-in-out font-medium transform hover:scale-105 active:scale-95",
+                      "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 font-medium",
                       userVote === "down" 
                         ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950" 
                         : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white",
@@ -1100,10 +1108,10 @@ await handleVote(type)
                     )}
                     disabled={isVoting}
                   >
-                    <ThumbsDown className={cn("w-5 h-5 transition-transform duration-200", userVote === "down" && "scale-110")} />
-                    {downvotes > 0 && <span className="text-sm transition-all duration-200">({downvotes})</span>}
+                    <ThumbsDown className={cn("w-5 h-5", userVote === "down" && "scale-110")} />
+                    {downvotes > 0 && <span className="text-sm">({downvotes})</span>}
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95">
+                  <button className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium">
                     <MessageCircle className="w-5 h-5" />
                     <span className="font-medium">Comment</span>
                   </button>
@@ -1118,7 +1126,7 @@ await handleVote(type)
               </div>
               
               {/* Comments Section */}
-              <div className="flex-1 overflow-y-auto overflow-x-visible min-h-0 px-4 py-3 space-y-6">
+              <div className="flex-1 overflow-y-auto overflow-x-visible min-h-0 px-2.5 py-2.5 space-y-2.5">
                 {comments.length > 0 ? (
                   comments.map((comment) => renderComment(comment, 0))
                 ) : (
@@ -1130,7 +1138,7 @@ await handleVote(type)
               </div>
 
               {/* Comment Input */}
-              <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-2.5">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8 flex-shrink-0">
                     <AvatarImage src={user?.image || "/placeholder-user.jpg"} />
@@ -1165,7 +1173,7 @@ await handleVote(type)
           // Text post layout - optimized with reduced spacing
           <>
             {/* Facebook-style Header - Compact */}
-            <div className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex-shrink-0 flex items-center justify-between p-2.5 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
                 <Avatar className="h-9 w-9">
                   <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
@@ -1212,7 +1220,7 @@ await handleVote(type)
             {/* Scrollable Content Area - No top padding */}
             <div className="flex-1 overflow-y-auto min-h-0">
               {/* Post Content - Reduced padding */}
-              <div className="p-3 pb-2">
+              <div className="p-2.5 pb-2">
                 <p className="text-gray-900 dark:text-white text-[15px] leading-relaxed whitespace-pre-line">
                   {post.content}
                 </p>
@@ -1298,7 +1306,7 @@ await handleVote(type)
               </div>
               
               {/* Comments Section */}
-              <div className="px-4 py-3 space-y-6">
+              <div className="px-2.5 py-2.5 space-y-2.5">
                 {comments.length > 0 ? (
                   comments.map((comment) => renderComment(comment, 0))
                 ) : (
@@ -1311,7 +1319,7 @@ await handleVote(type)
             </div>
 
             {/* Comment Input - Fixed at bottom */}
-            <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
+            <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-2.5 bg-white dark:bg-gray-900">
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarImage src={user?.image || "/placeholder-user.jpg"} />
@@ -1344,4 +1352,7 @@ await handleVote(type)
       </div>
     </div>
   )
+
+  // Use portal to render modal at document body level to ensure it covers entire homepage
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null
 }

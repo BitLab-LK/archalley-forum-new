@@ -374,9 +374,9 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading || !canUploadMore || isSubmitting}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 smooth-transition hover-scale active:scale-95"
                   >
-                    <Cloud className="h-4 w-4" />
+                    <Cloud className="h-4 w-4 transition-transform duration-200 hover:scale-110" />
                     {hasFiles ? `Add More Images (${remainingSlots} left)` : 'Upload Media'}
                   </Button>
                   
@@ -442,9 +442,9 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
                       size="sm"
                       onClick={clearAllFiles}
                       disabled={isUploading || isSubmitting}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-red-600 hover:text-red-700 smooth-transition hover-scale active:scale-95"
                     >
-                      <X className="h-4 w-4 mr-1" />
+                      <X className="h-4 w-4 mr-1 transition-transform duration-200 hover:scale-110" />
                       Clear All
                     </Button>
                   </div>
@@ -494,7 +494,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full"
+              className="w-full smooth-transition hover-scale active:scale-95 animate-fade-in-up"
               disabled={isSubmitting || isUploading || !content.trim()}
             >
               {isSubmitting ? (

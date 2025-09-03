@@ -481,7 +481,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
           ? "max-h-0 opacity-0 -mb-4 transform scale-95 overflow-hidden" 
           : "max-h-[2000px] opacity-100 mb-4 transform scale-100 overflow-visible"
       )}>
-        <Card className="shadow-sm border-0 overflow-visible smooth-transition hover-lift">
+        <Card className="shadow-sm border-0 overflow-visible smooth-transition hover-lift hover-scale">
           <CardContent className="p-4 overflow-visible">
           {/* Post Header */}
           <div className="mb-4">
@@ -600,13 +600,13 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                   size="sm"
                   onClick={() => handleCardVote("up")}
                   className={cn(
-                    "text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95",
-                    userVote === "up" && "text-primary",
+                    "text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3 transition-all duration-200 hover-scale smooth-transition active:scale-95",
+                    userVote === "up" && "text-primary bg-orange-50 dark:bg-orange-950",
                     isVoting && "opacity-70 cursor-not-allowed"
                   )}
                   disabled={isVoting}
                 >
-                  <ThumbsUp className={cn("w-3 h-3 sm:w-4 sm:h-4 mr-1 transition-transform duration-200", userVote === "up" && "scale-110")} />
+                  <ThumbsUp className={cn("w-3 h-3 sm:w-4 sm:h-4 mr-1 transition-transform duration-200", userVote === "up" && "scale-110 animate-bounce-in")} />
                   <span className="transition-all duration-200 text-xs sm:text-sm">{upvotes}</span>
                 </Button>
                 <Button
@@ -614,13 +614,13 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                   size="sm"
                   onClick={() => handleCardVote("down")}
                   className={cn(
-                    "text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-2 sm:px-3 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95",
-                    userVote === "down" && "text-red-500",
+                    "text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-2 sm:px-3 transition-all duration-200 hover-scale smooth-transition active:scale-95",
+                    userVote === "down" && "text-red-500 bg-red-50 dark:bg-red-950",
                     isVoting && "opacity-70 cursor-not-allowed"
                   )}
                   disabled={isVoting}
                 >
-                  <ThumbsDown className={cn("w-3 h-3 sm:w-4 sm:h-4 mr-1 transition-transform duration-200", userVote === "down" && "scale-110")} />
+                  <ThumbsDown className={cn("w-3 h-3 sm:w-4 sm:h-4 mr-1 transition-transform duration-200", userVote === "down" && "scale-110 animate-bounce-in")} />
                   <span className="transition-all duration-200 text-xs sm:text-sm">{downvotes}</span>
                 </Button>
               </div>
@@ -630,9 +630,9 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                 variant="ghost"
                 size="sm"
                 onClick={() => openModal(0)}
-                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3 flex-shrink-0"
+                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3 flex-shrink-0 smooth-transition hover-scale active:scale-95"
               >
-                <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 transition-transform duration-200 hover:scale-110" />
                 <span className="text-xs sm:text-sm">{commentCount} Comments</span>
               </Button>
 

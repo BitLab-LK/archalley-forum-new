@@ -192,12 +192,12 @@ function HomePageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fade-in">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
-          {/* Main Content - Loads immediately */}
-          <div className="lg:col-span-2 overflow-visible animate-fade-in">
-            <div className="animate-fade-in">
+          {/* Main Content */}
+          <div className="lg:col-span-2 overflow-visible animate-slide-in-up animate-stagger-1">
+            <div className="animate-fade-in-up animate-stagger-2 hover-lift smooth-transition">
               <PostCreator onPostCreated={async () => {
                 try {
                   await fetchPosts(1) // Always go to first page for new posts
@@ -206,9 +206,9 @@ function HomePageContent() {
                 }
               }} />
             </div>            {isLoading ? (
-              <div className="space-y-3 sm:space-y-4 animate-fade-in">
+              <div className="space-y-3 sm:space-y-4 animate-fade-in animate-delay-200">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow hover-lift animate-shimmer">
+                  <div key={i} className={`bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow hover-lift animate-shimmer animate-delay-${(i + 1) * 100}`}>
                     <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
                       <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-full" />
                       <div className="space-y-2">
@@ -226,11 +226,12 @@ function HomePageContent() {
               </div>
             ) : (
               <>
-            <div className="space-y-3 sm:space-y-4 overflow-visible animate-fade-in">
-                  {posts.map((post: Post) => (
+            <div className="space-y-3 sm:space-y-4 overflow-visible">
+                  {posts.map((post: Post, index: number) => (
                     <div 
                       key={post.id}
-                      className="hover-lift smooth-transition"
+                      className="animate-slide-in-up hover-lift smooth-transition"
+                      style={{ animationDelay: `${index * 100}ms` }}
                     >
                       <PostCard 
                         post={post} 
@@ -262,7 +263,7 @@ function HomePageContent() {
 
                 {/* Pagination - Mobile Optimized */}
                 {pagination.pages > 1 && (
-                  <div className="flex justify-center mt-6 sm:mt-8 px-2 animate-fade-in">
+                  <div className="flex justify-center mt-6 sm:mt-8 px-2 animate-fade-in-up animate-delay-500">
                     <nav className="flex items-center space-x-1 sm:space-x-2">
                       <Button
                         variant="outline"
@@ -309,8 +310,10 @@ function HomePageContent() {
           </div>
 
           {/* Sidebar - Hidden on mobile, shown as overlay or separate tab */}
-          <div className="hidden lg:block lg:col-span-1 animate-fade-in">
-            <Sidebar />
+          <div className="hidden lg:block lg:col-span-1 animate-slide-in-up animate-stagger-5">
+            <div className="hover-scale smooth-transition">
+              <Sidebar />
+            </div>
           </div>
         </div>
       </main>
@@ -321,13 +324,13 @@ function HomePageContent() {
 // Loading fallback component
 function HomePageLoading() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fade-in">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fade-in-up">
       <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
-          <div className="lg:col-span-2 animate-fade-in">
+          <div className="lg:col-span-2 animate-slide-in-up animate-stagger-1">
             <div className="space-y-3 sm:space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow animate-shimmer hover-lift">
+                <div key={i} className={`bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow animate-shimmer animate-stagger-${i + 1} hover-lift smooth-transition`}>
                   <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
                     <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-full" />
                     <div className="space-y-2">
@@ -344,8 +347,10 @@ function HomePageLoading() {
               ))}
             </div>
           </div>
-          <div className="hidden lg:block lg:col-span-1 animate-fade-in">
-            <Sidebar />
+          <div className="hidden lg:block lg:col-span-1 animate-slide-in-up animate-stagger-5">
+            <div className="animate-fade-in-up hover-scale smooth-transition">
+              <Sidebar />
+            </div>
           </div>
         </div>
       </main>
