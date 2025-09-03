@@ -245,7 +245,6 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
         // Refresh the page to show the new post
         window.location.reload()
       } catch (error) {
-        console.error("❌ Failed to create post:", error)
         
         if (error instanceof DeploymentError) {
           logDeploymentError(error)

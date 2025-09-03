@@ -219,7 +219,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
         throw new Error(errorData.error || "Failed to delete post")
       }
     } catch (error) {
-      console.error("Error deleting post:", error)
       setIsDeleting(false)
     }
   }, [onDelete, post.id])

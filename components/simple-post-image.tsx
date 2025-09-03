@@ -83,17 +83,14 @@ export default function SimplePostImage({
         width={!fill ? width || undefined : undefined}
         height={!fill ? height || undefined : undefined}
         onClick={onClick}
-        onError={(e) => {
-          console.error('❌ Image failed to load:', src, e)
+        onError={() => {
           setImageError(true)
           setIsLoading(false)
         }}
         onLoad={() => {
-          console.log('✅ Image loaded successfully:', src)
           setIsLoading(false)
         }}
         onLoadStart={() => {
-          console.log('🔄 Image loading started:', src)
           setIsLoading(true)
         }}
         crossOrigin="anonymous"
