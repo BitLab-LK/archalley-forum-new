@@ -48,7 +48,10 @@ interface PostCardProps {
       }>
     }
     content: string
-    category: string
+    category: string // Primary category
+    aiCategories?: string[] // AI-suggested categories
+    aiCategory?: string // Primary AI category
+    originalLanguage?: string
     isAnonymous: boolean
     isPinned: boolean
     upvotes: number
@@ -185,14 +188,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
 
   // Memoized callbacks
   const handleDelete = useCallback(async () => {
-    setIsDeleting(true)
-    
-    if (onDelete) {
-      await onDelete()
-      setIsDeleting(false)
-      return
-    }
-    
+    // Always show confirmation dialog first, regardless of onDelete prop
     const confirmed = await confirm({
       title: "Delete Post",
       description: "Are you sure you want to delete this post? This action cannot be undone.",
@@ -202,10 +198,20 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     })
     
     if (!confirmed) {
+      return
+    }
+    
+    // Only start deleting animation after confirmation
+    setIsDeleting(true)
+    
+    if (onDelete) {
+      // Use parent's delete handler
+      await onDelete()
       setIsDeleting(false)
       return
     }
     
+    // Use default delete logic
     try {
       const response = await fetch(`/api/posts/${post.id}`, {
         method: "DELETE",
@@ -221,7 +227,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     } catch (error) {
       setIsDeleting(false)
     }
-  }, [onDelete, post.id])
+  }, [onDelete, post.id, confirm])
 
   const handleCommentAdded = useCallback(() => {
     const newCount = commentCount + 1
@@ -525,14 +531,49 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                 </div>
               </div>
 
-              {/* Category Badge - responsive positioning */}
-              <div className="flex items-center space-x-2">
+              {/* Category Badges - show multiple categories */}
+              <div className="flex items-center space-x-2 flex-wrap gap-1">
+                {/* Primary Category */}
                 <Badge className={cn(
                   "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1", 
                   `category-${post.category.toLowerCase()}`
                 )}>
                   {post.category}
                 </Badge>
+                
+                {/* AI-suggested additional categories - filter out language names */}
+                {post.aiCategories && post.aiCategories.length > 0 && (
+                  <>
+                    {post.aiCategories
+                      .filter(aiCat => {
+                        // Filter out language names and primary category
+                        const languageNames = ['Sinhala', 'Tamil', 'English', 'Hindi', 'Japanese', 'Korean', 'Chinese', 'French', 'German', 'Spanish', 'Portuguese', 'Italian', 'Russian', 'Arabic']
+                        return !languageNames.includes(aiCat) && aiCat.toLowerCase() !== post.category.toLowerCase()
+                      })
+                      .slice(0, 2) // Show max 2 additional categories to avoid crowding
+                      .map((aiCategory, index) => (
+                        <Badge key={index} className={cn(
+                          "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 opacity-80", 
+                          `category-${aiCategory.toLowerCase()}`
+                        )}>
+                          {aiCategory}
+                        </Badge>
+                      ))
+                    }
+                    {post.aiCategories
+                      .filter(aiCat => {
+                        const languageNames = ['Sinhala', 'Tamil', 'English', 'Hindi', 'Japanese', 'Korean', 'Chinese', 'French', 'German', 'Spanish', 'Portuguese', 'Italian', 'Russian', 'Arabic']
+                        return !languageNames.includes(aiCat) && aiCat.toLowerCase() !== post.category.toLowerCase()
+                      }).length > 2 && (
+                      <Badge className="text-xs px-2 py-0.5 bg-gray-200 text-gray-600">
+                        +{post.aiCategories.filter(aiCat => {
+                          const languageNames = ['Sinhala', 'Tamil', 'English', 'Hindi', 'Japanese', 'Korean', 'Chinese', 'French', 'German', 'Spanish', 'Portuguese', 'Italian', 'Russian', 'Arabic']
+                          return !languageNames.includes(aiCat) && aiCat.toLowerCase() !== post.category.toLowerCase()
+                        }).length - 2}
+                      </Badge>
+                    )}
+                  </>
+                )}
                 
                 {/* Options Menu */}
                 <DropdownMenu>

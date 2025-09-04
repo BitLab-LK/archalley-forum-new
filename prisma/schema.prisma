@@ -50,16 +50,18 @@ model Post {
   isLocked          Boolean       @default(false)
   aiCategory        String?
   aiTags            String[]
+  aiCategories      String[]      // Multiple AI-suggested categories
   originalLanguage  String        @default("English")
-  translatedContent String?
+  translatedContent String?       // English translation for AI processing
   viewCount         Int           @default(0)
   shareCount        Int           @default(0)
   authorId          String
-  categoryId        String
+  categoryId        String        // Primary category (for backward compatibility)
   Comment           Comment[]
   users             users         @relation(fields: [authorId], references: [id])
   categories        categories    @relation(fields: [categoryId], references: [id])
   attachments       attachments[]
+  postCategories    PostCategory[] // Many-to-many relationship with categories
 
   @@index([authorId])
   @@index([categoryId])
@@ -96,16 +98,32 @@ model attachments {
 }
 
 model categories {
-  id          String   @id
-  name        String   @unique
-  description String
-  color       String
-  icon        String
-  slug        String   @unique
-  postCount   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime
-  Post        Post[]
+  id            String         @id
+  name          String         @unique
+  description   String
+  color         String
+  icon          String
+  slug          String         @unique
+  postCount     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime
+  Post          Post[]
+  postCategories PostCategory[] // Many-to-many relationship with posts
+}
+
+// Junction table for many-to-many relationship between posts and categories
+model PostCategory {
+  id         String     @id @default(cuid())
+  postId     String
+  categoryId String
+  isPrimary  Boolean    @default(false) // Mark the primary category
+  createdAt  DateTime   @default(now())
+  post       Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category   categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, categoryId])
+  @@index([postId])
+  @@index([categoryId])
 }
 
 model flags {

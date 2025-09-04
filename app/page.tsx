@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/lib/auth-context"
-import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
 import { useSidebar } from "@/lib/sidebar-context"
 import { toast } from "sonner"
 
@@ -58,10 +57,10 @@ function HomePageContent() {
     limit: 10,
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true) // Track if this is first load
   const searchParams = useSearchParams()
   const router = useRouter()
   const { user } = useAuth()
-  const { confirm } = useConfirmDialog()
   const { refreshAll } = useSidebar() // For refreshing sidebar on post deletion
 
   const fetchPosts = async (page: number = 1) => {
@@ -81,6 +80,7 @@ function HomePageContent() {
       toast.error("Failed to load posts")
     } finally {
       setIsLoading(false)
+      setIsInitialLoad(false) // Mark initial load as complete
     }
   }
 
@@ -199,10 +199,19 @@ function HomePageContent() {
           <div className="lg:col-span-2 overflow-visible animate-slide-in-up animate-stagger-1">
             <div className="animate-fade-in-up animate-stagger-2 hover-lift smooth-transition">
               <PostCreator onPostCreated={async () => {
+                // Optimistic update - just refresh without animations
                 try {
-                  await fetchPosts(1) // Always go to first page for new posts
+                  // Use a silent refresh to avoid animation restart
+                  const response = await fetch(`/api/posts?page=1&limit=10`)
+                  if (response.ok) {
+                    const data = await response.json()
+                    setPosts(data.posts)
+                    setPagination(data.pagination)
+                    // Don't reset isInitialLoad - keeps animations disabled
+                  }
                 } catch (error) {
-                  // Error handling for post refresh
+                  // Fallback to full refresh if silent update fails
+                  await fetchPosts(1)
                 }
               }} />
             </div>            {isLoading ? (
@@ -230,26 +239,15 @@ function HomePageContent() {
                   {posts.map((post: Post, index: number) => (
                     <div 
                       key={post.id}
-                      className="animate-slide-in-up hover-lift smooth-transition"
-                      style={{ animationDelay: `${index * 100}ms` }}
+                      className={`hover-lift smooth-transition ${isInitialLoad ? 'animate-slide-in-up' : ''}`}
+                      style={isInitialLoad ? { animationDelay: `${index * 100}ms` } : {}}
                     >
                       <PostCard 
                         post={post} 
                         onDelete={
                         user && (user.id === post.author.id || user.role === "ADMIN")
                           ? async () => {
-                              // Create a delete function that includes animation trigger
-                              const confirmed = await confirm({
-                                title: "Delete Post",
-                                description: "Are you sure you want to delete this post? This action cannot be undone.",
-                                confirmText: "Delete",
-                                cancelText: "Cancel",
-                                variant: "destructive"
-                              })
-                              
-                              if (!confirmed) {
-                                return
-                              }
+                              // The confirmation is now handled inside PostCard
                               handleDeletePost(post.id)
                             }
                           : undefined

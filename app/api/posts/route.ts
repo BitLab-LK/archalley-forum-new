@@ -4,12 +4,13 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { badgeService } from "@/lib/badge-service"
+import { geminiService } from "@/lib/gemini-service"
 import { join } from "path"
 import { stat } from "fs/promises"
 
 const createPostSchema = z.object({
   content: z.string().min(1, "Content is required"),
-  categoryId: z.string().min(1, "Category is required"),
+  categoryId: z.string().min(1, "Category is required"), // Primary category
   isAnonymous: z.boolean().default(false),
   tags: z.string().transform((str) => {
     try {
@@ -18,8 +19,8 @@ const createPostSchema = z.object({
       return []
     }
   }).default("[]"),
-  originalLanguage: z.string().optional(),
-  translatedContent: z.string().optional(),
+  originalLanguage: z.string().optional().default("English"),
+  // Remove translatedContent from schema as we'll generate it automatically
 })
 
 export async function POST(request: Request) {
@@ -95,8 +96,15 @@ export async function POST(request: Request) {
     const categoryId = formData.get("categoryId") as string
     const isAnonymous = formData.get("isAnonymous") === "true"
     const tags = formData.get("tags") as string
-    const originalLanguage = formData.get("originalLanguage") as string
-    const translatedContent = formData.get("translatedContent") as string
+    const originalLanguage = formData.get("originalLanguage") as string || "English"
+
+    console.log("📝 Post data:", {
+      content: content?.substring(0, 100) + (content?.length > 100 ? "..." : ""),
+      categoryId,
+      isAnonymous,
+      originalLanguage,
+      hasContent: !!content
+    })
 
     // Validate input
     const validationResult = createPostSchema.safeParse({
@@ -105,12 +113,11 @@ export async function POST(request: Request) {
       isAnonymous,
       tags,
       originalLanguage,
-      translatedContent,
     })
 
     if (!validationResult.success) {
       console.error("Validation error:", validationResult.error.format())
-      console.error("Received data:", { content, categoryId, isAnonymous, tags, originalLanguage, translatedContent })
+      console.error("Received data:", { content: !!content, categoryId, isAnonymous, tags, originalLanguage })
       return NextResponse.json(
         { 
           error: "Invalid input", 
@@ -124,40 +131,93 @@ export async function POST(request: Request) {
 
     const { data } = validationResult
 
-    // Check if category exists
-    const category = await prisma.categories.findUnique({
-      where: { id: data.categoryId },
+    // Get all available categories for AI categorization
+    const allCategories = await prisma.categories.findMany({
+      select: { id: true, name: true }
     })
 
-    if (!category) {
-      console.error(`❌ Category not found: ${data.categoryId}`)
-      const availableCategories = await prisma.categories.findMany({
-        select: { id: true, name: true }
-      })
-
+    // Check if primary category exists
+    const primaryCategory = allCategories.find(cat => cat.id === data.categoryId)
+    if (!primaryCategory) {
+      console.error(`❌ Primary category not found: ${data.categoryId}`)
       return NextResponse.json(
         { 
           error: "Category not found", 
           message: `The selected category "${data.categoryId}" does not exist`,
-          availableCategories
+          availableCategories: allCategories
         },
         { status: 404, headers: jsonHeaders }
       )
     }
 
-    // Create post with AI tags and translation info
-    const post = await prisma.post.create({
-      data: {
-        id: crypto.randomUUID(),
-        content: data.content,
-        authorId: session.user.id,
-        categoryId: data.categoryId,
-        isAnonymous: data.isAnonymous,
-        aiTags: data.tags,
-        originalLanguage: data.originalLanguage || "English",
-        translatedContent: data.translatedContent || data.content,
-        updatedAt: new Date(),
-      },
+    console.log("🤖 Starting AI processing...")
+
+    // Step 1: Translate content to English for AI processing (if needed)
+    let translatedContent = data.content
+    if (data.originalLanguage && data.originalLanguage.toLowerCase() !== 'english') {
+      console.log(`🌐 Translating from ${data.originalLanguage} to English...`)
+      try {
+        translatedContent = await geminiService.translateToEnglish(data.content, data.originalLanguage)
+        console.log("✅ Translation completed")
+      } catch (error) {
+        console.error("⚠️ Translation failed, using original content:", error)
+        translatedContent = data.content
+      }
+    }
+
+    // Step 2: Get AI category suggestions
+    const categoryNames = allCategories.map(cat => cat.name)
+    console.log("🎯 Getting AI category suggestions...")
+    let aiCategorySuggestion
+    try {
+      aiCategorySuggestion = await geminiService.categorizeContent(translatedContent, categoryNames)
+      console.log("✅ AI categorization completed:", aiCategorySuggestion)
+    } catch (error) {
+      console.error("⚠️ AI categorization failed:", error)
+      aiCategorySuggestion = {
+        categories: [primaryCategory.name],
+        confidence: 0.1,
+        reasoning: "Fallback to primary category due to AI error"
+      }
+    }
+
+    // Create post with AI categories and translation info
+    console.log("💾 Creating post in database...")
+    const post = await prisma.$transaction(async (tx) => {
+      // Create the post
+      const newPost = await tx.post.create({
+        data: {
+          id: crypto.randomUUID(),
+          content: data.content, // Keep original language
+          authorId: session.user.id,
+          categoryId: data.categoryId, // Primary category
+          isAnonymous: data.isAnonymous,
+          aiTags: data.tags,
+          aiCategory: aiCategorySuggestion.categories[0] || null, // Primary AI-suggested category
+          aiCategories: aiCategorySuggestion.categories || [], // All AI-suggested categories
+          originalLanguage: data.originalLanguage,
+          translatedContent: translatedContent, // Store English translation for future AI processing
+          updatedAt: new Date(),
+        },
+      })
+
+      // For now, store categories in the aiCategory field (primary category from AI)
+      // TODO: Store multiple categories in aiCategories array and PostCategory table
+      
+      // Update category post counts for primary category
+      await tx.categories.update({
+        where: { id: data.categoryId },
+        data: { postCount: { increment: 1 } }
+      })
+
+      return newPost
+    })
+
+    console.log("✅ Post created successfully with AI categorization")
+
+    // Fetch the complete post with relationships
+    const completePost = await prisma.post.findUnique({
+      where: { id: post.id },
       include: {
         users: {
           select: {
@@ -165,32 +225,17 @@ export async function POST(request: Request) {
             name: true,
             image: true,
             userBadges: {
-              take: 3, // Only get top 3 badges
-              include: {
-                badges: true
-              },
-              orderBy: {
-                earnedAt: 'desc'
-              }
+              take: 3,
+              include: { badges: true },
+              orderBy: { earnedAt: 'desc' }
             }
           },
         },
-        categories: true,
+        categories: true, // Primary category
+        // TODO: Add postCategories relationship once Prisma client is updated
         _count: {
-          select: {
-            Comment: true
-          }
+          select: { Comment: true }
         }
-      },
-    })
-
-    // Update category post count
-    await prisma.categories.update({
-      where: { id: data.categoryId },
-      data: {
-        postCount: {
-          increment: 1,
-        },
       },
     })
 
@@ -265,7 +310,16 @@ export async function POST(request: Request) {
       // Don't fail the post creation if badge checking fails
     }
 
-    return NextResponse.json(post, {
+    return NextResponse.json({
+      ...completePost,
+      // Add AI categorization metadata
+      aiCategorization: {
+        suggestedCategories: aiCategorySuggestion.categories,
+        confidence: aiCategorySuggestion.confidence,
+        reasoning: aiCategorySuggestion.reasoning,
+        translationUsed: data.originalLanguage !== 'English'
+      }
+    }, {
       status: 201,
       headers: jsonHeaders
     })
@@ -630,7 +684,10 @@ const skip = (page - 1) * limit
             badges: post.users.userBadges?.slice(0, 3) || [], // Include top 3 badges
           },
           content: post.content,
-          category: post.categories.name,
+          category: post.categories.name, // Primary category
+          aiCategories: post.aiCategories || [], // AI-suggested categories
+          aiCategory: post.aiCategory, // Primary AI category
+          originalLanguage: post.originalLanguage || 'English',
           isAnonymous: post.isAnonymous,
           isPinned: post.isPinned,
           upvotes: voteCount.upvotes,
