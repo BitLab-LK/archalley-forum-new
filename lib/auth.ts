@@ -128,7 +128,8 @@ export const authOptions: NextAuthOptions = {
 
           if (!existingUser) {
             // Redirect to registration with OAuth data for account linking
-            const redirectUrl = `/auth/register?provider=${account.provider}&email=${encodeURIComponent(user.email!)}&name=${encodeURIComponent(user.name || '')}&image=${encodeURIComponent(user.image || '')}&providerAccountId=${encodeURIComponent(account.providerAccountId)}&accessToken=${encodeURIComponent(account.access_token || '')}&tokenType=${encodeURIComponent(account.token_type || '')}&scope=${encodeURIComponent(account.scope || '')}`
+            console.log(`New user detected for ${account.provider}, redirecting to complete profile`)
+            const redirectUrl = `/auth/register?provider=${account.provider}&email=${encodeURIComponent(user.email!)}&name=${encodeURIComponent(user.name || '')}&image=${encodeURIComponent(user.image || '')}&providerAccountId=${encodeURIComponent(account.providerAccountId)}&accessToken=${encodeURIComponent(account.access_token || '')}&tokenType=${encodeURIComponent(account.token_type || '')}&scope=${encodeURIComponent(account.scope || '')}&message=${encodeURIComponent('Complete your profile to join our community!')}`
             return redirectUrl
           } else {
             // Check if this social account is already linked
@@ -143,6 +144,7 @@ export const authOptions: NextAuthOptions = {
 
             if (!existingAccount) {
               // Link the social account to the existing user
+              console.log(`Linking ${account.provider} account to existing user ${existingUser.email}`)
               await prisma.account.create({
                 data: {
                   userId: existingUser.id,
@@ -161,16 +163,33 @@ export const authOptions: NextAuthOptions = {
             }
             
             // Update user info if needed for existing users
+            // Preserve uploaded profile image over SSO image
+            const updateData: any = {
+              name: user.name || existingUser.name,
+              updatedAt: new Date(),
+            }
+            
+            // Only update image if user doesn't have one, or if the current image is from an SSO provider
+            // This preserves manually uploaded images
+            const isCurrentImageFromSSO = existingUser.image && (
+              existingUser.image.includes('googleusercontent.com') ||
+              existingUser.image.includes('facebook.com') ||
+              existingUser.image.includes('fbcdn.net') ||
+              existingUser.image.includes('linkedin.com') ||
+              existingUser.image.includes('licdn.com')
+            )
+            
+            if (!existingUser.image || isCurrentImageFromSSO) {
+              updateData.image = user.image || existingUser.image
+            }
+            // If user has uploaded their own image (not from SSO), keep it
+            
             await prisma.users.update({
               where: { id: existingUser.id },
-              data: {
-                name: user.name || existingUser.name,
-                image: user.image || existingUser.image,
-                updatedAt: new Date(),
-              },
+              data: updateData,
             })
             
-            console.log("Sign-in successful for existing user, returning true")
+            console.log(`${account.provider} sign-in successful for existing user: ${existingUser.email}`)
             return true
           }
         } catch (error) {

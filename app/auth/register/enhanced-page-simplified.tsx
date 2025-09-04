@@ -69,63 +69,29 @@ export default function SimplifiedEnhancedRegisterPage() {
   const [activeTab, setActiveTab] = useState("register")
   const [createMemberProfile, setCreateMemberProfile] = useState(false)
 
-  // Auto-refresh detection for OAuth returns
+  // Track animation state to prevent repeated animations
+  const [hasAnimated, setHasAnimated] = useState(false)
+  
+  // Clean up OAuth flags on component mount (without page reload)
   useEffect(() => {
-    const handleOAuthReturn = () => {
-      // Check if user was attempting OAuth login
-      const oauthAttempt = localStorage.getItem('oauth_attempt')
-      const oauthTimestamp = localStorage.getItem('oauth_timestamp')
+    const oauthAttempt = localStorage.getItem('oauth_attempt')
+    const oauthTimestamp = localStorage.getItem('oauth_timestamp')
+    
+    if (oauthAttempt && oauthTimestamp) {
+      const attemptTime = parseInt(oauthTimestamp)
+      const now = Date.now()
+      const fiveMinutes = 5 * 60 * 1000
       
-      if (oauthAttempt && oauthTimestamp) {
-        // Check if OAuth attempt was recent (within last 5 minutes)
-        const attemptTime = parseInt(oauthTimestamp)
-        const now = Date.now()
-        const fiveMinutes = 5 * 60 * 1000
-        
-        if (now - attemptTime < fiveMinutes) {
-          // Check if OAuth was successful by looking for success parameters
-          const hasSuccessParams = searchParams.get('provider') || 
-                                  searchParams.get('email') || 
-                                  searchParams.get('name') ||
-                                  searchParams.get('message')
-          
-          const hasErrorParams = searchParams.get('error') || 
-                                searchParams.get('code')
-          
-          // If no success parameters but OAuth was attempted, likely user cancelled/failed
-          if (!hasSuccessParams && !hasErrorParams) {
-            console.log('OAuth return detected without success parameters - auto refreshing')
-            // Clear OAuth flags
-            localStorage.removeItem('oauth_attempt')
-            localStorage.removeItem('oauth_timestamp')
-            // Auto refresh page to reset state silently
-            window.location.reload()
-            return
-          }
-        }
-        
-        // Clean up old flags if attempt was too old
-        if (now - attemptTime >= fiveMinutes) {
-          localStorage.removeItem('oauth_attempt')
-          localStorage.removeItem('oauth_timestamp')
-        }
+      // Clean up old flags if attempt was too old
+      if (now - attemptTime >= fiveMinutes) {
+        localStorage.removeItem('oauth_attempt')
+        localStorage.removeItem('oauth_timestamp')
       }
     }
-
-    // Check on page load
-    handleOAuthReturn()
-
-    // Also check when the page gains focus (user returns from OAuth tab)
-    const handleFocus = () => {
-      setTimeout(handleOAuthReturn, 500) // Small delay to allow URL to update
-    }
-
-    window.addEventListener('focus', handleFocus)
     
-    return () => {
-      window.removeEventListener('focus', handleFocus)
-    }
-  }, [searchParams, router])
+    // Mark that initial animation has been shown
+    setHasAnimated(true)
+  }, [])
 
   // Set active tab based on URL parameter
   useEffect(() => {
@@ -658,7 +624,7 @@ export default function SimplifiedEnhancedRegisterPage() {
     try {
       console.log(`Attempting ${provider} login...`)
       
-      // Set OAuth attempt flags before redirecting
+      // Set OAuth attempt flags before redirecting (with shorter timeout)
       localStorage.setItem('oauth_attempt', provider)
       localStorage.setItem('oauth_timestamp', Date.now().toString())
       
@@ -740,25 +706,28 @@ export default function SimplifiedEnhancedRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-4 sm:py-12 px-2 sm:px-4 lg:px-8 animate-fade-in">
-      <Card className="w-full max-w-2xl animate-scale-in animate-delay-100">
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-4 sm:py-12 px-2 sm:px-4 lg:px-8 ${!hasAnimated ? 'animate-fade-in' : ''}`}>
+      <Card className={`w-full max-w-2xl ${!hasAnimated ? 'animate-scale-in animate-delay-100' : ''}`}>
         <CardHeader className="space-y-1 p-4 sm:p-6">
-          <CardTitle className="text-xl sm:text-2xl font-bold text-center animate-fade-in-up animate-delay-200" style={{ color: '#ffa500' }}>
-            {activeTab === "login" ? "Archalley Forum" : "Join Archalley Forum"}
+          <CardTitle className={`text-xl sm:text-2xl font-bold text-center ${!hasAnimated ? 'animate-fade-in-up animate-delay-200' : ''}`} style={{ color: '#ffa500' }}>
+            {activeTab === "login" ? "Welcome to Archalley Forum" : "Join Archalley Forum"}
           </CardTitle>
-          <CardDescription className="text-center text-sm sm:text-base animate-fade-in-up animate-delay-300">
-            Professional Networking for Construction & Related Industries
+          <CardDescription className={`text-center text-sm sm:text-base ${!hasAnimated ? 'animate-fade-in-up animate-delay-300' : ''}`}>
+            {activeTab === "login" 
+              ? "Sign in to continue or create a new account" 
+              : "Professional Networking for Construction & Related Industries"
+            }
           </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full animate-fade-in-up animate-delay-400">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className={`w-full ${!hasAnimated ? 'animate-fade-in-up animate-delay-400' : ''}`}>
             <TabsList className="grid w-full grid-cols-2 smooth-transition hover-lift">
               <TabsTrigger value="login" className="smooth-transition">Login</TabsTrigger>
               <TabsTrigger value="register" className="smooth-transition">Register</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="login" className="space-y-6 animate-fade-in-up animate-delay-500">
+            <TabsContent value="login" className={`space-y-6 ${!hasAnimated ? 'animate-fade-in-up animate-delay-500' : ''}`}>
               {/* Success Message */}
               {message && (
                 <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/50 animate-fade-in-up animate-delay-600">
@@ -770,7 +739,7 @@ export default function SimplifiedEnhancedRegisterPage() {
               )}
               
               {/* Social Login */}
-              <div className="space-y-2 sm:space-y-3 animate-fade-in-up animate-delay-700">
+              <div className={`space-y-2 sm:space-y-3 ${!hasAnimated ? 'animate-fade-in-up animate-delay-700' : ''}`}>
                 <Button
                   variant={searchParams.get('provider') === 'google' ? "default" : "outline"}
                   className={`w-full text-sm sm:text-base smooth-transition hover-lift ${searchParams.get('provider') === 'google' ? 'ring-2 ring-blue-500 bg-blue-600 hover:bg-blue-700 text-white animate-pulse' : ''}`}
@@ -780,7 +749,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                   size="sm"
                 >
                   <Mail className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  Login with Google
+                  Continue with Google
                   {searchParams.get('provider') === 'google' && <span className="ml-2">👈</span>}
                 </Button>
                 <Button
@@ -792,7 +761,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                   size="sm"
                 >
                   <Facebook className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  Login with Facebook
+                  Continue with Facebook
                   {searchParams.get('provider') === 'facebook' && <span className="ml-2">👈</span>}
                 </Button>
                 <Button
@@ -804,7 +773,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                   size="sm"
                 >
                   <Linkedin className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  Login with LinkedIn
+                  Continue with LinkedIn
                   {searchParams.get('provider') === 'linkedin' && <span className="ml-2">👈</span>}
                 </Button>
               </div>
@@ -819,7 +788,7 @@ export default function SimplifiedEnhancedRegisterPage() {
               </div>
 
               {/* Email Login Form */}
-              <form onSubmit={handleLogin} className="space-y-4 animate-fade-in-up animate-delay-800">
+              <form onSubmit={handleLogin} className={`space-y-4 ${!hasAnimated ? 'animate-fade-in-up animate-delay-800' : ''}`}>
                 <div className="space-y-2">
                   <Label htmlFor="loginEmail">Email Address</Label>
                   <Input
@@ -863,7 +832,7 @@ export default function SimplifiedEnhancedRegisterPage() {
               </form>
             </TabsContent>
             
-            <TabsContent value="register" className="space-y-6 animate-fade-in-up animate-delay-500">
+            <TabsContent value="register" className={`space-y-6 ${!hasAnimated ? 'animate-fade-in-up animate-delay-500' : ''}`}>
               {error && (
                 <Alert variant="destructive" className="animate-fade-in-up animate-delay-600">
                   <AlertCircle className="h-4 w-4" />
@@ -872,7 +841,7 @@ export default function SimplifiedEnhancedRegisterPage() {
               )}
 
               {/* Social Registration */}
-              <div className="space-y-3 animate-fade-in-up animate-delay-700">
+              <div className={`space-y-3 ${!hasAnimated ? 'animate-fade-in-up animate-delay-700' : ''}`}>
                 <Button
                   variant="outline"
                   className="w-full smooth-transition hover-lift"
@@ -881,7 +850,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                   disabled={isLoading}
                 >
                   <Mail className="mr-2 h-4 w-4" />
-                  Register with Google
+                  Continue with Google
                 </Button>
                 <Button
                   variant="outline"
@@ -891,7 +860,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                   disabled={isLoading}
                 >
                   <Facebook className="mr-2 h-4 w-4" />
-                  Register with Facebook
+                  Continue with Facebook
                 </Button>
                 <Button
                   variant="outline"
@@ -901,7 +870,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                   disabled={isLoading}
                 >
                   <Linkedin className="mr-2 h-4 w-4" />
-                  Register with LinkedIn
+                  Continue with LinkedIn
                 </Button>
               </div>
 
@@ -914,7 +883,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in-up animate-delay-800">
+              <form onSubmit={handleSubmit} className={`space-y-6 ${!hasAnimated ? 'animate-fade-in-up animate-delay-800' : ''}`}>
                 {/* Social Registration Indicator */}
                 {searchParams.get('provider') && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 animate-fade-in-up animate-delay-900">
@@ -925,8 +894,8 @@ export default function SimplifiedEnhancedRegisterPage() {
                         {searchParams.get('provider') === 'linkedin' && <Linkedin className="h-4 w-4 text-white" />}
                       </div>
                       <div>
-                        <h4 className="font-medium text-blue-900">Complete Your {searchParams.get('provider')?.charAt(0).toUpperCase()}{searchParams.get('provider')?.slice(1)} Registration</h4>
-                        <p className="text-sm text-blue-700">Your basic information has been pre-filled. Please complete the remaining fields.</p>
+                        <h4 className="font-medium text-blue-900">Welcome! Complete Your Profile</h4>
+                        <p className="text-sm text-blue-700">We've pre-filled your basic info from {searchParams.get('provider')?.charAt(0).toUpperCase()}{searchParams.get('provider')?.slice(1)}. Complete your profile to join our community!</p>
                       </div>
                     </div>
                   </div>

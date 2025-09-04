@@ -55,6 +55,17 @@ export async function POST(request: NextRequest) {
       maxAge: 30 * 24 * 60 * 60, // 30 days
     })
 
+    // Also set the secure cookie name for production
+    if (process.env.NODE_ENV === "production") {
+      response.cookies.set("__Secure-next-auth.session-token", token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+      })
+    }
+
     return response
   } catch (error) {
     console.error("Auto-login error:", error)

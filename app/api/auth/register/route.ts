@@ -431,6 +431,50 @@ export async function POST(request: NextRequest) {
       return user
     })
 
+    // Auto-login for social registration
+    if (isSocialRegistration && provider) {
+      try {
+        // Call auto-login API to set session
+        const autoLoginResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/auto-login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: result.email,
+            provider: provider
+          })
+        })
+
+        if (autoLoginResponse.ok) {
+          // Get the session cookie from the auto-login response
+          const sessionCookie = autoLoginResponse.headers.get('set-cookie')
+          
+          const response = NextResponse.json({ 
+            user: {
+              id: result.id,
+              name: result.name,
+              email: result.email
+            }, 
+            message: `Profile completed successfully! You are now automatically logged in.`,
+            autoLogin: true,
+            redirectTo: "/"
+          }, { status: 201 })
+
+          // Forward the session cookie to the client
+          if (sessionCookie) {
+            response.headers.set('set-cookie', sessionCookie)
+          }
+
+          return response
+        } else {
+          console.error('Auto-login failed:', await autoLoginResponse.text())
+        }
+      } catch (error) {
+        console.error('Auto-login error:', error)
+      }
+    }
+
     return NextResponse.json({ 
       user: {
         id: result.id,
@@ -438,9 +482,9 @@ export async function POST(request: NextRequest) {
         email: result.email
       }, 
       message: isSocialRegistration 
-        ? `Profile completed successfully! You are now automatically logged in.`
+        ? `Profile completed successfully! Please log in to continue.`
         : "User created successfully. Enhanced profile features will be available after database migration.",
-      autoLogin: isSocialRegistration // Flag to indicate auto-login should happen
+      autoLogin: false
     }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
