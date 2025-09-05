@@ -186,6 +186,38 @@ export async function POST(
     // Log successful operation
     console.log(`✅ Vote ${result.operation} for post ${postId} by user ${userId} in ${duration}ms`)
 
+    // Send email notification for upvotes (likes) - but not for the post author's own votes
+    if (type === "UP" && result.operation !== "removed") {
+      try {
+        // Get post author to check if it's not a self-vote
+        const post = await prisma.post.findUnique({
+          where: { id: postId },
+          select: { authorId: true, title: true }
+        });
+
+        // Only send notification if someone else liked the post
+        if (post && post.authorId !== userId) {
+          await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'POST_LIKE',
+              userId: post.authorId,
+              data: {
+                postId,
+                authorId: userId,
+                postTitle: post.title || 'Untitled Post'
+              }
+            })
+          });
+          console.log(`📧 Like notification sent to post author`);
+        }
+      } catch (error) {
+        console.error("Error sending like notification:", error);
+        // Don't fail the vote operation if email notification fails
+      }
+    }
+
     return NextResponse.json({
       upvotes: result.upvotes,
       downvotes: result.downvotes,

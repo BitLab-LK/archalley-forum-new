@@ -129,6 +129,19 @@ export async function POST(request: NextRequest) {
   if (!postId || !content) {
     return NextResponse.json({ error: "Missing postId or content" }, { status: 400 })
   }
+
+  // Get post and parent comment data for notifications
+  const [post, parentComment] = await Promise.all([
+    prisma.post.findUnique({
+      where: { id: postId },
+      select: { id: true, title: true, authorId: true }
+    }),
+    parentId ? prisma.comment.findUnique({
+      where: { id: parentId },
+      select: { id: true, authorId: true }
+    }) : null
+  ]);
+
   // Create comment or reply
   const comment = await prisma.comment.create({
     data: {
@@ -150,6 +163,76 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error checking badges:", error)
     // Don't fail the comment creation if badge checking fails
+  }
+
+  // Send email notifications
+  try {
+    const notificationPromises = [];
+
+    // 1. Notify post author about new comment (if not commenting on own post)
+    if (post && post.authorId !== session.user.id) {
+      notificationPromises.push(
+        fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'POST_COMMENT',
+            userId: post.authorId,
+            data: {
+              postId,
+              commentId: comment.id,
+              authorId: session.user.id,
+              postTitle: post.title || 'Untitled Post',
+              commentContent: content
+            }
+          })
+        })
+      );
+    }
+
+    // 2. Notify parent comment author about reply (if replying and not replying to own comment)
+    if (parentComment && parentComment.authorId !== session.user.id) {
+      notificationPromises.push(
+        fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'COMMENT_REPLY',
+            userId: parentComment.authorId,
+            data: {
+              postId,
+              commentId: comment.id,
+              authorId: session.user.id,
+              postTitle: post?.title || 'Untitled Post',
+              commentContent: content
+            }
+          })
+        })
+      );
+    }
+
+    // 3. Send mention notifications
+    notificationPromises.push(
+      fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/email`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content,
+          authorId: session.user.id,
+          postId,
+          postTitle: post?.title || 'Untitled Post'
+        })
+      })
+    );
+
+    // Execute all notification promises
+    const results = await Promise.allSettled(notificationPromises);
+    const successCount = results.filter(r => r.status === 'fulfilled').length;
+    console.log(`📧 Comment notifications: ${successCount}/${results.length} sent successfully`);
+
+  } catch (error) {
+    console.error("Error sending comment notifications:", error);
+    // Don't fail the comment creation if email notifications fail
   }
 
   return NextResponse.json({ comment })

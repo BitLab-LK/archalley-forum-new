@@ -150,6 +150,34 @@ model notifications {
   users     users            @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model EmailLogs {
+  id          String           @id @default(cuid())
+  email       String
+  subject     String
+  template    String
+  type        NotificationType
+  status      EmailStatus      @default(PENDING)
+  sentAt      DateTime?
+  error       String?
+  userId      String?
+  postId      String?
+  commentId   String?
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+  
+  @@index([email])
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  BOUNCED
+}
+
 model pages {
   id          String   @id
   title       String
@@ -198,6 +226,16 @@ model users {
   githubUrl         String?
   youtubeUrl        String?
   tiktokUrl         String?
+  
+  // Email Notification Preferences
+  emailNotifications Boolean          @default(true)  // Global email notifications toggle
+  notifyOnComment   Boolean          @default(true)  // Email when someone comments on my post
+  notifyOnLike      Boolean          @default(true)  // Email when someone likes my post/comment
+  notifyOnMention   Boolean          @default(true)  // Email when someone mentions me
+  notifyOnReply     Boolean          @default(true)  // Email when someone replies to my comment
+  notifyOnNewPost   Boolean          @default(false) // Email for new posts in followed categories
+  notifyOnSystem    Boolean          @default(true)  // Email for system notifications
+  emailDigest       EmailDigestFreq  @default(DISABLED) // Weekly/daily digest emails
   behanceUrl        String?
   dribbbleUrl       String?
   otherSocialUrl    String?
@@ -324,6 +362,9 @@ enum NotificationType {
   MENTION
   BEST_ANSWER
   SYSTEM
+  EMAIL_VERIFICATION
+  NEW_POST_IN_CATEGORY
+  NEW_FOLLOWER
 }
 
 enum BadgeType {
@@ -352,6 +393,13 @@ enum UserRole {
 enum VoteType {
   UP
   DOWN
+}
+
+enum EmailDigestFreq {
+  DISABLED
+  DAILY
+  WEEKLY
+  MONTHLY
 }
 
 enum PrivacyLevel {

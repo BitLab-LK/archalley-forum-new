@@ -492,6 +492,13 @@ function EditProfileContent() {
                   <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Update your profile information</p>
                 </div>
               </div>
+              <div className="flex gap-2">
+                <Link href="/profile/email-preferences">
+                  <Button variant="outline" size="sm" className="smooth-transition hover-lift">
+                    Email Settings
+                  </Button>
+                </Link>
+              </div>
             </div>
 
             {error && (

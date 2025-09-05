@@ -310,6 +310,28 @@ export async function POST(request: Request) {
       // Don't fail the post creation if badge checking fails
     }
 
+    // Send email notifications for mentions in the post
+    try {
+      const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/email`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: data.content,
+          authorId: session.user.id,
+          postId: post.id,
+          postTitle: post.title || 'New Post'
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`📧 Mention notifications sent: ${result.mentionsSent}/${result.totalMentions}`);
+      }
+    } catch (error) {
+      console.error("Error sending mention notifications:", error);
+      // Don't fail the post creation if email notifications fail
+    }
+
     return NextResponse.json({
       ...completePost,
       // Add AI categorization metadata
