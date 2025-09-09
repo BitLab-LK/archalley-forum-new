@@ -58,6 +58,7 @@ function HomePageContent() {
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true) // Track if this is first load
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const router = useRouter()
   const { user } = useAuth()
@@ -86,8 +87,26 @@ function HomePageContent() {
 
   useEffect(() => {
     const page = parseInt(searchParams.get("page") || "1")
+    const highlight = searchParams.get("highlight")
+    
+    if (highlight) {
+      setHighlightedPostId(highlight)
+      // Clear highlight after 5 seconds
+      setTimeout(() => setHighlightedPostId(null), 5000)
+    }
+    
     fetchPosts(page)
   }, [searchParams])
+
+  useEffect(() => {
+    // Scroll to highlighted post when posts are loaded
+    if (highlightedPostId && posts.length > 0) {
+      const postElement = document.getElementById(`post-${highlightedPostId}`)
+      if (postElement) {
+        postElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }
+  }, [highlightedPostId, posts])
 
   useEffect(() => {
     // User loaded effect
@@ -239,7 +258,10 @@ function HomePageContent() {
                   {posts.map((post: Post, index: number) => (
                     <div 
                       key={post.id}
-                      className={`hover-lift smooth-transition ${isInitialLoad ? 'animate-slide-in-up' : ''}`}
+                      id={`post-${post.id}`}
+                      className={`hover-lift smooth-transition ${isInitialLoad ? 'animate-slide-in-up' : ''} ${
+                        highlightedPostId === post.id ? 'ring-2 ring-primary ring-offset-2 bg-primary/5 transition-all duration-300' : ''
+                      }`}
                       style={isInitialLoad ? { animationDelay: `${index * 100}ms` } : {}}
                     >
                       <PostCard 

@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { getCategoryColors, getCategoryLightBackground } from "@/lib/category-colors"
 import {
   Briefcase,
   Palette,
@@ -111,16 +112,16 @@ const categories = [
 
 export default function CategoriesPage() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fade-in">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
-        <div className="mb-4 sm:mb-8 animate-fade-in-up animate-delay-100">
+        <div className="mb-4 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">Forum Categories</h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Explore discussions organized by topic and interest</p>
         </div>
 
         {/* Category Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-8 animate-fade-in-up animate-delay-200">
-          <Card className="smooth-transition hover-lift animate-scale-in animate-delay-300">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-8">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs sm:text-sm font-medium">Total Categories</CardTitle>
               <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
@@ -131,7 +132,7 @@ export default function CategoriesPage() {
             </CardContent>
           </Card>
 
-          <Card className="smooth-transition hover-lift animate-scale-in animate-delay-400">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs sm:text-sm font-medium">Total Posts</CardTitle>
               <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
@@ -142,7 +143,7 @@ export default function CategoriesPage() {
             </CardContent>
           </Card>
 
-          <Card className="smooth-transition hover-lift animate-scale-in animate-delay-500">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs sm:text-sm font-medium">Most Active</CardTitle>
               <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
@@ -155,23 +156,23 @@ export default function CategoriesPage() {
         </div>
 
         {/* Categories Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 animate-fade-in-up animate-delay-600">
-          {categories.map((category, index) => {
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
+          {categories.map((category) => {
             const IconComponent = category.icon
+            const categoryColors = getCategoryColors(category.id)
+            const backgroundClasses = getCategoryLightBackground(category.id)
+            
             return (
-              <Card 
-                key={category.id} 
-                className={`hover:shadow-lg transition-shadow smooth-transition hover-lift animate-slide-in-up animate-delay-${Math.min(700 + (index * 100), 1200)}`}
-              >
+              <Card key={category.id} className={`hover:shadow-lg transition-shadow ${backgroundClasses}`}>
                 <CardHeader className="p-3 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2 sm:space-x-3">
-                      <div className={`w-8 h-8 sm:w-12 sm:h-12 ${category.color} rounded-lg flex items-center justify-center smooth-transition hover:scale-110`}>
+                      <div className={`w-8 h-8 sm:w-12 sm:h-12 ${categoryColors.primary} rounded-lg flex items-center justify-center`}>
                         <IconComponent className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                       </div>
                       <div>
                         <CardTitle className="text-base sm:text-xl">{category.name}</CardTitle>
-                        <Badge variant="secondary" className="mt-1 text-xs smooth-transition hover:scale-105">
+                        <Badge variant="secondary" className="mt-1 text-xs">
                           {category.posts} posts
                         </Badge>
                       </div>
@@ -181,7 +182,7 @@ export default function CategoriesPage() {
                 <CardContent className="p-3 sm:p-6 pt-0">
                   <CardDescription className="text-sm sm:text-base mb-3 sm:mb-4">{category.description}</CardDescription>
 
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4 smooth-transition hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <div className={`${categoryColors.accent} ${categoryColors.accentDark} rounded-lg p-3 sm:p-4 mb-3 sm:mb-4`}>
                     <h4 className="font-medium text-xs sm:text-sm mb-2">Latest Post</h4>
                     <p className="text-xs sm:text-sm font-medium mb-1 line-clamp-2">{category.latestPost.title}</p>
                     <div className="flex items-center justify-between text-xs text-gray-500">
@@ -192,10 +193,10 @@ export default function CategoriesPage() {
 
                   <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-0">
                     <Link href={`/category/${category.id}`} className="flex-1 sm:flex-none">
-                      <Button variant="outline" size="sm" className="w-full sm:w-auto smooth-transition hover-lift">View Category</Button>
+                      <Button variant="outline" size="sm" className="w-full sm:w-auto">View Category</Button>
                     </Link>
                     <Link href={`/category/${category.id}/new`} className="flex-1 sm:flex-none">
-                      <Button size="sm" className="w-full sm:w-auto smooth-transition hover-lift">New Post</Button>
+                      <Button size="sm" className="w-full sm:w-auto">New Post</Button>
                     </Link>
                   </div>
                 </CardContent>

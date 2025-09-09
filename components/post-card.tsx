@@ -9,6 +9,7 @@ import { ThumbsUp, ThumbsDown, MessageCircle, Flag, Pin, CheckCircle, Trash2, Mo
 import { cn } from "@/lib/utils"
 import { useGlobalVoteState } from "@/lib/vote-sync"
 import { activityEventManager } from "@/lib/activity-events"
+import { getCategoryBackground } from "@/lib/category-colors"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,10 +49,7 @@ interface PostCardProps {
       }>
     }
     content: string
-    category: string // Primary category
-    aiCategories?: string[] // AI-suggested categories
-    aiCategory?: string // Primary AI category
-    originalLanguage?: string
+    category: string
     isAnonymous: boolean
     isPinned: boolean
     upvotes: number
@@ -83,28 +81,10 @@ const TEXT_SIZE_CONFIG = [
   { max: 300, class: "text-lg" },
 ] as const
 
-const CATEGORY_COLORS = {
-  business: "bg-blue-500",
-  design: "bg-purple-500",
-  career: "bg-green-500",
-  construction: "bg-yellow-500",
-  academic: "bg-indigo-500",
-  informative: "bg-cyan-500",
-  other: "bg-gray-500",
-} as const
-
 // Utility functions
 const getTextSizeClass = (content: string): string => {
   const length = content.length
   return TEXT_SIZE_CONFIG.find(config => length <= config.max)?.class ?? "text-base"
-}
-
-const getCategoryColorClass = (category: string): string => {
-  return CATEGORY_COLORS[category.toLowerCase() as keyof typeof CATEGORY_COLORS] ?? "bg-gray-500"
-}
-
-const shouldUseColoredBackground = (content: string, hasImages: boolean): boolean => {
-  return !hasImages && content.length <= 300
 }
 
 const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, onVoteChange, onTopCommentVoteChange }: PostCardProps) {
@@ -114,6 +94,18 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   
   // Memoized computed values
   const isAuthor = useMemo(() => user?.id === post.author.id, [user?.id, post.author.id])
+  const cardBackgroundClasses = useMemo(() => {
+    // Card always has white/dark background
+    return "shadow-sm border-0 overflow-visible bg-white dark:bg-gray-800"
+  }, [])
+  const contentBackgroundClasses = useMemo(() => {
+    // Use light category-based background only for text posts content (posts without images)
+    const hasImages = post.images && post.images.length > 0
+    if (hasImages) {
+      return ""
+    }
+    return getCategoryBackground(post.category.toLowerCase())
+  }, [post.category, post.images])
   const isAdmin = useMemo(() => user?.role === "ADMIN", [user?.role])
   const canDelete = useMemo(() => isAuthor || isAdmin, [isAuthor, isAdmin])
   
@@ -188,7 +180,14 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
 
   // Memoized callbacks
   const handleDelete = useCallback(async () => {
-    // Always show confirmation dialog first, regardless of onDelete prop
+    setIsDeleting(true)
+    
+    if (onDelete) {
+      await onDelete()
+      setIsDeleting(false)
+      return
+    }
+    
     const confirmed = await confirm({
       title: "Delete Post",
       description: "Are you sure you want to delete this post? This action cannot be undone.",
@@ -198,20 +197,10 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     })
     
     if (!confirmed) {
-      return
-    }
-    
-    // Only start deleting animation after confirmation
-    setIsDeleting(true)
-    
-    if (onDelete) {
-      // Use parent's delete handler
-      await onDelete()
       setIsDeleting(false)
       return
     }
     
-    // Use default delete logic
     try {
       const response = await fetch(`/api/posts/${post.id}`, {
         method: "DELETE",
@@ -225,9 +214,10 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
         throw new Error(errorData.error || "Failed to delete post")
       }
     } catch (error) {
+      console.error("Error deleting post:", error)
       setIsDeleting(false)
     }
-  }, [onDelete, post.id, confirm])
+  }, [onDelete, post.id])
 
   const handleCommentAdded = useCallback(() => {
     const newCount = commentCount + 1
@@ -487,7 +477,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
           ? "max-h-0 opacity-0 -mb-4 transform scale-95 overflow-hidden" 
           : "max-h-[2000px] opacity-100 mb-4 transform scale-100 overflow-visible"
       )}>
-        <Card className="shadow-sm border-0 overflow-visible smooth-transition hover-lift hover-scale">
+        <Card className={cardBackgroundClasses}>
           <CardContent className="p-4 overflow-visible">
           {/* Post Header */}
           <div className="mb-4">
@@ -531,49 +521,14 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                 </div>
               </div>
 
-              {/* Category Badges - show multiple categories */}
-              <div className="flex items-center space-x-2 flex-wrap gap-1">
-                {/* Primary Category */}
+              {/* Category Badge - responsive positioning */}
+              <div className="flex items-center space-x-2">
                 <Badge className={cn(
                   "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1", 
                   `category-${post.category.toLowerCase()}`
                 )}>
                   {post.category}
                 </Badge>
-                
-                {/* AI-suggested additional categories - filter out language names */}
-                {post.aiCategories && post.aiCategories.length > 0 && (
-                  <>
-                    {post.aiCategories
-                      .filter(aiCat => {
-                        // Filter out language names and primary category
-                        const languageNames = ['Sinhala', 'Tamil', 'English', 'Hindi', 'Japanese', 'Korean', 'Chinese', 'French', 'German', 'Spanish', 'Portuguese', 'Italian', 'Russian', 'Arabic']
-                        return !languageNames.includes(aiCat) && aiCat.toLowerCase() !== post.category.toLowerCase()
-                      })
-                      .slice(0, 2) // Show max 2 additional categories to avoid crowding
-                      .map((aiCategory, index) => (
-                        <Badge key={index} className={cn(
-                          "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 opacity-80", 
-                          `category-${aiCategory.toLowerCase()}`
-                        )}>
-                          {aiCategory}
-                        </Badge>
-                      ))
-                    }
-                    {post.aiCategories
-                      .filter(aiCat => {
-                        const languageNames = ['Sinhala', 'Tamil', 'English', 'Hindi', 'Japanese', 'Korean', 'Chinese', 'French', 'German', 'Spanish', 'Portuguese', 'Italian', 'Russian', 'Arabic']
-                        return !languageNames.includes(aiCat) && aiCat.toLowerCase() !== post.category.toLowerCase()
-                      }).length > 2 && (
-                      <Badge className="text-xs px-2 py-0.5 bg-gray-200 text-gray-600">
-                        +{post.aiCategories.filter(aiCat => {
-                          const languageNames = ['Sinhala', 'Tamil', 'English', 'Hindi', 'Japanese', 'Korean', 'Chinese', 'French', 'German', 'Spanish', 'Portuguese', 'Italian', 'Russian', 'Arabic']
-                          return !languageNames.includes(aiCat) && aiCat.toLowerCase() !== post.category.toLowerCase()
-                        }).length - 2}
-                      </Badge>
-                    )}
-                  </>
-                )}
                 
                 {/* Options Menu */}
                 <DropdownMenu>
@@ -603,31 +558,22 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
           </div>
 
           {/* Post Content */}
-          <div className="mb-4">
-            {shouldUseColoredBackground(post.content, !!post.images?.length) ? (
-              <div
-                className={cn(
-                  "rounded-lg p-6 text-white text-center font-semibold leading-relaxed whitespace-pre-wrap",
-                  getCategoryColorClass(post.category),
-                  getTextSizeClass(post.content),
-                )}
-                dir="auto"
-              >
-                {post.content}
-              </div>
-            ) : (
-              <>
-                <p 
-                  className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap text-base leading-relaxed mb-4"
-                  dir="auto"
-                >
-                  {post.content}
-                </p>
+          <div className={cn("mb-4 p-4 rounded-lg", contentBackgroundClasses)}>
+            <p 
+              className={cn(
+                "text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed mb-4",
+                // For short text posts without images, use larger text and center alignment
+                !post.images?.length && post.content.length <= 300 
+                  ? `text-center font-semibold ${getTextSizeClass(post.content)}` 
+                  : "text-base"
+              )}
+              dir="auto"
+            >
+              {post.content}
+            </p>
 
-                {/* Image Grid */}
-                {Array.isArray(post.images) && post.images.length > 0 && renderImages(post.images)}
-              </>
-            )}
+            {/* Image Grid */}
+            {Array.isArray(post.images) && post.images.length > 0 && renderImages(post.images)}
           </div>
 
           {/* Post Actions */}
@@ -641,13 +587,13 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                   size="sm"
                   onClick={() => handleCardVote("up")}
                   className={cn(
-                    "text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3 transition-all duration-200 hover-scale smooth-transition active:scale-95",
-                    userVote === "up" && "text-primary bg-orange-50 dark:bg-orange-950",
+                    "text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95",
+                    userVote === "up" && "text-primary",
                     isVoting && "opacity-70 cursor-not-allowed"
                   )}
                   disabled={isVoting}
                 >
-                  <ThumbsUp className={cn("w-3 h-3 sm:w-4 sm:h-4 mr-1 transition-transform duration-200", userVote === "up" && "scale-110 animate-bounce-in")} />
+                  <ThumbsUp className={cn("w-3 h-3 sm:w-4 sm:h-4 mr-1 transition-transform duration-200", userVote === "up" && "scale-110")} />
                   <span className="transition-all duration-200 text-xs sm:text-sm">{upvotes}</span>
                 </Button>
                 <Button
@@ -655,13 +601,13 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                   size="sm"
                   onClick={() => handleCardVote("down")}
                   className={cn(
-                    "text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-2 sm:px-3 transition-all duration-200 hover-scale smooth-transition active:scale-95",
-                    userVote === "down" && "text-red-500 bg-red-50 dark:bg-red-950",
+                    "text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-2 sm:px-3 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95",
+                    userVote === "down" && "text-red-500",
                     isVoting && "opacity-70 cursor-not-allowed"
                   )}
                   disabled={isVoting}
                 >
-                  <ThumbsDown className={cn("w-3 h-3 sm:w-4 sm:h-4 mr-1 transition-transform duration-200", userVote === "down" && "scale-110 animate-bounce-in")} />
+                  <ThumbsDown className={cn("w-3 h-3 sm:w-4 sm:h-4 mr-1 transition-transform duration-200", userVote === "down" && "scale-110")} />
                   <span className="transition-all duration-200 text-xs sm:text-sm">{downvotes}</span>
                 </Button>
               </div>
@@ -671,9 +617,9 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                 variant="ghost"
                 size="sm"
                 onClick={() => openModal(0)}
-                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3 flex-shrink-0 smooth-transition hover-scale active:scale-95"
+                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3 flex-shrink-0"
               >
-                <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 transition-transform duration-200 hover:scale-110" />
+                <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                 <span className="text-xs sm:text-sm">{commentCount} Comments</span>
               </Button>
 

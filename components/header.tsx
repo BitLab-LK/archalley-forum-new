@@ -19,9 +19,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Bell, Search, Moon, Sun, Settings, LogOut, User, Shield, Home, Users, FolderOpen } from "lucide-react"
+import { Search, Moon, Sun, Settings, LogOut, User, Shield, Home, Users, FolderOpen } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/lib/auth-context"
+import NotificationDropdown from "@/components/notification-dropdown"
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -178,10 +179,7 @@ export default function Header() {
             ) : isAuthenticated ? (
               <>
                 {/* Notifications */}
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-4 w-4" />
-                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs"></span>
-                </Button>
+                <NotificationDropdown />
 
                 {/* User Menu */}
                 <DropdownMenu>
@@ -269,12 +267,7 @@ export default function Header() {
             ) : isAuthenticated ? (
               <>
                 {/* Notifications */}
-                <Button variant="ghost" size="icon" className="relative h-10 w-10">
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full flex items-center justify-center">
-                    <span className="text-[8px] text-white font-bold">3</span>
-                  </span>
-                </Button>
+                <NotificationDropdown />
 
                 {/* User Avatar */}
                 <DropdownMenu>

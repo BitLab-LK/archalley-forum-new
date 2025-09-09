@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { createActivityNotification } from "@/lib/notification-service"
 import { z } from "zod"
 
 // Enhanced validation schema
@@ -189,14 +190,48 @@ export async function POST(
     // Send email notification for upvotes (likes) - but not for the post author's own votes
     if (type === "UP" && result.operation !== "removed") {
       try {
-        // Get post author to check if it's not a self-vote
-        const post = await prisma.post.findUnique({
-          where: { id: postId },
-          select: { authorId: true, title: true }
-        });
+        // Get post and author details
+        const [post, reactingUser] = await Promise.all([
+          prisma.post.findUnique({
+            where: { id: postId },
+            select: { 
+              authorId: true, 
+              title: true,
+              content: true
+            }
+          }),
+          prisma.users.findUnique({
+            where: { id: userId },
+            select: { name: true, image: true }
+          })
+        ]);
 
         // Only send notification if someone else liked the post
-        if (post && post.authorId !== userId) {
+        if (post && post.authorId !== userId && reactingUser) {
+          // Create a meaningful post title/description
+          let postDescription = '';
+          if (post.title && post.title.trim()) {
+            postDescription = post.title;
+          } else if (post.content) {
+            // Use first 50 characters of content as description
+            const cleanContent = post.content.replace(/<[^>]*>/g, '').trim(); // Remove HTML tags
+            postDescription = cleanContent.length > 50 ? cleanContent.substring(0, 50) + '...' : cleanContent;
+          }
+
+          // Create database notification
+          await createActivityNotification(
+            post.authorId,
+            'POST_LIKE',
+            {
+              postId,
+              authorId: userId,
+              authorName: reactingUser.name || 'Someone',
+              postTitle: postDescription,
+              avatarUrl: reactingUser.image || undefined
+            }
+          );
+
+          // Send email notification
           await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/email`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -206,6 +241,7 @@ export async function POST(
               data: {
                 postId,
                 authorId: userId,
+                authorName: reactingUser.name || 'Someone',
                 postTitle: post.title || 'Untitled Post'
               }
             })
@@ -214,7 +250,7 @@ export async function POST(
         }
       } catch (error) {
         console.error("Error sending like notification:", error);
-        // Don't fail the vote operation if email notification fails
+        // Don't fail the vote operation if notification fails
       }
     }
 

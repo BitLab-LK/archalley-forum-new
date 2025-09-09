@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { badgeService } from "@/lib/badge-service"
+import { createActivityNotification } from "@/lib/notification-service"
 
 // GET /api/comments?postId=...
 export async function GET(request: NextRequest) {
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest) {
   const [post, parentComment] = await Promise.all([
     prisma.post.findUnique({
       where: { id: postId },
-      select: { id: true, title: true, authorId: true }
+      select: { id: true, title: true, content: true, authorId: true }
     }),
     parentId ? prisma.comment.findUnique({
       where: { id: parentId },
@@ -165,12 +166,44 @@ export async function POST(request: NextRequest) {
     // Don't fail the comment creation if badge checking fails
   }
 
-  // Send email notifications
+  // Send notifications (both database and email)
   try {
     const notificationPromises = [];
 
+    // Get current user info for notifications
+    const currentUser = await prisma.users.findUnique({
+      where: { id: session.user.id },
+      select: { name: true, image: true }
+    });
+
     // 1. Notify post author about new comment (if not commenting on own post)
-    if (post && post.authorId !== session.user.id) {
+    if (post && post.authorId !== session.user.id && currentUser) {
+      // Create a meaningful post title/description
+      let postDescription = '';
+      if (post.title && post.title.trim()) {
+        postDescription = post.title;
+      } else if (post.content) {
+        // Use first 50 characters of content as description
+        const cleanContent = post.content.replace(/<[^>]*>/g, '').trim(); // Remove HTML tags
+        postDescription = cleanContent.length > 50 ? cleanContent.substring(0, 50) + '...' : cleanContent;
+      }
+
+      // Create database notification
+      await createActivityNotification(
+        post.authorId,
+        'POST_COMMENT',
+        {
+          postId,
+          commentId: comment.id,
+          authorId: session.user.id,
+          authorName: currentUser.name || 'Someone',
+          postTitle: postDescription,
+          commentContent: content,
+          avatarUrl: currentUser.image || undefined
+        }
+      );
+
+      // Send email notification
       notificationPromises.push(
         fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/email`, {
           method: 'POST',
@@ -182,7 +215,8 @@ export async function POST(request: NextRequest) {
               postId,
               commentId: comment.id,
               authorId: session.user.id,
-              postTitle: post.title || 'Untitled Post',
+              authorName: currentUser.name || 'Someone',
+              postTitle: postDescription,
               commentContent: content
             }
           })
@@ -191,7 +225,33 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Notify parent comment author about reply (if replying and not replying to own comment)
-    if (parentComment && parentComment.authorId !== session.user.id) {
+    if (parentComment && parentComment.authorId !== session.user.id && currentUser) {
+      // Create a meaningful post title/description
+      let postDescription = '';
+      if (post?.title && post.title.trim()) {
+        postDescription = post.title;
+      } else if (post?.content) {
+        // Use first 50 characters of content as description
+        const cleanContent = post.content.replace(/<[^>]*>/g, '').trim(); // Remove HTML tags
+        postDescription = cleanContent.length > 50 ? cleanContent.substring(0, 50) + '...' : cleanContent;
+      }
+
+      // Create database notification
+      await createActivityNotification(
+        parentComment.authorId,
+        'COMMENT_REPLY',
+        {
+          postId,
+          commentId: comment.id,
+          authorId: session.user.id,
+          authorName: currentUser.name || 'Someone',
+          postTitle: postDescription,
+          commentContent: content,
+          avatarUrl: currentUser.image || undefined
+        }
+      );
+
+      // Send email notification
       notificationPromises.push(
         fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/email`, {
           method: 'POST',
@@ -203,6 +263,7 @@ export async function POST(request: NextRequest) {
               postId,
               commentId: comment.id,
               authorId: session.user.id,
+              authorName: currentUser.name || 'Someone',
               postTitle: post?.title || 'Untitled Post',
               commentContent: content
             }
@@ -211,7 +272,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Send mention notifications
+    // 3. Send mention notifications (email only for now)
     notificationPromises.push(
       fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/email`, {
         method: 'PUT',
@@ -219,6 +280,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           content,
           authorId: session.user.id,
+          authorName: currentUser?.name || 'Someone',
           postId,
           postTitle: post?.title || 'Untitled Post'
         })
@@ -232,7 +294,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error("Error sending comment notifications:", error);
-    // Don't fail the comment creation if email notifications fail
+    // Don't fail the comment creation if notifications fail
   }
 
   return NextResponse.json({ comment })
