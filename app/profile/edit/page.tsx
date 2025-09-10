@@ -9,7 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Save, Plus, X, Briefcase, GraduationCap, ExternalLink, User, Camera } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ArrowLeft, Save, Plus, X, Briefcase, GraduationCap, ExternalLink, User, Camera, Mail } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { AuthGuard } from "@/components/auth-guard"
@@ -33,6 +35,17 @@ interface Education {
   startDate: string
   endDate?: string
   description?: string
+}
+
+interface EmailPreferences {
+  emailNotifications: boolean
+  notifyOnComment: boolean
+  notifyOnLike: boolean
+  notifyOnMention: boolean
+  notifyOnReply: boolean
+  notifyOnNewPost: boolean
+  notifyOnSystem: boolean
+  emailDigest: 'DISABLED' | 'DAILY' | 'WEEKLY' | 'MONTHLY'
 }
 
 // Helper function to count words in text
@@ -139,6 +152,17 @@ function EditProfileContent() {
     linkedin: { connected: false, email: "" }
   })
 
+  const [emailPreferences, setEmailPreferences] = useState<EmailPreferences>({
+    emailNotifications: true,
+    notifyOnComment: true,
+    notifyOnLike: true,
+    notifyOnMention: true,
+    notifyOnReply: true,
+    notifyOnNewPost: false,
+    notifyOnSystem: true,
+    emailDigest: 'DISABLED'
+  })
+
   const [privacySettings, setPrivacySettings] = useState({
     currentPassword: "",
     newPassword: "",
@@ -203,8 +227,32 @@ function EditProfileContent() {
       setWorkExperience(userData.workExperience || [])
       setEducation(userData.education || [])
 
+      // Set account settings based on user data
+      setAccountSettings({
+        profileVisibility: userData.profileVisibility ? "public" : "private",
+        newConnections: true, // Default values for now since these aren't in the schema yet
+        messages: true,
+        jobAlerts: true,
+        weeklyDigest: true,
+        securityAlerts: true,
+        profileSearchable: true
+      })
+
+      // Set email preferences from user data
+      setEmailPreferences({
+        emailNotifications: userData.emailNotifications ?? true,
+        notifyOnComment: userData.notifyOnComment ?? true,
+        notifyOnLike: userData.notifyOnLike ?? true,
+        notifyOnMention: userData.notifyOnMention ?? true,
+        notifyOnReply: userData.notifyOnReply ?? true,
+        notifyOnNewPost: userData.notifyOnNewPost ?? false,
+        notifyOnSystem: userData.notifyOnSystem ?? true,
+        emailDigest: userData.emailDigest || 'DISABLED'
+      })
+
       // Fetch connected accounts
       await fetchConnectedAccounts()
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load user data')
     } finally {
@@ -435,6 +483,53 @@ function EditProfileContent() {
         }
       }
 
+      // Save account settings (profile visibility)
+      const accountResponse = await fetch(`/api/users/${user?.id}/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(accountSettings)
+      });
+
+      if (!accountResponse.ok) {
+        console.warn('Failed to update account settings');
+      }
+
+      // Save email preferences
+      const emailResponse = await fetch('/api/users/preferences/email', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(emailPreferences)
+      });
+
+      if (!emailResponse.ok) {
+        console.warn('Failed to update email preferences');
+      }
+
+      // Save password changes if provided
+      if (privacySettings.newPassword && privacySettings.currentPassword) {
+        const passwordResponse = await fetch(`/api/users/${user?.id}/change-password`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentPassword: privacySettings.currentPassword,
+            newPassword: privacySettings.newPassword,
+            confirmPassword: privacySettings.confirmPassword
+          })
+        });
+
+        if (!passwordResponse.ok) {
+          console.warn('Failed to update password');
+        } else {
+          // Clear password fields on success
+          setPrivacySettings(prev => ({
+            ...prev,
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: ""
+          }));
+        }
+      }
+
       toast({
         title: "Profile Updated",
         description: "Your profile has been successfully updated.",
@@ -491,13 +586,6 @@ function EditProfileContent() {
                   <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Edit Profile</h1>
                   <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Update your profile information</p>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <Link href="/profile/email-preferences">
-                  <Button variant="outline" size="sm" className="smooth-transition hover-lift">
-                    Email Settings
-                  </Button>
-                </Link>
               </div>
             </div>
 
@@ -1244,13 +1332,10 @@ function EditProfileContent() {
                           <p className="text-sm font-medium">New Connections</p>
                           <p className="text-sm text-gray-500">Get notified when someone connects with you</p>
                         </div>
-                        <Button
-                          variant={accountSettings.newConnections ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setAccountSettings(prev => ({ ...prev, newConnections: !prev.newConnections }))}
-                        >
-                          {accountSettings.newConnections ? "On" : "Off"}
-                        </Button>
+                        <Switch
+                          checked={accountSettings.newConnections}
+                          onCheckedChange={(checked) => setAccountSettings(prev => ({ ...prev, newConnections: checked }))}
+                        />
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -1258,13 +1343,10 @@ function EditProfileContent() {
                           <p className="text-sm font-medium">Messages</p>
                           <p className="text-sm text-gray-500">Receive notifications for new messages</p>
                         </div>
-                        <Button
-                          variant={accountSettings.messages ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setAccountSettings(prev => ({ ...prev, messages: !prev.messages }))}
-                        >
-                          {accountSettings.messages ? "On" : "Off"}
-                        </Button>
+                        <Switch
+                          checked={accountSettings.messages}
+                          onCheckedChange={(checked) => setAccountSettings(prev => ({ ...prev, messages: checked }))}
+                        />
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -1272,13 +1354,10 @@ function EditProfileContent() {
                           <p className="text-sm font-medium">Job Alerts</p>
                           <p className="text-sm text-gray-500">Receive notifications about relevant job opportunities</p>
                         </div>
-                        <Button
-                          variant={accountSettings.jobAlerts ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setAccountSettings(prev => ({ ...prev, jobAlerts: !prev.jobAlerts }))}
-                        >
-                          {accountSettings.jobAlerts ? "On" : "Off"}
-                        </Button>
+                        <Switch
+                          checked={accountSettings.jobAlerts}
+                          onCheckedChange={(checked) => setAccountSettings(prev => ({ ...prev, jobAlerts: checked }))}
+                        />
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -1286,13 +1365,10 @@ function EditProfileContent() {
                           <p className="text-sm font-medium">Weekly Digest</p>
                           <p className="text-sm text-gray-500">Get a weekly summary of your network activity</p>
                         </div>
-                        <Button
-                          variant={accountSettings.weeklyDigest ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setAccountSettings(prev => ({ ...prev, weeklyDigest: !prev.weeklyDigest }))}
-                        >
-                          {accountSettings.weeklyDigest ? "On" : "Off"}
-                        </Button>
+                        <Switch
+                          checked={accountSettings.weeklyDigest}
+                          onCheckedChange={(checked) => setAccountSettings(prev => ({ ...prev, weeklyDigest: checked }))}
+                        />
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -1300,13 +1376,10 @@ function EditProfileContent() {
                           <p className="text-sm font-medium">Security Alerts</p>
                           <p className="text-sm text-gray-500">Important security notifications (always enabled)</p>
                         </div>
-                        <Button
-                          variant={accountSettings.securityAlerts ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setAccountSettings(prev => ({ ...prev, securityAlerts: !prev.securityAlerts }))}
-                        >
-                          {accountSettings.securityAlerts ? "On" : "Off"}
-                        </Button>
+                        <Switch
+                          checked={accountSettings.securityAlerts}
+                          onCheckedChange={(checked) => setAccountSettings(prev => ({ ...prev, securityAlerts: checked }))}
+                        />
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -1314,29 +1387,131 @@ function EditProfileContent() {
                           <p className="text-sm font-medium">Profile Searchable</p>
                           <p className="text-sm text-gray-500">Allow others to find your profile in search</p>
                         </div>
-                        <Button
-                          variant={accountSettings.profileSearchable ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setAccountSettings(prev => ({ ...prev, profileSearchable: !prev.profileSearchable }))}
-                        >
-                          {accountSettings.profileSearchable ? "On" : "Off"}
-                        </Button>
+                        <Switch
+                          checked={accountSettings.profileSearchable}
+                          onCheckedChange={(checked) => setAccountSettings(prev => ({ ...prev, profileSearchable: checked }))}
+                        />
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-6">
-                    <Button 
-                      className="w-full"
-                      onClick={() => {
-                        toast({
-                          title: "Settings Saved",
-                          description: "Account settings updated successfully.",
-                        })
-                      }}
-                    >
-                      Save Account Settings
-                    </Button>
+                  {/* Email Preferences */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      Email Preferences
+                    </h3>
+                    
+                    <div className="space-y-3">
+                      {/* Master Email Toggle */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Email Notifications</p>
+                          <p className="text-sm text-gray-500">Receive email notifications for forum activities</p>
+                        </div>
+                        <Switch
+                          checked={emailPreferences.emailNotifications}
+                          onCheckedChange={(checked) => setEmailPreferences(prev => ({ ...prev, emailNotifications: checked }))}
+                        />
+                      </div>
+
+                      {/* Email Digest */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Email Digest</p>
+                          <p className="text-sm text-gray-500">Receive a summary of forum activity</p>
+                        </div>
+                        <Select
+                          value={emailPreferences.emailDigest}
+                          onValueChange={(value) => setEmailPreferences(prev => ({ ...prev, emailDigest: value as any }))}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="DISABLED">Disabled</SelectItem>
+                            <SelectItem value="DAILY">Daily</SelectItem>
+                            <SelectItem value="WEEKLY">Weekly</SelectItem>
+                            <SelectItem value="MONTHLY">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Individual Email Settings */}
+                      <div className="space-y-3 pl-4 border-l-2 border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">New Comments</p>
+                            <p className="text-sm text-gray-500">When someone comments on your posts</p>
+                          </div>
+                          <Switch
+                            checked={emailPreferences.notifyOnComment}
+                            onCheckedChange={(checked) => setEmailPreferences(prev => ({ ...prev, notifyOnComment: checked }))}
+                            disabled={!emailPreferences.emailNotifications}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">Post Likes</p>
+                            <p className="text-sm text-gray-500">When someone likes your posts or comments</p>
+                          </div>
+                          <Switch
+                            checked={emailPreferences.notifyOnLike}
+                            onCheckedChange={(checked) => setEmailPreferences(prev => ({ ...prev, notifyOnLike: checked }))}
+                            disabled={!emailPreferences.emailNotifications}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">Mentions</p>
+                            <p className="text-sm text-gray-500">When someone mentions you in a post or comment</p>
+                          </div>
+                          <Switch
+                            checked={emailPreferences.notifyOnMention}
+                            onCheckedChange={(checked) => setEmailPreferences(prev => ({ ...prev, notifyOnMention: checked }))}
+                            disabled={!emailPreferences.emailNotifications}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">Comment Replies</p>
+                            <p className="text-sm text-gray-500">When someone replies to your comments</p>
+                          </div>
+                          <Switch
+                            checked={emailPreferences.notifyOnReply}
+                            onCheckedChange={(checked) => setEmailPreferences(prev => ({ ...prev, notifyOnReply: checked }))}
+                            disabled={!emailPreferences.emailNotifications}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">New Posts in Categories</p>
+                            <p className="text-sm text-gray-500">When new posts are created in categories you follow</p>
+                          </div>
+                          <Switch
+                            checked={emailPreferences.notifyOnNewPost}
+                            onCheckedChange={(checked) => setEmailPreferences(prev => ({ ...prev, notifyOnNewPost: checked }))}
+                            disabled={!emailPreferences.emailNotifications}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">System Notifications</p>
+                            <p className="text-sm text-gray-500">Important updates and announcements</p>
+                          </div>
+                          <Switch
+                            checked={emailPreferences.notifyOnSystem}
+                            onCheckedChange={(checked) => setEmailPreferences(prev => ({ ...prev, notifyOnSystem: checked }))}
+                            disabled={!emailPreferences.emailNotifications}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1500,20 +1675,6 @@ function EditProfileContent() {
                         </Button>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="mt-6">
-                    <Button 
-                      className="w-full"
-                      onClick={() => {
-                        toast({
-                          title: "Security Settings Saved",
-                          description: "Your security settings have been updated.",
-                        })
-                      }}
-                    >
-                      Save Security Settings
-                    </Button>
                   </div>
                 </CardContent>
               </Card>

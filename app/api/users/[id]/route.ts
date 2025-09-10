@@ -189,6 +189,18 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       role: user.role,
       profileVisibility: user.profileVisibility,
       lastActiveAt: user.lastActiveAt,
+      
+      // Email Notification Preferences (only for own profile)
+      ...(isOwnProfile && {
+        emailNotifications: user.emailNotifications,
+        notifyOnComment: user.notifyOnComment,
+        notifyOnLike: user.notifyOnLike,
+        notifyOnMention: user.notifyOnMention,
+        notifyOnReply: user.notifyOnReply,
+        notifyOnNewPost: user.notifyOnNewPost,
+        notifyOnSystem: user.notifyOnSystem,
+        emailDigest: user.emailDigest,
+      }),
     }
 
     return NextResponse.json({ user: formattedUser })

@@ -3,15 +3,15 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { badgeService } from "@/lib/badge-service"
 
-// GET /api/badges/user/[userId] - Get user's badges
+// GET /api/badges/user/[id] - Get user's badges
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
     const resolvedParams = await params
-    const userId = resolvedParams.userId
+    const userId = resolvedParams.id
 
     // Users can view their own badges, or public profiles
     if (session?.user?.id !== userId) {
@@ -27,15 +27,15 @@ export async function GET(
   }
 }
 
-// POST /api/badges/user/[userId]/check - Check and award automatic badges
+// POST /api/badges/user/[id]/check - Check and award automatic badges
 export async function POST(
   _request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
     const resolvedParams = await params
-    const userId = resolvedParams.userId
+    const userId = resolvedParams.id
 
     // Users can only check their own badges, or admins can check any
     if (session?.user?.id !== userId && session?.user?.role !== "ADMIN") {
