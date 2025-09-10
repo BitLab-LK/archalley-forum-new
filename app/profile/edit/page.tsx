@@ -2407,33 +2407,33 @@ function EditProfileContent() {
 
       {/* Account Deletion Confirmation Dialog */}
       <Dialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-4">
             <DialogTitle className="flex items-center gap-2 text-red-600">
               <AlertTriangle className="w-5 h-5" />
               Final Warning - Account Deletion
             </DialogTitle>
-            <DialogDescription className="text-left space-y-3 pt-2">
-              <div className="space-y-3">
-                <div className="font-semibold text-red-800">
-                  This action will PERMANENTLY delete your account and ALL associated data including:
-                </div>
-                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
-                  <li>All your posts and comments</li>
-                  <li>Your profile information</li>
-                  <li>Your connections and activity history</li>
-                  <li>All uploaded files and images</li>
-                </ul>
-                <div className="font-bold text-red-800 bg-red-50 p-3 rounded border border-red-200">
-                  ⚠️ This action CANNOT be undone!
-                </div>
-                <div className="text-gray-800 font-medium">
-                  Are you absolutely sure you want to proceed?
-                </div>
-              </div>
-            </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+          <div className="text-sm text-muted-foreground text-left space-y-4">
+            <div className="space-y-4">
+              <div className="font-semibold text-red-800">
+                This action will PERMANENTLY delete your account and ALL associated data including:
+              </div>
+              <ul className="list-disc list-inside space-y-2 text-sm text-gray-700 ml-4">
+                <li>All your posts and comments</li>
+                <li>Your profile information</li>
+                <li>Your connections and activity history</li>
+                <li>All uploaded files and images</li>
+              </ul>
+              <div className="font-bold text-red-800 bg-red-50 p-4 rounded border border-red-200">
+                ⚠️ This action CANNOT be undone!
+              </div>
+              <div className="text-gray-800 font-medium">
+                Are you absolutely sure you want to proceed?
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-6">
             <Button 
               variant="outline" 
               onClick={() => setShowDeleteConfirmation(false)}
