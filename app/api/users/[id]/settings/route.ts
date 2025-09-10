@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -12,7 +12,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: userId } = params;
+    const { id: userId } = await params;
     const body = await request.json();
 
     // Verify the user is updating their own settings or is an admin
@@ -55,7 +55,7 @@ export async function PUT(
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -63,7 +63,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: userId } = params;
+    const { id: userId } = await params;
 
     // Verify the user is accessing their own settings or is an admin
     const currentUser = await prisma.users.findUnique({

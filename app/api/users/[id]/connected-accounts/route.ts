@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -14,15 +14,17 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { id } = await params
+
     // Check if user is requesting their own data or is admin
-    if (session.user.id !== params.id && session.user.role !== "ADMIN") {
+    if (session.user.id !== id && session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     // Fetch connected accounts for the user
     const accounts = await prisma.account.findMany({
       where: {
-        userId: params.id
+        userId: id
       },
       select: {
         id: true,
@@ -56,7 +58,7 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -65,8 +67,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { id } = await params
+
     // Check if user is requesting their own data
-    if (session.user.id !== params.id) {
+    if (session.user.id !== id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -79,7 +83,7 @@ export async function DELETE(
 
     // Don't allow disconnecting the primary account used for login
     const accounts = await prisma.account.findMany({
-      where: { userId: params.id }
+      where: { userId: id }
     })
 
     if (accounts.length <= 1) {
@@ -92,7 +96,7 @@ export async function DELETE(
     // Delete the account
     await prisma.account.deleteMany({
       where: {
-        userId: params.id,
+        userId: id,
         provider: provider
       }
     })

@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Save, Plus, X, Briefcase, GraduationCap, ExternalLink, User, Camera, Mail } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ArrowLeft, Save, Plus, X, Briefcase, GraduationCap, ExternalLink, User, Camera, Mail, Shield, Eye, EyeOff, Download, Trash2, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { AuthGuard } from "@/components/auth-guard"
@@ -167,8 +168,17 @@ function EditProfileContent() {
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
-    twoFactorEnabled: false
+    twoFactorEnabled: false,
+    showPassword: false,
+    qrCode: "",
+    verificationCode: "",
+    deleteConfirmText: "",
+    deletePassword: "",
+    hasSocialAccount: false,
+    hasPassword: false
   })
+
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
 
   useEffect(() => {
     if (user?.id) {
@@ -249,6 +259,14 @@ function EditProfileContent() {
         notifyOnSystem: userData.notifyOnSystem ?? true,
         emailDigest: userData.emailDigest || 'DISABLED'
       })
+
+      // Set 2FA status from user data
+      setPrivacySettings(prev => ({
+        ...prev,
+        twoFactorEnabled: userData.twoFactorEnabled ?? false,
+        hasPassword: userData.password !== null,
+        hasSocialAccount: userData.Account && userData.Account.length > 0
+      }))
 
       // Fetch connected accounts
       await fetchConnectedAccounts()
@@ -554,6 +572,601 @@ function EditProfileContent() {
       })
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // Password change handler
+  const handlePasswordChange = async () => {
+    if (!privacySettings.newPassword) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a new password.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (privacySettings.hasPassword && !privacySettings.currentPassword) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter your current password.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (privacySettings.newPassword !== privacySettings.confirmPassword) {
+      toast({
+        title: "Password Mismatch",
+        description: "New passwords do not match.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/users/${user?.id}/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: privacySettings.hasPassword ? privacySettings.currentPassword : undefined,
+          newPassword: privacySettings.newPassword,
+          confirmPassword: privacySettings.confirmPassword
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to change password')
+      }
+
+      toast({
+        title: "Password Updated",
+        description: privacySettings.hasPassword 
+          ? "Your password has been updated successfully."
+          : "Password has been set for your account successfully."
+      })
+
+      setPrivacySettings(prev => ({ 
+        ...prev, 
+        currentPassword: "", 
+        newPassword: "", 
+        confirmPassword: "",
+        hasPassword: true // Now they have a password
+      }))
+
+    } catch (error) {
+      toast({
+        title: "Password Change Failed",
+        description: error instanceof Error ? error.message : 'Failed to change password',
+        variant: "destructive"
+      })
+    }
+  }
+
+  // 2FA handlers
+  const handle2FASetup = async () => {
+    try {
+      const response = await fetch(`/api/users/${user?.id}/two-factor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'enable' })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to setup 2FA')
+      }
+
+      setPrivacySettings(prev => ({ 
+        ...prev, 
+        qrCode: result.qrCode 
+      }))
+
+      toast({
+        title: "2FA Setup",
+        description: "Scan the QR code with your authenticator app and enter the code to verify."
+      })
+
+    } catch (error) {
+      toast({
+        title: "2FA Setup Failed",
+        description: error instanceof Error ? error.message : 'Failed to setup 2FA',
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handle2FAVerify = async () => {
+    if (!privacySettings.verificationCode) {
+      toast({
+        title: "Missing Code",
+        description: "Please enter the verification code from your authenticator app.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/users/${user?.id}/two-factor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'verify',
+          token: privacySettings.verificationCode 
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to verify 2FA')
+      }
+
+      setPrivacySettings(prev => ({ 
+        ...prev, 
+        twoFactorEnabled: true,
+        qrCode: "",
+        verificationCode: ""
+      }))
+
+      toast({
+        title: "2FA Enabled",
+        description: "Two-factor authentication has been enabled successfully."
+      })
+
+    } catch (error) {
+      toast({
+        title: "2FA Verification Failed",
+        description: error instanceof Error ? error.message : 'Failed to verify 2FA',
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handle2FADisable = async () => {
+    if (!privacySettings.verificationCode) {
+      toast({
+        title: "Missing Code",
+        description: "Please enter the verification code to disable 2FA.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/users/${user?.id}/two-factor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'disable',
+          token: privacySettings.verificationCode 
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to disable 2FA')
+      }
+
+      setPrivacySettings(prev => ({ 
+        ...prev, 
+        twoFactorEnabled: false,
+        verificationCode: ""
+      }))
+
+      toast({
+        title: "2FA Disabled",
+        description: "Two-factor authentication has been disabled."
+      })
+
+    } catch (error) {
+      toast({
+        title: "2FA Disable Failed",
+        description: error instanceof Error ? error.message : 'Failed to disable 2FA',
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handlePDFExport = async () => {
+    try {
+      // Import jsPDF dynamically to avoid SSR issues
+      const { default: jsPDF } = await import('jspdf');
+      
+      const response = await fetch(`/api/users/${user?.id}/export-pdf-data`, {
+        method: 'POST'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to get export data')
+      }
+
+      const data = await response.json()
+
+      // Create PDF with modern styling
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 25;
+      let yPosition = margin;
+
+      // Define colors with proper tuple types
+      const primaryColor: [number, number, number] = [37, 99, 235]; // Blue
+      const secondaryColor: [number, number, number] = [75, 85, 99]; // Gray
+      const lightGray: [number, number, number] = [249, 250, 251];
+      const textColor: [number, number, number] = [31, 41, 55];
+
+      // Helper function to add modern header
+      const addHeader = () => {
+        // Header background
+        pdf.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+        pdf.rect(0, 0, pageWidth, 30, 'F');
+        
+        // Logo/Title area
+        pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        pdf.rect(margin, 8, pageWidth - 2 * margin, 14, 'F');
+        
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('ArchAlley Forum - Profile Export', margin + 5, 18);
+        
+        // Reset colors
+        pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+        pdf.setFont('helvetica', 'normal');
+        
+        yPosition = 35;
+      };
+
+      // Helper function to add footer
+      const addFooter = (pageNum: number, totalPages: number) => {
+        pdf.setFontSize(8);
+        pdf.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+        pdf.text(`Page ${pageNum} of ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+        pdf.text(`Generated on ${data.exportDate}`, margin, pageHeight - 10);
+      };
+
+      // Helper function to add text with modern styling
+      const addText = (text: string, fontSize = 10, isBold = false, color: [number, number, number] = textColor, indent = 0) => {
+        pdf.setFontSize(fontSize);
+        pdf.setTextColor(color[0], color[1], color[2]);
+        if (isBold) pdf.setFont('helvetica', 'bold');
+        else pdf.setFont('helvetica', 'normal');
+        
+        const lines = pdf.splitTextToSize(text, pageWidth - 2 * margin - indent);
+        lines.forEach((line: string) => {
+          if (yPosition > pageHeight - 30) { // New page if near bottom
+            pdf.addPage();
+            addHeader();
+          }
+          pdf.text(line, margin + indent, yPosition);
+          yPosition += fontSize * 0.5;
+        });
+        yPosition += 3; // Extra spacing
+      };
+
+      // Helper function to add modern section headers
+      const addSection = (title: string) => {
+        yPosition += 8;
+        
+        // Section background
+        pdf.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+        pdf.rect(margin - 5, yPosition - 8, pageWidth - 2 * margin + 10, 12, 'F');
+        
+        // Section title
+        pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        pdf.rect(margin - 5, yPosition - 8, 4, 12, 'F');
+        
+        addText(title, 12, true, primaryColor);
+        yPosition += 3;
+      };
+
+      // Helper function to add info cards
+      const addInfoCard = (label: string, value: string) => {
+        if (!value) return;
+        
+        // Card background
+        pdf.setFillColor(255, 255, 255);
+        pdf.setDrawColor(229, 231, 235);
+        pdf.rect(margin, yPosition - 2, pageWidth - 2 * margin, 8, 'FD');
+        
+        // Label and value
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+        pdf.text(label + ':', margin + 3, yPosition + 2);
+        
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+        pdf.text(value, margin + 3, yPosition + 5);
+        
+        yPosition += 10;
+      };
+
+      // Start first page
+      addHeader();
+
+      // User profile header
+      if (data.profile.fullName) {
+        pdf.setFontSize(20);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        pdf.text(data.profile.fullName, margin, yPosition);
+        yPosition += 8;
+      }
+
+      if (data.profile.headline) {
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+        pdf.text(data.profile.headline, margin, yPosition);
+        yPosition += 10;
+      }
+
+      // Profile Information Section
+      addSection('Profile Information');
+      addInfoCard('Email', data.profile.email);
+      addInfoCard('Company', data.profile.company);
+      addInfoCard('Profession', data.profile.profession);
+      addInfoCard('Industry', data.profile.industry);
+      addInfoCard('Location', data.profile.location);
+      addInfoCard('Phone', data.profile.phone);
+      addInfoCard('Website', data.profile.website);
+      addInfoCard('Portfolio', data.profile.portfolioUrl);
+      addInfoCard('Member Since', data.profile.memberSince);
+      addInfoCard('Last Active', data.profile.lastActive);
+
+      if (data.profile.bio) {
+        yPosition += 5;
+        addText('Bio:', 10, true, secondaryColor);
+        addText(data.profile.bio, 10, false, textColor, 10);
+      }
+
+      // Skills Section
+      if (data.profile.skills && data.profile.skills.length > 0) {
+        addSection('Skills & Expertise');
+        
+        // Create skill tags
+        const skills = data.profile.skills;
+        let xPos = margin;
+        let currentY = yPosition;
+        
+        skills.forEach((skill: string) => {
+          const skillWidth = pdf.getTextWidth(skill) + 8;
+          
+          if (xPos + skillWidth > pageWidth - margin) {
+            xPos = margin;
+            currentY += 8;
+          }
+          
+          // Skill tag background
+          pdf.setFillColor(239, 246, 255);
+          pdf.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+          pdf.roundedRect(xPos, currentY - 3, skillWidth, 6, 2, 2, 'FD');
+          
+          // Skill text
+          pdf.setFontSize(8);
+          pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+          pdf.text(skill, xPos + 4, currentY + 1);
+          
+          xPos += skillWidth + 5;
+        });
+        
+        yPosition = currentY + 10;
+      }
+
+      // Social Links Section
+      const socialLinks = Object.entries(data.socialLinks).filter(([, url]) => url);
+      if (socialLinks.length > 0) {
+        addSection('Social Links');
+        socialLinks.forEach(([platform, url]) => {
+          addInfoCard(platform.charAt(0).toUpperCase() + platform.slice(1), url as string);
+        });
+      }
+
+      // Work Experience Section
+      if (data.workExperience && data.workExperience.length > 0) {
+        addSection('Work Experience');
+        data.workExperience.forEach((work: any) => {
+          // Experience card
+          pdf.setFillColor(248, 250, 252);
+          pdf.setDrawColor(203, 213, 225);
+          pdf.rect(margin, yPosition, pageWidth - 2 * margin, 20, 'FD');
+          
+          yPosition += 5;
+          addText(`${work.position}`, 11, true, primaryColor, 5);
+          addText(`${work.company} • ${work.duration}`, 9, false, secondaryColor, 5);
+          if (work.description) {
+            addText(work.description, 9, false, textColor, 5);
+          }
+          yPosition += 5;
+        });
+      }
+
+      // Education Section
+      if (data.education && data.education.length > 0) {
+        addSection('Education');
+        data.education.forEach((edu: any) => {
+          // Education card
+          pdf.setFillColor(248, 250, 252);
+          pdf.setDrawColor(203, 213, 225);
+          pdf.rect(margin, yPosition, pageWidth - 2 * margin, 18, 'FD');
+          
+          yPosition += 5;
+          addText(`${edu.degree}`, 11, true, primaryColor, 5);
+          addText(`${edu.institution} • ${edu.duration}`, 9, false, secondaryColor, 5);
+          if (edu.description) {
+            addText(edu.description, 9, false, textColor, 5);
+          }
+          yPosition += 5;
+        });
+      }
+
+      // Activity Statistics Section
+      addSection('Activity Statistics');
+      
+      // Statistics cards in a grid
+      const stats = [
+        { label: 'Total Posts', value: data.activity.totalPosts },
+        { label: 'Total Comments', value: data.activity.totalComments }
+      ];
+      
+      const cardWidth = (pageWidth - 2 * margin - 10) / 2;
+      let xPos = margin;
+      
+      stats.forEach((stat) => {
+        // Stat card
+        pdf.setFillColor(239, 246, 255);
+        pdf.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        pdf.rect(xPos, yPosition, cardWidth, 15, 'FD');
+        
+        // Large number
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        pdf.text(stat.value.toString(), xPos + 5, yPosition + 8);
+        
+        // Label
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+        pdf.text(stat.label, xPos + 5, yPosition + 12);
+        
+        xPos += cardWidth + 10;
+      });
+      
+      yPosition += 20;
+
+      // Privacy Preferences Section
+      addSection('Privacy & Notification Preferences');
+      Object.entries(data.preferences).forEach(([key, value]) => {
+        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+        const statusColor: [number, number, number] = value === 'true' || value === true ? [34, 197, 94] : [239, 68, 68];
+        const statusText = value === 'true' || value === true ? 'Enabled' : 'Disabled';
+        
+        // Preference row
+        pdf.setFillColor(255, 255, 255);
+        pdf.setDrawColor(229, 231, 235);
+        pdf.rect(margin, yPosition, pageWidth - 2 * margin, 8, 'FD');
+        
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+        pdf.text(label, margin + 3, yPosition + 5);
+        
+        // Status badge
+        pdf.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+        const badgeWidth = 20;
+        pdf.rect(pageWidth - margin - badgeWidth - 3, yPosition + 1, badgeWidth, 6, 'F');
+        
+        pdf.setFontSize(7);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text(statusText, pageWidth - margin - badgeWidth + 2, yPosition + 4.5);
+        
+        yPosition += 10;
+      });
+
+      // Add page numbers to all pages
+      const totalPages = pdf.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        addFooter(i, totalPages);
+      }
+
+      // Save PDF with modern filename
+      const fileName = `ArchAlley-Profile-${data.profile.fullName || 'User'}-${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+
+      toast({
+        title: "PDF Export Complete",
+        description: "Your professional profile report has been downloaded successfully."
+      })
+
+    } catch (error) {
+      toast({
+        title: "PDF Export Failed",
+        description: error instanceof Error ? error.message : 'Failed to generate PDF',
+        variant: "destructive"
+      })
+    }
+  }
+
+  // Account deletion handler with confirmation
+  const handleAccountDeletion = async () => {
+    if (privacySettings.deleteConfirmText !== "DELETE MY ACCOUNT") {
+      toast({
+        title: "Confirmation Required",
+        description: 'Please type "DELETE MY ACCOUNT" to confirm.',
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (privacySettings.hasPassword && !privacySettings.deletePassword) {
+      toast({
+        title: "Password Required",
+        description: "Please enter your password to confirm account deletion.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Show confirmation modal
+    setShowDeleteConfirmation(true)
+  }
+
+  // Actual account deletion after confirmation
+  const confirmAccountDeletion = async () => {
+    try {
+      setShowDeleteConfirmation(false)
+      
+      const response = await fetch(`/api/users/${user?.id}/delete-account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: privacySettings.hasPassword ? privacySettings.deletePassword : undefined,
+          confirmText: privacySettings.deleteConfirmText
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete account')
+      }
+
+      toast({
+        title: "Account Deleted Successfully",
+        description: "Your account has been permanently deleted. You will be logged out and redirected to the homepage."
+      })
+
+      // Sign out and redirect to non-login homepage
+      setTimeout(async () => {
+        try {
+          // Import signOut from next-auth/react
+          const { signOut } = await import('next-auth/react')
+          
+          // Sign out and redirect to home page
+          await signOut({ 
+            redirect: true,
+            callbackUrl: '/' 
+          })
+        } catch (error) {
+          // Fallback: manual redirect if signOut fails
+          window.location.href = '/'
+        }
+      }, 2000)
+
+    } catch (error) {
+      toast({
+        title: "Account Deletion Failed",
+        description: error instanceof Error ? error.message : 'Failed to delete account',
+        variant: "destructive"
+      })
     }
   }
 
@@ -1519,161 +2132,257 @@ function EditProfileContent() {
 
             {/* Privacy & Security */}
             <TabsContent value="privacy" className="space-y-4 sm:space-y-6">
+              {/* Password Section */}
               <Card>
                 <CardHeader className="p-4 sm:p-6">
                   <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
-                    Privacy & Security
+                    <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Change Password
                   </CardTitle>
                   <CardDescription className="text-sm">
-                    Manage your account security and privacy settings.
+                    Update your account password to keep it secure.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6 p-4 sm:p-6">
-                  {/* Change Password */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium">Change Password</h3>
-                    
-                    <div className="space-y-3">
+                <CardContent className="space-y-4 p-4 sm:p-6">
+                  <div className="space-y-3">
+                    {privacySettings.hasPassword && (
                       <div className="space-y-2">
                         <Label htmlFor="currentPassword" className="text-sm">Current Password</Label>
-                        <Input
-                          id="currentPassword"
-                          type="password"
-                          value={privacySettings.currentPassword}
-                          onChange={(e) => setPrivacySettings(prev => ({ ...prev, currentPassword: e.target.value }))}
-                          placeholder="Enter current password"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="currentPassword"
+                            type={privacySettings.showPassword ? "text" : "password"}
+                            value={privacySettings.currentPassword}
+                            onChange={(e) => setPrivacySettings(prev => ({ ...prev, currentPassword: e.target.value }))}
+                            placeholder="Enter current password"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-auto p-1"
+                            onClick={() => setPrivacySettings(prev => ({ ...prev, showPassword: !prev.showPassword }))}
+                          >
+                            {privacySettings.showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </Button>
+                        </div>
                       </div>
+                    )}
 
-                      <div className="space-y-2">
-                        <Label htmlFor="newPassword" className="text-sm">New Password</Label>
-                        <Input
-                          id="newPassword"
-                          type="password"
-                          value={privacySettings.newPassword}
-                          onChange={(e) => setPrivacySettings(prev => ({ ...prev, newPassword: e.target.value }))}
-                          placeholder="Enter new password"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="confirmPassword" className="text-sm">Confirm New Password</Label>
-                        <Input
-                          id="confirmPassword"
-                          type="password"
-                          value={privacySettings.confirmPassword}
-                          onChange={(e) => setPrivacySettings(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                          placeholder="Confirm new password"
-                        />
-                      </div>
-
-                      <Button 
-                        className="w-full"
-                        onClick={() => {
-                          if (privacySettings.newPassword !== privacySettings.confirmPassword) {
-                            toast({
-                              title: "Password Mismatch",
-                              description: "New passwords do not match.",
-                              variant: "destructive"
-                            })
-                            return
-                          }
-                          toast({
-                            title: "Password Updated",
-                            description: "Your password has been updated successfully.",
-                          })
-                          setPrivacySettings(prev => ({ 
-                            ...prev, 
-                            currentPassword: "", 
-                            newPassword: "", 
-                            confirmPassword: "" 
-                          }))
-                        }}
-                      >
-                        Send Verification Code to Email
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Two-Factor Authentication */}
-                  <div className="space-y-3 pt-6 border-t">
-                    <h3 className="text-sm font-medium">Two-Factor Authentication</h3>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">Add an extra layer of security to your account</p>
-                        <p className="text-sm text-gray-500">
-                          {privacySettings.twoFactorEnabled ? "Enabled" : "Disabled"}
+                    {!privacySettings.hasPassword && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <p className="text-sm text-blue-800">
+                          <strong>Set a password:</strong> You signed up with a social account. Setting a password will allow you to sign in directly.
                         </p>
                       </div>
-                      <Button
-                        variant={privacySettings.twoFactorEnabled ? "destructive" : "default"}
-                        size="sm"
-                        onClick={() => {
-                          setPrivacySettings(prev => ({ ...prev, twoFactorEnabled: !prev.twoFactorEnabled }))
-                          toast({
-                            title: privacySettings.twoFactorEnabled ? "2FA Disabled" : "2FA Enabled",
-                            description: `Two-factor authentication has been ${privacySettings.twoFactorEnabled ? "disabled" : "enabled"}.`,
-                          })
-                        }}
-                      >
-                        {privacySettings.twoFactorEnabled ? "Disable" : "Enable"}
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword" className="text-sm">New Password</Label>
+                      <Input
+                        id="newPassword"
+                        type={privacySettings.showPassword ? "text" : "password"}
+                        value={privacySettings.newPassword}
+                        onChange={(e) => setPrivacySettings(prev => ({ ...prev, newPassword: e.target.value }))}
+                        placeholder="Enter new password (min 8 characters)"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword" className="text-sm">Confirm New Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        type={privacySettings.showPassword ? "text" : "password"}
+                        value={privacySettings.confirmPassword}
+                        onChange={(e) => setPrivacySettings(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        placeholder="Confirm new password"
+                      />
+                    </div>
+
+                    <Button 
+                      className="w-full"
+                      onClick={handlePasswordChange}
+                      disabled={!privacySettings.newPassword || !privacySettings.confirmPassword || (privacySettings.hasPassword && !privacySettings.currentPassword)}
+                    >
+                      {privacySettings.hasPassword ? "Update Password" : "Set Password"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Two-Factor Authentication */}
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Two-Factor Authentication
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Add an extra layer of security to your account with 2FA.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 p-4 sm:p-6">
+                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <div>
+                      <p className="text-sm font-medium">
+                        Two-Factor Authentication is {privacySettings.twoFactorEnabled ? "Enabled" : "Disabled"}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {privacySettings.twoFactorEnabled 
+                          ? "Your account is protected with 2FA" 
+                          : "Enable 2FA to secure your account"
+                        }
+                      </p>
+                    </div>
+                    {!privacySettings.twoFactorEnabled ? (
+                      <Button onClick={handle2FASetup} size="sm">
+                        Enable 2FA
+                      </Button>
+                    ) : (
+                      <Button variant="destructive" size="sm" onClick={() => setPrivacySettings(prev => ({ ...prev, verificationCode: "" }))}>
+                        Disable 2FA
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* QR Code for 2FA Setup */}
+                  {privacySettings.qrCode && (
+                    <div className="space-y-4 p-4 border border-blue-200 rounded-lg bg-blue-50">
+                      <h4 className="font-medium text-sm">Setup Two-Factor Authentication</h4>
+                      <div className="flex flex-col items-center space-y-4">
+                        <img src={privacySettings.qrCode} alt="QR Code for 2FA" className="w-48 h-48" />
+                        <div className="text-center text-sm text-gray-600">
+                          <p>1. Open your authenticator app (Google Authenticator, Authy, etc.)</p>
+                          <p>2. Scan this QR code</p>
+                          <p>3. Enter the verification code below</p>
+                        </div>
+                        <div className="flex gap-2 w-full">
+                          <Input
+                            placeholder="Enter verification code"
+                            value={privacySettings.verificationCode}
+                            onChange={(e) => setPrivacySettings(prev => ({ ...prev, verificationCode: e.target.value }))}
+                          />
+                          <Button onClick={handle2FAVerify}>Verify</Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 2FA Disable Form */}
+                  {privacySettings.twoFactorEnabled && !privacySettings.qrCode && (
+                    <div className="space-y-4 p-4 border border-red-200 rounded-lg bg-red-50">
+                      <h4 className="font-medium text-sm text-red-800">Disable Two-Factor Authentication</h4>
+                      <p className="text-sm text-red-600">
+                        Enter a verification code from your authenticator app to disable 2FA.
+                      </p>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Enter verification code"
+                          value={privacySettings.verificationCode}
+                          onChange={(e) => setPrivacySettings(prev => ({ ...prev, verificationCode: e.target.value }))}
+                        />
+                        <Button variant="destructive" onClick={handle2FADisable}>
+                          Disable 2FA
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Data Management */}
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Data Management
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Export your data in different formats or manage your account information.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 p-4 sm:p-6">
+                  <div className="space-y-4">
+                    {/* PDF Export */}
+                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium">Export as PDF Report</p>
+                        <p className="text-sm text-gray-500">
+                          Download a formatted PDF report of your profile and activity
+                        </p>
+                      </div>
+                      <Button variant="default" onClick={handlePDFExport}>
+                        <Download className="w-4 h-4 mr-2" />
+                        Export PDF
                       </Button>
                     </div>
-                  </div>
 
-                  {/* Data Management */}
-                  <div className="space-y-3 pt-6 border-t">
-                    <h3 className="text-sm font-medium">Data Management</h3>
-                    
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">Export Your Data</p>
-                          <p className="text-sm text-gray-500">Download a copy of all your profile data and activity</p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            toast({
-                              title: "Export Started",
-                              description: "Your data export has been initiated. You'll receive an email when ready.",
-                            })
-                          }}
-                        >
-                          Export Data
-                        </Button>
+
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Danger Zone */}
+              <Card className="border-red-200">
+                <CardHeader className="p-4 sm:p-6 bg-red-50">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-red-700">
+                    <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Danger Zone
+                  </CardTitle>
+                  <CardDescription className="text-sm text-red-600">
+                    Permanently delete your account and all associated data. This action cannot be undone.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 p-4 sm:p-6">
+                  <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-red-800">
+                          Type "DELETE MY ACCOUNT" to confirm:
+                        </Label>
+                        <Input
+                          value={privacySettings.deleteConfirmText}
+                          onChange={(e) => setPrivacySettings(prev => ({ ...prev, deleteConfirmText: e.target.value }))}
+                          placeholder="DELETE MY ACCOUNT"
+                          className="border-red-300"
+                        />
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Danger Zone */}
-                  <div className="space-y-3 pt-6 border-t border-red-200">
-                    <h3 className="text-sm font-medium text-red-600">Danger Zone</h3>
-                    
-                    <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-red-800">Delete Account</p>
-                          <p className="text-sm text-red-600">
-                            Permanently delete your account and all associated data. This action cannot be undone.
+                      {privacySettings.hasPassword && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-red-800">
+                            Enter your password to confirm:
+                          </Label>
+                          <Input
+                            type="password"
+                            value={privacySettings.deletePassword}
+                            onChange={(e) => setPrivacySettings(prev => ({ ...prev, deletePassword: e.target.value }))}
+                            placeholder="Enter your password"
+                            className="border-red-300"
+                          />
+                        </div>
+                      )}
+
+                      {!privacySettings.hasPassword && privacySettings.hasSocialAccount && (
+                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                          <p className="text-sm text-yellow-800">
+                            <strong>Social Account:</strong> Since you signed up with a social account, only confirmation text is required for deletion.
                           </p>
                         </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => {
-                            toast({
-                              title: "Account Deletion",
-                              description: "Please contact support to delete your account.",
-                              variant: "destructive"
-                            })
-                          }}
-                        >
-                          Delete Account
-                        </Button>
-                      </div>
+                      )}
+
+                      <Button 
+                        variant="destructive" 
+                        className="w-full"
+                        onClick={handleAccountDeletion}
+                        disabled={
+                          privacySettings.deleteConfirmText !== "DELETE MY ACCOUNT" || 
+                          (privacySettings.hasPassword && !privacySettings.deletePassword)
+                        }
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Account Permanently
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -1695,6 +2404,55 @@ function EditProfileContent() {
           </div>
         </main>
       </div>
+
+      {/* Account Deletion Confirmation Dialog */}
+      <Dialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              Final Warning - Account Deletion
+            </DialogTitle>
+            <DialogDescription className="text-left space-y-3 pt-2">
+              <div className="space-y-3">
+                <div className="font-semibold text-red-800">
+                  This action will PERMANENTLY delete your account and ALL associated data including:
+                </div>
+                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                  <li>All your posts and comments</li>
+                  <li>Your profile information</li>
+                  <li>Your connections and activity history</li>
+                  <li>All uploaded files and images</li>
+                </ul>
+                <div className="font-bold text-red-800 bg-red-50 p-3 rounded border border-red-200">
+                  ⚠️ This action CANNOT be undone!
+                </div>
+                <div className="text-gray-800 font-medium">
+                  Are you absolutely sure you want to proceed?
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteConfirmation(false)}
+              className="w-full sm:w-auto"
+            >
+              Cancel - Keep My Account
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmAccountDeletion}
+              className="w-full sm:w-auto"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Yes, Delete Permanently
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </AuthGuard>
   )
 }

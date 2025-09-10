@@ -73,6 +73,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
             startDate: 'desc'
           }
         },
+        // Social accounts information
+        Account: {
+          select: {
+            provider: true
+          }
+        },
         userBadges: {
           include: {
             badges: true
@@ -200,6 +206,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         notifyOnNewPost: user.notifyOnNewPost,
         notifyOnSystem: user.notifyOnSystem,
         emailDigest: user.emailDigest,
+        // Add password and account info for privacy settings
+        password: user.password, // Include password field to check if user has one
+        twoFactorEnabled: user.twoFactorEnabled,
+        Account: user.Account, // Include social accounts info
       }),
     }
 

@@ -236,6 +236,10 @@ model users {
   notifyOnNewPost   Boolean          @default(false) // Email for new posts in followed categories
   notifyOnSystem    Boolean          @default(true)  // Email for system notifications
   emailDigest       EmailDigestFreq  @default(DISABLED) // Weekly/daily digest emails
+  
+  // Two-Factor Authentication
+  twoFactorEnabled  Boolean          @default(false) // Whether 2FA is enabled
+  twoFactorSecret   String?                          // 2FA secret key
   behanceUrl        String?
   dribbbleUrl       String?
   otherSocialUrl    String?
