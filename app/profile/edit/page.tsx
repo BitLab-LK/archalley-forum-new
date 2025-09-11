@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ArrowLeft, Save, Plus, X, Briefcase, GraduationCap, ExternalLink, User, Camera, Mail, Shield, Eye, EyeOff, Download, Trash2, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
@@ -1090,6 +1090,45 @@ function EditProfileContent() {
       toast({
         title: "PDF Export Failed",
         description: error instanceof Error ? error.message : 'Failed to generate PDF',
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleZipExport = async () => {
+    try {
+      const response = await fetch(`/api/users/${user?.id}/export-zip-data`, {
+        method: 'POST'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export data')
+      }
+
+      // Get the ZIP file as a blob
+      const blob = await response.blob()
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.style.display = 'none'
+      a.href = url
+      a.download = `archalley_forum_complete_export_${new Date().toISOString().split('T')[0]}.zip`
+      
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      toast({
+        title: "ZIP Export Complete",
+        description: "Your complete data archive (posts, images, and profile) has been downloaded successfully."
+      })
+
+    } catch (error) {
+      toast({
+        title: "ZIP Export Failed", 
+        description: error instanceof Error ? error.message : 'Failed to generate ZIP archive',
         variant: "destructive"
       })
     }
@@ -2317,6 +2356,19 @@ function EditProfileContent() {
                       </Button>
                     </div>
 
+                    {/* ZIP Export */}
+                    <div className="flex items-center justify-between p-4 border border-blue-200 rounded-lg bg-blue-50">
+                      <div>
+                        <p className="text-sm font-medium text-blue-900">Complete Data Archive</p>
+                        <p className="text-sm text-blue-700">
+                          Download all your posts, images, and profile data in a ZIP archive
+                        </p>
+                      </div>
+                      <Button variant="outline" onClick={handleZipExport} className="border-blue-300 text-blue-700 hover:bg-blue-100">
+                        <Download className="w-4 h-4 mr-2" />
+                        Export ZIP
+                      </Button>
+                    </div>
 
                   </div>
                 </CardContent>
