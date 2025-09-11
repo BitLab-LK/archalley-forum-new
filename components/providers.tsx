@@ -13,7 +13,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       refetchWhenOffline={false}
     >
       <MantineProvider>
-        <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" disableTransitionOnChange>
           <AuthProvider>
             <SidebarProvider>
               {children}
