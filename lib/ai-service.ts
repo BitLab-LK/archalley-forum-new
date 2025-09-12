@@ -17,10 +17,10 @@ const model = genAI ? genAI.getGenerativeModel({
   }
 }) : null
 
-// Legacy available categories for fallback
-const LEGACY_CATEGORIES = [
+// Fallback categories when database is unavailable
+const FALLBACK_CATEGORIES = [
   "Business",
-  "Design",
+  "Design", 
   "Career",
   "Construction",
   "Academic",
@@ -35,7 +35,7 @@ interface TranslationResult {
 
 interface AIClassification {
   category: string
-  categories?: string[]  // Multiple AI-suggested categories
+  categories?: string[]
   tags: string[]
   confidence: number
   originalLanguage: string
@@ -97,12 +97,6 @@ Return the response in this exact JSON format:
       }
     }
 
-    console.log("✅ Translation successful:", {
-      original: text.substring(0, 100) + "...",
-      translated: data.translatedText.substring(0, 100) + "...",
-      detectedLanguage: data.detectedLanguage
-    })
-
     return {
       translatedText: data.translatedText,
       detectedLanguage: data.detectedLanguage
@@ -123,22 +117,19 @@ Return the response in this exact JSON format:
 
 export async function classifyPost(content: string, availableCategories?: string[]): Promise<AIClassification> {
   try {
-    // Use passed categories or fallback to legacy categories
-    const categories = availableCategories || LEGACY_CATEGORIES
+    const categories = availableCategories || FALLBACK_CATEGORIES
     
-    // Check if API key and model are available
     if (!API_KEY || !model) {
       console.warn("Google Gemini API key not configured, using default classification")
       return {
         category: "Other",
+        categories: ["Other"],
         tags: [],
         confidence: 0,
         originalLanguage: "English",
         translatedContent: content
       }
     }
-
-    console.log("🚀 Starting AI classification for content:", content.substring(0, 100) + "...")
 
     // Step 1: Detect language and translate if needed
     const { translatedText, detectedLanguage } = await detectAndTranslate(content)
@@ -161,12 +152,6 @@ ANALYSIS INSTRUCTIONS:
 7. For academic, research, educational content → include "Academic"
 8. For tutorials, guides, informational content → include "Informative"
 
-EXAMPLE MAPPINGS:
-- "starting a construction company and budgeting" → ["Construction", "Business"]
-- "career advice for civil engineers" → ["Career", "Construction"] 
-- "freelance consulting in construction industry" → ["Business", "Career"]
-- "interior design concepts" → ["Design"]
-
 MANDATORY JSON RESPONSE FORMAT:
 {
   "categories": ["Category1", "Category2"],
@@ -176,44 +161,30 @@ MANDATORY JSON RESPONSE FORMAT:
 
 CRITICAL: Always return categories as an array, even for single categories. If content clearly spans multiple domains, you MUST include multiple categories.`
 
-    console.log("🤖 Calling Gemini API for classification...")
     const result = await model.generateContent(prompt)
     const response = await result.response
     const responseText = response.text()
 
-    console.log("📝 Raw classification response:", responseText)
-
     // Parse the JSON response
     const classificationResponse = extractJsonFromMarkdown(responseText) as any
-    
-    console.log("🔍 Parsed classification response:", JSON.stringify(classificationResponse, null, 2))
 
     // Handle both old format (single category) and new format (multiple categories)
     let resultCategories: string[] = []
     
     if (Array.isArray(classificationResponse.categories)) {
-      // New format with multiple categories
       resultCategories = classificationResponse.categories
-      console.log("✅ Found categories array:", resultCategories)
     } else if (classificationResponse.category) {
-      // Old format with single category - convert to array
       resultCategories = [classificationResponse.category]
-      console.log("🔧 Converting single category to array:", resultCategories)
     } else {
-      console.warn("❌ No categories found in response")
       resultCategories = ["Other"]
     }
 
-    // Ensure we have tags
     const resultTags = Array.isArray(classificationResponse.tags) ? classificationResponse.tags : []
-    
-    console.log("🏷️ Final tags:", resultTags)
 
     // Validate and filter categories
     const validCategories = resultCategories
       .map((cat: string) => cat.trim())
       .map((cat: string) => {
-        // Find exact match (case-insensitive)
         const matchedCategory = categories.find(
           (availableCat: string) => availableCat.toLowerCase() === cat.toLowerCase()
         )
@@ -221,14 +192,8 @@ CRITICAL: Always return categories as an array, even for single categories. If c
       })
       .filter((cat: string | null) => cat !== null) as string[]
 
-    console.log("🔍 Valid categories after filtering:", validCategories)
-
     // If no valid categories found, use fallback logic
     if (validCategories.length === 0) {
-      console.warn(`No valid categories found in response:`, resultCategories)
-      console.warn(`Available categories:`, categories)
-      
-      // Try to find any category that contains the first suggested category as substring
       let fallbackCategory = "Other"
       if (resultCategories.length > 0) {
         const firstSuggestion = resultCategories[0].toLowerCase()
@@ -240,9 +205,7 @@ CRITICAL: Always return categories as an array, even for single categories. If c
           fallbackCategory = partialMatch
         }
       }
-      
       validCategories.push(fallbackCategory)
-      console.log(`Using fallback category: "${fallbackCategory}"`)
     }
 
     // Create final classification result with forced multiple categories for certain content
@@ -256,34 +219,27 @@ CRITICAL: Always return categories as an array, even for single categories. If c
     const hasDesign = contentLower.includes('design') || contentLower.includes('interior') || contentLower.includes('architecture')
     const hasAcademic = contentLower.includes('degree') || contentLower.includes('student') || contentLower.includes('university') || contentLower.includes('study')
     
-    console.log("🔍 Content analysis:", { hasConstruction, hasBusiness, hasCareer, hasDesign, hasAcademic })
-    
     // Force multiple categories based on content analysis
     const forcedCategories = new Set(finalCategories)
     
     if (hasConstruction && hasBusiness && categories.includes('Construction') && categories.includes('Business')) {
       forcedCategories.add('Construction')
       forcedCategories.add('Business')
-      console.log("🔧 FORCED: Adding Construction + Business")
     }
     if (hasCareer && hasAcademic && categories.includes('Career') && categories.includes('Academic')) {
       forcedCategories.add('Career')
       forcedCategories.add('Academic')
-      console.log("🔧 FORCED: Adding Career + Academic")
     }
     if (hasCareer && hasBusiness && categories.includes('Career') && categories.includes('Business')) {
       forcedCategories.add('Career')
       forcedCategories.add('Business')
-      console.log("🔧 FORCED: Adding Career + Business")
     }
     if (hasDesign && hasConstruction && categories.includes('Design') && categories.includes('Construction')) {
       forcedCategories.add('Design')
       forcedCategories.add('Construction')
-      console.log("🔧 FORCED: Adding Design + Construction")
     }
     
     finalCategories = Array.from(forcedCategories)
-    console.log("🎯 Final categories after forcing:", finalCategories)
 
     const classification: AIClassification = {
       category: finalCategories[0], // Primary category
@@ -294,22 +250,11 @@ CRITICAL: Always return categories as an array, even for single categories. If c
       translatedContent: translatedText
     }
 
-    console.log("✅ Classification successful:", {
-      primaryCategory: classification.category,
-      allCategories: classification.categories,
-      tags: classification.tags,
-      confidence: classification.confidence,
-      originalLanguage
-    })
-
     return classification
+    return classification
+
   } catch (error) {
-    console.error("❌ AI classification error:", {
-      error,
-      message: error instanceof Error ? error.message : "Unknown error",
-      details: error instanceof Error ? error.stack : undefined
-    })
-    // Return a default classification in case of error
+    console.error("AI classification error:", error)
     return {
       category: "Other",
       categories: ["Other"],
@@ -330,7 +275,7 @@ export async function testAIService(): Promise<boolean> {
     }
 
     console.log("🧪 Testing AI service...")
-    const testResult = await classifyPost("This is a test post about architecture and design.", LEGACY_CATEGORIES)
+    const testResult = await classifyPost("This is a test post about architecture and design.", FALLBACK_CATEGORIES)
     
     if (testResult.category && testResult.tags.length > 0) {
       console.log("✅ AI service test successful:", testResult)

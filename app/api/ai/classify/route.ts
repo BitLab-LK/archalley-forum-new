@@ -47,18 +47,8 @@ export async function POST(req: Request) {
       })
       
       const categoryNames = categories.map(cat => cat.name)
-      console.log("📋 Available categories:", categoryNames)
-
       // Get AI classification with dynamic categories
       const classification = await classifyPost(content, categoryNames)
-
-      console.log("✅ Classification completed:", {
-        primaryCategory: classification.category,
-        allCategories: classification.categories,
-        tagsCount: classification.tags.length,
-        confidence: classification.confidence,
-        originalLanguage: classification.originalLanguage
-      })
 
       return NextResponse.json(classification)
     } catch (dbError) {
@@ -66,14 +56,6 @@ export async function POST(req: Request) {
       
       // Fallback to AI classification without dynamic categories
       const classification = await classifyPost(content)
-      
-      console.log("✅ Classification completed (fallback):", {
-        primaryCategory: classification.category,
-        allCategories: classification.categories,
-        tagsCount: classification.tags.length,
-        confidence: classification.confidence,
-        originalLanguage: classification.originalLanguage
-      })
 
       return NextResponse.json(classification)
     }

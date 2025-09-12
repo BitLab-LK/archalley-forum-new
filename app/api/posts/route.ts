@@ -32,39 +32,21 @@ export async function POST(request: Request) {
   }
 
   try {
-    console.log("🚀 POST /api/posts - Starting request")
-    console.log("🔍 Request headers:", Object.fromEntries(request.headers.entries()))
-    
     const session = await getServerSession(authOptions)
-    console.log("🔍 Session status:", {
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      userId: session?.user?.id,
-      userEmail: session?.user?.email
-    })
     
     if (!session?.user) {
-      console.log("❌ Unauthorized request - no valid session")
       return NextResponse.json(
         { 
           error: "Unauthorized", 
-          message: "Please log in to create a post",
-          debug: {
-            hasSession: !!session,
-            environment: process.env.NODE_ENV,
-            timestamp: new Date().toISOString()
-          }
+          message: "Please log in to create a post"
         }, 
         { status: 401, headers: jsonHeaders }
       )
     }
 
-    console.log("✅ User authenticated:", session.user.email)
-
     // Test database connection first
     try {
       await prisma.$connect()
-      console.log("✅ Database connected")
     } catch (dbError) {
       console.error("❌ Database connection failed:", dbError)
       return NextResponse.json(
@@ -99,14 +81,6 @@ export async function POST(request: Request) {
     const tags = formData.get("tags") as string
     const originalLanguage = formData.get("originalLanguage") as string || "English"
 
-    console.log("📝 Post data:", {
-      content: content?.substring(0, 100) + (content?.length > 100 ? "..." : ""),
-      categoryId,
-      isAnonymous,
-      originalLanguage,
-      hasContent: !!content
-    })
-
     // Validate input
     const validationResult = createPostSchema.safeParse({
       content,
@@ -117,14 +91,11 @@ export async function POST(request: Request) {
     })
 
     if (!validationResult.success) {
-      console.error("Validation error:", validationResult.error.format())
-      console.error("Received data:", { content: !!content, categoryId, isAnonymous, tags, originalLanguage })
       return NextResponse.json(
         { 
           error: "Invalid input", 
           details: validationResult.error.format(),
-          message: "Please check your input and try again",
-          received: { content: !!content, categoryId: !!categoryId, isAnonymous, tags: !!tags }
+          message: "Please check your input and try again"
         },
         { status: 400, headers: jsonHeaders }
       )
@@ -151,23 +122,18 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log("🤖 Starting AI processing...")
-
     // Step 1: Translate content to English for AI processing (if needed)
     let translatedContent = data.content
     if (data.originalLanguage && data.originalLanguage.toLowerCase() !== 'english') {
-      console.log(`🌐 Translating from ${data.originalLanguage} to English...`)
       try {
         translatedContent = await geminiService.translateToEnglish(data.content, data.originalLanguage)
-        console.log("✅ Translation completed")
       } catch (error) {
-        console.error("⚠️ Translation failed, using original content:", error)
+        console.error("Translation failed, using original content:", error)
         translatedContent = data.content
       }
     }
 
     // Step 2: Get AI category suggestions
-    console.log("🎯 Getting AI category suggestions...")
     let aiCategorySuggestion
     try {
       const categoryNames = allCategories.map(cat => cat.name)
@@ -180,17 +146,15 @@ export async function POST(request: Request) {
         confidence: classification.confidence,
         reasoning: `AI classification with ${classification.confidence} confidence`
       }
-      console.log("✅ AI categorization completed:", aiCategorySuggestion)
     } catch (error) {
-      console.error("⚠️ AI categorization failed:", error)
+      console.error("AI categorization failed:", error)
       
       // Fallback to gemini service if AI service fails
       try {
         const categoryNames = allCategories.map(cat => cat.name)
         aiCategorySuggestion = await geminiService.categorizeContent(translatedContent, categoryNames)
-        console.log("✅ AI categorization completed (fallback):", aiCategorySuggestion)
       } catch (fallbackError) {
-        console.error("⚠️ Fallback categorization also failed:", fallbackError)
+        console.error("Fallback categorization also failed:", fallbackError)
         aiCategorySuggestion = {
           categories: [primaryCategory.name],
           confidence: 0.1,
@@ -200,7 +164,6 @@ export async function POST(request: Request) {
     }
 
     // Create post with AI categories and translation info
-    console.log("💾 Creating post in database...")
     const post = await prisma.$transaction(async (tx) => {
       // Create the post
       const newPost = await tx.post.create({
@@ -241,7 +204,6 @@ export async function POST(request: Request) {
           await tx.postCategory.createMany({
             data: postCategoryData
           })
-          console.log(`✅ Created ${postCategoryData.length} category associations for post`)
         }
       }
       
@@ -253,8 +215,6 @@ export async function POST(request: Request) {
 
       return newPost
     })
-
-    console.log("✅ Post created successfully with AI categorization")
 
     // Fetch the complete post with relationships
     const completePost = await prisma.post.findUnique({
