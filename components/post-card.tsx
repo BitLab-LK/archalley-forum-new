@@ -218,14 +218,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
 
   // Memoized callbacks
   const handleDelete = useCallback(async () => {
-    setIsDeleting(true)
-    
-    if (onDelete) {
-      await onDelete()
-      setIsDeleting(false)
-      return
-    }
-    
+    // Always show confirmation dialog first
     const confirmed = await confirm({
       title: "Delete Post",
       description: "Are you sure you want to delete this post? This action cannot be undone.",
@@ -235,10 +228,20 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     })
     
     if (!confirmed) {
+      return
+    }
+    
+    // Only set deleting state AFTER confirmation
+    setIsDeleting(true)
+    
+    // If onDelete prop exists, use it
+    if (onDelete) {
+      await onDelete()
       setIsDeleting(false)
       return
     }
     
+    // Otherwise, handle deletion ourselves
     try {
       const response = await fetch(`/api/posts/${post.id}`, {
         method: "DELETE",
@@ -251,11 +254,25 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
         setIsDeleting(false)
         throw new Error(errorData.error || "Failed to delete post")
       }
+      
+      // Show success message
+      toast({
+        title: "Success",
+        description: "Post deleted successfully",
+      })
+      
+      // Refresh the page to update the post list
+      window.location.reload()
     } catch (error) {
       console.error("Error deleting post:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive"
+      })
       setIsDeleting(false)
     }
-  }, [onDelete, post.id])
+  }, [onDelete, post.id, confirm, toast])
 
   const handleCommentAdded = useCallback(() => {
     const newCount = commentCount + 1
@@ -609,10 +626,15 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                     {canDelete && (
                       <DropdownMenuItem
                         className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                        onClick={handleDelete}
+                        onClick={async () => {
+                          if (!isDeleting) {
+                            await handleDelete()
+                          }
+                        }}
+                        disabled={isDeleting}
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
-                        {isAdmin && !isAuthor ? "Delete Post (Admin)" : "Delete Post"}
+                        {isDeleting ? "Deleting..." : (isAdmin && !isAuthor ? "Delete Post (Admin)" : "Delete Post")}
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem>
@@ -688,7 +710,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                 className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 sm:px-3 flex-shrink-0"
               >
                 <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                <span className="text-xs sm:text-sm">{commentCount} Comments</span>
+                <span className="text-xs sm:text-sm">Comment{commentCount > 0 ? ` ${commentCount}` : ''}</span>
               </Button>
 
               {/* Share button */}

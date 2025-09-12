@@ -1,14 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
 interface ConfirmDialogState {
@@ -39,6 +31,7 @@ export function useConfirmDialog() {
     variant?: "default" | "destructive"
   } = {}) => {
     return new Promise<boolean>((resolve) => {
+      console.log("Confirmation dialog requested:", title) // Debug log
       setDialogState({
         isOpen: true,
         title,
@@ -47,10 +40,12 @@ export function useConfirmDialog() {
         cancelText,
         variant,
         onConfirm: () => {
+          console.log("Dialog confirmed") // Debug log
           setDialogState(null)
           resolve(true)
         },
         onCancel: () => {
+          console.log("Dialog cancelled") // Debug log
           setDialogState(null)
           resolve(false)
         }
@@ -70,31 +65,43 @@ export function ConfirmDialogProvider({ children }: { children: React.ReactNode 
   return (
     <>
       {children}
-      <Dialog open={dialogState?.isOpen || false} onOpenChange={(open) => {
-        if (!open && dialogState) {
-          dialogState.onCancel()
-        }
-      }}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{dialogState?.title}</DialogTitle>
-            <DialogDescription>
-              {dialogState?.description}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={dialogState?.onCancel}>
-              {dialogState?.cancelText}
-            </Button>
-            <Button 
-              variant={dialogState?.variant} 
-              onClick={dialogState?.onConfirm}
-            >
-              {dialogState?.confirmText}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {dialogState?.isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999999]"
+          style={{ zIndex: 9999999 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              dialogState.onCancel()
+            }
+          }}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 z-[9999999]"
+            style={{ zIndex: 9999999 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                {dialogState.title}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {dialogState.description}
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={dialogState.onCancel}>
+                {dialogState.cancelText}
+              </Button>
+              <Button 
+                variant={dialogState.variant} 
+                onClick={dialogState.onConfirm}
+              >
+                {dialogState.confirmText}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

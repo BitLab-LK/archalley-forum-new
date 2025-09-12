@@ -900,6 +900,60 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
     )
   }
 
+  // Handle post deletion
+  const handleDeletePost = async () => {
+    const confirmed = await confirm({
+      title: "Delete Post",
+      description: "Are you sure you want to delete this post? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      variant: "destructive"
+    })
+    
+    if (!confirmed) {
+      return
+    }
+    
+    try {
+      const response = await fetch(`/api/posts/${post.id}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Post deleted successfully",
+        })
+        onClose() // Close the modal
+        // Optionally, you can call a callback to refresh the parent component
+        // if you need to update the post list
+        window.location.reload() // Force refresh to update post list
+      } else {
+        const errorData = await response.json()
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to delete post",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error("Error deleting post:", error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      })
+    }
+  }
+
+  // Check if user can delete this post (author or admin)
+  const canDeletePost = user && (user.id === post.author.id || user.role === "ADMIN")
+
+  // Calculate total comment count including replies
+  const totalCommentCount = comments.reduce((total, comment) => {
+    return total + 1 + (comment.replies?.length || 0)
+  }, 0)
+
   // Early return after all hooks are declared
   if (!open) return null
 
@@ -1017,6 +1071,28 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                     </div>
                   </div>
                 </div>
+                
+                {/* Delete Post Button */}
+                {canDeletePost && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="h-8 w-8 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-32">
+                      <DropdownMenuItem 
+                        onClick={async () => {
+                          await handleDeletePost()
+                        }}
+                        className="text-red-600 hover:text-red-700 focus:text-red-700 cursor-pointer flex items-center hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
 
               {/* Post Content */}
@@ -1068,9 +1144,11 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                     <ThumbsDown className={cn("w-5 h-5", userVote === "down" && "scale-110")} />
                     {downvotes > 0 && <span className="text-sm">{downvotes}</span>}
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium">
-                    <MessageCircle className="w-5 h-5" />
-                    <span className="font-medium">Comment</span>
+                  <button className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium min-w-0">
+                    <MessageCircle className="w-5 h-5 flex-shrink-0" />
+                    <span className="text-sm whitespace-nowrap font-semibold text-gray-900 dark:text-white">
+                      Comment{totalCommentCount > 0 ? ` ${totalCommentCount}` : ''}
+                    </span>
                   </button>
                   <ShareDropdown 
                     post={post}
@@ -1164,14 +1242,40 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                   </div>
                 </div>
               </div>
-              <button 
-                onClick={onClose} 
-                className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              
+              <div className="flex items-center gap-2">
+                {/* Delete Post Button */}
+                {canDeletePost && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="h-7 w-7 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-32">
+                      <DropdownMenuItem 
+                        onClick={async () => {
+                          await handleDeletePost()
+                        }}
+                        className="text-red-600 hover:text-red-700 focus:text-red-700 cursor-pointer flex items-center hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                
+                {/* Close Button */}
+                <button 
+                  onClick={onClose} 
+                  className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
             
             {/* Scrollable Content Area - No top padding */}
@@ -1222,7 +1326,9 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                   </button>
                   <button className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95">
                     <MessageCircle className="w-5 h-5" />
-                    <span className="font-medium">Comment</span>
+                    <span className="font-medium">
+                      Comment{totalCommentCount > 0 ? ` ${totalCommentCount}` : ''}
+                    </span>
                   </button>
                   <ShareDropdown 
                     post={post}

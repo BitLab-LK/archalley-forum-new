@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/lib/auth-context"
-import { useSidebar } from "@/lib/sidebar-context"
 import { toast } from "sonner"
 
 interface Post {
@@ -65,7 +64,6 @@ function HomePageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { user } = useAuth()
-  const { refreshAll } = useSidebar() // For refreshing sidebar on post deletion
 
   const fetchPosts = async (page: number = 1) => {
     setIsLoading(true)
@@ -125,45 +123,6 @@ function HomePageContent() {
     router.push(`/?page=${newPage}`)
   }
 
-  const handleDeletePost = async (postId: string) => {
-    try {
-      // Start optimistic update - remove post immediately for smooth UX
-      const originalPosts = posts
-      setPosts(posts.filter(post => post.id !== postId))
-      
-      const response = await fetch(`/api/posts/${postId}`, {
-        method: "DELETE",
-        credentials: "include", // Ensure cookies/session are sent
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-
-      const responseBody = await response.text()
-
-      if (!response.ok) {
-        // Restore posts if deletion failed
-        setPosts(originalPosts)
-        
-        let errorData
-        try {
-          errorData = JSON.parse(responseBody)
-        } catch (e) {
-          // Could not parse response as JSON
-        }
-        throw new Error(`Failed to delete post: ${response.status} - ${errorData?.error || responseBody}`)
-      }
-
-      toast.success("Post deleted successfully")
-      
-      // Refresh sidebar data in real-time after successful deletion
-      refreshAll()
-      
-    } catch (error) {
-      toast.error("Failed to delete post")
-    }
-  }
-
   const handleCommentCountChange = (postId: string, newCount: number) => {
     setPosts(prevPosts => 
       prevPosts.map(post => 
@@ -216,23 +175,41 @@ function HomePageContent() {
           <div className="lg:col-span-2 overflow-visible animate-slide-in-up animate-stagger-1">
             <div className="animate-fade-in-up animate-stagger-2 hover-lift smooth-transition">
               <PostCreator onPostCreated={async () => {
-                // Optimistic update - just refresh without animations
+                // Immediate refresh with no delay for instant feedback
                 try {
-                  // Use a silent refresh to avoid animation restart
+                  // Force immediate refresh to get the latest posts including the new one
                   const params = new URLSearchParams({
                     page: '1',
-                    limit: '10'
+                    limit: pagination?.limit?.toString() || '10'
                   })
                   
-                  const response = await fetch(`/api/posts?${params.toString()}`)
+                  const response = await fetch(`/api/posts?${params.toString()}`, {
+                    cache: 'no-store',
+                    headers: {
+                      'Cache-Control': 'no-cache',
+                    }
+                  })
+                  
                   if (response.ok) {
                     const data = await response.json()
+                    // Update state immediately
                     setPosts(data.posts)
                     setPagination(data.pagination)
-                    // Don't reset isInitialLoad - keeps animations disabled
+                    
+                    // Scroll to top to show the new post
+                    setTimeout(() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }, 100)
+                    
+                    // Show success feedback
+                    toast.success("Post created successfully!")
+                  } else {
+                    throw new Error('Failed to refresh posts')
                   }
                 } catch (error) {
+                  console.error('Failed to refresh posts:', error)
                   // Fallback to full refresh if silent update fails
+                  toast.info("Post created! Refreshing...")
                   await fetchPosts(1)
                 }
               }} />
@@ -271,15 +248,7 @@ function HomePageContent() {
                     >
                       <PostCard 
                         post={post} 
-                        onDelete={
-                        user && (user.id === post.author.id || user.role === "ADMIN")
-                          ? async () => {
-                              // The confirmation is now handled inside PostCard
-                              handleDeletePost(post.id)
-                            }
-                          : undefined
-                      }
-                      onCommentCountChange={handleCommentCountChange}
+                        onCommentCountChange={handleCommentCountChange}
                     />
                     </div>
                   ))}

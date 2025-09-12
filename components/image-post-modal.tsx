@@ -1104,10 +1104,12 @@ export default function ImagePostModal({
                 </button>
                 <button 
                   onClick={handleCommentClick} 
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95 min-w-0"
                 >
-                  <MessageCircle className="w-5 h-5" />
-                  <span>Comment</span>
+                  <MessageCircle className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-sm whitespace-nowrap">
+                    Comment{post.comments > 0 ? ` ${post.comments}` : ''}
+                  </span>
                 </button>
                 <ShareDropdown 
                   post={post}

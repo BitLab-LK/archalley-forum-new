@@ -163,11 +163,6 @@ export default function UserProfilePage() {
   const totalUpvotes = useMemo(() => posts.reduce((sum, post) => sum + post.upvotes, 0), [posts])
   const totalDownvotes = useMemo(() => posts.reduce((sum, post) => sum + post.downvotes, 0), [posts])
 
-  // Optimized handlers with useCallback
-  const handleDeletePost = useCallback(async (postId: string) => {
-    setPosts(prevPosts => prevPosts.filter(post => post.id !== postId))
-  }, [])
-
   // Handle comment count changes - this will trigger recalculation of totals
   const handleCommentCountChange = useCallback((postId: string, newCount: number) => {
     setPosts(prevPosts => prevPosts.map(post => 
@@ -1017,7 +1012,6 @@ export default function UserProfilePage() {
                   <PostCard 
                     key={post.id} 
                     post={post}
-                    onDelete={() => handleDeletePost(post.id)}
                     onCommentCountChange={handleCommentCountChange}
                   />
                 ))}

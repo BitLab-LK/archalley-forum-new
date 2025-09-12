@@ -353,6 +353,8 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
           body: formData, // Send as FormData, not JSON
         })
 
+        // Immediately show success and reset form for instant feedback
+        toast.success("Post created successfully!")
         setAiProgress(100)
         setAiStatus("Post created successfully!")
 
@@ -362,19 +364,20 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
         resetUpload() // Reset upload state without deleting blobs
         setSelectedTags([])
         setSuggestedTags([])
-        setAiProgress(0)
-        setAiStatus("")
         
         // Clear file input
         if (fileInputRef.current) {
           fileInputRef.current.value = ""
         }
 
-        // Show success message
-        toast.success("Post created successfully!")
-        
-        // Single refresh approach - let parent handle the update
+        // Call parent callback immediately for fast refresh
         onPostCreated()
+        
+        // Clear status after a brief moment
+        setTimeout(() => {
+          setAiProgress(0)
+          setAiStatus("")
+        }, 1000)
 
       } catch (error) {
         

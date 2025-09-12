@@ -22,7 +22,6 @@ import {
   UserPlus, 
   Check, 
   CheckCheck,
-  Settings,
   X
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
@@ -232,9 +231,6 @@ export default function NotificationDropdown() {
                 Mark all read
               </Button>
             )}
-            <Button variant="ghost" size="icon" className="h-6 w-6">
-              <Settings className="h-3 w-3" />
-            </Button>
           </div>
         </DropdownMenuLabel>
         
