@@ -141,18 +141,26 @@ export async function classifyPost(content: string): Promise<AIClassification> {
     const originalLanguage = detectedLanguage
 
     // Step 2: Analyze content for category and tags
-    const prompt = `Analyze the following text and determine the most appropriate category and generate relevant tags. The category must be one of: ${AVAILABLE_CATEGORIES.join(", ")}.
+    const prompt = `Analyze the following text and determine the most appropriate category and generate relevant tags. The category must be exactly one of: ${AVAILABLE_CATEGORIES.join(", ")}.
 
 Category descriptions:
-- Business: Business strategies, entrepreneurship, and industry trends in architecture and construction
-- Design: Architectural designs, concepts, and creative inspiration
-- Career: Career advice, job opportunities, and professional development
-- Construction: Construction techniques, materials, project management, and innovations
-- Academic: Academic discussions, research, theories, and educational resources
-- Informative: News, updates, tutorials, and informational content
-- Other: General discussions that don't fit other categories
+- Business: Business strategies, entrepreneurship, marketing, finance, management, industry trends, company news, startups, economics
+- Design: Architectural designs, interior design, graphic design, UI/UX design, visual arts, creative inspiration, aesthetics
+- Career: Career advice, job opportunities, professional development, workplace issues, resume tips, interviews, hiring
+- Construction: Construction techniques, building materials, project management, engineering, infrastructure development, renovation
+- Academic: Educational content, research papers, theories, university/college topics, scholarly discussions, learning resources
+- Informative: General news, updates, how-to guides, tutorials, factual information, knowledge sharing, instructional content
+- Other: Any content that clearly doesn't fit into the above categories, miscellaneous topics, general discussions
 
 Text: "${translatedText}"
+
+Special instructions:
+1. The category MUST be one of the exact names from the list: ${AVAILABLE_CATEGORIES.join(", ")}
+2. Don't invent new categories or combine categories
+3. For general or mixed content, prefer "Other" category
+4. For news, guides, or information-sharing content, prefer "Informative" category
+5. For educational, research, or scholarly content, prefer "Academic" category
+6. Match case exactly as provided in the category list
 
 Return the response in this exact JSON format:
 {
@@ -185,12 +193,44 @@ Return the response in this exact JSON format:
 
     // Validate category
     const normalizedCategory = classification.category.trim()
-    if (!AVAILABLE_CATEGORIES.includes(normalizedCategory)) {
-      console.warn(`Invalid category "${normalizedCategory}", available categories:`, AVAILABLE_CATEGORIES)
-      classification.category = "Other"
-      classification.confidence = 0.5
+    
+    // Check if the category exists in our available categories (case-insensitive)
+    const matchedCategory = AVAILABLE_CATEGORIES.find(
+      cat => cat.toLowerCase() === normalizedCategory.toLowerCase()
+    )
+    
+    if (matchedCategory) {
+      // Use the correct casing from our defined categories
+      classification.category = matchedCategory
+      console.log(`Category matched: "${classification.category}" with confidence ${classification.confidence}`)
     } else {
-      classification.category = normalizedCategory
+      console.warn(`Invalid category "${normalizedCategory}", available categories:`, AVAILABLE_CATEGORIES)
+      
+      // Try to find the closest matching category
+      let bestMatch = "Other";
+      
+      // First check if any category is a substring of the normalized category
+      for (const category of AVAILABLE_CATEGORIES) {
+        if (normalizedCategory.toLowerCase().includes(category.toLowerCase())) {
+          bestMatch = category;
+          break;
+        }
+      }
+      
+      // If still no match, check if normalized category is a substring of any category
+      if (bestMatch === "Other") {
+        for (const category of AVAILABLE_CATEGORIES) {
+          if (category.toLowerCase().includes(normalizedCategory.toLowerCase())) {
+            bestMatch = category;
+            break;
+          }
+        }
+      }
+      
+      classification.category = bestMatch;
+      classification.confidence = 0.5;
+      
+      console.log(`Remapped invalid category "${normalizedCategory}" to "${bestMatch}"`);
     }
 
     // Add translation info

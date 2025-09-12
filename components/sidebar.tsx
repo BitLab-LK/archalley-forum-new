@@ -45,7 +45,18 @@ interface TopContributor {
 }
 
 export default function Sidebar() {
-  const [categories, setCategories] = useState<Category[]>([])
+  // Fallback categories to ensure they always display
+  const FALLBACK_CATEGORIES: Category[] = [
+    { id: "other", name: "Other", color: "bg-gray-500", icon: "📂", slug: "other", count: 0 },
+    { id: "informative", name: "Informative", color: "bg-cyan-500", icon: "ℹ️", slug: "informative", count: 0 },
+    { id: "business", name: "Business", color: "bg-blue-500", icon: "💼", slug: "business", count: 0 },
+    { id: "design", name: "Design", color: "bg-purple-500", icon: "🎨", slug: "design", count: 0 },
+    { id: "career", name: "Career", color: "bg-green-500", icon: "👔", slug: "career", count: 0 },
+    { id: "construction", name: "Construction", color: "bg-yellow-500", icon: "🏗️", slug: "construction", count: 0 },
+    { id: "academic", name: "Academic", color: "bg-indigo-500", icon: "🎓", slug: "academic", count: 0 },
+  ]
+
+  const [categories, setCategories] = useState<Category[]>(FALLBACK_CATEGORIES)
   const [isLoading, setIsLoading] = useState(true)
   const [trendingPosts, setTrendingPosts] = useState<TrendingPost[]>([])
   const [isTrendingLoading, setIsTrendingLoading] = useState(true)
@@ -117,12 +128,44 @@ export default function Sidebar() {
         }
         
         const data = await response.json()
-        setCategories(data)
+        
+        // Use API data if available, otherwise fallback to standard categories
+        if (data && Array.isArray(data) && data.length > 0) {
+          // Check if all required categories exist
+          const categoryNames = data.map((cat: Category) => cat.name.toLowerCase());
+          const requiredCategories = FALLBACK_CATEGORIES.map(cat => cat.name.toLowerCase());
+          const missingCategories = requiredCategories.filter(name => !categoryNames.includes(name));
+          
+          if (missingCategories.length > 0) {
+            console.warn('Some categories are missing from API response:', missingCategories);
+            
+            // Add missing categories from the fallback list
+            const combinedCategories = [...data];
+            
+            for (const missingCategory of missingCategories) {
+              const fallbackCategory = FALLBACK_CATEGORIES.find(
+                cat => cat.name.toLowerCase() === missingCategory
+              );
+              
+              if (fallbackCategory) {
+                combinedCategories.push(fallbackCategory);
+              }
+            }
+            
+            setCategories(combinedCategories);
+          } else {
+            setCategories(data);
+          }
+        } else {
+          console.warn('API returned empty categories, using fallback')
+          setCategories(FALLBACK_CATEGORIES)
+        }
         
       } catch (error) {
         console.error('Error fetching categories:', error)
-        // Set empty array instead of keeping old data
-        setCategories([])
+        // Always fallback to standard categories when API fails
+        console.warn('Using fallback categories due to API error')
+        setCategories(FALLBACK_CATEGORIES)
       } finally {
         setIsLoading(false)
       }
@@ -229,10 +272,10 @@ export default function Sidebar() {
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 pt-0">
+        <CardContent className="space-y-2 pt-0 px-2">
           {isLoading ? (
             // Loading skeleton
-            Array.from({ length: 5 }).map((_, index) => (
+            Array.from({ length: 7 }).map((_, index) => (
               <div key={index} className="flex items-center justify-between animate-pulse p-3 rounded-xl">
                 <div className="flex items-center space-x-3">
                   <div className="w-3 h-3 rounded-full bg-gray-200 dark:bg-gray-700" />
@@ -242,20 +285,58 @@ export default function Sidebar() {
               </div>
             ))
           ) : (
-            categories.map((category, index) => {
-              return (
-                <div 
-                  key={category.id} 
-                  className={`group flex items-center justify-between rounded-xl p-3 transition-all duration-200 cursor-pointer border border-transparent ${getCategoryLightColor(category.name)} smooth-transition hover-lift animate-slide-in-up`}
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full ${getCategoryDotColor(category.name)} ring-2 ring-white dark:ring-gray-800 group-hover:scale-110 transition-transform`} />
-                    <span className="text-sm font-medium">{category.name}</span>
+            // Display categories in a specific order - ensure all required categories are shown
+            (() => {
+              // Get categories to display - use fetched or fallback
+              const displayCategories = categories.length > 0 ? categories : FALLBACK_CATEGORIES;
+              
+              // Define the desired display order
+              const categoryOrder = [
+                "Other", 
+                "Informative", 
+                "Business", 
+                "Design", 
+                "Career", 
+                "Construction", 
+                "Academic"
+              ];
+              
+              // Sort categories by the predefined order
+              const sortedCategories = [...displayCategories].sort((a, b) => {
+                const aIndex = categoryOrder.findIndex(name => name.toLowerCase() === a.name.toLowerCase());
+                const bIndex = categoryOrder.findIndex(name => name.toLowerCase() === b.name.toLowerCase());
+                
+                // If both categories are in the order list, sort by order
+                if (aIndex !== -1 && bIndex !== -1) {
+                  return aIndex - bIndex;
+                }
+                
+                // If only one category is in the order list, prioritize it
+                if (aIndex !== -1) return -1;
+                if (bIndex !== -1) return 1;
+                
+                // Otherwise, sort alphabetically
+                return a.name.localeCompare(b.name);
+              });
+              
+              return sortedCategories.map((category, index) => {
+                // Get the appropriate colors based on the category
+                const dotColor = getCategoryDotColor(category.name);
+                
+                return (
+                  <div 
+                    key={category.id} 
+                    className={`group flex items-center rounded-xl py-2 px-4 transition-all duration-200 cursor-pointer smooth-transition hover-lift animate-slide-in-up ${getCategoryLightColor(category.name)}`}
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-3 h-3 rounded-full ${dotColor}`} />
+                      <span className="text-sm font-medium">{category.name}</span>
+                    </div>
                   </div>
-                </div>
-              )
-            })
+                );
+              });
+            })()
           )}
         </CardContent>
       </Card>

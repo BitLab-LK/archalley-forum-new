@@ -133,7 +133,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
           const categories = Array.isArray(categoriesData) ? categoriesData : (categoriesData.categories || [])
           
           if (categories && categories.length > 0) {
-            // Try to find exact match first
+            // Try to find exact match first (case insensitive)
             let foundCategory = categories.find((cat: any) => 
               cat.name.toLowerCase() === classifiedCategory.toLowerCase() ||
               cat.slug.toLowerCase() === classifiedCategory.toLowerCase()
@@ -147,33 +147,148 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
               )
             }
             
-            // If still no match, try common category mappings
+            // If still no match, try common category mappings with enhanced mappings
             if (!foundCategory) {
               const categoryMappings: Record<string, string> = {
+                // Design related
                 'architecture': 'design',
-                'interior': 'design',
+                'interior': 'design', 
                 'art': 'design',
                 'creative': 'design',
+                'graphic': 'design',
+                'illustration': 'design',
+                'ui': 'design',
+                'ux': 'design',
+                'visual': 'design',
+                'artistic': 'design',
+                
+                // Career related
                 'work': 'career',
                 'job': 'career',
                 'employment': 'career',
+                'profession': 'career',
+                'interview': 'career',
+                'resume': 'career',
+                'hiring': 'career',
+                'workplace': 'career',
+                
+                // Business related
                 'company': 'business',
                 'startup': 'business',
                 'entrepreneur': 'business',
+                'finance': 'business',
+                'marketing': 'business',
+                'management': 'business',
+                'investment': 'business',
+                'economics': 'business',
+                
+                // Construction related
                 'building': 'construction',
                 'engineering': 'construction',
-                'project': 'construction'
+                'project': 'construction',
+                'materials': 'construction',
+                'development': 'construction',
+                'infrastructure': 'construction',
+                'renovation': 'construction',
+                
+                // Academic related
+                'education': 'academic',
+                'research': 'academic',
+                'study': 'academic',
+                'university': 'academic',
+                'college': 'academic',
+                'theory': 'academic',
+                'teaching': 'academic',
+                'learning': 'academic',
+                'scholar': 'academic',
+                'paper': 'academic',
+                'thesis': 'academic',
+                'journal': 'academic',
+                'lecture': 'academic',
+                'student': 'academic',
+                'professor': 'academic',
+                'curriculum': 'academic',
+                'school': 'academic',
+                
+                // Informative related
+                'information': 'informative',
+                'news': 'informative',
+                'update': 'informative',
+                'article': 'informative',
+                'insight': 'informative',
+                'facts': 'informative',
+                'instructions': 'informative',
+                'knowledge': 'informative',
+                'tutorial': 'informative',
+                'how-to': 'informative',
+                'guide': 'informative',
+                'report': 'informative',
+                'announcement': 'informative',
+                'resource': 'informative',
+                'explanation': 'informative',
+                
+                // Other related
+                'general': 'other',
+                'miscellaneous': 'other',
+                'discussion': 'other',
+                'question': 'other',
+                'random': 'other',
+                'various': 'other',
+                'diverse': 'other',
+                'chat': 'other',
+                'talk': 'other',
+                'conversation': 'other',
+                'forum': 'other'
               }
               
-              const mappedCategory = categoryMappings[classifiedCategory.toLowerCase()]
+              // Convert to lowercase for comparison
+              const lowerClassifiedCategory = classifiedCategory.toLowerCase();
+              
+              // Try to find direct mapping first
+              let mappedCategory = categoryMappings[lowerClassifiedCategory];
+              
+              // If no direct mapping, check if any keyword appears in the classified category
+              if (!mappedCategory) {
+                for (const [keyword, category] of Object.entries(categoryMappings)) {
+                  if (lowerClassifiedCategory.includes(keyword)) {
+                    mappedCategory = category;
+                    break;
+                  }
+                }
+              }
+              
               if (mappedCategory) {
                 foundCategory = categories.find((cat: any) => 
-                  cat.slug.toLowerCase() === mappedCategory
+                  cat.slug.toLowerCase() === mappedCategory.toLowerCase() ||
+                  cat.name.toLowerCase() === mappedCategory.toLowerCase()
                 )
               }
             }
             
-            // Use found category or fallback to first available category
+            // If we still don't have a category match, try to find a category by exact name match
+            if (!foundCategory) {
+              // Try to find direct match for special categories that might be underrepresented
+              if (classifiedCategory.toLowerCase() === "other" || 
+                  classifiedCategory.toLowerCase() === "academic" || 
+                  classifiedCategory.toLowerCase() === "informative") {
+                
+                foundCategory = categories.find((cat: any) => 
+                  cat.name.toLowerCase() === classifiedCategory.toLowerCase()
+                )
+                
+                if (foundCategory) {
+                  console.log(`Direct match found for "${classifiedCategory}" category`)
+                }
+              }
+            }
+            
+            // Use found category or fallback to appropriate default
+            if (!foundCategory && classifiedCategory.toLowerCase() === "other") {
+              // Look specifically for the "Other" category
+              foundCategory = categories.find((cat: any) => cat.name.toLowerCase() === "other")
+            }
+            
+            // Final fallback to first category
             categoryId = foundCategory?.id || categories[0]?.id || ''
           }
         }

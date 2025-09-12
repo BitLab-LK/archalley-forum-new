@@ -14,13 +14,13 @@ const createCategorySchema = z.object({
 
 // Fallback categories for when database is not available
 const FALLBACK_CATEGORIES = [
-  { id: "other", name: "Other", color: "bg-gray-500", icon: "�", slug: "other", count: 15 },
+  { id: "other", name: "Other", color: "bg-gray-500", icon: "📂", slug: "other", count: 15 },
   { id: "informative", name: "Informative", color: "bg-cyan-500", icon: "ℹ️", slug: "informative", count: 8 },
-  { id: "business", name: "Business", color: "bg-blue-500", icon: "�", slug: "business", count: 6 },
-  { id: "design", name: "Design", color: "bg-purple-500", icon: "�", slug: "design", count: 4 },
-  { id: "career", name: "Career", color: "bg-green-500", icon: "�", slug: "career", count: 3 },
+  { id: "business", name: "Business", color: "bg-blue-500", icon: "💼", slug: "business", count: 6 },
+  { id: "design", name: "Design", color: "bg-purple-500", icon: "🎨", slug: "design", count: 4 },
+  { id: "career", name: "Career", color: "bg-green-500", icon: "👔", slug: "career", count: 3 },
   { id: "construction", name: "Construction", color: "bg-yellow-500", icon: "🏗️", slug: "construction", count: 2 },
-  { id: "academic", name: "Academic", color: "bg-indigo-500", icon: "�", slug: "academic", count: 1 },
+  { id: "academic", name: "Academic", color: "bg-indigo-500", icon: "🎓", slug: "academic", count: 1 },
 ]
 
 export async function GET(request: NextRequest) {
@@ -123,13 +123,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("[CATEGORIES_GET]", error)
     
-    // If it's a database error, return fallback data
-    if (error instanceof Error && error.message.includes('database')) {
-      console.warn("Database error, returning fallback categories")
-      return NextResponse.json(FALLBACK_CATEGORIES)
-    }
-    
-    return new NextResponse("Internal Error", { status: 500 })
+    // Always return fallback categories on any error to ensure UI consistency
+    console.warn("Error occurred, returning fallback categories")
+    return NextResponse.json(FALLBACK_CATEGORIES)
   }
 }
 
