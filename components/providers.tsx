@@ -3,6 +3,7 @@ import { MantineProvider } from "@mantine/core";
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/lib/auth-context"
 import { SidebarProvider } from "@/lib/sidebar-context"
+import { SocketProvider } from "@/lib/socket-context"
 import { SessionProvider } from "next-auth/react"
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -16,7 +17,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" disableTransitionOnChange>
           <AuthProvider>
             <SidebarProvider>
-              {children}
+              <SocketProvider>
+                {children}
+              </SocketProvider>
             </SidebarProvider>
           </AuthProvider>
         </ThemeProvider>

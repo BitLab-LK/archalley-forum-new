@@ -20,6 +20,14 @@ const predefinedCategories = [
     slug: 'design'
   },
   {
+    id: 'informative',
+    name: 'Informative',
+    description: 'Educational content, tutorials, and informational resources',
+    color: '#0D9488', // Teal
+    icon: '📚',
+    slug: 'informative'
+  },
+  {
     id: 'career',
     name: 'Career',
     description: 'Career development, professional growth, and networking',

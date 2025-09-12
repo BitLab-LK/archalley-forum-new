@@ -7,13 +7,14 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MapPin, Calendar, CheckCircle, ArrowLeft, Edit, MessageCircle, Phone, Mail, Building, Briefcase, GraduationCap, ExternalLink, Users, Trophy, User, LinkIcon, Shield, Camera, Share2 } from "lucide-react"
+import { MapPin, Calendar, CheckCircle, ArrowLeft, Edit, MessageCircle, Phone, Mail, Building, Briefcase, GraduationCap, ExternalLink, Users, Trophy, User } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { shouldShowField, type PrivacyContext } from "@/lib/privacy-utils"
 import PostCard from "@/components/post-card"
 import ActivityFeed from "@/components/activity-feed"
 import { PostBadges } from "@/components/post-badges"
+import ShareProfileDropdown from "@/components/share-profile-dropdown"
 
 interface UserBadge {
   id: string
@@ -96,7 +97,10 @@ interface Post {
   timeAgo: string
   images?: string[]
   topComment?: {
-    author: string
+    author: {
+      name: string
+      image?: string
+    }
     content: string
     upvotes: number
     downvotes: number
@@ -169,15 +173,6 @@ export default function UserProfilePage() {
     setPosts(prevPosts => prevPosts.map(post => 
       post.id === postId 
         ? { ...post, comments: newCount }
-        : post
-    ))
-  }, [])
-
-  // Handle vote changes - this will trigger recalculation of totals
-  const handleVoteChange = useCallback((postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => {
-    setPosts(prevPosts => prevPosts.map(post => 
-      post.id === postId 
-        ? { ...post, upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
         : post
     ))
   }, [])
@@ -335,14 +330,25 @@ export default function UserProfilePage() {
                   </div>
                 </div>
                 
-                {/* Edit Button */}
+                {/* Edit and Share Buttons */}
                 {isOwnProfile && (
-                  <Link href={`/profile/edit`}>
-                    <Button variant="outline" size="sm" className="ml-2 px-2 py-1 text-xs smooth-transition hover-lift">
-                      <Edit className="w-3 h-3 mr-1" />
-                      Edit
-                    </Button>
-                  </Link>
+                  <div className="flex flex-col gap-1">
+                    <Link href={`/profile/edit`}>
+                      <Button variant="outline" size="sm" className="ml-2 px-2 py-1 text-xs smooth-transition hover-lift">
+                        <Edit className="w-3 h-3 mr-1" />
+                        Edit
+                      </Button>
+                    </Link>
+                    <div className="ml-2">
+                      <ShareProfileDropdown 
+                        user={user}
+                        variant="outline"
+                        size="sm"
+                        showLabel={false}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
                 )}
                 {!isOwnProfile && (currentUser?.role === 'ADMIN' || currentUser?.isAdmin) && (
                   <Badge variant="outline" className="ml-2 text-xs smooth-transition hover:scale-105">
@@ -408,12 +414,20 @@ export default function UserProfilePage() {
                   </div>
                   
                   {isOwnProfile && (
-                    <Link href={`/profile/edit`}>
-                      <Button variant="outline" size="sm">
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Profile
-                      </Button>
-                    </Link>
+                    <div className="flex gap-2">
+                      <Link href={`/profile/edit`}>
+                        <Button variant="outline" size="sm">
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Profile
+                        </Button>
+                      </Link>
+                      <ShareProfileDropdown 
+                        user={user}
+                        variant="outline"
+                        size="sm"
+                        showLabel={true}
+                      />
+                    </div>
                   )}
                   {!isOwnProfile && (currentUser?.role === 'ADMIN' || currentUser?.isAdmin) && (
                     <Badge variant="outline">
@@ -484,10 +498,11 @@ export default function UserProfilePage() {
         {/* Profile Tabs */}
         <Tabs defaultValue="overview" className="w-full animate-fade-in-up animate-delay-300">
           <div className="overflow-x-auto">
-            <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-4' : 'grid-cols-3'} min-w-max sm:min-w-0 smooth-transition hover-lift`}>
+            <TabsList className={`grid w-full grid-cols-3 min-w-max sm:min-w-0 smooth-transition hover-lift`}>
               <TabsTrigger value="overview" className="text-xs sm:text-sm smooth-transition">Overview</TabsTrigger>
               <TabsTrigger value="posts" className="text-xs sm:text-sm smooth-transition">Posts ({posts.length})</TabsTrigger>
-              {isOwnProfile && <TabsTrigger value="settings" className="text-xs sm:text-sm smooth-transition">Settings</TabsTrigger>}
+              {/* Settings Tab - Temporarily Removed */}
+              {/* {isOwnProfile && <TabsTrigger value="settings" className="text-xs sm:text-sm smooth-transition">Settings</TabsTrigger>} */}
               <TabsTrigger value="activity" className="text-xs sm:text-sm smooth-transition">Activity</TabsTrigger>
             </TabsList>
           </div>
@@ -1004,7 +1019,6 @@ export default function UserProfilePage() {
                     post={post}
                     onDelete={() => handleDeletePost(post.id)}
                     onCommentCountChange={handleCommentCountChange}
-                    onVoteChange={handleVoteChange}
                   />
                 ))}
               </div>
@@ -1034,67 +1048,12 @@ export default function UserProfilePage() {
             )}
           </TabsContent>
 
-          {isOwnProfile && (
+          {/* Settings Tab Content - Temporarily Removed */}
+          {/* {isOwnProfile && (
             <TabsContent value="settings" className="space-y-6">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold mb-6">Account Settings</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Link href="/profile/edit">
-                      <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-blue-50 hover:border-blue-200">
-                        <Edit className="w-5 h-5" />
-                        <span className="text-sm">Edit Profile</span>
-                      </Button>
-                    </Link>
-                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-green-50 hover:border-green-200" 
-                            onClick={() => window.location.href = '/profile/edit?tab=account'}>
-                      <User className="w-5 h-5" />
-                      <span className="text-sm">Account Settings</span>
-                    </Button>
-                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-purple-50 hover:border-purple-200"
-                            onClick={() => window.location.href = '/profile/edit?tab=connected'}>
-                      <LinkIcon className="w-5 h-5" />
-                      <span className="text-sm">Connected Accounts</span>
-                    </Button>
-                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-orange-50 hover:border-orange-200"
-                            onClick={() => window.location.href = '/profile/edit?tab=privacy'}>
-                      <Shield className="w-5 h-5" />
-                      <span className="text-sm">Privacy & Security</span>
-                    </Button>
-                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-indigo-50 hover:border-indigo-200"
-                            onClick={() => window.location.href = '/profile/edit?tab=professional'}>
-                      <Briefcase className="w-5 h-5" />
-                      <span className="text-sm">Professional Info</span>
-                    </Button>
-                    <Button variant="outline" className="w-full h-20 flex-col gap-2 hover:bg-red-50 hover:border-red-200"
-                            onClick={() => window.location.href = '/profile/edit?tab=experience'}>
-                      <GraduationCap className="w-5 h-5" />
-                      <span className="text-sm">Experience & Education</span>
-                    </Button>
-                  </div>
-                  
-                  <div className="mt-8 pt-6 border-t">
-                    <h4 className="text-md font-medium mb-4">Quick Actions</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Button variant="ghost" className="w-full justify-start" 
-                              onClick={() => window.location.href = '/profile/edit?tab=personal'}>
-                        <Camera className="w-4 h-4 mr-2" />
-                        Change Profile Picture
-                      </Button>
-                      <Button variant="ghost" className="w-full justify-start"
-                              onClick={() => {
-                                navigator.clipboard.writeText(window.location.origin + `/profile/${user?.id}`)
-                                // Add toast notification here if available
-                              }}>
-                        <Share2 className="w-4 h-4 mr-2" />
-                        Share Profile
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              ... settings content removed ...
             </TabsContent>
-          )}
+          )} */}
 
           <TabsContent value="activity" className="space-y-4">
             <ActivityFeed 

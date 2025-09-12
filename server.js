@@ -45,6 +45,9 @@ app.prepare().then(() => {
     },
     transports: ['websocket', 'polling'],
     allowEIO3: true,
+    pingTimeout: 60000, // 60 seconds
+    pingInterval: 25000, // 25 seconds
+    connectTimeout: 10000 // 10 seconds connection timeout
   });
 
   // Authentication middleware

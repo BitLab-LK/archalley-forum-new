@@ -543,6 +543,7 @@ const skip = (page - 1) * limit
                 select: {
                   id: true,
                   name: true,
+                  image: true,
                   userBadges: {
                     take: 1,
                     include: { badges: true },
@@ -604,7 +605,10 @@ const skip = (page - 1) * limit
 
             return {
               postId: post.id,
-              author: topComment.users.name || "Anonymous",
+              author: {
+                name: topComment.users.name || "Anonymous",
+                image: topComment.users.image
+              },
               content: topComment.content,
               upvotes: topCommentUpvotes,
               downvotes: topCommentDownvotes,

@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 import { useGlobalVoteState } from "@/lib/vote-sync"
 import { activityEventManager } from "@/lib/activity-events"
 import { getCategoryBackground } from "@/lib/category-colors"
+import { useSocket } from "@/lib/socket-context"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,7 +60,10 @@ interface PostCardProps {
     timeAgo: string
     images?: string[]
     topComment?: {
-      author: string
+      author: {
+        name: string
+        image?: string
+      }
       content: string
       upvotes: number
       downvotes: number
@@ -69,8 +73,7 @@ interface PostCardProps {
   }
   onDelete?: () => void | Promise<void>
   onCommentCountChange?: (postId: string, newCount: number) => void
-  onVoteChange?: (postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => void
-  onTopCommentVoteChange?: (postId: string, topComment: { id: string, author: string, content: string, upvotes: number, downvotes: number, isBestAnswer: boolean, userVote?: "up" | "down" } | null) => void
+  onTopCommentVoteChange?: (postId: string, topComment: { id: string, author: { name: string, image?: string }, content: string, upvotes: number, downvotes: number, isBestAnswer: boolean, userVote?: "up" | "down" } | null) => void
 }
 
 // Constants
@@ -87,7 +90,7 @@ const getTextSizeClass = (content: string): string => {
   return TEXT_SIZE_CONFIG.find(config => length <= config.max)?.class ?? "text-base"
 }
 
-const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, onVoteChange, onTopCommentVoteChange }: PostCardProps) {
+const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, onTopCommentVoteChange }: PostCardProps) {
   const { user, isLoading } = useAuth()
   const { confirm } = useConfirmDialog()
   const { toast } = useToast()
@@ -130,7 +133,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   }, [])
   
   // Handle top comment vote changes from modal
-  const handleTopCommentVoteChange = useCallback((postId: string, newTopComment: { id: string, author: string, content: string, upvotes: number, downvotes: number, isBestAnswer: boolean } | null) => {
+  const handleTopCommentVoteChange = useCallback((postId: string, newTopComment: { id: string, author: { name: string, image?: string }, content: string, upvotes: number, downvotes: number, isBestAnswer: boolean } | null) => {
     if (postId === post.id) {
       if (newTopComment === null) {
         // No top comment anymore
@@ -145,19 +148,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     }
   }, [post.id, topComment, onTopCommentVoteChange])
   
-  // Notify parent when vote changes
-  const prevVoteState = useRef({ upvotes, downvotes, userVote })
-  
-  useEffect(() => {
-    if (onVoteChange && 
-        (prevVoteState.current.upvotes !== upvotes || 
-         prevVoteState.current.downvotes !== downvotes || 
-         prevVoteState.current.userVote !== userVote)) {
-      onVoteChange(post.id, upvotes, downvotes, userVote)
-      prevVoteState.current = { upvotes, downvotes, userVote }
-    }
-  }, [upvotes, downvotes, userVote, post.id, onVoteChange])
-  
   // Local state
   const [modalOpen, setModalOpen] = useState(false)
   const [modalImageIndex, setModalImageIndex] = useState(0)
@@ -165,7 +155,45 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
 
   // Use refs to track previous values for parent notifications - initialize with current hook values
   const prevCommentCount = useRef(commentCount)
-  const lastClickTime = useRef(0) // Track last click time for debouncing
+
+  // Socket.IO for real-time updates
+  const { socket, joinPost, leavePost } = useSocket()
+  
+  // Join post room on mount, leave on unmount
+  useEffect(() => {
+    if (socket) {
+      joinPost(post.id)
+      
+      // Listen for real-time vote updates
+      const handleVoteUpdate = (data: { upvotes: number; downvotes: number; userVote: string | null }) => {
+        updateVote({
+          upvotes: data.upvotes,
+          downvotes: data.downvotes,
+          userVote: data.userVote as "up" | "down" | null
+        })
+      }
+      
+      // Listen for new comments
+      const handleNewComment = (commentData: any) => {
+        // Update comment count or handle as needed
+        // Could trigger a refetch or update local state
+        console.log('New comment received:', commentData)
+      }
+      
+      socket.on('vote-update', handleVoteUpdate)
+      socket.on('new-comment', handleNewComment)
+      
+      return () => {
+        socket.off('vote-update', handleVoteUpdate)
+        socket.off('new-comment', handleNewComment)
+        leavePost(post.id)
+      }
+    }
+    
+    return () => {
+      // Cleanup function when socket is not available
+    }
+  }, [socket, post.id, joinPost, leavePost, updateVote])
 
   // Notify parent component when comment count changes - immediate sync for smooth UX
   useEffect(() => {
@@ -314,6 +342,14 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
         userVote: result.userVote
       })
       
+      // Emit socket event for real-time updates to other users
+      if (socket) {
+        socket.emit('vote', {
+          postId: post.id,
+          type: type.toUpperCase()
+        })
+      }
+      
       // Emit activity event for real-time feed updates
       if (user?.id) {
         activityEventManager.emitVote(user.id, post.id)
@@ -349,23 +385,16 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     } finally {
       setIsVoting(false)
     }
-  }, [user, isVoting, post.id, userVote, upvotes, downvotes])
+  }, [user, isVoting, post.id, userVote, upvotes, downvotes, socket, updateVote])
 
   // Enhanced vote handler that syncs with modals and provides instant feedback
   const handleCardVote = useCallback(async (type: "up" | "down") => {
-    // Prevent rapid clicking - debounce button clicks using ref
-    const now = Date.now()
-    if (lastClickTime.current && now - lastClickTime.current < 500) {
-      return
-    }
-    lastClickTime.current = now
-    
     try {
       await handleVote(type)
     } catch (error) {
       console.error('Vote failed:', error)
     }
-  }, [handleVote, post.id, userVote])
+  }, [handleVote])
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-40">
@@ -639,9 +668,9 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
               <div className="flex items-start space-x-3">
                 {/* Avatar */}
                 <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarImage src="/placeholder.svg" />
+                  <AvatarImage src={topComment.author.image || "/placeholder-user.jpg"} />
                   <AvatarFallback className="bg-orange-500 text-white text-xs">
-                    {topComment.author.charAt(0).toUpperCase()}
+                    {topComment.author.name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 
@@ -649,7 +678,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2 mb-1">
                     <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                      {topComment.author}
+                      {topComment.author.name}
                     </span>
                     {topComment.isBestAnswer && (
                       <Badge variant="default" className="text-xs bg-green-500">
@@ -724,7 +753,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
         initialImage={modalImageIndex} 
         onCommentAdded={handleCommentAdded}
         onCommentCountUpdate={handleCommentCountUpdate}
-        onVoteChange={onVoteChange}
         onTopCommentVoteChange={handleTopCommentVoteChange}
       />
     </>

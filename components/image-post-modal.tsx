@@ -49,8 +49,7 @@ interface ImagePostModalProps {
   onClose: () => void
   onCommentAdded?: () => void
   onCommentCountUpdate?: (newCount: number) => void
-  onVoteChange?: (postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => void
-  onTopCommentVoteChange?: (postId: string, topComment: { id: string, author: string, content: string, upvotes: number, downvotes: number, isBestAnswer: boolean, userVote?: "up" | "down" } | null) => void
+  onTopCommentVoteChange?: (postId: string, topComment: { id: string, author: { name: string, image?: string }, content: string, upvotes: number, downvotes: number, isBestAnswer: boolean, userVote?: "up" | "down" } | null) => void
   post: {
     id: string
     author: {
@@ -72,9 +71,12 @@ interface ImagePostModalProps {
     timeAgo: string
     images?: string[]
     topComment?: {
-      author: string
+      author: { name: string, image?: string }
       content: string
+      upvotes: number
+      downvotes: number
       isBestAnswer: boolean
+      userVote?: "up" | "down"
     }
   }
   initialImage?: number
@@ -85,7 +87,6 @@ export default function ImagePostModal({
   onClose, 
   onCommentAdded, 
   onCommentCountUpdate,
-  onVoteChange,
   onTopCommentVoteChange,
   post, 
   initialImage = 0 
@@ -112,7 +113,6 @@ export default function ImagePostModal({
   
   // Refs and hooks
   const commentInputRef = useRef<HTMLInputElement>(null)
-  const lastVoteClickTime = useRef<number>(0) // Debounce vote clicks
   const previousCommentCount = useRef<number>(0) // Track previous comment count
   const { user } = useAuth()
   const { toast } = useToast()
@@ -141,22 +141,6 @@ export default function ImagePostModal({
   // Extract values for easier use
   const { upvotes, downvotes, userVote } = voteState
   const [isVoting, setIsVoting] = useState(false)
-  
-  // Simple comment count management for now
-  const commentCount = post.comments
-  
-  // Notify parent when vote changes 
-  const prevVoteState = useRef({ upvotes, downvotes, userVote })
-  
-  useEffect(() => {
-    if (onVoteChange && 
-        (prevVoteState.current.upvotes !== upvotes || 
-         prevVoteState.current.downvotes !== downvotes || 
-         prevVoteState.current.userVote !== userVote)) {
-      onVoteChange(post.id, upvotes, downvotes, userVote)
-      prevVoteState.current = { upvotes, downvotes, userVote }
-    }
-  }, [upvotes, downvotes, userVote, post.id, onVoteChange])
   
   // Computed values
   const images = post.images || []
@@ -324,15 +308,12 @@ export default function ImagePostModal({
   }
 
   const handleDebouncedVote = async (type: "up" | "down") => {
-    const now = Date.now()
-    if (lastVoteClickTime.current && now - lastVoteClickTime.current < 500) {
-      return
+    if (isVoting) {
+      return // Prevent multiple clicks while processing
     }
-    lastVoteClickTime.current = now
-
-await handleVote(type)
-
-}
+    
+    await handleVote(type)
+  }
 
   const handleSubmitComment = async () => {
     if (!commentInput.trim()) return
@@ -874,7 +855,10 @@ await handleVote(type)
         // Update top comment with complete data
         const topCommentData = {
           id: newTopComment.id,
-          author: newTopComment.author,
+          author: {
+            name: newTopComment.author,
+            image: newTopComment.authorImage
+          },
           content: newTopComment.content,
           upvotes: newTopComment.upvotes || 0,
           downvotes: newTopComment.downvotes || 0,
@@ -1089,37 +1073,6 @@ await handleVote(type)
                   </span>
                 </div>
               )}
-              
-              {/* Stats */}
-              <div className="flex items-center justify-between pt-2.5 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-4">
-                  {(upvotes > 0 || downvotes > 0) && (
-                    <span className="flex items-center gap-1">
-                      <div className="flex items-center">
-                        {upvotes > 0 && (
-                          <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                            <ThumbsUp className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                        {downvotes > 0 && (
-                          <div className={cn(
-                            "w-5 h-5 bg-red-500 rounded-full flex items-center justify-center",
-                            upvotes > 0 && "-ml-1"
-                          )}>
-                            <ThumbsDown className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                      </div>
-                      <span>
-                        {(upvotes || 0) + (downvotes || 0)}
-                      </span>
-                    </span>
-                  )}
-                </div>
-                {commentCount > 0 && (
-                  <span>{commentCount} comments</span>
-                )}
-              </div>
             </div>
 
             {/* Action Buttons - Sticky */}
@@ -1135,19 +1088,19 @@ await handleVote(type)
                   )}
                 >
                   <ThumbsUp className="w-5 h-5" />
-                  {upvotes > 0 && <span className="text-sm">({upvotes})</span>}
+                  {upvotes > 0 && <span className="text-sm">{upvotes}</span>}
                 </button>
                 <button 
                   onClick={() => handleDebouncedVote("down")} 
                   className={cn(
                     "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 font-medium active:scale-95",
                     userVote === "down" 
-                      ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950" 
+                      ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950" 
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   )}
                 >
                   <ThumbsDown className="w-5 h-5" />
-                  {downvotes > 0 && <span className="text-sm">({downvotes})</span>}
+                  {downvotes > 0 && <span className="text-sm">{downvotes}</span>}
                 </button>
                 <button 
                   onClick={handleCommentClick} 

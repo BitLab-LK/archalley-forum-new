@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Search, Moon, Sun, Settings, LogOut, User, Shield, Home, Users, FolderOpen } from "lucide-react"
+import { Search, Moon, Sun, LogOut, User, Shield, Home, Users } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/lib/auth-context"
 import NotificationDropdown from "@/components/notification-dropdown"
@@ -128,7 +128,8 @@ export default function Header() {
               >
                 Home
               </Link>
-              <Link 
+              {/* Categories - Temporarily Removed */}
+              {/* <Link 
                 href="/categories" 
                 className={`text-sm font-medium transition-colors ${
                   isActivePath("/categories") 
@@ -137,7 +138,7 @@ export default function Header() {
                 }`}
               >
                 Categories
-              </Link>
+              </Link> */}
               <Link 
                 href="/members" 
                 className={`text-sm font-medium transition-colors ${
@@ -167,12 +168,12 @@ export default function Header() {
 
           {/* Right Side */}
           <div className="flex items-center space-x-4">
-            {/* Theme Toggle */}
-            <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
+            {/* Theme Toggle - Temporarily Removed */}
+            {/* <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
               <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               <span className="sr-only">Toggle theme</span>
-            </Button>
+            </Button> */}
 
             {isLoading ? (
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -213,12 +214,13 @@ export default function Header() {
                         <span>Profile</span>
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
+                    {/* Settings - Temporarily Removed */}
+                    {/* <DropdownMenuItem asChild>
                       <Link href="/settings">
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Settings</span>
                       </Link>
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
                     {(user?.role === "ADMIN" || user?.role === "MODERATOR") && (
                       <DropdownMenuItem asChild>
                         <Link href="/admin">
@@ -293,12 +295,13 @@ export default function Header() {
                         <span>Profile</span>
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
+                    {/* Settings - Temporarily Removed */}
+                    {/* <DropdownMenuItem asChild>
                       <Link href="/settings">
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Settings</span>
                       </Link>
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
                     <DropdownMenuItem onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
                       <div className="mr-2 h-4 w-4 relative">
                         <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -360,8 +363,8 @@ export default function Header() {
             <span className="text-[11px]">Home</span>
           </Link>
 
-          {/* Categories */}
-          <Link 
+          {/* Categories - Temporarily Removed */}
+          {/* <Link 
             href="/categories" 
             className={`flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-colors py-2 px-1 min-h-[44px] ${
               isActivePath("/categories") 
@@ -371,7 +374,7 @@ export default function Header() {
           >
             <FolderOpen className={`h-6 w-6 ${isActivePath("/categories") ? "fill-current" : ""}`} />
             <span className="text-[11px]">Categories</span>
-          </Link>
+          </Link> */}
 
           {/* Members */}
           <Link 

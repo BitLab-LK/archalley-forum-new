@@ -32,7 +32,10 @@ interface Post {
   timeAgo: string
   images?: string[]
   topComment?: {
-    author: string
+    author: {
+      name: string
+      image?: string
+    }
     content: string
     upvotes: number
     downvotes: number
@@ -67,7 +70,12 @@ function HomePageContent() {
   const fetchPosts = async (page: number = 1) => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/posts?page=${page}&limit=10`)
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '10'
+      })
+      
+      const response = await fetch(`/api/posts?${params.toString()}`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch posts: ${response.status}`)
@@ -166,16 +174,6 @@ function HomePageContent() {
     )
   }
 
-  const handleVoteChange = (postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => {
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
-        post.id === postId 
-          ? { ...post, upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
-          : post
-      )
-    )
-  }
-
   // Generate pagination range with ellipsis
   const getPaginationRange = () => {
     const range: (number | string)[] = []
@@ -221,7 +219,12 @@ function HomePageContent() {
                 // Optimistic update - just refresh without animations
                 try {
                   // Use a silent refresh to avoid animation restart
-                  const response = await fetch(`/api/posts?page=1&limit=10`)
+                  const params = new URLSearchParams({
+                    page: '1',
+                    limit: '10'
+                  })
+                  
+                  const response = await fetch(`/api/posts?${params.toString()}`)
                   if (response.ok) {
                     const data = await response.json()
                     setPosts(data.posts)
@@ -233,7 +236,9 @@ function HomePageContent() {
                   await fetchPosts(1)
                 }
               }} />
-            </div>            {isLoading ? (
+            </div>
+
+            {isLoading ? (
               <div className="space-y-3 sm:space-y-4 animate-fade-in animate-delay-200">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className={`bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow hover-lift animate-shimmer animate-delay-${(i + 1) * 100}`}>
@@ -275,7 +280,6 @@ function HomePageContent() {
                           : undefined
                       }
                       onCommentCountChange={handleCommentCountChange}
-                      onVoteChange={handleVoteChange}
                     />
                     </div>
                   ))}

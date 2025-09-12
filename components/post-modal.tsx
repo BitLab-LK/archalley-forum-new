@@ -8,8 +8,7 @@ interface PostModalProps {
   onClose: () => void
   onCommentAdded?: () => void
   onCommentCountUpdate?: (newCount: number) => void
-  onVoteChange?: (postId: string, newUpvotes: number, newDownvotes: number, newUserVote: "up" | "down" | null) => void
-  onTopCommentVoteChange?: (postId: string, topComment: { id: string, author: string, content: string, upvotes: number, downvotes: number, isBestAnswer: boolean, userVote?: "up" | "down" } | null) => void
+  onTopCommentVoteChange?: (postId: string, topComment: { id: string, author: { name: string, image?: string }, content: string, upvotes: number, downvotes: number, isBestAnswer: boolean, userVote?: "up" | "down" } | null) => void
   post: {
     id: string
     author: {
@@ -31,17 +30,23 @@ interface PostModalProps {
     timeAgo: string
     images?: string[]
     topComment?: {
-      author: string
+      author: {
+        name: string
+        image?: string
+      }
       content: string
+      upvotes: number
+      downvotes: number
       isBestAnswer: boolean
+      userVote?: "up" | "down"
     }
   }
   initialImage?: number
 }
 
-export default function PostModal({ open, onClose, onCommentAdded, onCommentCountUpdate, onVoteChange, onTopCommentVoteChange, post, initialImage }: PostModalProps) {
+export default function PostModal({ open, onClose, onCommentAdded, onCommentCountUpdate, onTopCommentVoteChange, post, initialImage }: PostModalProps) {
   if (post.images && post.images.length > 0) {
-    return <ImagePostModal open={open} onClose={onClose} onCommentAdded={onCommentAdded} onCommentCountUpdate={onCommentCountUpdate} onVoteChange={onVoteChange} onTopCommentVoteChange={onTopCommentVoteChange} post={post} initialImage={initialImage} />
+    return <ImagePostModal open={open} onClose={onClose} onCommentAdded={onCommentAdded} onCommentCountUpdate={onCommentCountUpdate} onTopCommentVoteChange={onTopCommentVoteChange} post={post} initialImage={initialImage} />
   }
-  return <TextPostModal open={open} onClose={onClose} onCommentAdded={onCommentAdded} onCommentCountUpdate={onCommentCountUpdate} onVoteChange={onVoteChange} onTopCommentVoteChange={onTopCommentVoteChange} post={post} />
+  return <TextPostModal open={open} onClose={onClose} onCommentAdded={onCommentAdded} onCommentCountUpdate={onCommentCountUpdate} onTopCommentVoteChange={onTopCommentVoteChange} post={post} />
 } 
