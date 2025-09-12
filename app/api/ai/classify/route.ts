@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { classifyPost, testAIService } from "@/lib/ai-service"
+import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
 const classifyRequestSchema = z.object({
@@ -38,17 +39,44 @@ export async function POST(req: Request) {
 
     const { content } = validationResult.data
 
-    // Get AI classification
-    const classification = await classifyPost(content)
+    // Fetch available categories from database
+    try {
+      const categories = await prisma.categories.findMany({
+        select: { name: true },
+        orderBy: { name: 'asc' }
+      })
+      
+      const categoryNames = categories.map(cat => cat.name)
+      console.log("📋 Available categories:", categoryNames)
 
-    console.log("✅ Classification completed:", {
-      category: classification.category,
-      tagsCount: classification.tags.length,
-      confidence: classification.confidence,
-      originalLanguage: classification.originalLanguage
-    })
+      // Get AI classification with dynamic categories
+      const classification = await classifyPost(content, categoryNames)
 
-    return NextResponse.json(classification)
+      console.log("✅ Classification completed:", {
+        primaryCategory: classification.category,
+        allCategories: classification.categories,
+        tagsCount: classification.tags.length,
+        confidence: classification.confidence,
+        originalLanguage: classification.originalLanguage
+      })
+
+      return NextResponse.json(classification)
+    } catch (dbError) {
+      console.error("Database error when fetching categories:", dbError)
+      
+      // Fallback to AI classification without dynamic categories
+      const classification = await classifyPost(content)
+      
+      console.log("✅ Classification completed (fallback):", {
+        primaryCategory: classification.category,
+        allCategories: classification.categories,
+        tagsCount: classification.tags.length,
+        confidence: classification.confidence,
+        originalLanguage: classification.originalLanguage
+      })
+
+      return NextResponse.json(classification)
+    }
   } catch (error) {
     console.error("❌ AI classification error:", {
       error,

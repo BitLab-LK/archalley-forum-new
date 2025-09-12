@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { badgeService } from "@/lib/badge-service"
 import { geminiService } from "@/lib/gemini-service"
+import { classifyPost } from "@/lib/ai-service"
 import { join } from "path"
 import { stat } from "fs/promises"
 
@@ -166,18 +167,35 @@ export async function POST(request: Request) {
     }
 
     // Step 2: Get AI category suggestions
-    const categoryNames = allCategories.map(cat => cat.name)
     console.log("🎯 Getting AI category suggestions...")
     let aiCategorySuggestion
     try {
-      aiCategorySuggestion = await geminiService.categorizeContent(translatedContent, categoryNames)
+      const categoryNames = allCategories.map(cat => cat.name)
+      
+      // Use the updated AI service that supports multiple categories
+      const classification = await classifyPost(translatedContent, categoryNames)
+      
+      aiCategorySuggestion = {
+        categories: classification.categories || [classification.category],
+        confidence: classification.confidence,
+        reasoning: `AI classification with ${classification.confidence} confidence`
+      }
       console.log("✅ AI categorization completed:", aiCategorySuggestion)
     } catch (error) {
       console.error("⚠️ AI categorization failed:", error)
-      aiCategorySuggestion = {
-        categories: [primaryCategory.name],
-        confidence: 0.1,
-        reasoning: "Fallback to primary category due to AI error"
+      
+      // Fallback to gemini service if AI service fails
+      try {
+        const categoryNames = allCategories.map(cat => cat.name)
+        aiCategorySuggestion = await geminiService.categorizeContent(translatedContent, categoryNames)
+        console.log("✅ AI categorization completed (fallback):", aiCategorySuggestion)
+      } catch (fallbackError) {
+        console.error("⚠️ Fallback categorization also failed:", fallbackError)
+        aiCategorySuggestion = {
+          categories: [primaryCategory.name],
+          confidence: 0.1,
+          reasoning: "Fallback to primary category due to AI error"
+        }
       }
     }
 
@@ -201,8 +219,31 @@ export async function POST(request: Request) {
         },
       })
 
-      // For now, store categories in the aiCategory field (primary category from AI)
-      // TODO: Store multiple categories in aiCategories array and PostCategory table
+      // Create PostCategory relationships for AI-suggested categories
+      if (aiCategorySuggestion.categories && aiCategorySuggestion.categories.length > 0) {
+        const categoryIds = await tx.categories.findMany({
+          where: {
+            name: {
+              in: aiCategorySuggestion.categories
+            }
+          },
+          select: { id: true, name: true }
+        })
+
+        // Create PostCategory entries for all AI-suggested categories
+        const postCategoryData = categoryIds.map((category, index) => ({
+          postId: newPost.id,
+          categoryId: category.id,
+          isPrimary: index === 0 // Mark the first one as primary
+        }))
+
+        if (postCategoryData.length > 0) {
+          await tx.postCategory.createMany({
+            data: postCategoryData
+          })
+          console.log(`✅ Created ${postCategoryData.length} category associations for post`)
+        }
+      }
       
       // Update category post counts for primary category
       await tx.categories.update({
@@ -232,7 +273,11 @@ export async function POST(request: Request) {
           },
         },
         categories: true, // Primary category
-        // TODO: Add postCategories relationship once Prisma client is updated
+        postCategories: {  // All categories via junction table
+          include: {
+            category: true
+          }
+        },
         _count: {
           select: { Comment: true }
         }
@@ -491,7 +536,12 @@ const skip = (page - 1) * limit
               }
             },
           },
-          categories: true,
+          categories: true,  // Primary category
+          postCategories: {  // All categories via junction table
+            include: {
+              category: true
+            }
+          },
           _count: {
             select: {
               Comment: true,
@@ -711,6 +761,7 @@ const skip = (page - 1) * limit
           },
           content: post.content,
           category: post.categories.name, // Primary category
+          categories: post.postCategories || [], // Multiple categories from junction table
           aiCategories: post.aiCategories || [], // AI-suggested categories
           aiCategory: post.aiCategory, // Primary AI category
           originalLanguage: post.originalLanguage || 'English',

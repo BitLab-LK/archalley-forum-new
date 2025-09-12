@@ -21,6 +21,7 @@ interface PostCreatorProps {
 
 interface AIClassification {
   category: string
+  categories?: string[]  // Multiple AI-suggested categories
   tags: string[]
   confidence: number
   originalLanguage: string
@@ -108,7 +109,15 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       }
 
       const classification = await classificationResponse.json() as AIClassification
-      const { category: classifiedCategory, tags, originalLanguage } = classification
+      
+      // Log multiple categories if available
+      if (classification.categories && classification.categories.length > 0) {
+        console.log("AI suggested categories:", classification.categories);
+      }
+      
+      // Override classification for test posts if needed
+      let classifiedCategory = classification.category;
+      const { tags, originalLanguage } = classification
       
       setAiProgress(60)
       setAiStatus(originalLanguage !== "English" 

@@ -50,7 +50,17 @@ interface PostCardProps {
       }>
     }
     content: string
-    category: string
+    category: string  // Primary category (for backward compatibility)
+    categories?: Array<{  // Multiple categories from junction table
+      id: string
+      category: {
+        id: string
+        name: string
+        color: string
+        slug: string
+      }
+    }>
+    aiCategories?: string[]  // AI-suggested categories as strings
     isAnonymous: boolean
     isPinned: boolean
     upvotes: number
@@ -550,14 +560,43 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                 </div>
               </div>
 
-              {/* Category Badge - responsive positioning */}
-              <div className="flex items-center space-x-2">
-                <Badge className={cn(
-                  "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1", 
-                  `category-${post.category.toLowerCase()}`
-                )}>
-                  {post.category}
-                </Badge>
+              {/* Category Badges - show multiple categories if available */}
+              <div className="flex items-center space-x-2 flex-wrap gap-1">
+                {post.categories && post.categories.length > 0 ? (
+                  // Show all categories from junction table
+                  post.categories.map((postCategory) => (
+                    <Badge 
+                      key={postCategory.id}
+                      className={cn(
+                        "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1", 
+                        `category-${postCategory.category.name.toLowerCase()}`
+                      )}
+                    >
+                      {postCategory.category.name}
+                    </Badge>
+                  ))
+                ) : post.aiCategories && post.aiCategories.length > 0 ? (
+                  // Fallback to AI categories if junction table is empty
+                  post.aiCategories.map((categoryName, index) => (
+                    <Badge 
+                      key={index}
+                      className={cn(
+                        "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1", 
+                        `category-${categoryName.toLowerCase()}`
+                      )}
+                    >
+                      {categoryName}
+                    </Badge>
+                  ))
+                ) : (
+                  // Final fallback to primary category
+                  <Badge className={cn(
+                    "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1", 
+                    `category-${post.category.toLowerCase()}`
+                  )}>
+                    {post.category}
+                  </Badge>
+                )}
                 
                 {/* Options Menu */}
                 <DropdownMenu>
