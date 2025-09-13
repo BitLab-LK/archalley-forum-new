@@ -103,6 +103,7 @@ export async function POST(
         content: true,
         createdAt: true,
         updatedAt: true,
+        categoryIds: true,
         categories: {
           select: {
             name: true
@@ -232,6 +233,7 @@ POST ${index + 1}
 ID: ${post.id}
 Title: ${post.title}
 Category: ${post.categories?.name || 'Uncategorized'}
+Multiple Categories: ${post.categoryIds?.length ? 'Yes (' + post.categoryIds.length + ' categories)' : 'No'}
 Created: ${post.createdAt?.toLocaleString()}
 Updated: ${post.updatedAt?.toLocaleString()}
 Comments: ${post.Comment?.length || 0}

@@ -51,14 +51,17 @@ interface PostCardProps {
     }
     content: string
     category: string  // Primary category (for backward compatibility)
-    categories?: Array<{  // Multiple categories from junction table
+    categories?: {    // Single category object (primary category)
       id: string
-      category: {
-        id: string
-        name: string
-        color: string
-        slug: string
-      }
+      name: string
+      color: string
+      slug: string
+    }
+    allCategories?: Array<{  // Multiple categories from new structure
+      id: string
+      name: string
+      color: string
+      slug: string
     }>
     aiCategories?: string[]  // AI-suggested categories as strings
     isAnonymous: boolean
@@ -577,42 +580,63 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                 </div>
               </div>
 
-              {/* Category Badges - show multiple categories if available */}
+              {/* Category Badges - show multiple categories */}
               <div className="flex items-center space-x-2 flex-wrap gap-1">
-                {post.categories && post.categories.length > 0 ? (
-                  // Show all categories from junction table
-                  post.categories.map((postCategory) => (
+                {post.allCategories && post.allCategories.length > 0 ? (
+                  // Show all categories from allCategories array
+                  post.allCategories.map((category: any) => (
                     <Badge 
-                      key={postCategory.id}
+                      key={category.id}
                       className={cn(
                         "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1", 
-                        `category-${postCategory.category.name.toLowerCase()}`
+                        `category-${category.name.toLowerCase()}`
                       )}
                     >
-                      {postCategory.category.name}
+                      {category.name}
                     </Badge>
                   ))
-                ) : post.aiCategories && post.aiCategories.length > 0 ? (
-                  // Fallback to AI categories if junction table is empty
-                  post.aiCategories.map((categoryName, index) => (
-                    <Badge 
-                      key={index}
-                      className={cn(
-                        "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1", 
-                        `category-${categoryName.toLowerCase()}`
-                      )}
-                    >
-                      {categoryName}
-                    </Badge>
-                  ))
+                ) : post.categories ? (
+                  // Fallback to single primary category
+                  <Badge 
+                    key={post.categories.id}
+                    className={cn(
+                      "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1", 
+                      `category-${post.categories.name.toLowerCase()}`
+                    )}
+                  >
+                    {post.categories.name}
+                  </Badge>
                 ) : (
-                  // Final fallback to primary category
+                  // Final fallback to category string
                   <Badge className={cn(
                     "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1", 
                     `category-${post.category.toLowerCase()}`
                   )}>
                     {post.category}
                   </Badge>
+                )}
+                
+                {/* AI-suggested categories as additional badges - only show if not already in allCategories */}
+                {post.aiCategories && post.aiCategories.length > 0 && post.allCategories && (
+                  post.aiCategories
+                    .filter(categoryName => {
+                      // Only show AI category if it's not already in allCategories
+                      return !post.allCategories?.some(cat => 
+                        cat.name.toLowerCase() === categoryName.toLowerCase()
+                      )
+                    })
+                    .map((categoryName, index) => (
+                      <Badge 
+                        key={`ai-${index}`}
+                        className={cn(
+                          "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 border-dashed opacity-80", 
+                          `category-${categoryName.toLowerCase()}`
+                        )}
+                        title="AI-suggested category"
+                      >
+                        {categoryName}
+                      </Badge>
+                    ))
                 )}
                 
                 {/* Options Menu */}

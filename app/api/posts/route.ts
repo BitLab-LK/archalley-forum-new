@@ -44,21 +44,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Test database connection first
-    try {
-      await prisma.$connect()
-    } catch (dbError) {
-      console.error("❌ Database connection failed:", dbError)
-      return NextResponse.json(
-        { 
-          error: "Database connection failed", 
-          message: "The application is currently unable to connect to the database. Please try again later.",
-          details: dbError instanceof Error ? dbError.message : "Database service is unavailable"
-        },
-        { status: 503, headers: jsonHeaders }
-      )
-    }
-
     let formData: FormData
     try {
       formData = await request.formData()
@@ -164,7 +149,31 @@ export async function POST(request: Request) {
     }
 
     // Create post with AI categories and translation info
-    const post = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
+      // Convert AI-suggested category names to category IDs
+      const aiCategoryIds: string[] = []
+      if (aiCategorySuggestion.categories && aiCategorySuggestion.categories.length > 0) {
+        for (const categoryName of aiCategorySuggestion.categories) {
+          const category = allCategories.find(cat => 
+            cat.name.toLowerCase() === categoryName.toLowerCase()
+          )
+          if (category && !aiCategoryIds.includes(category.id)) {
+            aiCategoryIds.push(category.id)
+          }
+        }
+      }
+      
+      // Combine primary category with AI-suggested categories, ensuring no duplicates
+      const allCategoryIds = [data.categoryId] // Start with primary category
+      aiCategoryIds.forEach(id => {
+        if (!allCategoryIds.includes(id)) {
+          allCategoryIds.push(id)
+        }
+      })
+      
+      // Ensure no duplicate categories in the array
+      const uniqueCategoryIds = [...new Set(allCategoryIds)]
+      
       // Create the post
       const newPost = await tx.post.create({
         data: {
@@ -172,140 +181,138 @@ export async function POST(request: Request) {
           content: data.content, // Keep original language
           authorId: session.user.id,
           categoryId: data.categoryId, // Primary category
+          categoryIds: uniqueCategoryIds, // Multiple unique categories (including primary)
           isAnonymous: data.isAnonymous,
           aiTags: data.tags,
           aiCategory: aiCategorySuggestion.categories[0] || null, // Primary AI-suggested category
-          aiCategories: aiCategorySuggestion.categories || [], // All AI-suggested categories
+          // Filter out AI categories that match the primary category to avoid duplicates
+          aiCategories: aiCategorySuggestion.categories.filter(categoryName => {
+            const primaryCategoryName = primaryCategory.name.toLowerCase()
+            return categoryName.toLowerCase() !== primaryCategoryName
+          }) || [],
           originalLanguage: data.originalLanguage,
           translatedContent: translatedContent, // Store English translation for future AI processing
           updatedAt: new Date(),
         },
       })
 
-      // Create PostCategory relationships for AI-suggested categories
-      if (aiCategorySuggestion.categories && aiCategorySuggestion.categories.length > 0) {
-        const categoryIds = await tx.categories.findMany({
-          where: {
-            name: {
-              in: aiCategorySuggestion.categories
-            }
-          },
-          select: { id: true, name: true }
-        })
-
-        // Create PostCategory entries for all AI-suggested categories
-        const postCategoryData = categoryIds.map((category, index) => ({
-          postId: newPost.id,
-          categoryId: category.id,
-          isPrimary: index === 0 // Mark the first one as primary
-        }))
-
-        if (postCategoryData.length > 0) {
-          await tx.postCategory.createMany({
-            data: postCategoryData
+      // Update category post counts for all unique categories
+      await Promise.all(
+        uniqueCategoryIds.map(categoryId =>
+          tx.categories.update({
+            where: { id: categoryId },
+            data: { postCount: { increment: 1 } }
           })
-        }
-      }
-      
-      // Update category post counts for primary category
-      await tx.categories.update({
-        where: { id: data.categoryId },
-        data: { postCount: { increment: 1 } }
+        )
+      )
+
+      // Fetch the complete post with relationships
+      const completePost = await tx.post.findUnique({
+        where: { id: newPost.id },
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+              userBadges: {
+                take: 3,
+                include: { badges: true },
+                orderBy: { earnedAt: 'desc' }
+              }
+            },
+          },
+          categories: true,  // Primary category
+          _count: {
+            select: { Comment: true }
+          }
+        },
       })
 
-      return newPost
-    })
-
-    // Fetch the complete post with relationships
-    const completePost = await prisma.post.findUnique({
-      where: { id: post.id },
-      include: {
-        users: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-            userBadges: {
-              take: 3,
-              include: { badges: true },
-              orderBy: { earnedAt: 'desc' }
-            }
-          },
-        },
-        categories: true, // Primary category
-        postCategories: {  // All categories via junction table
-          include: {
-            category: true
-          }
-        },
-        _count: {
-          select: { Comment: true }
-        }
-      },
-    })
-
-    // Handle image uploads if any
-    const imageEntries = Array.from(formData.entries())
-      .filter(([key]) => key.startsWith("image") && key.endsWith("_url"))
-      .map(([_, value]) => value as string)
-
-    if (imageEntries.length > 0) {
-      try {
-        // Process image uploads
-        const uploadPromises = imageEntries.map(async (imageUrl, index) => {
-          // Extract filename from URL or get it from form data
-          const nameKey = `image_${index}_name`
-          const filename = formData.get(nameKey) as string || imageUrl.split('/').pop() || 'unknown'
-          
-          // Check if this is a Vercel Blob URL
-          const isBlobUrl = imageUrl.includes('blob.vercel-storage.com')
-          
-          let fileSize = 0
-          let mimeType = 'image/jpeg' // default
-          
-          if (isBlobUrl) {
-            // For Vercel Blob URLs, we don't have direct access to file stats
-            // We'll estimate or use default values
-            mimeType = getMimeType(filename)
-            fileSize = 0 // We could fetch this via HEAD request if needed
-          } else {
-            // Original logic for local files
-            const filePath = join(process.cwd(), "public", imageUrl)
-            const stats = await stat(filePath).catch(() => null)
-            
-            if (!stats) {
-              console.error(`File not found: ${filePath}`)
-              return null
-            }
-            
-            fileSize = stats.size
-            mimeType = getMimeType(filename)
-          }
-
-          return prisma.attachments.create({
-            data: {
-              id: crypto.randomUUID(),
-              url: imageUrl,
-              filename: filename,
-              size: fileSize,
-              mimeType: mimeType,
-              postId: post.id,
-            },
+      // Fetch multiple categories based on categoryIds
+      const multipleCategories = newPost.categoryIds && newPost.categoryIds.length > 0 
+        ? await tx.categories.findMany({
+            where: { id: { in: newPost.categoryIds } },
+            select: { id: true, name: true, color: true, slug: true }
           })
-        })
+        : []
 
-        const attachments = await Promise.all(uploadPromises)
-        // Filter out any failed attachments
-        const validAttachments = attachments.filter((a): a is NonNullable<typeof a> => a !== null)
-        
-        if (validAttachments.length !== imageEntries.length) {
-          console.warn(`Some attachments failed to create. Expected ${imageEntries.length}, got ${validAttachments.length}`)
+      // Handle image uploads if any
+      const imageEntries = Array.from(formData.entries())
+        .filter(([key]) => key.startsWith("image") && key.endsWith("_url"))
+        .map(([_, value]) => value as string)
+
+      if (imageEntries.length > 0) {
+        try {
+          // Process image uploads
+          const uploadPromises = imageEntries.map(async (imageUrl, index) => {
+            // Extract filename from URL or get it from form data
+            const nameKey = `image_${index}_name`
+            const filename = formData.get(nameKey) as string || imageUrl.split('/').pop() || 'unknown'
+            
+            // Check if this is a Vercel Blob URL
+            const isBlobUrl = imageUrl.includes('blob.vercel-storage.com')
+            
+            let fileSize = 0
+            let mimeType = 'image/jpeg' // default
+            
+            if (isBlobUrl) {
+              // For Vercel Blob URLs, we don't have direct access to file stats
+              // We'll estimate or use default values
+              mimeType = getMimeType(filename)
+              fileSize = 0 // We could fetch this via HEAD request if needed
+            } else {
+              // Original logic for local files
+              const filePath = join(process.cwd(), "public", imageUrl)
+              const stats = await stat(filePath).catch(() => null)
+              
+              if (!stats) {
+                console.error(`File not found: ${filePath}`)
+                return null
+              }
+              
+              fileSize = stats.size
+              mimeType = getMimeType(filename)
+            }
+
+            return tx.attachments.create({
+              data: {
+                id: crypto.randomUUID(),
+                url: imageUrl,
+                filename: filename,
+                size: fileSize,
+                mimeType: mimeType,
+                postId: newPost.id,
+              },
+            })
+          })
+
+          const attachments = await Promise.all(uploadPromises)
+          // Filter out any failed attachments
+          const validAttachments = attachments.filter((a): a is NonNullable<typeof a> => a !== null)
+          
+          if (validAttachments.length !== imageEntries.length) {
+            console.warn(`Some attachments failed to create. Expected ${imageEntries.length}, got ${validAttachments.length}`)
+          }
+        } catch (error) {
+          console.error("Error creating attachments:", error)
+          // Don't fail the post creation if attachments fail
         }
-      } catch (error) {
-        console.error("Error creating attachments:", error)
-        // Don't fail the post creation if attachments fail
       }
-    }
+
+      return {
+        ...completePost,
+        // Add multiple categories to the response
+        allCategories: multipleCategories,
+        // Add AI categorization metadata with filtered categories to avoid duplicates
+        aiCategorization: {
+          suggestedCategories: aiCategorySuggestion.categories,
+          confidence: aiCategorySuggestion.confidence,
+          reasoning: aiCategorySuggestion.reasoning,
+          translationUsed: data.originalLanguage !== 'English'
+        }
+      }
+    })
 
     // Check and award badges after successful post creation
     try {
@@ -323,30 +330,21 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           content: data.content,
           authorId: session.user.id,
-          postId: post.id,
-          postTitle: post.title || 'New Post'
+          postId: result.id,
+          postTitle: result.title || 'New Post'
         })
       });
       
       if (response.ok) {
-        const result = await response.json();
-        console.log(`📧 Mention notifications sent: ${result.mentionsSent}/${result.totalMentions}`);
+        const notificationResult = await response.json();
+        console.log(`📧 Mention notifications sent: ${notificationResult.mentionsSent}/${notificationResult.totalMentions}`);
       }
     } catch (error) {
       console.error("Error sending mention notifications:", error);
       // Don't fail the post creation if email notifications fail
     }
 
-    return NextResponse.json({
-      ...completePost,
-      // Add AI categorization metadata
-      aiCategorization: {
-        suggestedCategories: aiCategorySuggestion.categories,
-        confidence: aiCategorySuggestion.confidence,
-        reasoning: aiCategorySuggestion.reasoning,
-        translationUsed: data.originalLanguage !== 'English'
-      }
-    }, {
+    return NextResponse.json(result, {
       status: 201,
       headers: jsonHeaders
     })
@@ -359,13 +357,6 @@ export async function POST(request: Request) {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV
     })
-    
-    // Ensure we always disconnect from database in case of error
-    try {
-      await prisma.$disconnect()
-    } catch (disconnectError) {
-      console.error("❌ Failed to disconnect from database:", disconnectError)
-    }
     
     // Check if it's a database connection error
     if (error instanceof Error && (
@@ -417,13 +408,6 @@ export async function POST(request: Request) {
         headers: jsonHeaders
       }
     )
-  } finally {
-    // Always ensure database is disconnected
-    try {
-      await prisma.$disconnect()
-    } catch (disconnectError) {
-      console.error("❌ Failed to disconnect from database in finally block:", disconnectError)
-    }
   }
 }
 
@@ -442,21 +426,6 @@ function getMimeType(filename: string): string {
 
 export async function GET(request: NextRequest) {
   try {
-    // Test database connection first
-    try {
-      await prisma.$connect()
-    } catch (dbError) {
-      console.error("Database connection failed in GET:", dbError)
-      return NextResponse.json(
-        { 
-          error: "Database connection failed", 
-          message: "The application is currently unable to connect to the database. Please try again later.",
-          details: "Database service is unavailable"
-        },
-        { status: 503 }
-      )
-    }
-
     // Get session for user vote information
     const session = await getServerSession(authOptions)
     
@@ -497,11 +466,6 @@ const skip = (page - 1) * limit
             },
           },
           categories: true,  // Primary category
-          postCategories: {  // All categories via junction table
-            include: {
-              category: true
-            }
-          },
           _count: {
             select: {
               Comment: true,
@@ -516,6 +480,19 @@ const skip = (page - 1) * limit
 
       // Get total count for pagination
       const total = await prisma.post.count({ where })
+
+      // Get multiple categories for all posts
+      const allCategoryIds = posts.flatMap(post => post.categoryIds || [])
+      const uniqueCategoryIds = [...new Set(allCategoryIds)]
+      const multipleCategories = uniqueCategoryIds.length > 0 
+        ? await prisma.categories.findMany({
+            where: { id: { in: uniqueCategoryIds } },
+            select: { id: true, name: true, color: true, slug: true }
+          })
+        : []
+      
+      // Create a map for quick category lookup
+      const categoryMap = new Map(multipleCategories.map(cat => [cat.id, cat]))
 
 // Get vote counts for all posts in a single efficient query
       const voteCounts = await prisma.votes.groupBy({
@@ -708,6 +685,16 @@ const skip = (page - 1) * limit
         const primaryBadge = getPrimaryBadge(post.users.userBadges)
         const topComment = topCommentMap.get(post.id) || null
         
+        // Get multiple categories for this post, avoiding duplicates
+        const postCategories = (post.categoryIds || [])
+          .map(id => categoryMap.get(id))
+          .filter(Boolean) // Remove undefined values
+        
+        // Remove duplicate categories by creating a unique set based on category ID
+        const uniqueCategories = postCategories.filter((category, index, array) => 
+          array.findIndex(c => c?.id === category?.id) === index
+        )
+        
         return {
           id: post.id,
           author: {
@@ -720,10 +707,11 @@ const skip = (page - 1) * limit
             badges: post.users.userBadges?.slice(0, 3) || [], // Include top 3 badges
           },
           content: post.content,
-          category: post.categories.name, // Primary category
-          categories: post.postCategories || [], // Multiple categories from junction table
-          aiCategories: post.aiCategories || [], // AI-suggested categories
-          aiCategory: post.aiCategory, // Primary AI category
+          category: post.categories.name, // Primary category name
+          categories: post.categories, // Primary category object (direct relationship)
+          allCategories: uniqueCategories, // Multiple unique categories
+          aiCategories: post.aiCategories || [], // AI-suggested category names
+          aiCategory: post.aiCategory, // Primary AI category name
           originalLanguage: post.originalLanguage || 'English',
           isAnonymous: post.isAnonymous,
           isPinned: post.isPinned,

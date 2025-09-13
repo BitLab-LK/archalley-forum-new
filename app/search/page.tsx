@@ -29,6 +29,12 @@ interface SearchPost {
     name: string
     color: string | null
   } | null
+  allCategories?: Array<{
+    id: string
+    name: string
+    color: string | null
+    slug: string
+  }>
   attachments: {
     id: string
     filename: string
@@ -394,11 +400,19 @@ function SearchContent() {
                                     <span className="text-sm text-muted-foreground">
                                       {post.author.name} • {formatDate(post.createdAt)}
                                     </span>
-                                    {post.categories && (
+                                    {post.allCategories && post.allCategories.length > 0 ? (
+                                      // Show all categories
+                                      post.allCategories.map((category: any) => (
+                                        <Badge key={category.id} variant="secondary" className="text-xs mr-1">
+                                          {category.name}
+                                        </Badge>
+                                      ))
+                                    ) : post.categories ? (
+                                      // Fallback to single category
                                       <Badge variant="secondary" className="text-xs">
                                         {post.categories.name}
                                       </Badge>
-                                    )}
+                                    ) : null}
                                   </div>
                                   
                                   <Link href={`/posts/${post.id}`} className="group">
@@ -569,11 +583,19 @@ function SearchContent() {
                                 <span className="text-sm text-muted-foreground">
                                   {post.author.name} • {formatDate(post.createdAt)}
                                 </span>
-                                {post.categories && (
+                                {post.allCategories && post.allCategories.length > 0 ? (
+                                  // Show all categories
+                                  post.allCategories.map((category: any) => (
+                                    <Badge key={category.id} variant="secondary" className="text-xs mr-1">
+                                      {category.name}
+                                    </Badge>
+                                  ))
+                                ) : post.categories ? (
+                                  // Fallback to single category
                                   <Badge variant="secondary" className="text-xs">
                                     {post.categories.name}
                                   </Badge>
-                                )}
+                                ) : null}
                               </div>
                               
                               <Link href={`/posts/${post.id}`} className="group">
