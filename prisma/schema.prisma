@@ -40,28 +40,28 @@ model Comment {
 }
 
 model Post {
-  id                String        @id @default(cuid())
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  id                String         @id @default(cuid())
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
   title             String?
   content           String
-  isAnonymous       Boolean       @default(false)
-  isPinned          Boolean       @default(false)
-  isLocked          Boolean       @default(false)
+  isAnonymous       Boolean        @default(false)
+  isPinned          Boolean        @default(false)
+  isLocked          Boolean        @default(false)
   aiCategory        String?
   aiTags            String[]
-  aiCategories      String[]      // Multiple AI-suggested categories
-  originalLanguage  String        @default("English")
-  translatedContent String?       // English translation for AI processing
-  viewCount         Int           @default(0)
-  shareCount        Int           @default(0)
+  originalLanguage  String         @default("English")
+  translatedContent String?
+  viewCount         Int            @default(0)
+  shareCount        Int            @default(0)
   authorId          String
-  categoryId        String        // Primary category (for backward compatibility)
+  categoryId        String
+  aiCategories      String[]
   Comment           Comment[]
-  users             users         @relation(fields: [authorId], references: [id])
-  categories        categories    @relation(fields: [categoryId], references: [id])
+  users             users          @relation(fields: [authorId], references: [id])
+  categories        categories     @relation(fields: [categoryId], references: [id])
+  postCategories    PostCategory[]
   attachments       attachments[]
-  postCategories    PostCategory[] // Many-to-many relationship with categories
 
   @@index([authorId])
   @@index([categoryId])
@@ -98,28 +98,27 @@ model attachments {
 }
 
 model categories {
-  id            String         @id
-  name          String         @unique
-  description   String
-  color         String
-  icon          String
-  slug          String         @unique
-  postCount     Int            @default(0)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime
-  Post          Post[]
-  postCategories PostCategory[] // Many-to-many relationship with posts
+  id             String         @id
+  name           String         @unique
+  description    String
+  color          String
+  icon           String
+  slug           String         @unique
+  postCount      Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  Post           Post[]
+  postCategories PostCategory[]
 }
 
-// Junction table for many-to-many relationship between posts and categories
 model PostCategory {
   id         String     @id @default(cuid())
   postId     String
   categoryId String
-  isPrimary  Boolean    @default(false) // Mark the primary category
+  isPrimary  Boolean    @default(false)
   createdAt  DateTime   @default(now())
-  post       Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
   category   categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  post       Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([postId, categoryId])
   @@index([postId])
@@ -151,31 +150,24 @@ model notifications {
 }
 
 model EmailLogs {
-  id          String           @id @default(cuid())
-  email       String
-  subject     String
-  template    String
-  type        NotificationType
-  status      EmailStatus      @default(PENDING)
-  sentAt      DateTime?
-  error       String?
-  userId      String?
-  postId      String?
-  commentId   String?
-  metadata    Json?
-  createdAt   DateTime         @default(now())
-  
+  id        String           @id @default(cuid())
+  email     String
+  subject   String
+  template  String
+  type      NotificationType
+  status    EmailStatus      @default(PENDING)
+  sentAt    DateTime?
+  error     String?
+  userId    String?
+  postId    String?
+  commentId String?
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
   @@index([email])
   @@index([userId])
   @@index([type])
   @@index([status])
-}
-
-enum EmailStatus {
-  PENDING
-  SENT
-  FAILED
-  BOUNCED
 }
 
 model pages {
@@ -201,78 +193,71 @@ model settings {
 }
 
 model users {
-  id                String           @id
-  name              String?
-  email             String           @unique
-  emailVerified     DateTime?
-  image             String?
-  password          String?
-  company           String?
-  profession        String?
-  bio               String?
-  location          String?
-  website           String?
-  phone             String?
-  profileVisibility Boolean          @default(true)
-  
-  // Privacy Settings
-  emailPrivacy      PrivacyLevel     @default(MEMBERS_ONLY)
-  phonePrivacy      PrivacyLevel     @default(ONLY_ME)
-  profilePhotoPrivacy PrivacyLevel   @default(EVERYONE)
-  
-  linkedinUrl       String?
-  twitterUrl        String?
-  instagramUrl      String?
-  githubUrl         String?
-  youtubeUrl        String?
-  tiktokUrl         String?
-  
-  // Email Notification Preferences
-  emailNotifications Boolean          @default(true)  // Global email notifications toggle
-  notifyOnComment   Boolean          @default(true)  // Email when someone comments on my post
-  notifyOnLike      Boolean          @default(true)  // Email when someone likes my post/comment
-  notifyOnMention   Boolean          @default(true)  // Email when someone mentions me
-  notifyOnReply     Boolean          @default(true)  // Email when someone replies to my comment
-  notifyOnNewPost   Boolean          @default(false) // Email for new posts in followed categories
-  notifyOnSystem    Boolean          @default(true)  // Email for system notifications
-  emailDigest       EmailDigestFreq  @default(DISABLED) // Weekly/daily digest emails
-  
-  // Two-Factor Authentication
-  twoFactorEnabled  Boolean          @default(false) // Whether 2FA is enabled
-  twoFactorSecret   String?                          // 2FA secret key
-  behanceUrl        String?
-  dribbbleUrl       String?
-  otherSocialUrl    String?
-  role              UserRole         @default(MEMBER)
-  isVerified        Boolean          @default(false)
-  isSuspended       Boolean          @default(false)
-  suspendedUntil    DateTime?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime
-  lastActiveAt      DateTime         @default(now())
-  city              String?
-  country           String?
-  facebookUrl       String?
-  firstName         String?
-  headline          String?
-  industry          String?
-  professions       String[]         @default([])
-  lastName          String?
-  phoneNumber       String?
-  portfolioUrl      String?
-  skills            String[]         @default([])
-  Account           Account[]
-  Comment           Comment[]
-  education         Education[]
-  Post              Post[]
-  Session           Session[]
-  workExperience    WorkExperience[]
-  flags             flags[]
-  notifications     notifications[]
-  pages             pages[]
-  settings          settings[]
-  votes             votes[]
-  userBadges        userBadges[]
+  id                  String           @id
+  name                String?
+  email               String           @unique
+  emailVerified       DateTime?
+  image               String?
+  password            String?
+  company             String?
+  profession          String?
+  bio                 String?
+  location            String?
+  website             String?
+  phone               String?
+  profileVisibility   Boolean          @default(true)
+  linkedinUrl         String?
+  twitterUrl          String?
+  instagramUrl        String?
+  role                UserRole         @default(MEMBER)
+  isVerified          Boolean          @default(false)
+  isSuspended         Boolean          @default(false)
+  suspendedUntil      DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime
+  lastActiveAt        DateTime         @default(now())
+  city                String?
+  country             String?
+  facebookUrl         String?
+  firstName           String?
+  headline            String?
+  industry            String?
+  lastName            String?
+  phoneNumber         String?
+  portfolioUrl        String?
+  skills              String[]         @default([])
+  behanceUrl          String?
+  dribbbleUrl         String?
+  emailPrivacy        PrivacyLevel     @default(MEMBERS_ONLY)
+  githubUrl           String?
+  otherSocialUrl      String?
+  phonePrivacy        PrivacyLevel     @default(ONLY_ME)
+  profilePhotoPrivacy PrivacyLevel     @default(EVERYONE)
+  tiktokUrl           String?
+  youtubeUrl          String?
+  professions         String[]         @default([])
+  emailDigest         EmailDigestFreq  @default(DISABLED)
+  emailNotifications  Boolean          @default(true)
+  notifyOnComment     Boolean          @default(true)
+  notifyOnLike        Boolean          @default(true)
+  notifyOnMention     Boolean          @default(true)
+  notifyOnNewPost     Boolean          @default(false)
+  notifyOnReply       Boolean          @default(true)
+  notifyOnSystem      Boolean          @default(true)
+  twoFactorEnabled    Boolean          @default(false)
+  twoFactorSecret     String?
+  Account             Account[]
+  Comment             Comment[]
+  education           Education[]
+  Post                Post[]
+  Session             Session[]
+  workExperience      WorkExperience[]
+  flags               flags[]
+  notifications       notifications[]
+  pages               pages[]
+  settings            settings[]
+  userBadges          userBadges[]
+  votes               votes[]
 }
 
 model WorkExperience {
@@ -308,17 +293,17 @@ model Education {
 }
 
 model badges {
-  id          String     @id @default(cuid())
-  name        String     @unique
+  id          String       @id @default(cuid())
+  name        String       @unique
   description String
   icon        String
   color       String
   type        BadgeType
-  level       BadgeLevel @default(BRONZE)
-  criteria    Json       // Stores the criteria for earning this badge
-  isActive    Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  level       BadgeLevel   @default(BRONZE)
+  criteria    Json
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   userBadges  userBadges[]
 
   @@index([type])
@@ -330,9 +315,9 @@ model userBadges {
   userId    String
   badgeId   String
   earnedAt  DateTime @default(now())
-  awardedBy String?  // For manually awarded badges
-  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  awardedBy String?
   badges    badges   @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, badgeId])
   @@index([userId])
@@ -350,6 +335,13 @@ model votes {
 
   @@unique([userId, commentId])
   @@unique([userId, postId])
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  BOUNCED
 }
 
 enum FlagStatus {

@@ -47,13 +47,14 @@ interface TopContributor {
 export default function Sidebar() {
   // Fallback categories to ensure they always display
   const FALLBACK_CATEGORIES: Category[] = [
-    { id: "other", name: "Other", color: "bg-gray-500", icon: "📂", slug: "other", count: 0 },
+    { id: "design", name: "Design", color: "bg-purple-500", icon: "🎨", slug: "design", count: 0 },
     { id: "informative", name: "Informative", color: "bg-cyan-500", icon: "ℹ️", slug: "informative", count: 0 },
     { id: "business", name: "Business", color: "bg-blue-500", icon: "💼", slug: "business", count: 0 },
-    { id: "design", name: "Design", color: "bg-purple-500", icon: "🎨", slug: "design", count: 0 },
     { id: "career", name: "Career", color: "bg-green-500", icon: "👔", slug: "career", count: 0 },
-    { id: "construction", name: "Construction", color: "bg-yellow-500", icon: "🏗️", slug: "construction", count: 0 },
+    { id: "construction", name: "Construction", color: "bg-yellow-500", icon: "�️", slug: "construction", count: 0 },
     { id: "academic", name: "Academic", color: "bg-indigo-500", icon: "🎓", slug: "academic", count: 0 },
+    { id: "jobs", name: "Jobs", color: "bg-red-500", icon: "💼", slug: "jobs", count: 0 },
+    { id: "other", name: "Other", color: "bg-gray-500", icon: "📂", slug: "other", count: 0 },
   ]
 
   const [categories, setCategories] = useState<Category[]>(FALLBACK_CATEGORIES)
@@ -74,6 +75,7 @@ export default function Sidebar() {
     construction: "bg-yellow-500",
     academic: "bg-indigo-500",
     informative: "bg-cyan-500",
+    jobs: "bg-red-500",
     other: "bg-gray-500",
   } as const
 
@@ -96,6 +98,8 @@ export default function Sidebar() {
         return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-200 dark:hover:bg-indigo-900/50'
       case 'bg-cyan-500':
         return 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-200 dark:hover:bg-cyan-900/50'
+      case 'bg-red-500':
+        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800 hover:bg-red-200 dark:hover:bg-red-900/50'
       case 'bg-gray-500':
       default:
         return 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-900/50'
@@ -272,7 +276,7 @@ export default function Sidebar() {
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 pt-0 px-2">
+        <CardContent className="space-y-4 pt-0 px-2">
           {isLoading ? (
             // Loading skeleton
             Array.from({ length: 7 }).map((_, index) => (
@@ -290,15 +294,16 @@ export default function Sidebar() {
               // Get categories to display - use fetched or fallback
               const displayCategories = categories.length > 0 ? categories : FALLBACK_CATEGORIES;
               
-              // Define the desired display order
+              // Define the desired display order - "Other" should always be last
               const categoryOrder = [
-                "Other", 
+                "Design",
                 "Informative", 
                 "Business", 
-                "Design", 
                 "Career", 
                 "Construction", 
-                "Academic"
+                "Academic",
+                "Jobs",
+                "Other"
               ];
               
               // Sort categories by the predefined order
@@ -324,16 +329,17 @@ export default function Sidebar() {
                 const dotColor = getCategoryDotColor(category.name);
                 
                 return (
-                  <div 
-                    key={category.id} 
-                    className={`group flex items-center rounded-xl py-2 px-4 transition-all duration-200 cursor-pointer smooth-transition hover-lift animate-slide-in-up ${getCategoryLightColor(category.name)}`}
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-3 h-3 rounded-full ${dotColor}`} />
-                      <span className="text-sm font-medium">{category.name}</span>
-                    </div>
-                  </div>
+                  <div
+  key={category.id}
+  className={`group flex items-center rounded-lg py-2 px-3 transition-all duration-200 cursor-pointer smooth-transition hover-lift animate-slide-in-up ${getCategoryLightColor(category.name)} max-w-[280px] mx-auto`}
+  style={{ animationDelay: `${index * 50}ms` }}
+>
+  <div className="flex items-center space-x-2 w-full">
+    <div className={`w-3 h-3 rounded-full ${dotColor}`} />
+    <span className="text-base font-semibold">{category.name}</span>
+  </div>
+</div>
+
                 );
               });
             })()

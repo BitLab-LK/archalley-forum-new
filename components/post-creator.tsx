@@ -178,8 +178,24 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
                 'profession': 'career',
                 'interview': 'career',
                 'resume': 'career',
-                'hiring': 'career',
                 'workplace': 'career',
+                'professional': 'career',
+                'networking': 'career',
+                'skill': 'career',
+                'development': 'career',
+                'freelance': 'career',
+                'consultant': 'career',
+                'promotion': 'career',
+                
+                // Jobs related (separate from career - this is for job postings)
+                'hiring': 'jobs',
+                'recruitment': 'jobs',
+                'position': 'jobs',
+                'vacancy': 'jobs',
+                'opening': 'jobs',
+                'opportunity': 'jobs',
+                'posting': 'jobs',
+                'apply': 'jobs',
                 
                 // Business related
                 'company': 'business',
@@ -196,7 +212,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
                 'engineering': 'construction',
                 'project': 'construction',
                 'materials': 'construction',
-                'development': 'construction',
+                'construction-development': 'construction',
                 'infrastructure': 'construction',
                 'renovation': 'construction',
                 
@@ -292,13 +308,26 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
             }
             
             // Use found category or fallback to appropriate default
-            if (!foundCategory && classifiedCategory.toLowerCase() === "other") {
-              // Look specifically for the "Other" category
-              foundCategory = categories.find((cat: any) => cat.name.toLowerCase() === "other")
+            if (!foundCategory) {
+              // Check if the AI specifically suggested "Other" - respect that decision
+              if (classifiedCategory.toLowerCase() === "other") {
+                foundCategory = categories.find((cat: any) => cat.name.toLowerCase() === "other")
+              } else {
+                // For other cases, try to find the most appropriate category
+                // But still respect AI's decision if it's valid
+                foundCategory = categories.find((cat: any) => cat.name.toLowerCase() === "informative") ||
+                               categories.find((cat: any) => cat.name.toLowerCase() === "design") ||
+                               categories.find((cat: any) => cat.name.toLowerCase() === "business") ||
+                               categories.find((cat: any) => cat.name.toLowerCase() === "other")
+              }
             }
             
-            // Final fallback to first category
-            categoryId = foundCategory?.id || categories[0]?.id || ''
+            // Final fallback - respect AI's "Other" decision or use first category
+            if (!foundCategory) {
+              foundCategory = categories[0]
+            }
+            
+            categoryId = foundCategory?.id || ''
           }
         }
       } catch (error) {

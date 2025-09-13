@@ -76,6 +76,9 @@
 .category-informative {
   @apply bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200;
 }
+.category-jobs {
+  @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+}
 .category-other {
   @apply bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200;
 }

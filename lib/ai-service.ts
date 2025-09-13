@@ -19,12 +19,13 @@ const model = genAI ? genAI.getGenerativeModel({
 
 // Fallback categories when database is unavailable
 const FALLBACK_CATEGORIES = [
+  "Design",
+  "Informative", 
   "Business",
-  "Design", 
   "Career",
   "Construction",
   "Academic",
-  "Informative",
+  "Jobs",
   "Other"
 ]
 
@@ -136,30 +137,42 @@ export async function classifyPost(content: string, availableCategories?: string
     const originalLanguage = detectedLanguage
 
     // Step 2: Analyze content for category and tags
-    const prompt = `IMPORTANT: You must categorize this content into multiple relevant categories when applicable.
+    const prompt = `CRITICAL: You are an expert content categorizer. Your job is to accurately classify content into specific categories.
 
 AVAILABLE CATEGORIES: ${categories.join(", ")}
 
-CONTENT: "${translatedText}"
+CONTENT TO ANALYZE: "${translatedText}"
 
-ANALYSIS INSTRUCTIONS:
-1. Read the content carefully and identify ALL relevant topics
-2. Select 1-3 categories that match the content themes
-3. For business-related content about starting companies, budgeting, consulting → include "Business"
-4. For construction, engineering, building, architecture → include "Construction" 
-5. For career advice, job seeking, professional development → include "Career"
-6. For design, aesthetics, visual concepts → include "Design"
-7. For academic, research, educational content → include "Academic"
-8. For tutorials, guides, informational content → include "Informative"
+STRICT CATEGORIZATION RULES:
+
+1. FIRST, check if the content is meaningful:
+   - Random letters, gibberish, or nonsensical text → "Other"
+   - Very short meaningless posts (like "hi", "ok", "test") → "Other"
+   - Spam or irrelevant content → "Other"
+
+2. For MEANINGFUL content, analyze deeply:
+   - DESIGN: architecture, interior design, art, creative work, visual concepts, layouts, graphics, UI/UX, aesthetics
+   - BUSINESS: companies, startups, entrepreneurship, management, marketing, finance, budgeting, strategy, consulting
+   - CAREER: job searching, professional development, skills, networking, freelancing, interviews, workplace advice
+   - CONSTRUCTION: building, engineering, civil works, project management, materials, contractors, infrastructure
+   - ACADEMIC: education, research, universities, studies, degrees, courses, learning, teaching, scholarly work
+   - INFORMATIVE: tutorials, guides, how-to content, educational material, explanations, tips, knowledge sharing
+   - JOBS: job postings, hiring, recruitment, job opportunities, employment openings, positions available
+
+3. CRITICAL RULES:
+   - If content is gibberish/random → "Other"
+   - If content is meaningful but doesn't fit specific categories → "Other"
+   - Only use other categories when content clearly relates to them
+   - Multiple categories allowed if content spans domains
 
 MANDATORY JSON RESPONSE FORMAT:
 {
   "categories": ["Category1", "Category2"],
-  "tags": ["relevant", "tags", "here"],
+  "tags": ["relevant", "keywords", "here"],
   "confidence": 0.9
 }
 
-CRITICAL: Always return categories as an array, even for single categories. If content clearly spans multiple domains, you MUST include multiple categories.`
+REMEMBER: Be strict about categorization. When in doubt, use "Other".`
 
     const result = await model.generateContent(prompt)
     const response = await result.response
@@ -192,20 +205,69 @@ CRITICAL: Always return categories as an array, even for single categories. If c
       })
       .filter((cat: string | null) => cat !== null) as string[]
 
-    // If no valid categories found, use fallback logic
+    // If no valid categories found, use intelligent fallback logic
     if (validCategories.length === 0) {
-      let fallbackCategory = "Other"
-      if (resultCategories.length > 0) {
-        const firstSuggestion = resultCategories[0].toLowerCase()
-        const partialMatch = categories.find((cat: string) => 
-          cat.toLowerCase().includes(firstSuggestion) || 
-          firstSuggestion.includes(cat.toLowerCase())
-        )
-        if (partialMatch) {
-          fallbackCategory = partialMatch
+      // Try to match content to categories using keyword analysis
+      const contentLower = translatedText.toLowerCase()
+      let bestMatch: string | null = null
+      
+      // Define keyword mappings for each category
+      const categoryKeywords = {
+        'Design': ['design', 'art', 'creative', 'visual', 'aesthetic', 'layout', 'graphic', 'ui', 'ux', 'color', 'style', 'beautiful', 'elegant'],
+        'Business': ['business', 'company', 'startup', 'entrepreneur', 'management', 'finance', 'marketing', 'strategy', 'profit', 'revenue', 'client', 'customer'],
+        'Career': ['career', 'professional', 'skill', 'development', 'networking', 'freelance', 'consultant', 'interview', 'resume', 'promotion', 'workplace'],
+        'Construction': ['construction', 'building', 'engineering', 'project', 'contractor', 'infrastructure', 'renovation', 'planning', 'materials', 'structural'],
+        'Academic': ['education', 'research', 'university', 'study', 'degree', 'course', 'learning', 'teaching', 'academic', 'scholar', 'thesis', 'student'],
+        'Informative': ['tutorial', 'guide', 'how-to', 'tip', 'advice', 'instruction', 'explanation', 'help', 'learn', 'knowledge', 'information'],
+        'Jobs': ['hiring', 'recruitment', 'position', 'vacancy', 'opening', 'opportunity', 'apply', 'job posting', 'employment']
+      }
+      
+      // Score each category based on keyword matches
+      let bestScore = 0
+      for (const [categoryName, keywords] of Object.entries(categoryKeywords)) {
+        if (categories.includes(categoryName)) {
+          const score = keywords.filter(keyword => contentLower.includes(keyword)).length
+          if (score > bestScore) {
+            bestScore = score
+            bestMatch = categoryName
+          }
         }
       }
-      validCategories.push(fallbackCategory)
+      
+      // If we found a good match (at least 1 keyword), use it
+      if (bestMatch && bestScore > 0) {
+        validCategories.push(bestMatch)
+      } else {
+        // Check if content is meaningful before applying fallback
+        const isMeaningfulContent = contentLower.length > 2 && 
+                                   /[aeiou]/.test(contentLower) && // Has vowels
+                                   !/^[^a-z\s]*$/.test(contentLower) && // Not just symbols/numbers
+                                   !(/^[a-z]{1,3}$/.test(contentLower.trim())) && // Not just short random letters
+                                   !(contentLower.length > 10 && !/\s/.test(contentLower) && /^[a-z]+$/.test(contentLower)) // Not long strings without spaces
+        
+        if (!isMeaningfulContent) {
+          // Random letters, gibberish, or very short content should be "Other"
+          validCategories.push("Other")
+        } else {
+          // Try partial matching with AI suggestions as last resort
+          if (resultCategories.length > 0) {
+            const firstSuggestion = resultCategories[0].toLowerCase()
+            const partialMatch = categories.find((cat: string) => 
+              cat.toLowerCase().includes(firstSuggestion) || 
+              firstSuggestion.includes(cat.toLowerCase())
+            )
+            if (partialMatch && partialMatch !== 'Other') {
+              validCategories.push(partialMatch)
+            } else {
+              // For meaningful content that doesn't fit elsewhere, use "Informative"
+              validCategories.push("Informative")
+            }
+          } else {
+            // Default to "Informative" only for meaningful content
+            validCategories.push("Informative")
+          }
+        }
+      }
     }
 
     // Create final classification result with forced multiple categories for certain content

@@ -14,13 +14,14 @@ const createCategorySchema = z.object({
 
 // Fallback categories for when database is not available
 const FALLBACK_CATEGORIES = [
-  { id: "other", name: "Other", color: "bg-gray-500", icon: "📂", slug: "other", count: 15 },
-  { id: "informative", name: "Informative", color: "bg-cyan-500", icon: "ℹ️", slug: "informative", count: 8 },
-  { id: "business", name: "Business", color: "bg-blue-500", icon: "💼", slug: "business", count: 6 },
   { id: "design", name: "Design", color: "bg-purple-500", icon: "🎨", slug: "design", count: 4 },
-  { id: "career", name: "Career", color: "bg-green-500", icon: "👔", slug: "career", count: 3 },
-  { id: "construction", name: "Construction", color: "bg-yellow-500", icon: "🏗️", slug: "construction", count: 2 },
+  { id: "informative", name: "Informative", color: "bg-cyan-500", icon: "📚", slug: "informative", count: 8 },
+  { id: "business", name: "Business", color: "bg-blue-500", icon: "💼", slug: "business", count: 6 },
+  { id: "career", name: "Career", color: "bg-green-500", icon: "📈", slug: "career", count: 3 },
+  { id: "construction", name: "Construction", color: "bg-yellow-500", icon: "�️", slug: "construction", count: 2 },
   { id: "academic", name: "Academic", color: "bg-indigo-500", icon: "🎓", slug: "academic", count: 1 },
+  { id: "jobs", name: "Jobs", color: "bg-red-500", icon: "💼", slug: "jobs", count: 0 },
+  { id: "other", name: "Other", color: "bg-gray-500", icon: "📂", slug: "other", count: 15 },
 ]
 
 export async function GET(request: NextRequest) {
@@ -118,6 +119,13 @@ export async function GET(request: NextRequest) {
       slug: category.slug,
       count: category._count.Post // Use actual post count from relationship
     }))
+
+    // Ensure "Other" category is always at the bottom
+    const otherIndex = formattedCategories.findIndex(cat => cat.name.toLowerCase() === 'other')
+    if (otherIndex > -1) {
+      const otherCategory = formattedCategories.splice(otherIndex, 1)[0]
+      formattedCategories.push(otherCategory)
+    }
 
     return NextResponse.json(formattedCategories)
   } catch (error) {
