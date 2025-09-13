@@ -434,12 +434,19 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
         // No top comment or no votes left
         onTopCommentVoteChange(post.id, null)
       } else {
-        // Update top comment with complete data
+        // Update top comment with complete data - handle both string and object author
+        const authorName = typeof newTopComment.author === 'string' 
+          ? newTopComment.author 
+          : (newTopComment.author as any)?.name || "Anonymous"
+        const authorImage = typeof newTopComment.author === 'string' 
+          ? (newTopComment as any).authorImage 
+          : (newTopComment.author as any)?.image
+          
         onTopCommentVoteChange(post.id, {
           id: newTopComment.id,
           author: {
-            name: newTopComment.author.name,
-            image: newTopComment.author.image
+            name: authorName,
+            image: authorImage || "/placeholder-user.jpg"
           },
           content: newTopComment.content,
           upvotes: newTopComment.upvotes || 0,
@@ -463,12 +470,69 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
         setComments(originalComments)
         const errorText = await response.text()
         console.error(`Failed to vote on comment: ${response.status} ${response.statusText}`, errorText)
+        
+        // Also revert the top comment change
+        if (onTopCommentVoteChange) {
+          const originalTopComment = originalComments.reduce((top, comment) => {
+            const currentActivity = (comment.upvotes || 0) + (comment.downvotes || 0)
+            const topActivity = (top?.upvotes || 0) + (top?.downvotes || 0)
+            return currentActivity > topActivity ? comment : top
+          }, originalComments[0])
+          
+          if (!originalTopComment || (originalTopComment.upvotes || 0) + (originalTopComment.downvotes || 0) === 0) {
+            onTopCommentVoteChange(post.id, null)
+          } else {
+            // Use fallback values to avoid type issues
+            const authorData = originalTopComment as any
+            onTopCommentVoteChange(post.id, {
+              id: originalTopComment.id,
+              author: {
+                name: authorData.author?.name || authorData.author || "Anonymous",
+                image: authorData.author?.image || "/placeholder-user.jpg"
+              },
+              content: originalTopComment.content,
+              upvotes: originalTopComment.upvotes || 0,
+              downvotes: originalTopComment.downvotes || 0,
+              isBestAnswer: false,
+              userVote: originalTopComment.userVote || undefined
+            })
+          }
+        }
+        
         throw new Error(`Failed to vote on comment: ${response.status} ${response.statusText}`)
       }
     } catch (error) {
       // Revert to original state on error
       setComments(originalComments)
       console.error("Error voting on comment, reverted:", error)
+      
+      // Also revert the top comment change
+      if (onTopCommentVoteChange) {
+        const originalTopComment = originalComments.reduce((top, comment) => {
+          const currentActivity = (comment.upvotes || 0) + (comment.downvotes || 0)
+          const topActivity = (top?.upvotes || 0) + (top?.downvotes || 0)
+          return currentActivity > topActivity ? comment : top
+        }, originalComments[0])
+        
+        if (!originalTopComment || (originalTopComment.upvotes || 0) + (originalTopComment.downvotes || 0) === 0) {
+          onTopCommentVoteChange(post.id, null)
+        } else {
+          // Use fallback values to avoid type issues
+          const authorData = originalTopComment as any
+          onTopCommentVoteChange(post.id, {
+            id: originalTopComment.id,
+            author: {
+              name: authorData.author?.name || authorData.author || "Anonymous",
+              image: authorData.author?.image || "/placeholder-user.jpg"
+            },
+            content: originalTopComment.content,
+            upvotes: originalTopComment.upvotes || 0,
+            downvotes: originalTopComment.downvotes || 0,
+            isBestAnswer: false,
+            userVote: originalTopComment.userVote || undefined
+          })
+        }
+      }
     }
   }
 

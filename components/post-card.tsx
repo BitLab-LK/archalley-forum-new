@@ -729,9 +729,9 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
               <div className="flex items-start space-x-3">
                 {/* Avatar */}
                 <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarImage src={topComment.author.image || "/placeholder-user.jpg"} />
+                  <AvatarImage src={topComment.author?.image || "/placeholder-user.jpg"} />
                   <AvatarFallback className="bg-orange-500 text-white text-xs">
-                    {topComment.author.name.charAt(0).toUpperCase()}
+                    {(topComment.author?.name || "U").charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 
@@ -739,7 +739,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2 mb-1">
                     <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                      {topComment.author.name}
+                      {topComment.author?.name || "Anonymous"}
                     </span>
                     {topComment.isBestAnswer && (
                       <Badge variant="default" className="text-xs bg-green-500">

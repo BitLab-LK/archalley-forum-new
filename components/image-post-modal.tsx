@@ -849,15 +849,21 @@ export default function ImagePostModal({
     if (onTopCommentVoteChange) {
       if (!newTopComment || (newTopComment.upvotes || 0) + (newTopComment.downvotes || 0) === 0) {
         // No top comment or no votes left
-        
         onTopCommentVoteChange(post.id, null)
       } else {
-        // Update top comment with complete data
+        // Update top comment with complete data - handle both string and object author
+        const authorName = typeof newTopComment.author === 'string' 
+          ? newTopComment.author 
+          : (newTopComment.author as any)?.name || "Anonymous"
+        const authorImage = typeof newTopComment.author === 'string' 
+          ? newTopComment.authorImage 
+          : (newTopComment.author as any)?.image || newTopComment.authorImage
+          
         const topCommentData = {
           id: newTopComment.id,
           author: {
-            name: newTopComment.author,
-            image: newTopComment.authorImage
+            name: authorName,
+            image: authorImage || "/placeholder-user.jpg"
           },
           content: newTopComment.content,
           upvotes: newTopComment.upvotes || 0,
@@ -881,12 +887,68 @@ export default function ImagePostModal({
       if (!response.ok) {
         // Rollback on error
         setComments(previousComments)
-        console.error("Failed to vote on comment")
+        console.error("Failed to vote on comment:", response.status, await response.text())
+        
+        // Also revert the top comment change
+        if (onTopCommentVoteChange) {
+          const originalTopComment = previousComments.reduce((top, comment) => {
+            const currentActivity = (comment.upvotes || 0) + (comment.downvotes || 0)
+            const topActivity = (top?.upvotes || 0) + (top?.downvotes || 0)
+            return currentActivity > topActivity ? comment : top
+          }, previousComments[0])
+          
+          if (!originalTopComment || (originalTopComment.upvotes || 0) + (originalTopComment.downvotes || 0) === 0) {
+            onTopCommentVoteChange(post.id, null)
+          } else {
+            // Use fallback values to avoid type issues
+            const authorData = originalTopComment as any
+            onTopCommentVoteChange(post.id, {
+              id: originalTopComment.id,
+              author: {
+                name: authorData.author || "Anonymous",
+                image: authorData.authorImage || "/placeholder-user.jpg"
+              },
+              content: originalTopComment.content,
+              upvotes: originalTopComment.upvotes || 0,
+              downvotes: originalTopComment.downvotes || 0,
+              isBestAnswer: false,
+              userVote: originalTopComment.userVote
+            })
+          }
+        }
       }
     } catch (error) {
       // Rollback on error
       setComments(previousComments)
       console.error("Error voting on comment:", error)
+      
+      // Also revert the top comment change
+      if (onTopCommentVoteChange) {
+        const originalTopComment = previousComments.reduce((top, comment) => {
+          const currentActivity = (comment.upvotes || 0) + (comment.downvotes || 0)
+          const topActivity = (top?.upvotes || 0) + (top?.downvotes || 0)
+          return currentActivity > topActivity ? comment : top
+        }, previousComments[0])
+        
+        if (!originalTopComment || (originalTopComment.upvotes || 0) + (originalTopComment.downvotes || 0) === 0) {
+          onTopCommentVoteChange(post.id, null)
+        } else {
+          // Use fallback values to avoid type issues
+          const authorData = originalTopComment as any
+          onTopCommentVoteChange(post.id, {
+            id: originalTopComment.id,
+            author: {
+              name: authorData.author || "Anonymous",
+              image: authorData.authorImage || "/placeholder-user.jpg"
+            },
+            content: originalTopComment.content,
+            upvotes: originalTopComment.upvotes || 0,
+            downvotes: originalTopComment.downvotes || 0,
+            isBestAnswer: false,
+            userVote: originalTopComment.userVote
+          })
+        }
+      }
     }
   }
 
