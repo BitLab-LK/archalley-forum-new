@@ -630,18 +630,22 @@ export default function ImagePostModal({
             <div className="flex items-center gap-4 mt-1 text-xs">
               <button 
                 onClick={() => handleCommentVote(comment.id, "up")}
+                disabled={comment.id.startsWith('temp-')}
                 className={cn(
                   "font-semibold transition-all duration-100 hover:underline active:scale-95",
-                  comment.userVote === "up" ? "text-orange-600 dark:text-orange-400" : "text-gray-500 dark:text-gray-400"
+                  comment.userVote === "up" ? "text-orange-600 dark:text-orange-400" : "text-gray-500 dark:text-gray-400",
+                  comment.id.startsWith('temp-') && "opacity-50 cursor-not-allowed"
                 )}
               >
                 {comment.userVote === "up" ? "Unlike" : "Like"}
               </button>
               <button 
                 onClick={() => handleCommentVote(comment.id, "down")}
+                disabled={comment.id.startsWith('temp-')}
                 className={cn(
                   "font-semibold transition-all duration-100 hover:underline active:scale-95",
-                  comment.userVote === "down" ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"
+                  comment.userVote === "down" ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400",
+                  comment.id.startsWith('temp-') && "opacity-50 cursor-not-allowed"
                 )}
               >
                 {comment.userVote === "down" ? "Remove Dislike" : "Dislike"}
@@ -762,6 +766,12 @@ export default function ImagePostModal({
 
   const handleCommentVote = async (commentId: string, voteType: "up" | "down") => {
     if (!user) return
+    
+    // Prevent voting on optimistic comments (temporary comments that haven't been saved to server yet)
+    if (commentId.startsWith('temp-')) {
+      console.warn('Cannot vote on optimistic comment, please wait for it to be saved')
+      return
+    }
     
     // Store previous state for rollback
     const previousComments = comments
@@ -887,7 +897,7 @@ export default function ImagePostModal({
       if (!response.ok) {
         // Rollback on error
         setComments(previousComments)
-        console.error("Failed to vote on comment:", response.status, await response.text())
+        console.error(`Failed to vote on comment ${commentId}: ${response.status}`, await response.text())
         
         // Also revert the top comment change
         if (onTopCommentVoteChange) {
@@ -920,7 +930,7 @@ export default function ImagePostModal({
     } catch (error) {
       // Rollback on error
       setComments(previousComments)
-      console.error("Error voting on comment:", error)
+      console.error(`Error voting on comment ${commentId}:`, error)
       
       // Also revert the top comment change
       if (onTopCommentVoteChange) {

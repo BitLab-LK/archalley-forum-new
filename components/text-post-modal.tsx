@@ -79,6 +79,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
   const [replyTo, setReplyTo] = useState<string | null>(null)
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [optimisticCommentIds, setOptimisticCommentIds] = useState<Set<string>>(new Set()) // Track optimistic comments
   
   const previousCommentCount = useRef<number>(0) // Track previous comment count
   const { user } = useAuth()
@@ -327,6 +328,9 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
       replies: []
     }
     
+    // Track this as an optimistic comment
+    setOptimisticCommentIds(prev => new Set(prev).add(optimisticComment.id))
+    
     // Update UI immediately
     setComments(prev => [...prev, optimisticComment])
     setCommentInput("")
@@ -349,6 +353,13 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
           // Comment count will be handled by parent component
         }
         
+        // Remove from optimistic tracking
+        setOptimisticCommentIds(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(optimisticComment.id)
+          return newSet
+        })
+        
         // Emit activity event for real-time feed updates
         if (user?.id) {
           activityEventManager.emitComment(user.id, post.id, optimisticComment.id)
@@ -358,18 +369,34 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
       } else {
         // Remove optimistic comment on error
         setComments(prev => prev.filter(c => c.id !== optimisticComment.id))
+        setOptimisticCommentIds(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(optimisticComment.id)
+          return newSet
+        })
         setCommentInput(optimisticComment.content)
       }
     } catch (error) {
       console.error("Error posting comment:", error)
       // Remove optimistic comment on error
       setComments(prev => prev.filter(c => c.id !== optimisticComment.id))
+      setOptimisticCommentIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(optimisticComment.id)
+        return newSet
+      })
       setCommentInput(optimisticComment.content)
     }
   }
 
   const handleCommentVote = async (commentId: string, voteType: "up" | "down") => {
     if (!user) return
+    
+    // Prevent voting on optimistic comments (temporary comments that haven't been saved to server yet)
+    if (optimisticCommentIds.has(commentId)) {
+      console.warn('Cannot vote on optimistic comment, please wait for it to be saved')
+      return
+    }
     
     // Store original comments state for potential revert
     const originalComments = [...comments]
@@ -469,7 +496,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
         // Revert to original state on error
         setComments(originalComments)
         const errorText = await response.text()
-        console.error(`Failed to vote on comment: ${response.status} ${response.statusText}`, errorText)
+        console.error(`Failed to vote on comment ${commentId}: ${response.status} ${response.statusText}`, errorText)
         
         // Also revert the top comment change
         if (onTopCommentVoteChange) {
@@ -499,12 +526,12 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
           }
         }
         
-        throw new Error(`Failed to vote on comment: ${response.status} ${response.statusText}`)
+        throw new Error(`Failed to vote on comment ${commentId}: ${response.status} ${response.statusText}`)
       }
     } catch (error) {
       // Revert to original state on error
       setComments(originalComments)
-      console.error("Error voting on comment, reverted:", error)
+      console.error(`Error voting on comment ${commentId}, reverted:`, error)
       
       // Also revert the top comment change
       if (onTopCommentVoteChange) {
@@ -623,6 +650,9 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
       replies: []
     }
     
+    // Track this as an optimistic comment
+    setOptimisticCommentIds(prev => new Set(prev).add(optimisticReply.id))
+    
     // Update UI immediately
     const currentReplyTo = replyTo
     setComments(prev => addReplyToComment(prev, currentReplyTo, optimisticReply))
@@ -686,6 +716,14 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
           
           return updatedComments
         })
+        
+        // Remove from optimistic tracking
+        setOptimisticCommentIds(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(optimisticReply.id)
+          return newSet
+        })
+        
         onCommentAdded?.()
       } else {
         // Remove optimistic reply on error and restore input
@@ -700,6 +738,11 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
           })
         }
         setComments(prev => removeOptimistic(prev))
+        setOptimisticCommentIds(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(optimisticReply.id)
+          return newSet
+        })
         setReplyInput(optimisticReply.content)
         setReplyTo(currentReplyTo)
       }
@@ -717,6 +760,11 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
         })
       }
       setComments(prev => removeOptimistic(prev))
+      setOptimisticCommentIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(optimisticReply.id)
+        return newSet
+      })
       setReplyInput(optimisticReply.content)
       setReplyTo(currentReplyTo)
     }
@@ -855,18 +903,22 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
             <div className="flex items-center gap-4 mt-1 text-xs">
               <button 
                 onClick={() => handleCommentVote(comment.id, "up")}
+                disabled={optimisticCommentIds.has(comment.id)}
                 className={cn(
                   "font-semibold transition-colors duration-75 hover:underline",
-                  comment.userVote === "up" ? "text-orange-600 dark:text-orange-400" : "text-gray-500 dark:text-gray-400"
+                  comment.userVote === "up" ? "text-orange-600 dark:text-orange-400" : "text-gray-500 dark:text-gray-400",
+                  optimisticCommentIds.has(comment.id) && "opacity-50 cursor-not-allowed"
                 )}
               >
                 {comment.userVote === "up" ? "Unlike" : "Like"}
               </button>
               <button 
                 onClick={() => handleCommentVote(comment.id, "down")}
+                disabled={optimisticCommentIds.has(comment.id)}
                 className={cn(
                   "font-semibold transition-colors duration-75 hover:underline",
-                  comment.userVote === "down" ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"
+                  comment.userVote === "down" ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400",
+                  optimisticCommentIds.has(comment.id) && "opacity-50 cursor-not-allowed"
                 )}
               >
                 {comment.userVote === "down" ? "Remove Dislike" : "Dislike"}
