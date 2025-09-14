@@ -62,50 +62,75 @@ export default function HomePageInteractive({
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null)
   const router = useRouter()
 
-  const fetchPosts = useCallback(async (page: number = 1) => {
+  const fetchPosts = useCallback(async (page: number = 1, retries: number = 2) => {
     setIsLoading(true)
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '10'
-      })
-      
-      const response = await fetch(`/api/posts?${params.toString()}`, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Accept': 'application/json',
+    
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: '10'
+        })
+        
+        const response = await fetch(`/api/posts?${params.toString()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Accept': 'application/json',
+          }
+        })
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('Failed to fetch posts:', response.status, errorText)
+          
+          // For 503 errors, show a more specific message
+          if (response.status === 503) {
+            throw new Error('Service temporarily unavailable. Please refresh the page.')
+          } else if (response.status >= 500) {
+            throw new Error('Server error. Please try again in a moment.')
+          } else {
+            throw new Error(`Failed to fetch posts: ${response.status}`)
+          }
         }
-      })
-      
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Failed to fetch posts:', response.status, errorText)
-        throw new Error(`Failed to fetch posts: ${response.status}`)
+        
+        const data = await response.json()
+        setPosts(data.posts || [])
+        setPagination(data.pagination || { total: 0, pages: 1, currentPage: 1, limit: 10 })
+        setIsLoading(false)
+        return // Success, exit retry loop
+        
+      } catch (error) {
+        console.error(`Homepage posts fetch error (attempt ${attempt + 1}/${retries + 1}):`, error)
+        
+        // If this is the last attempt, handle the error
+        if (attempt === retries) {
+          toast.error("Failed to load posts")
+          // Set empty state on error to prevent infinite loading
+          setPosts([])
+          setPagination({ total: 0, pages: 1, currentPage: 1, limit: 10 })
+          setIsLoading(false)
+          return
+        }
+        
+        // Wait before retry (progressive delay for 503s)
+        const delay = (error as Error).message?.includes('503') ? 2000 * (attempt + 1) : 1000 * (attempt + 1)
+        await new Promise(resolve => setTimeout(resolve, delay))
       }
-      const data = await response.json()
-      setPosts(data.posts || [])
-      setPagination(data.pagination || { total: 0, pages: 1, currentPage: 1, limit: 10 })
-    } catch (error) {
-      console.error('Homepage posts fetch error:', error)
-      toast.error("Failed to load posts")
-      // Set empty state on error to prevent infinite loading
-      setPosts([])
-      setPagination({ total: 0, pages: 1, currentPage: 1, limit: 10 })
-    } finally {
-      setIsLoading(false)
     }
   }, [])
 
   // Client-side fallback when SSR fails and returns empty posts
   useEffect(() => {
-    if (!posts || posts.length === 0) {
+    // Only trigger fallback if we have no posts AND we haven't started loading yet
+    // This prevents unnecessary refetches when posts are being updated optimistically
+    if ((!posts || posts.length === 0) && !isLoading) {
       console.log("No posts from SSR, attempting client-side fetch...")
       fetchPosts(1).catch(error => {
         console.error("Client-side fallback fetch failed:", error)
       })
     }
-  }, [fetchPosts, posts.length]) // Dependencies: fetchPosts and posts.length
+  }, [fetchPosts, posts.length, isLoading]) // Added isLoading to dependencies
 
   // Callbacks for search params handler
   const handlePageChange = useCallback((page: number) => {
@@ -194,11 +219,10 @@ export default function HomePageInteractive({
             <div className="animate-fade-in-up animate-stagger-2 hover-lift smooth-transition">
               <PostCreator onPostCreated={async (result) => {
                 if (result && result.success && result.post) {
-                  // API call succeeded, replace temp post with real one
-                  const tempId = result.tempId
+                  // API call succeeded, add the real post
                   const realPost = result.post
                   
-                  console.log("Replacing temp post with real post:", { tempId, realPost })
+                  console.log("Adding real post:", { realPost })
                   
                   // Transform the real API response
                   const transformedPost: Post = {
@@ -223,23 +247,22 @@ export default function HomePageInteractive({
                     images: realPost.attachments?.map((att: any) => att.url) || []
                   }
                   
-                  // Replace temp post with real one
-                  setPosts(prev => prev.map(post => 
-                    post.id === tempId ? transformedPost : post
-                  ))
+                  // Add real post to the beginning
+                  setPosts(prev => [transformedPost, ...prev])
+                  setPagination(prev => ({ 
+                    ...prev, 
+                    total: (prev?.total || 0) + 1 
+                  }))
+                  
+                  // Scroll to show the new post
+                  setTimeout(() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }, 100)
                   
                   toast.success("Post created successfully!")
                 } else if (result && result.error) {
-                  // API call failed, rollback the optimistic update
-                  const tempId = result.tempId
-                  console.error("Post creation failed, rolling back:", result.error)
-                  
-                  setPosts(prev => prev.filter(post => post.id !== tempId))
-                  setPagination(prev => ({ 
-                    ...prev, 
-                    total: Math.max((prev?.total || 0) - 1, 0)
-                  }))
-                  
+                  // API call failed, just show error
+                  console.error("Post creation failed:", result.error)
                   toast.error(result.error || "Failed to create post")
                 } else {
                   // Legacy fallback - refresh posts
@@ -270,60 +293,24 @@ export default function HomePageInteractive({
                     toast.error("Post created but failed to refresh feed")
                   }
                 }
-              }}
-              
-              onOptimisticUpdate={(optimisticPost: Post) => {
-                // Add optimistic post immediately when user submits
-                setPosts(prev => [optimisticPost, ...prev])
-                setPagination(prev => ({ 
-                  ...prev, 
-                  total: (prev?.total || 0) + 1 
-                }))
-                
-                // Scroll to show the new post
-                setTimeout(() => {
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                }, 100)
-              }}
-            />
+              }} />
             </div>
 
             <div className="space-y-3 sm:space-y-4 overflow-visible">
-              {isLoading ? (
-                <div className="space-y-4">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow animate-pulse">
-                      <div className="flex items-center space-x-4 mb-4">
-                        <div className="h-12 w-12 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
-                        <div className="space-y-2">
-                          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-32"></div>
-                          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-24"></div>
-                        </div>
-                      </div>
-                      <div className="h-20 bg-gray-300 dark:bg-gray-600 rounded mb-4"></div>
-                      <div className="flex space-x-4">
-                        <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-16"></div>
-                        <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-16"></div>
-                      </div>
-                    </div>
-                  ))}
+              {posts.map((post: Post) => (
+                <div 
+                  key={post.id}
+                  id={`post-${post.id}`}
+                  className={`hover-lift smooth-transition ${
+                    highlightedPostId === post.id ? 'ring-2 ring-primary ring-offset-2 bg-primary/5 transition-all duration-300' : ''
+                  }`}
+                >
+                  <PostCard 
+                    post={post} 
+                    onCommentCountChange={handleCommentCountChange}
+                  />
                 </div>
-              ) : (
-                posts.map((post: Post) => (
-                  <div 
-                    key={post.id}
-                    id={`post-${post.id}`}
-                    className={`hover-lift smooth-transition ${
-                      highlightedPostId === post.id ? 'ring-2 ring-primary ring-offset-2 bg-primary/5 transition-all duration-300' : ''
-                    }`}
-                  >
-                    <PostCard 
-                      post={post} 
-                      onCommentCountChange={handleCommentCountChange}
-                    />
-                  </div>
-                ))
-              )}
+              ))}
             </div>
 
             {/* Pagination - Mobile Optimized */}

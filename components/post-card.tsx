@@ -72,6 +72,7 @@ interface PostCardProps {
     comments: number
     timeAgo: string
     images?: string[]
+    isOptimistic?: boolean // Flag for optimistic posts
     topComment?: {
       author: {
         name: string

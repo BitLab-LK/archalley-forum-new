@@ -84,12 +84,15 @@ function Sidebar() {
     console.log('🔄 Loading sidebar data...')
     
     // Helper function for fetch with retry
-    const fetchWithRetry = async (url: string, retries = 2): Promise<Response> => {
+    const fetchWithRetry = async (url: string, retries = 3): Promise<Response> => {
       for (let i = 0; i <= retries; i++) {
         try {
           const response = await fetch(url, {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache'
+            },
             cache: 'no-cache',
           })
           
@@ -97,19 +100,25 @@ function Sidebar() {
             return response
           }
           
+          // For 503 errors, wait longer before retry
+          const delay = response.status === 503 ? 2000 * (i + 1) : 500 * (i + 1)
+          
           // If not ok and we have retries left, wait and retry
           if (i < retries) {
-            await new Promise(resolve => setTimeout(resolve, 500 * (i + 1))) // Progressive delay
+            console.warn(`API ${url} failed with ${response.status}, retrying in ${delay}ms (attempt ${i + 1}/${retries + 1})`)
+            await new Promise(resolve => setTimeout(resolve, delay))
             continue
           }
           
-          throw new Error(`HTTP ${response.status}`)
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
         } catch (error) {
           if (i === retries) {
             throw error // Re-throw on final attempt
           }
-          // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)))
+          // Wait before retry, longer for network errors
+          const delay = 1000 * (i + 1)
+          console.warn(`Network error for ${url}, retrying in ${delay}ms (attempt ${i + 1}/${retries + 1})`)
+          await new Promise(resolve => setTimeout(resolve, delay))
         }
       }
       throw new Error('Max retries exceeded')

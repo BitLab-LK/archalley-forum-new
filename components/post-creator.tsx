@@ -16,8 +16,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { useVercelBlobUpload } from "@/hooks/use-vercel-blob-upload"
 
 interface PostCreatorProps {
-  onPostCreated: (result?: { success?: boolean; post?: any; error?: string; tempId?: string }) => void
-  onOptimisticUpdate?: (optimisticPost: any) => void
+  onPostCreated: (result?: { success?: boolean; post?: any; error?: string }) => void
 }
 
 interface AIClassification {
@@ -29,7 +28,7 @@ interface AIClassification {
   translatedContent: string
 }
 
-export default function PostCreator({ onPostCreated, onOptimisticUpdate }: PostCreatorProps) {
+export default function PostCreator({ onPostCreated }: PostCreatorProps) {
   const { user, isAuthenticated } = useAuth()
   const [content, setContent] = useState("")
   const [isAnonymous, setIsAnonymous] = useState(false)
@@ -380,38 +379,6 @@ export default function PostCreator({ onPostCreated, onOptimisticUpdate }: PostC
         formData.append(`image_${index}_name`, file.name)
       })
 
-      // Generate temporary ID for optimistic update
-      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      
-      // Create optimistic post object immediately
-      if (onOptimisticUpdate) {
-        // For optimistic update, we'll use a placeholder category name and let the real response update it
-        const optimisticPost = {
-          id: tempId,
-          author: {
-            id: user?.id || '',
-            name: user?.name || (isAnonymous ? 'Anonymous' : 'Unknown User'),
-            avatar: user?.image || '/placeholder-user.jpg',
-            isVerified: false,
-            rank: 'Member',
-            rankIcon: '👤'
-          },
-          content: content.trim(),
-          category: 'General', // Placeholder category, will be updated with real response
-          isAnonymous,
-          isPinned: false,
-          upvotes: 0,
-          downvotes: 0,
-          userVote: null,
-          comments: 0,
-          timeAgo: 'just now',
-          images: uploadedFiles.map(file => file.url)
-        }
-        
-        // Add optimistic post immediately
-        onOptimisticUpdate(optimisticPost)
-      }
-
       try {
         const response = await makeApiRequest("/api/posts", {
           method: "POST",
@@ -454,8 +421,7 @@ export default function PostCreator({ onPostCreated, onOptimisticUpdate }: PostC
         // Call parent callback with success result
         onPostCreated({
           success: true,
-          post: createdPost,
-          tempId: tempId
+          post: createdPost
         })
         
         // Clear status after a brief moment
@@ -475,7 +441,9 @@ export default function PostCreator({ onPostCreated, onOptimisticUpdate }: PostC
           if (error.details?.responseType === 'html') {
             errorMessage = "Authentication error. Please refresh the page and try again."
           } else if (error.statusCode === 503) {
-            errorMessage = "Database connection issue. Please try again in a moment."
+            errorMessage = "Service temporarily unavailable. Please wait a moment and try again."
+          } else if (error.statusCode === 502 || error.statusCode === 504) {
+            errorMessage = "Server timeout. Please try again in a few moments."
           } else if (error.statusCode === 401) {
             errorMessage = "Please log in again and try posting."
           } else {
@@ -491,8 +459,7 @@ export default function PostCreator({ onPostCreated, onOptimisticUpdate }: PostC
         // Call parent callback with error result for rollback
         onPostCreated({
           success: false,
-          error: errorMessage,
-          tempId: tempId
+          error: errorMessage
         })
         
         // DON'T clear files on error - user might want to retry
