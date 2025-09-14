@@ -70,20 +70,13 @@ export default function HomePageInteractive({
         limit: '10'
       })
       
-      // Add timeout to prevent hanging requests
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
-      
       const response = await fetch(`/api/posts?${params.toString()}`, {
-        signal: controller.signal,
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
           'Accept': 'application/json',
         }
       })
-      
-      clearTimeout(timeoutId)
       
       if (!response.ok) {
         const errorText = await response.text()
@@ -95,11 +88,7 @@ export default function HomePageInteractive({
       setPagination(data.pagination || { total: 0, pages: 1, currentPage: 1, limit: 10 })
     } catch (error) {
       console.error('Homepage posts fetch error:', error)
-      if (error instanceof Error && error.name === 'AbortError') {
-        toast.error("Request timed out. Please refresh the page.")
-      } else {
-        toast.error("Failed to load posts")
-      }
+      toast.error("Failed to load posts")
       // Set empty state on error to prevent infinite loading
       setPosts([])
       setPagination({ total: 0, pages: 1, currentPage: 1, limit: 10 })
@@ -194,67 +183,34 @@ export default function HomePageInteractive({
           <div className="lg:col-span-2 overflow-visible animate-slide-in-up animate-stagger-1">
             <div className="animate-fade-in-up animate-stagger-2 hover-lift smooth-transition">
               <PostCreator onPostCreated={async () => {
-                // Optimized refresh with immediate state update and cache busting
+                // Optimized refresh - simple and fast
                 try {
-                  // Add cache-busting timestamp to prevent stale data
-                  const cacheTimestamp = Date.now()
-                  const params = new URLSearchParams({
-                    page: '1',
-                    limit: pagination?.limit?.toString() || '10',
-                    _t: cacheTimestamp.toString() // Cache buster
-                  })
-                  
-                  const controller = new AbortController()
-                  const timeoutId = setTimeout(() => controller.abort(), 8000) // Increased timeout
-                  
-                  const response = await fetch(`/api/posts?${params.toString()}`, {
-                    signal: controller.signal,
+                  const response = await fetch(`/api/posts?page=1&limit=${pagination?.limit || 10}`, {
                     cache: 'no-store',
                     headers: {
-                      'Cache-Control': 'no-cache, no-store, must-revalidate',
-                      'Pragma': 'no-cache',
-                      'Expires': '0',
+                      'Cache-Control': 'no-cache',
                       'Accept': 'application/json',
                     }
                   })
                   
-                  clearTimeout(timeoutId)
-                  
                   if (response.ok) {
                     const data = await response.json()
-                    
-                    // Immediate state update for real-time feel
                     setPosts(data.posts || [])
                     setPagination(data.pagination || pagination)
                     
-                    // Force reload of images with new cache headers
-                    if (data.posts && data.posts.length > 0) {
-                      data.posts.forEach((post: any) => {
-                        if (post.images && post.images.length > 0) {
-                          post.images.forEach((imageUrl: string) => {
-                            // Preload images to ensure they're cached properly
-                            const img = document.createElement('img')
-                            img.src = imageUrl
-                          })
-                        }
-                      })
-                    }
-                    
-                    // Reduced scroll delay for faster UX
+                    // Quick scroll to top
                     setTimeout(() => {
                       window.scrollTo({ top: 0, behavior: 'smooth' })
-                    }, 50)
+                    }, 100)
                     
-                    // Show success feedback
-                    toast.success("Post created and feed updated!")
+                    toast.success("Post created successfully!")
                   } else {
                     throw new Error('Failed to refresh posts')
                   }
                 } catch (error) {
                   console.error('Failed to refresh posts:', error)
-                  // Fallback to full refresh if silent update fails
-                  toast.info("Post created! Refreshing...")
-                  // Force a hard refresh with cache clearing
+                  toast.error("Post created but failed to refresh feed")
+                  // Simple fallback
                   await fetchPosts(1)
                 }
               }} />

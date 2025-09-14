@@ -84,49 +84,73 @@ function Sidebar() {
     const loadAllSidebarData = async () => {
       console.log('🔄 Loading sidebar data...')
       
-      // Only set categories loading to true since we already have fallback data
+      // Set initial loading states
+      setIsLoading(true)
       setIsTrendingLoading(true)
       setIsContributorsLoading(true)
 
-
-
-      try {
-        // Fetch categories
-        const fetchCategories = async () => {
-          setIsLoading(true) // Only set loading when actually fetching
+      // Helper function for fetch with retry
+      const fetchWithRetry = async (url: string, retries = 2): Promise<Response> => {
+        for (let i = 0; i <= retries; i++) {
           try {
-            const response = await fetch('/api/categories', {
+            const response = await fetch(url, {
               method: 'GET',
               headers: { 'Content-Type': 'application/json' },
               cache: 'no-cache',
             })
             
             if (response.ok) {
-              const categoriesData = await response.json()
-              if (categoriesData && Array.isArray(categoriesData) && categoriesData.length > 0) {
-                const categoryNames = categoriesData.map((cat: Category) => cat.name.toLowerCase());
-                const requiredCategories = FALLBACK_CATEGORIES.map(cat => cat.name.toLowerCase());
-                const missingCategories = requiredCategories.filter(name => !categoryNames.includes(name));
-                
-                if (missingCategories.length > 0) {
-                  const combinedCategories = [...categoriesData];
-                  for (const missingCategory of missingCategories) {
-                    const fallbackCategory = FALLBACK_CATEGORIES.find(
-                      cat => cat.name.toLowerCase() === missingCategory
-                    );
-                    if (fallbackCategory) {
-                      combinedCategories.push(fallbackCategory);
-                    }
+              return response
+            }
+            
+            // If not ok and we have retries left, wait and retry
+            if (i < retries) {
+              await new Promise(resolve => setTimeout(resolve, 500 * (i + 1))) // Progressive delay
+              continue
+            }
+            
+            throw new Error(`HTTP ${response.status}`)
+          } catch (error) {
+            if (i === retries) {
+              throw error // Re-throw on final attempt
+            }
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)))
+          }
+        }
+        throw new Error('Max retries exceeded')
+      }
+
+
+
+      try {
+        // Fetch categories
+        const fetchCategories = async () => {
+          try {
+            const response = await fetchWithRetry('/api/categories')
+            const categoriesData = await response.json()
+            
+            if (categoriesData && Array.isArray(categoriesData) && categoriesData.length > 0) {
+              const categoryNames = categoriesData.map((cat: Category) => cat.name.toLowerCase());
+              const requiredCategories = FALLBACK_CATEGORIES.map(cat => cat.name.toLowerCase());
+              const missingCategories = requiredCategories.filter(name => !categoryNames.includes(name));
+              
+              if (missingCategories.length > 0) {
+                const combinedCategories = [...categoriesData];
+                for (const missingCategory of missingCategories) {
+                  const fallbackCategory = FALLBACK_CATEGORIES.find(
+                    cat => cat.name.toLowerCase() === missingCategory
+                  );
+                  if (fallbackCategory) {
+                    combinedCategories.push(fallbackCategory);
                   }
-                  setCategories(combinedCategories);
-                } else {
-                  setCategories(categoriesData);
                 }
+                setCategories(combinedCategories);
               } else {
-                setCategories(FALLBACK_CATEGORIES)
+                setCategories(categoriesData);
               }
             } else {
-              console.warn('Categories API failed, using fallback')
+              console.warn('No categories data received, using fallback')
               setCategories(FALLBACK_CATEGORIES)
             }
           } catch (error) {
@@ -140,19 +164,9 @@ function Sidebar() {
         // Fetch trending posts
         const fetchTrending = async () => {
           try {
-            const response = await fetch('/api/posts?limit=5&sortBy=upvotes&sortOrder=desc', {
-              method: 'GET',
-              headers: { 'Content-Type': 'application/json' },
-              cache: 'no-cache',
-            })
-            
-            if (response.ok) {
-              const trendingData = await response.json()
-              setTrendingPosts(trendingData.posts || [])
-            } else {
-              console.warn('Trending posts API failed')
-              setTrendingPosts([])
-            }
+            const response = await fetchWithRetry('/api/posts?limit=5&sortBy=upvotes&sortOrder=desc')
+            const trendingData = await response.json()
+            setTrendingPosts(trendingData.posts || [])
           } catch (error) {
             console.error('Error fetching trending posts:', error)
             setTrendingPosts([])
@@ -164,19 +178,9 @@ function Sidebar() {
         // Fetch contributors
         const fetchContributors = async () => {
           try {
-            const response = await fetch('/api/contributors/top', {
-              method: 'GET',
-              headers: { 'Content-Type': 'application/json' },
-              cache: 'no-cache',
-            })
-            
-            if (response.ok) {
-              const contributorsData = await response.json()
-              setTopContributors(contributorsData)
-            } else {
-              console.warn('Contributors API failed')
-              setTopContributors([])
-            }
+            const response = await fetchWithRetry('/api/contributors/top')
+            const contributorsData = await response.json()
+            setTopContributors(contributorsData || [])
           } catch (error) {
             console.error('Error fetching contributors:', error)
             setTopContributors([])
@@ -252,9 +256,11 @@ function Sidebar() {
               </div>
               <span className="text-gray-900 dark:text-gray-100">Categories</span>
             </div>
-            {isLoading && (
-              <div className="w-4 h-4 border-2 border-orange-200 border-t-orange-600 rounded-full animate-spin" />
-            )}
+            <div className="flex items-center space-x-2">
+              {isLoading && (
+                <div className="w-4 h-4 border-2 border-orange-200 border-t-orange-600 rounded-full animate-spin" />
+              )}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 pt-0 px-2">
@@ -338,9 +344,11 @@ function Sidebar() {
               </div>
               <span className="text-gray-900 dark:text-gray-100">Trending Posts</span>
             </div>
-            {isTrendingLoading && (
-              <div className="w-4 h-4 border-2 border-orange-200 border-t-orange-600 rounded-full animate-spin" />
-            )}
+            <div className="flex items-center space-x-2">
+              {isTrendingLoading && (
+                <div className="w-4 h-4 border-2 border-orange-200 border-t-orange-600 rounded-full animate-spin" />
+              )}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 pt-0">
@@ -390,9 +398,11 @@ function Sidebar() {
               </div>
               <span className="text-gray-900 dark:text-gray-100">Top Contributors</span>
             </div>
-            {isContributorsLoading && (
-              <div className="w-4 h-4 border-2 border-green-200 border-t-green-600 rounded-full animate-spin" />
-            )}
+            <div className="flex items-center space-x-2">
+              {isContributorsLoading && (
+                <div className="w-4 h-4 border-2 border-green-200 border-t-green-600 rounded-full animate-spin" />
+              )}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 pt-0">
