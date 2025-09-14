@@ -8,6 +8,11 @@ import { geminiService } from "@/lib/gemini-service"
 import { classifyPost } from "@/lib/ai-service"
 import { join } from "path"
 import { stat } from "fs/promises"
+import { revalidatePath } from "next/cache"
+
+// Force dynamic rendering and disable caching
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 const createPostSchema = z.object({
   content: z.string().min(1, "Content is required"),
@@ -355,6 +360,15 @@ export async function POST(request: Request) {
     } catch (error) {
       console.error("Error broadcasting new post:", error)
       // Don't fail the post creation if broadcasting fails
+    }
+
+    // Revalidate the homepage cache so SSR shows the new post
+    try {
+      revalidatePath("/")
+      console.log("✅ Homepage cache revalidated")
+    } catch (error) {
+      console.error("Error revalidating homepage:", error)
+      // Don't fail the post creation if revalidation fails
     }
 
     const response = NextResponse.json(result, {

@@ -97,6 +97,16 @@ export default function HomePageInteractive({
     }
   }, [])
 
+  // Client-side fallback when SSR fails and returns empty posts
+  useEffect(() => {
+    if (!posts || posts.length === 0) {
+      console.log("No posts from SSR, attempting client-side fetch...")
+      fetchPosts(1).catch(error => {
+        console.error("Client-side fallback fetch failed:", error)
+      })
+    }
+  }, [fetchPosts, posts.length]) // Dependencies: fetchPosts and posts.length
+
   // Callbacks for search params handler
   const handlePageChange = useCallback((page: number) => {
     if (page < 1 || page > pagination.pages) return
@@ -182,8 +192,38 @@ export default function HomePageInteractive({
           {/* Main Content */}
           <div className="lg:col-span-2 overflow-visible animate-slide-in-up animate-stagger-1">
             <div className="animate-fade-in-up animate-stagger-2 hover-lift smooth-transition">
-              <PostCreator onPostCreated={async () => {
-                // Optimized refresh - simple and fast
+              <PostCreator onPostCreated={async (createdPost) => {
+                if (createdPost) {
+                  // Optimistic update - add the new post immediately
+                  console.log("Adding new post optimistically:", createdPost)
+                  
+                  // Format the created post to match our Post type structure
+                  const formattedPost = {
+                    ...createdPost,
+                    // Ensure all required fields are present
+                    updatedAt: createdPost.updatedAt || new Date().toISOString(),
+                    _count: createdPost._count || { Comment: 0 },
+                    // Handle case where user data might be nested differently
+                    users: createdPost.users || createdPost.user || null,
+                    categories: createdPost.categories || null
+                  }
+                  
+                  setPosts(prev => [formattedPost, ...prev])
+                  setPagination(prev => ({ 
+                    ...prev, 
+                    total: (prev?.total || 0) + 1 
+                  }))
+                  
+                  // Quick scroll to top to show the new post
+                  setTimeout(() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }, 100)
+                  
+                  toast.success("Post created successfully!")
+                  return // Early return for optimistic update
+                }
+
+                // Fallback: refresh posts if createdPost isn't provided
                 try {
                   const response = await fetch(`/api/posts?page=1&limit=${pagination?.limit || 10}`, {
                     cache: 'no-store',

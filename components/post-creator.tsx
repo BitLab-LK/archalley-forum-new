@@ -16,7 +16,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { useVercelBlobUpload } from "@/hooks/use-vercel-blob-upload"
 
 interface PostCreatorProps {
-  onPostCreated: () => void
+  onPostCreated: (createdPost?: any) => void
 }
 
 interface AIClassification {
@@ -380,10 +380,26 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       })
 
       try {
-        await makeApiRequest("/api/posts", {
+        const response = await makeApiRequest("/api/posts", {
           method: "POST",
           body: formData, // Send as FormData, not JSON
         })
+
+        // Get the created post from the response
+        let createdPost = null
+        try {
+          if (response && typeof response === 'object') {
+            // Check if response has json method (Response object)
+            if ('json' in response && typeof (response as any).json === 'function') {
+              createdPost = await (response as Response).json()
+            } else {
+              // Response is already parsed JSON
+              createdPost = response
+            }
+          }
+        } catch (parseError) {
+          console.log("Could not parse response, but post was created successfully")
+        }
 
         // Immediately show success and reset form for instant feedback
         toast.success("Post created successfully!")
@@ -402,8 +418,8 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
           fileInputRef.current.value = ""
         }
 
-        // Call parent callback immediately for fast refresh
-        onPostCreated()
+        // Call parent callback with the created post for optimistic update
+        onPostCreated(createdPost)
         
         // Clear status after a brief moment
         setTimeout(() => {
