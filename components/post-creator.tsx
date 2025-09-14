@@ -16,7 +16,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { useVercelBlobUpload } from "@/hooks/use-vercel-blob-upload"
 
 interface PostCreatorProps {
-  onPostCreated: (createdPost?: any) => void
+  onPostCreated: (result?: { success?: boolean; post?: any; error?: string; tempId?: string }) => void
+  onOptimisticUpdate?: (optimisticPost: any) => void
 }
 
 interface AIClassification {
@@ -28,7 +29,7 @@ interface AIClassification {
   translatedContent: string
 }
 
-export default function PostCreator({ onPostCreated }: PostCreatorProps) {
+export default function PostCreator({ onPostCreated, onOptimisticUpdate }: PostCreatorProps) {
   const { user, isAuthenticated } = useAuth()
   const [content, setContent] = useState("")
   const [isAnonymous, setIsAnonymous] = useState(false)
@@ -379,6 +380,38 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
         formData.append(`image_${index}_name`, file.name)
       })
 
+      // Generate temporary ID for optimistic update
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      
+      // Create optimistic post object immediately
+      if (onOptimisticUpdate) {
+        // For optimistic update, we'll use a placeholder category name and let the real response update it
+        const optimisticPost = {
+          id: tempId,
+          author: {
+            id: user?.id || '',
+            name: user?.name || (isAnonymous ? 'Anonymous' : 'Unknown User'),
+            avatar: user?.image || '/placeholder-user.jpg',
+            isVerified: false,
+            rank: 'Member',
+            rankIcon: '👤'
+          },
+          content: content.trim(),
+          category: 'General', // Placeholder category, will be updated with real response
+          isAnonymous,
+          isPinned: false,
+          upvotes: 0,
+          downvotes: 0,
+          userVote: null,
+          comments: 0,
+          timeAgo: 'just now',
+          images: uploadedFiles.map(file => file.url)
+        }
+        
+        // Add optimistic post immediately
+        onOptimisticUpdate(optimisticPost)
+      }
+
       try {
         const response = await makeApiRequest("/api/posts", {
           method: "POST",
@@ -406,7 +439,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
         setAiProgress(100)
         setAiStatus("Post created successfully!")
 
-        // Reset form state immediately (optimistic update)
+        // Reset form state immediately
         setContent("")
         setIsAnonymous(false)
         resetUpload() // Reset upload state without deleting blobs
@@ -418,8 +451,12 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
           fileInputRef.current.value = ""
         }
 
-        // Call parent callback with the created post for optimistic update
-        onPostCreated(createdPost)
+        // Call parent callback with success result
+        onPostCreated({
+          success: true,
+          post: createdPost,
+          tempId: tempId
+        })
         
         // Clear status after a brief moment
         setTimeout(() => {
@@ -429,24 +466,35 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
 
       } catch (error) {
         
+        let errorMessage = "Failed to create post. Please try again."
+        
         if (error instanceof DeploymentError) {
           logDeploymentError(error)
           
           // Provide specific error messages based on error type
           if (error.details?.responseType === 'html') {
-            setAiStatus("Authentication error. Please refresh the page and try again.")
+            errorMessage = "Authentication error. Please refresh the page and try again."
           } else if (error.statusCode === 503) {
-            setAiStatus("Database connection issue. Please try again in a moment.")
+            errorMessage = "Database connection issue. Please try again in a moment."
           } else if (error.statusCode === 401) {
-            setAiStatus("Please log in again and try posting.")
+            errorMessage = "Please log in again and try posting."
           } else {
-            setAiStatus(error.message || "Failed to create post. Please try again.")
+            errorMessage = error.message || "Failed to create post. Please try again."
           }
         } else {
-          setAiStatus("Network error. Please check your connection and try again.")
+          errorMessage = "Network error. Please check your connection and try again."
         }
         
+        setAiStatus(errorMessage)
         setAiProgress(0)
+        
+        // Call parent callback with error result for rollback
+        onPostCreated({
+          success: false,
+          error: errorMessage,
+          tempId: tempId
+        })
+        
         // DON'T clear files on error - user might want to retry
       }
 

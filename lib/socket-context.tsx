@@ -21,7 +21,14 @@ const SocketContext = createContext<SocketContextType>({
 export const useSocket = () => {
   const context = useContext(SocketContext)
   if (!context) {
-    throw new Error('useSocket must be used within a SocketProvider')
+    // Return safe fallback when SocketProvider is disabled
+    console.warn('SocketProvider not found, using fallback (Socket.IO disabled)')
+    return {
+      socket: null,
+      isConnected: false,
+      joinPost: () => {},
+      leavePost: () => {}
+    }
   }
   return context
 }

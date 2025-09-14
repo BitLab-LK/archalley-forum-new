@@ -192,80 +192,100 @@ export default function HomePageInteractive({
           {/* Main Content */}
           <div className="lg:col-span-2 overflow-visible animate-slide-in-up animate-stagger-1">
             <div className="animate-fade-in-up animate-stagger-2 hover-lift smooth-transition">
-              <PostCreator onPostCreated={async (createdPost) => {
-                if (createdPost) {
-                  // Optimistic update - add the new post immediately
-                  console.log("Adding new post optimistically:", createdPost)
+              <PostCreator onPostCreated={async (result) => {
+                if (result && result.success && result.post) {
+                  // API call succeeded, replace temp post with real one
+                  const tempId = result.tempId
+                  const realPost = result.post
                   
-                  // Transform the API response to match our Post interface
+                  console.log("Replacing temp post with real post:", { tempId, realPost })
+                  
+                  // Transform the real API response
                   const transformedPost: Post = {
-                    id: createdPost.id,
+                    id: realPost.id,
                     author: {
-                      id: createdPost.users?.id || createdPost.authorId || '',
-                      name: createdPost.users?.name || (createdPost.isAnonymous ? 'Anonymous' : 'Unknown User'),
-                      avatar: createdPost.users?.image || '/placeholder-user.jpg',
-                      isVerified: false, // Default for now
-                      rank: 'Member', // Default for now
-                      rankIcon: '👤' // Default for now
+                      id: realPost.users?.id || realPost.authorId || '',
+                      name: realPost.users?.name || (realPost.isAnonymous ? 'Anonymous' : 'Unknown User'),
+                      avatar: realPost.users?.image || '/placeholder-user.jpg',
+                      isVerified: false,
+                      rank: 'Member',
+                      rankIcon: '👤'
                     },
-                    content: createdPost.content || '',
-                    category: createdPost.categories?.name || 'General',
-                    isAnonymous: createdPost.isAnonymous || false,
-                    isPinned: false, // Default for new posts
-                    upvotes: 0, // New posts start with 0
-                    downvotes: 0, // New posts start with 0  
-                    userVote: null, // No vote initially
-                    comments: createdPost._count?.Comment || 0,
-                    timeAgo: 'just now', // Since it's just created
-                    images: createdPost.attachments?.map((att: any) => att.url) || []
+                    content: realPost.content || '',
+                    category: realPost.categories?.name || 'General',
+                    isAnonymous: realPost.isAnonymous || false,
+                    isPinned: false,
+                    upvotes: 0,
+                    downvotes: 0,  
+                    userVote: null,
+                    comments: realPost._count?.Comment || 0,
+                    timeAgo: 'just now',
+                    images: realPost.attachments?.map((att: any) => att.url) || []
                   }
                   
-                  setPosts(prev => [transformedPost, ...prev])
-                  setPagination(prev => ({ 
-                    ...prev, 
-                    total: (prev?.total || 0) + 1 
-                  }))
-                  
-                  // Quick scroll to top to show the new post
-                  setTimeout(() => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }, 100)
+                  // Replace temp post with real one
+                  setPosts(prev => prev.map(post => 
+                    post.id === tempId ? transformedPost : post
+                  ))
                   
                   toast.success("Post created successfully!")
-                  return // Early return for optimistic update
-                }
-
-                // Fallback: refresh posts if createdPost isn't provided
-                try {
-                  const response = await fetch(`/api/posts?page=1&limit=${pagination?.limit || 10}`, {
-                    cache: 'no-store',
-                    headers: {
-                      'Cache-Control': 'no-cache',
-                      'Accept': 'application/json',
-                    }
-                  })
+                } else if (result && result.error) {
+                  // API call failed, rollback the optimistic update
+                  const tempId = result.tempId
+                  console.error("Post creation failed, rolling back:", result.error)
                   
-                  if (response.ok) {
-                    const data = await response.json()
-                    setPosts(data.posts || [])
-                    setPagination(data.pagination || pagination)
+                  setPosts(prev => prev.filter(post => post.id !== tempId))
+                  setPagination(prev => ({ 
+                    ...prev, 
+                    total: Math.max((prev?.total || 0) - 1, 0)
+                  }))
+                  
+                  toast.error(result.error || "Failed to create post")
+                } else {
+                  // Legacy fallback - refresh posts
+                  try {
+                    const response = await fetch(`/api/posts?page=1&limit=${pagination?.limit || 10}`, {
+                      cache: 'no-store',
+                      headers: {
+                        'Cache-Control': 'no-cache',
+                        'Accept': 'application/json',
+                      }
+                    })
                     
-                    // Quick scroll to top
-                    setTimeout(() => {
-                      window.scrollTo({ top: 0, behavior: 'smooth' })
-                    }, 100)
-                    
-                    toast.success("Post created successfully!")
-                  } else {
-                    throw new Error('Failed to refresh posts')
+                    if (response.ok) {
+                      const data = await response.json()
+                      setPosts(data.posts || [])
+                      setPagination(data.pagination || pagination)
+                      
+                      setTimeout(() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }, 100)
+                      
+                      toast.success("Post created successfully!")
+                    } else {
+                      throw new Error('Failed to refresh posts')
+                    }
+                  } catch (error) {
+                    console.error('Failed to refresh posts:', error)
+                    toast.error("Post created but failed to refresh feed")
                   }
-                } catch (error) {
-                  console.error('Failed to refresh posts:', error)
-                  toast.error("Post created but failed to refresh feed")
-                  // Simple fallback
-                  await fetchPosts(1)
                 }
-              }} />
+              }}
+              
+              onOptimisticUpdate={(optimisticPost: Post) => {
+                // Add optimistic post immediately when user submits
+                setPosts(prev => [optimisticPost, ...prev])
+                setPagination(prev => ({ 
+                  ...prev, 
+                  total: (prev?.total || 0) + 1 
+                }))
+                
+                // Scroll to show the new post
+                setTimeout(() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }, 100)
+              }}
+            />
             </div>
 
             <div className="space-y-3 sm:space-y-4 overflow-visible">
