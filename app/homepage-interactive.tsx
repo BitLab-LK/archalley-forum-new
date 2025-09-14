@@ -197,18 +197,30 @@ export default function HomePageInteractive({
                   // Optimistic update - add the new post immediately
                   console.log("Adding new post optimistically:", createdPost)
                   
-                  // Format the created post to match our Post type structure
-                  const formattedPost = {
-                    ...createdPost,
-                    // Ensure all required fields are present
-                    updatedAt: createdPost.updatedAt || new Date().toISOString(),
-                    _count: createdPost._count || { Comment: 0 },
-                    // Handle case where user data might be nested differently
-                    users: createdPost.users || createdPost.user || null,
-                    categories: createdPost.categories || null
+                  // Transform the API response to match our Post interface
+                  const transformedPost: Post = {
+                    id: createdPost.id,
+                    author: {
+                      id: createdPost.users?.id || createdPost.authorId || '',
+                      name: createdPost.users?.name || (createdPost.isAnonymous ? 'Anonymous' : 'Unknown User'),
+                      avatar: createdPost.users?.image || '/placeholder-user.jpg',
+                      isVerified: false, // Default for now
+                      rank: 'Member', // Default for now
+                      rankIcon: '👤' // Default for now
+                    },
+                    content: createdPost.content || '',
+                    category: createdPost.categories?.name || 'General',
+                    isAnonymous: createdPost.isAnonymous || false,
+                    isPinned: false, // Default for new posts
+                    upvotes: 0, // New posts start with 0
+                    downvotes: 0, // New posts start with 0  
+                    userVote: null, // No vote initially
+                    comments: createdPost._count?.Comment || 0,
+                    timeAgo: 'just now', // Since it's just created
+                    images: createdPost.attachments?.map((att: any) => att.url) || []
                   }
                   
-                  setPosts(prev => [formattedPost, ...prev])
+                  setPosts(prev => [transformedPost, ...prev])
                   setPagination(prev => ({ 
                     ...prev, 
                     total: (prev?.total || 0) + 1 
