@@ -63,6 +63,14 @@ export default function HomePageInteractive({
   const [hasConnectionError, setHasConnectionError] = useState(false)
   const router = useRouter()
 
+  // Auto-fetch posts if no initial posts were provided (SSR fallback)
+  useEffect(() => {
+    if (initialPosts.length === 0 && !isLoading) {
+      console.log('🔄 No initial posts, triggering client-side fetch...')
+      fetchPosts(1)
+    }
+  }, []) // Only run once on mount
+
   const fetchPosts = useCallback(async (page: number = 1, preserveExistingOnError = false) => {
     setIsLoading(true)
     setHasConnectionError(false)
