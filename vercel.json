@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "app/api/**/*.js": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "PRISMA_CLIENT_ENGINE_TYPE": "library"
+  },
+  "buildCommand": "prisma generate && next build"
+}

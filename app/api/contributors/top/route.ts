@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { prisma, ensureDbConnection } from "@/lib/prisma"
 
 export async function GET() {
   try {
+    // Ensure database connection before proceeding
+    await ensureDbConnection()
+    
     // Get top contributors based on post count, comments, and votes received
     const topContributors = await prisma.users.findMany({
       select: {
@@ -131,10 +134,53 @@ export async function GET() {
 
     return NextResponse.json(sortedContributors)
   } catch (error) {
-    console.error("Error fetching top contributors:", error)
+    console.error("❌ Error fetching top contributors:", error)
+    console.error("❌ Error details:", {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV
+    })
+    
+    // Check if it's a database connection error
+    if (error instanceof Error && (
+      error.message.includes('database') || 
+      error.message.includes('connection') ||
+      error.message.includes('P1001') ||
+      error.message.includes('timeout')
+    )) {
+      return NextResponse.json(
+        { 
+          error: "Database connection failed",
+          message: "The application is currently unable to connect to the database. Please try again later.",
+          details: error.message,
+          timestamp: new Date().toISOString()
+        },
+        { 
+          status: 503,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store'
+          }
+        }
+      )
+    }
+    
     return NextResponse.json(
-      { error: "Failed to fetch top contributors" },
-      { status: 500 }
+      { 
+        error: "Failed to fetch top contributors",
+        message: "An unexpected error occurred while fetching contributors. Please try again.",
+        details: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString()
+      },
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      }
     )
   }
 }

@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { prisma, ensureDbConnection } from "@/lib/prisma"
 
 // Utility function to format time ago
 const getTimeAgo = (date: Date): string => {
@@ -20,6 +20,9 @@ const getTimeAgo = (date: Date): string => {
 
 export async function GET(request: NextRequest) {
   try {
+    // Ensure database connection before proceeding
+    await ensureDbConnection()
+    
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -65,13 +68,62 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("Get notifications error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("❌ Get notifications error:", error)
+    console.error("❌ Error details:", {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV
+    })
+    
+    // Check if it's a database connection error
+    if (error instanceof Error && (
+      error.message.includes('database') || 
+      error.message.includes('connection') ||
+      error.message.includes('P1001') ||
+      error.message.includes('timeout')
+    )) {
+      return NextResponse.json(
+        { 
+          error: "Database connection failed",
+          message: "The application is currently unable to connect to the database. Please try again later.",
+          details: error.message,
+          timestamp: new Date().toISOString()
+        },
+        { 
+          status: 503,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store'
+          }
+        }
+      )
+    }
+    
+    return NextResponse.json(
+      { 
+        error: "Failed to fetch notifications",
+        message: "An unexpected error occurred while fetching notifications. Please try again.",
+        details: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString()
+      },
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      }
+    )
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
+    // Ensure database connection before proceeding
+    await ensureDbConnection()
+    
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

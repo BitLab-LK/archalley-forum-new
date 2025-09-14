@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { prisma, ensureDbConnection, checkDbHealth } from "@/lib/prisma"
 import { z } from "zod"
 import { badgeService } from "@/lib/badge-service"
 import { geminiService } from "@/lib/gemini-service"
@@ -37,6 +37,9 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Ensure database connection before proceeding
+    await ensureDbConnection()
+    
     const session = await getServerSession(authOptions)
     
     if (!session?.user) {
@@ -460,6 +463,9 @@ function getMimeType(filename: string): string {
 
 export async function GET(request: NextRequest) {
   try {
+    // Ensure database connection before proceeding
+    await ensureDbConnection()
+    
     // Get session for user vote information
     const session = await getServerSession(authOptions)
     
@@ -811,36 +817,57 @@ const skip = (page - 1) * limit
       throw dbError // Re-throw to be caught by outer try-catch
     }
   } catch (error) {
-    console.error("Error fetching posts:", error)
-    // Log the full error object for debugging
-    if (error instanceof Error) {
-      console.error("Error details:", {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      })
-    }
+    console.error("❌ Error fetching posts:", error)
+    console.error("❌ Error details:", {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV
+    })
     
-    // Check for database connection errors and provide user-friendly messages
+    // Check for database connection errors
     if (error instanceof Error && (
       error.message.includes("Can't reach database server") ||
-      error.message.includes("connection") ||
+      error.message.includes('database') || 
+      error.message.includes('connection') ||
+      error.message.includes('P1001') ||
+      error.message.includes('timeout') ||
       error.message.includes("Database connection failed") ||
       error.message.includes("Database temporarily unavailable")
     )) {
       return NextResponse.json(
         { 
-          error: "Database service temporarily unavailable",
+          error: "Database connection failed",
+          message: "The application is currently unable to connect to the database. Please try again later.",
           details: "Please try refreshing the page in a few moments",
-          message: "The forum is experiencing connectivity issues"
+          timestamp: new Date().toISOString()
         },
-        { status: 503 }
+        { 
+          status: 503,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store'
+          }
+        }
       )
     }
     
+    // Generic error response
     return NextResponse.json(
-      { error: "Failed to fetch posts", details: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
+      { 
+        error: "Failed to fetch posts", 
+        message: "An unexpected error occurred while fetching posts. Please try again.",
+        details: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString()
+      },
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      }
     )
   }
 }
