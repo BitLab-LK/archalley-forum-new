@@ -58,7 +58,7 @@ function Sidebar() {
   ]
 
   const [categories, setCategories] = useState<Category[]>(FALLBACK_CATEGORIES)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false) // Start with false, show fallback data immediately
   const [trendingPosts, setTrendingPosts] = useState<TrendingPost[]>([])
   const [isTrendingLoading, setIsTrendingLoading] = useState(true)
   const [topContributors, setTopContributors] = useState<TopContributor[]>([])
@@ -79,87 +79,125 @@ function Sidebar() {
     other: "bg-gray-500",
   } as const
 
-  // Load all sidebar data simultaneously
+  // Load all sidebar data simultaneously but handle loading states independently
   useEffect(() => {
     const loadAllSidebarData = async () => {
-      setIsLoading(true)
+      console.log('🔄 Loading sidebar data...')
+      
+      // Only set categories loading to true since we already have fallback data
       setIsTrendingLoading(true)
       setIsContributorsLoading(true)
 
+
+
       try {
-        // Fetch all data in parallel
-        const [categoriesResponse, trendingResponse, contributorsResponse] = await Promise.all([
-          fetch('/api/categories', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            cache: 'no-cache',
-          }),
-          fetch('/api/posts?limit=5&sortBy=upvotes&sortOrder=desc', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            cache: 'no-cache',
-          }),
-          fetch('/api/contributors/top', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            cache: 'no-cache',
-          })
-        ])
-
-        // Process categories
-        if (categoriesResponse.ok) {
-          const categoriesData = await categoriesResponse.json()
-          if (categoriesData && Array.isArray(categoriesData) && categoriesData.length > 0) {
-            const categoryNames = categoriesData.map((cat: Category) => cat.name.toLowerCase());
-            const requiredCategories = FALLBACK_CATEGORIES.map(cat => cat.name.toLowerCase());
-            const missingCategories = requiredCategories.filter(name => !categoryNames.includes(name));
+        // Fetch categories
+        const fetchCategories = async () => {
+          setIsLoading(true) // Only set loading when actually fetching
+          try {
+            const response = await fetch('/api/categories', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+              cache: 'no-cache',
+            })
             
-            if (missingCategories.length > 0) {
-              const combinedCategories = [...categoriesData];
-              for (const missingCategory of missingCategories) {
-                const fallbackCategory = FALLBACK_CATEGORIES.find(
-                  cat => cat.name.toLowerCase() === missingCategory
-                );
-                if (fallbackCategory) {
-                  combinedCategories.push(fallbackCategory);
+            if (response.ok) {
+              const categoriesData = await response.json()
+              if (categoriesData && Array.isArray(categoriesData) && categoriesData.length > 0) {
+                const categoryNames = categoriesData.map((cat: Category) => cat.name.toLowerCase());
+                const requiredCategories = FALLBACK_CATEGORIES.map(cat => cat.name.toLowerCase());
+                const missingCategories = requiredCategories.filter(name => !categoryNames.includes(name));
+                
+                if (missingCategories.length > 0) {
+                  const combinedCategories = [...categoriesData];
+                  for (const missingCategory of missingCategories) {
+                    const fallbackCategory = FALLBACK_CATEGORIES.find(
+                      cat => cat.name.toLowerCase() === missingCategory
+                    );
+                    if (fallbackCategory) {
+                      combinedCategories.push(fallbackCategory);
+                    }
+                  }
+                  setCategories(combinedCategories);
+                } else {
+                  setCategories(categoriesData);
                 }
+              } else {
+                setCategories(FALLBACK_CATEGORIES)
               }
-              setCategories(combinedCategories);
             } else {
-              setCategories(categoriesData);
+              console.warn('Categories API failed, using fallback')
+              setCategories(FALLBACK_CATEGORIES)
             }
-          } else {
+          } catch (error) {
+            console.error('Error fetching categories:', error)
             setCategories(FALLBACK_CATEGORIES)
+          } finally {
+            setIsLoading(false)
           }
-        } else {
-          console.warn('Categories API failed, using fallback')
-          setCategories(FALLBACK_CATEGORIES)
         }
 
-        // Process trending posts
-        if (trendingResponse.ok) {
-          const trendingData = await trendingResponse.json()
-          setTrendingPosts(trendingData.posts || [])
-        } else {
-          console.warn('Trending posts API failed')
-          setTrendingPosts([])
+        // Fetch trending posts
+        const fetchTrending = async () => {
+          try {
+            const response = await fetch('/api/posts?limit=5&sortBy=upvotes&sortOrder=desc', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+              cache: 'no-cache',
+            })
+            
+            if (response.ok) {
+              const trendingData = await response.json()
+              setTrendingPosts(trendingData.posts || [])
+            } else {
+              console.warn('Trending posts API failed')
+              setTrendingPosts([])
+            }
+          } catch (error) {
+            console.error('Error fetching trending posts:', error)
+            setTrendingPosts([])
+          } finally {
+            setIsTrendingLoading(false)
+          }
         }
 
-        // Process contributors
-        if (contributorsResponse.ok) {
-          const contributorsData = await contributorsResponse.json()
-          setTopContributors(contributorsData)
-        } else {
-          console.warn('Contributors API failed')
-          setTopContributors([])
+        // Fetch contributors
+        const fetchContributors = async () => {
+          try {
+            const response = await fetch('/api/contributors/top', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+              cache: 'no-cache',
+            })
+            
+            if (response.ok) {
+              const contributorsData = await response.json()
+              setTopContributors(contributorsData)
+            } else {
+              console.warn('Contributors API failed')
+              setTopContributors([])
+            }
+          } catch (error) {
+            console.error('Error fetching contributors:', error)
+            setTopContributors([])
+          } finally {
+            setIsContributorsLoading(false)
+          }
         }
+
+        // Execute all fetches in parallel but handle loading states independently
+        await Promise.all([
+          fetchCategories(),
+          fetchTrending(),
+          fetchContributors()
+        ])
 
       } catch (error) {
         console.error('Error loading sidebar data:', error)
+        // Set fallback data and stop all loading states
         setCategories(FALLBACK_CATEGORIES)
         setTrendingPosts([])
         setTopContributors([])
-      } finally {
         setIsLoading(false)
         setIsTrendingLoading(false)
         setIsContributorsLoading(false)

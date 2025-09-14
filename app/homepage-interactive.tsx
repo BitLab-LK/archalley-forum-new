@@ -62,7 +62,7 @@ export default function HomePageInteractive({
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null)
   const router = useRouter()
 
-  const fetchPosts = async (page: number = 1) => {
+  const fetchPosts = useCallback(async (page: number = 1) => {
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
@@ -106,7 +106,7 @@ export default function HomePageInteractive({
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
   // Callbacks for search params handler
   const handlePageChange = useCallback((page: number) => {
