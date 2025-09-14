@@ -81,14 +81,31 @@ export default function HomePageInteractive({
       if (!response.ok) {
         const errorText = await response.text()
         console.error('Failed to fetch posts:', response.status, errorText)
-        throw new Error(`Failed to fetch posts: ${response.status}`)
+        
+        // Handle 503 (Service Unavailable) errors more gracefully
+        if (response.status === 503) {
+          throw new Error(`Database service temporarily unavailable`)
+        } else {
+          throw new Error(`Failed to fetch posts: ${response.status}`)
+        }
       }
       const data = await response.json()
       setPosts(data.posts || [])
       setPagination(data.pagination || { total: 0, pages: 1, currentPage: 1, limit: 10 })
     } catch (error) {
       console.error('Homepage posts fetch error:', error)
-      toast.error("Failed to load posts")
+      
+      // Handle different types of errors with appropriate user feedback
+      if (error instanceof Error) {
+        if (error.message.includes('Database service temporarily unavailable')) {
+          toast.error("Forum is temporarily busy. Please try again in a moment.")
+        } else {
+          toast.error("Failed to load posts")
+        }
+      } else {
+        toast.error("Failed to load posts")
+      }
+      
       // Set empty state on error to prevent infinite loading
       setPosts([])
       setPagination({ total: 0, pages: 1, currentPage: 1, limit: 10 })
@@ -183,36 +200,64 @@ export default function HomePageInteractive({
           <div className="lg:col-span-2 overflow-visible animate-slide-in-up animate-stagger-1">
             <div className="animate-fade-in-up animate-stagger-2 hover-lift smooth-transition">
               <PostCreator onPostCreated={async () => {
-                // Optimized refresh - simple and fast
-                try {
-                  const response = await fetch(`/api/posts?page=1&limit=${pagination?.limit || 10}`, {
-                    cache: 'no-store',
-                    headers: {
-                      'Cache-Control': 'no-cache',
-                      'Accept': 'application/json',
+                // Show immediate success feedback
+                toast.success("Post created successfully!")
+                
+                // Quick scroll to top
+                setTimeout(() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }, 100)
+                
+                // Attempt to refresh posts with retry logic for 503 errors
+                const attemptRefresh = async (retryCount = 0): Promise<void> => {
+                  try {
+                    const response = await fetch(`/api/posts?page=1&limit=${pagination?.limit || 10}`, {
+                      cache: 'no-store',
+                      headers: {
+                        'Cache-Control': 'no-cache',
+                        'Accept': 'application/json',
+                      }
+                    })
+                    
+                    if (response.ok) {
+                      const data = await response.json()
+                      setPosts(data.posts || [])
+                      setPagination(data.pagination || pagination)
+                      console.log('✅ Posts refreshed successfully after post creation')
+                    } else if (response.status === 503 && retryCount < 2) {
+                      // Database temporarily unavailable - retry after a short delay
+                      console.log(`⏳ Database temporarily unavailable (503), retrying in ${(retryCount + 1) * 2} seconds...`)
+                      if (retryCount === 0) {
+                        toast.info("Refreshing posts... This may take a moment.")
+                      }
+                      setTimeout(() => {
+                        attemptRefresh(retryCount + 1)
+                      }, (retryCount + 1) * 2000) // 2s, 4s delays
+                    } else {
+                      // Other errors or max retries reached
+                      console.warn('⚠️ Could not refresh posts automatically, but post was created')
+                      toast.info("Your post was created! Refresh the page to see it.")
                     }
-                  })
-                  
-                  if (response.ok) {
-                    const data = await response.json()
-                    setPosts(data.posts || [])
-                    setPagination(data.pagination || pagination)
-                    
-                    // Quick scroll to top
-                    setTimeout(() => {
-                      window.scrollTo({ top: 0, behavior: 'smooth' })
-                    }, 100)
-                    
-                    toast.success("Post created successfully!")
-                  } else {
-                    throw new Error('Failed to refresh posts')
+                  } catch (error) {
+                    if (retryCount < 2) {
+                      // Network error - retry after delay
+                      console.log(`🔄 Network error, retrying in ${(retryCount + 1) * 2} seconds...`)
+                      if (retryCount === 0) {
+                        toast.info("Refreshing posts... This may take a moment.")
+                      }
+                      setTimeout(() => {
+                        attemptRefresh(retryCount + 1)
+                      }, (retryCount + 1) * 2000)
+                    } else {
+                      // Max retries reached
+                      console.warn('⚠️ Could not refresh posts after multiple attempts')
+                      toast.info("Your post was created! Please refresh the page to see it.")
+                    }
                   }
-                } catch (error) {
-                  console.error('Failed to refresh posts:', error)
-                  toast.error("Post created but failed to refresh feed")
-                  // Simple fallback
-                  await fetchPosts(1)
                 }
+                
+                // Start the refresh attempt
+                attemptRefresh()
               }} />
             </div>
 
