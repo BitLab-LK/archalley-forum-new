@@ -1,11 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useEffect, useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { Suspense } from "react"
 import PostCreator from "@/components/post-creator"
 import PostCard from "@/components/post-card"
 import Sidebar from "@/components/sidebar"
+import SearchParamsHandler from "@/components/homepage-search-params"
 import { Button } from "@/components/ui/button"
 
 interface Post {
@@ -58,7 +60,6 @@ export default function HomePageInteractive({
   const [pagination, setPagination] = useState(initialPagination)
   const [isLoading, setIsLoading] = useState(false) // Start with false since we have initial data
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null)
-  const searchParams = useSearchParams()
   const router = useRouter()
 
   const fetchPosts = async (page: number = 1) => {
@@ -107,22 +108,23 @@ export default function HomePageInteractive({
     }
   }
 
-  useEffect(() => {
-    const page = parseInt(searchParams.get("page") || "1")
-    const highlight = searchParams.get("highlight")
-    
-    if (highlight) {
-      setHighlightedPostId(highlight)
-      // Clear highlight after 3 seconds
-      setTimeout(() => setHighlightedPostId(null), 3000)
-    }
-    
-    // Only fetch if it's not the first page (since we have SSR data for page 1)
-    // and only if we don't already have posts for this page
-    if (page !== 1 && pagination.currentPage !== page) {
+  // Callbacks for search params handler
+  const handlePageChange = useCallback((page: number) => {
+    if (page < 1 || page > pagination.pages) return
+    if (pagination.currentPage !== page) {
       fetchPosts(page)
     }
-  }, [searchParams])
+  }, [pagination.currentPage, pagination.pages, fetchPosts])
+
+  const handleHighlight = useCallback((postId: string | null) => {
+    setHighlightedPostId(postId)
+  }, [])
+
+  // Navigation handler for pagination buttons
+  const handlePaginationClick = useCallback((page: number) => {
+    if (page < 1 || page > pagination.pages) return
+    router.push(`/?page=${page}`)
+  }, [pagination.pages, router])
 
   useEffect(() => {
     // Scroll to highlighted post when posts are loaded
@@ -133,11 +135,6 @@ export default function HomePageInteractive({
       }
     }
   }, [highlightedPostId, posts])
-
-  const handlePageChange = (newPage: number) => {
-    if (newPage < 1 || newPage > pagination.pages) return
-    router.push(`/?page=${newPage}`)
-  }
 
   const handleCommentCountChange = (postId: string, newCount: number) => {
     setPosts(prevPosts => 
@@ -185,6 +182,12 @@ export default function HomePageInteractive({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Suspense fallback={<div>Loading...</div>}>
+        <SearchParamsHandler 
+          onPageChange={handlePageChange} 
+          onHighlight={handleHighlight} 
+        />
+      </Suspense>
       <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
           {/* Main Content */}
@@ -302,7 +305,7 @@ export default function HomePageInteractive({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handlePageChange(pagination.currentPage - 1)}
+                    onClick={() => handlePaginationClick(pagination.currentPage - 1)}
                     disabled={pagination.currentPage === 1}
                     className="text-xs sm:text-sm px-2 sm:px-3 smooth-transition hover-lift"
                   >
@@ -318,7 +321,7 @@ export default function HomePageInteractive({
                         key={page}
                         variant={pagination.currentPage === page ? "default" : "outline"}
                         size="sm"
-                        onClick={() => handlePageChange(page as number)}
+                        onClick={() => handlePaginationClick(page as number)}
                         className="text-xs sm:text-sm min-w-[32px] sm:min-w-[40px] px-2 sm:px-3 smooth-transition hover-lift"
                       >
                         {page}
@@ -329,7 +332,7 @@ export default function HomePageInteractive({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handlePageChange(pagination.currentPage + 1)}
+                    onClick={() => handlePaginationClick(pagination.currentPage + 1)}
                     disabled={pagination.currentPage === pagination.pages}
                     className="text-xs sm:text-sm px-2 sm:px-3 smooth-transition hover-lift"
                   >
