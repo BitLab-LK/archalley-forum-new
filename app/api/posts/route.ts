@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { prisma, ensureDbConnection, checkDbHealth } from "@/lib/prisma"
+import { prisma, ensureDbConnection } from "@/lib/prisma"
 import { z } from "zod"
 import { badgeService } from "@/lib/badge-service"
 import { geminiService } from "@/lib/gemini-service"
