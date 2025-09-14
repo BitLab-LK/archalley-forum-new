@@ -81,8 +81,41 @@ function Sidebar() {
 
   // Load all sidebar data simultaneously but handle loading states independently
   useEffect(() => {
+    console.log('🔄 Loading sidebar data...')
+    
+    // Helper function for fetch with retry
+    const fetchWithRetry = async (url: string, retries = 2): Promise<Response> => {
+      for (let i = 0; i <= retries; i++) {
+        try {
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-cache',
+          })
+          
+          if (response.ok) {
+            return response
+          }
+          
+          // If not ok and we have retries left, wait and retry
+          if (i < retries) {
+            await new Promise(resolve => setTimeout(resolve, 500 * (i + 1))) // Progressive delay
+            continue
+          }
+          
+          throw new Error(`HTTP ${response.status}`)
+        } catch (error) {
+          if (i === retries) {
+            throw error // Re-throw on final attempt
+          }
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)))
+        }
+      }
+      throw new Error('Max retries exceeded')
+    }
 
-    // Fetch categories independently - simplified
+    // Fetch categories independently - only show loading if we don't have fallback data visible
     const fetchCategories = async () => {
       // Only show loading skeleton if categories are empty (first load)
       if (categories.length === 0) {
@@ -90,72 +123,85 @@ function Sidebar() {
       }
       
       try {
-        const response = await fetch('/api/categories', {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          cache: 'no-cache'
-        })
+        const response = await fetchWithRetry('/api/categories')
+        const categoriesData = await response.json()
         
-        if (response.ok) {
-          const categoriesData = await response.json()
+        if (categoriesData && Array.isArray(categoriesData) && categoriesData.length > 0) {
+          const categoryNames = categoriesData.map((cat: Category) => cat.name.toLowerCase());
+          const requiredCategories = FALLBACK_CATEGORIES.map(cat => cat.name.toLowerCase());
+          const missingCategories = requiredCategories.filter(name => !categoryNames.includes(name));
           
-          if (categoriesData && Array.isArray(categoriesData) && categoriesData.length > 0) {
-            setCategories(categoriesData)
+          if (missingCategories.length > 0) {
+            const combinedCategories = [...categoriesData];
+            for (const missingCategory of missingCategories) {
+              const fallbackCategory = FALLBACK_CATEGORIES.find(
+                cat => cat.name.toLowerCase() === missingCategory
+              );
+              if (fallbackCategory) {
+                combinedCategories.push(fallbackCategory);
+              }
+            }
+            setCategories(combinedCategories);
+          } else {
+            setCategories(categoriesData);
           }
         }
-        // If no data or error, keep existing fallback categories
+        // If no data, keep existing fallback categories (don't override)
       } catch (error) {
         console.error('Error fetching categories:', error)
-        // Keep existing fallback categories
+        // Keep existing fallback categories, don't override with empty array
       } finally {
         setIsLoading(false)
       }
     }
 
-    // Fetch trending posts independently - optimized for speed
+    // Fetch trending posts independently
     const fetchTrending = async () => {
+      console.log('🔄 Starting to fetch trending posts...')
       setIsTrendingLoading(true)
       
+      // Safety timeout to prevent stuck loading state
+      const safetyTimeout = setTimeout(() => {
+        console.warn('⚠️ Trending posts fetch timed out, stopping loading state')
+        setIsTrendingLoading(false)
+        setTrendingPosts([])
+      }, 15000) // 15 second safety timeout
+      
       try {
-        const response = await fetch('/api/posts?limit=5&sortBy=upvotes&sortOrder=desc', {
-          method: 'GET',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Cache-Control': 'max-age=60' // Cache for 1 minute for faster subsequent loads
-          }
-        })
+        const response = await fetchWithRetry('/api/posts?limit=5&sortBy=upvotes&sortOrder=desc')
+        console.log('📊 Trending posts response status:', response.status)
         
-        if (response.ok) {
-          const data = await response.json()
-          setTrendingPosts(data.posts || [])
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+        
+        const trendingData = await response.json()
+        console.log('📊 Trending posts data:', trendingData)
+        
+        if (trendingData && trendingData.posts && Array.isArray(trendingData.posts)) {
+          setTrendingPosts(trendingData.posts)
+          console.log(`✅ Set ${trendingData.posts.length} trending posts`)
         } else {
+          console.warn('⚠️ Invalid trending posts data structure:', trendingData)
           setTrendingPosts([])
         }
       } catch (error) {
-        console.error('Error fetching trending posts:', error)
+        console.error('❌ Error fetching trending posts:', error)
         setTrendingPosts([])
       } finally {
+        clearTimeout(safetyTimeout)
         setIsTrendingLoading(false)
+        console.log('✅ Trending posts loading completed')
       }
     }
 
-    // Fetch contributors independently - simplified for speed
+    // Fetch contributors independently
     const fetchContributors = async () => {
       setIsContributorsLoading(true)
-      
       try {
-        const response = await fetch('/api/contributors/top', {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          cache: 'no-cache'
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          setTopContributors(data || [])
-        } else {
-          setTopContributors([])
-        }
+        const response = await fetchWithRetry('/api/contributors/top')
+        const contributorsData = await response.json()
+        setTopContributors(contributorsData || [])
       } catch (error) {
         console.error('Error fetching contributors:', error)
         setTopContributors([])
@@ -164,7 +210,9 @@ function Sidebar() {
       }
     }
 
-    // Run all fetches independently for fast loading
+    // Run all fetches independently (not wrapped in Promise.all)
+    // Each section manages its own loading state and errors
+    console.log('🚀 Starting all sidebar fetches...')
     fetchCategories()
     fetchTrending()
     fetchContributors()

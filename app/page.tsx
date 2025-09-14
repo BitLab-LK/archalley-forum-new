@@ -43,21 +43,8 @@ interface Pagination {
 // Server-side function to get initial posts
 async function getInitialPosts(): Promise<{ posts: Post[], pagination: Pagination }> {
   try {
-    console.log('🔍 Starting getInitialPosts - Environment:', process.env.NODE_ENV)
-    console.log('🔍 Database URL exists:', !!process.env.DATABASE_URL)
-    
     const limit = 10
     const skip = 0
-    
-    // Test database connection first
-    try {
-      await prisma.$connect()
-      await prisma.$queryRaw`SELECT 1`
-      console.log('✅ Database connection successful')
-    } catch (dbError) {
-      console.error('❌ Database connection failed:', dbError)
-      throw new Error('Database connection failed')
-    }
     
     // Get posts with all necessary relations (matching the API structure)
     const [posts, total, voteCounts, attachments] = await Promise.all([
@@ -147,8 +134,6 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
       return userBadges?.[0] || null
     }
 
-    console.log(`✅ Retrieved ${posts.length} posts, ${total} total`)
-
     // Transform vote counts into a map
     const voteCountMap = new Map<string, { upvotes: number; downvotes: number }>()
     
@@ -216,16 +201,7 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
 
     return { posts: formattedPosts, pagination }
   } catch (error) {
-    console.error('❌ Error fetching initial posts:', error)
-    
-    // Log specific error details for debugging
-    if (error instanceof Error) {
-      console.error('Error name:', error.name)
-      console.error('Error message:', error.message)
-      console.error('Error stack:', error.stack)
-    }
-    
-    // Return empty state instead of crashing
+    console.error('Error fetching initial posts:', error)
     return {
       posts: [],
       pagination: { total: 0, pages: 1, currentPage: 1, limit: 10 }
@@ -235,29 +211,13 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
 
 // Main page component - Now a server component with SSR
 export default async function HomePage() {
-  console.log('🏠 HomePage component rendering...')
-  
-  try {
-    // Fetch initial posts on the server
-    const { posts: initialPosts, pagination: initialPagination } = await getInitialPosts()
-    
-    console.log(`🏠 HomePage: Passing ${initialPosts.length} initial posts to client`)
-    
-    return (
-      <HomePageInteractive 
-        initialPosts={initialPosts} 
-        initialPagination={initialPagination} 
-      />
-    )
-  } catch (error) {
-    console.error('🚨 HomePage: Critical error during SSR:', error)
-    
-    // Fallback: Render with empty data and let client-side fetch handle it
-    return (
-      <HomePageInteractive 
-        initialPosts={[]} 
-        initialPagination={{ total: 0, pages: 1, currentPage: 1, limit: 10 }} 
-      />
-    )
-  }
+  // Fetch initial posts on the server
+  const { posts: initialPosts, pagination: initialPagination } = await getInitialPosts()
+
+  return (
+    <HomePageInteractive 
+      initialPosts={initialPosts} 
+      initialPagination={initialPagination} 
+    />
+  )
 }

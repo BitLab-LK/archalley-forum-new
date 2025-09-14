@@ -60,21 +60,10 @@ export default function HomePageInteractive({
   const [pagination, setPagination] = useState(initialPagination)
   const [isLoading, setIsLoading] = useState(false) // Start with false since we have initial data
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null)
-  const [hasConnectionError, setHasConnectionError] = useState(false)
   const router = useRouter()
 
-  // Auto-fetch posts if no initial posts were provided (SSR fallback)
-  useEffect(() => {
-    if (initialPosts.length === 0 && !isLoading) {
-      console.log('🔄 No initial posts, triggering client-side fetch...')
-      fetchPosts(1)
-    }
-  }, []) // Only run once on mount
-
-  const fetchPosts = useCallback(async (page: number = 1, preserveExistingOnError = false) => {
+  const fetchPosts = useCallback(async (page: number = 1) => {
     setIsLoading(true)
-    setHasConnectionError(false)
-    
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -92,29 +81,21 @@ export default function HomePageInteractive({
       if (!response.ok) {
         const errorText = await response.text()
         console.error('Failed to fetch posts:', response.status, errorText)
-        throw new Error(`Failed to fetch posts: ${response.status} ${errorText}`)
+        throw new Error(`Failed to fetch posts: ${response.status}`)
       }
       const data = await response.json()
       setPosts(data.posts || [])
       setPagination(data.pagination || { total: 0, pages: 1, currentPage: 1, limit: 10 })
-      setHasConnectionError(false) // Clear error state on success
     } catch (error) {
       console.error('Homepage posts fetch error:', error)
-      setHasConnectionError(true)
-      
-      // Only clear posts if we don't have existing posts to preserve
-      if (!preserveExistingOnError || posts.length === 0) {
-        toast.error("Failed to load posts")
-        setPosts([])
-        setPagination({ total: 0, pages: 1, currentPage: 1, limit: 10 })
-      } else {
-        // Just show a warning toast if we're preserving existing posts
-        toast.warning("Unable to refresh posts. Showing cached content.")
-      }
+      toast.error("Failed to load posts")
+      // Set empty state on error to prevent infinite loading
+      setPosts([])
+      setPagination({ total: 0, pages: 1, currentPage: 1, limit: 10 })
     } finally {
       setIsLoading(false)
     }
-  }, [posts.length])
+  }, [])
 
   // Callbacks for search params handler
   const handlePageChange = useCallback((page: number) => {
@@ -202,7 +183,7 @@ export default function HomePageInteractive({
           <div className="lg:col-span-2 overflow-visible animate-slide-in-up animate-stagger-1">
             <div className="animate-fade-in-up animate-stagger-2 hover-lift smooth-transition">
               <PostCreator onPostCreated={async () => {
-                // Improved post creation handler with graceful error handling
+                // Optimized refresh - simple and fast
                 try {
                   const response = await fetch(`/api/posts?page=1&limit=${pagination?.limit || 10}`, {
                     cache: 'no-store',
@@ -217,7 +198,7 @@ export default function HomePageInteractive({
                     setPosts(data.posts || [])
                     setPagination(data.pagination || pagination)
                     
-                    // Quick scroll to top to show the new post
+                    // Quick scroll to top
                     setTimeout(() => {
                       window.scrollTo({ top: 0, behavior: 'smooth' })
                     }, 100)
@@ -227,54 +208,13 @@ export default function HomePageInteractive({
                     throw new Error('Failed to refresh posts')
                   }
                 } catch (error) {
-                  console.error('Failed to refresh posts after creation:', error)
-                  
-                  // Use graceful fallback - preserve existing posts
-                  try {
-                    await fetchPosts(1, true) // Use preserveExistingOnError flag
-                    toast.success("Post created! Please refresh to see updates.")
-                  } catch (fallbackError) {
-                    console.error('Fallback fetch also failed:', fallbackError)
-                    // Even if refresh fails, show success message for post creation
-                    toast.success("Post created! Refresh the page to see your post.")
-                  }
+                  console.error('Failed to refresh posts:', error)
+                  toast.error("Post created but failed to refresh feed")
+                  // Simple fallback
+                  await fetchPosts(1)
                 }
               }} />
             </div>
-
-            {/* Connection Error Notice */}
-            {hasConnectionError && posts.length > 0 && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                        Connection Issue
-                      </h3>
-                      <div className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
-                        Unable to refresh posts. Showing cached content.
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fetchPosts(pagination.currentPage)}
-                      disabled={isLoading}
-                      className="text-yellow-800 border-yellow-300 hover:bg-yellow-100 dark:text-yellow-200 dark:border-yellow-600 dark:hover:bg-yellow-800/30"
-                    >
-                      {isLoading ? "Retrying..." : "Retry"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="space-y-3 sm:space-y-4 overflow-visible">
               {isLoading ? (
@@ -295,30 +235,6 @@ export default function HomePageInteractive({
                       </div>
                     </div>
                   ))}
-                </div>
-              ) : posts.length === 0 ? (
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center shadow">
-                  <div className="max-w-md mx-auto">
-                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01M8 20h.01M12 20h.01M16 20h.01" />
-                    </svg>
-                    <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">No posts found</h3>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                      {hasConnectionError 
-                        ? "Unable to load posts due to connection issues. Please try again."
-                        : "Be the first to create a post in this community!"
-                      }
-                    </p>
-                    {hasConnectionError && (
-                      <Button
-                        onClick={() => fetchPosts(1)}
-                        disabled={isLoading}
-                        className="mt-4"
-                      >
-                        {isLoading ? "Loading..." : "Try Again"}
-                      </Button>
-                    )}
-                  </div>
                 </div>
               ) : (
                 posts.map((post: Post) => (
