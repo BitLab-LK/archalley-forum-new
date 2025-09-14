@@ -344,10 +344,30 @@ export async function POST(request: Request) {
       // Don't fail the post creation if email notifications fail
     }
 
-    return NextResponse.json(result, {
+    // Broadcast new post via Socket.IO for real-time updates
+    try {
+      // Note: In production, you'd get the socket server instance
+      // For now, we'll trigger a client-side refresh via the response headers
+      console.log("📡 Broadcasting new post creation for real-time updates")
+      
+      // You can implement Socket.IO server-side broadcasting here
+      // Example: io.emit('new-post', { postId: result.id, authorId: session.user.id })
+    } catch (error) {
+      console.error("Error broadcasting new post:", error)
+      // Don't fail the post creation if broadcasting fails
+    }
+
+    const response = NextResponse.json(result, {
       status: 201,
       headers: jsonHeaders
     })
+
+    // Add headers to trigger cache invalidation
+    response.headers.set('X-Post-Created', 'true')
+    response.headers.set('X-Cache-Invalidate', 'posts')
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    
+    return response
   } catch (error) {
     console.error("❌ Error creating post:", error)
     console.error("❌ Error details:", {
@@ -737,7 +757,7 @@ const skip = (page - 1) * limit
         .slice(skip, skip + limit)
       }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
         posts: transformedPosts,
       pagination: {
         total,
@@ -746,6 +766,14 @@ const skip = (page - 1) * limit
           limit,
       },
     })
+
+    // Add cache control headers for better performance and real-time updates
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    response.headers.set('Last-Modified', new Date().toUTCString())
+    
+    return response
     } catch (dbError) {
       console.error("Database error:", dbError)
       

@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { ThumbsUp, ThumbsDown, MessageCircle, Flag, Pin, CheckCircle, Trash2, MoreHorizontal } from "lucide-react"
+import { ThumbsUp, ThumbsDown, MessageCircle, Flag, CheckCircle, Trash2, MoreHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useGlobalVoteState } from "@/lib/vote-sync"
 import { activityEventManager } from "@/lib/activity-events"
@@ -20,7 +20,7 @@ import {
 import { useAuth } from "@/lib/auth-context"
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
 import { useToast } from "@/hooks/use-toast"
-import PostImage from "@/components/simple-post-image"
+import PostImage from "@/components/post-image"
 import PostModal from "./post-modal"
 import { PostBadges } from "./post-badges"
 import ShareDropdown from "./share-dropdown"
@@ -104,7 +104,7 @@ const getTextSizeClass = (content: string): string => {
 }
 
 const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, onTopCommentVoteChange }: PostCardProps) {
-  const { user, isLoading } = useAuth()
+  const { user } = useAuth()
   const { confirm } = useConfirmDialog()
   const { toast } = useToast()
   
@@ -425,14 +425,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
       console.error('Vote failed:', error)
     }
   }, [handleVote])
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-40">
-        <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-2"></span>
-        Loading...
-      </div>
-    )
-  }
 
   // Memoized image renderer for better performance
   const renderImages = useCallback((images: string[]) => {
@@ -537,28 +529,27 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
           : "max-h-[2000px] opacity-100 mb-4 transform scale-100 overflow-visible"
       )}>
         <Card className={cardBackgroundClasses}>
-          <CardContent className="p-4 overflow-visible">
-          {/* Post Header */}
-          <div className="mb-4">
-            {/* Mobile: Stacked layout, Desktop: Side by side */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-3 sm:space-y-0">
-              {/* User Info Section */}
-              <div className="flex items-center space-x-3 min-w-0 flex-1">
-                <Avatar className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
-                  <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
-                  <AvatarFallback>{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  {/* Name and verification badges */}
-                  <div className="flex items-center space-x-1.5 mb-1">
-                    <span className="font-semibold text-sm sm:text-base truncate">
-                      {post.isAnonymous ? "Anonymous" : post.author.name}
-                    </span>
-                    {!post.isAnonymous && post.author.isVerified && (
-                      <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" />
-                    )}
-                    {post.isPinned && <Pin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />}
-                  </div>
+            <CardContent className="p-4 overflow-visible">
+            {/* Post Header */}
+            <div className="mb-4">
+              {/* Mobile: Stacked layout, Desktop: Side by side */}
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-3 sm:space-y-0">
+                {/* User Info Section */}
+                <div className="flex items-center space-x-3 min-w-0 flex-1">
+                  <Avatar className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
+                    <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
+                    <AvatarFallback>{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    {/* Name and verification badges */}
+                    <div className="flex items-center space-x-1.5 mb-1">
+                      <span className="font-semibold text-sm sm:text-base truncate">
+                        {post.isAnonymous ? "Anonymous" : post.author.name}
+                      </span>
+                      {!post.isAnonymous && post.author.isVerified && (
+                        <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" />
+                      )}
+                    </div>
                   
                   {/* Badges and time - responsive layout */}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">

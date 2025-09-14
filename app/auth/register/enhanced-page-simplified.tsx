@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { getNames } from "country-list"
 import { useState, useEffect, useCallback } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -286,10 +287,12 @@ export default function SimplifiedEnhancedRegisterPage() {
     "Lighting Consultant"
   ]
 
-  const countries = [
-    "United States", "Canada", "United Kingdom", "Australia", "Germany", 
-    "France", "Netherlands", "Spain", "Italy", "Singapore", "UAE", 
-    "India", "China", "Japan", "South Korea", "Other"
+  // Use country-list package for countries, add "Other" manually, Sri Lanka at top
+  const countryNames = Object.values(getNames()) as string[]
+  const countries: string[] = [
+    "Sri Lanka",
+    ...countryNames.filter((c: string) => c !== "Sri Lanka").sort((a: string, b: string) => a.localeCompare(b)),
+    "Other"
   ]
 
   const socialMediaPlatforms = [
@@ -1254,7 +1257,7 @@ export default function SimplifiedEnhancedRegisterPage() {
                             <SelectValue placeholder="Select a country" />
                           </SelectTrigger>
                           <SelectContent>
-                            {countries.map((ctry) => (
+                            {countries.map((ctry: string) => (
                               <SelectItem key={ctry} value={ctry}>
                                 {ctry}
                               </SelectItem>

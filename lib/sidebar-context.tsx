@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react'
+import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react'
 
 interface SidebarContextType {
   refreshCategories: () => void
@@ -33,13 +33,14 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
     setTrendingKey(prev => prev + 1)
   }, [])
 
-  const value = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     refreshCategories,
     refreshTrendingPosts,
     refreshAll,
     categoriesKey,
     trendingKey
-  }
+  }), [refreshCategories, refreshTrendingPosts, refreshAll, categoriesKey, trendingKey])
 
   return (
     <SidebarContext.Provider value={value}>

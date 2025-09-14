@@ -69,7 +69,10 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
   })
 
   const handleContentChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value)
+    const newContent = e.target.value
+    if (newContent !== content) {
+      setContent(newContent)
+    }
   }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -93,7 +96,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
     try {
       // Step 1: Get AI classification
       setAiProgress(20)
-      setAiStatus("Analyzing content and detecting language...")
+      setAiStatus("Posting...")
       
       const classificationResponse = await fetch("/api/ai/classify", {
         method: "POST",
@@ -130,7 +133,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
 
       // Step 2: Get category ID from category name
       setAiProgress(70)
-      setAiStatus("Finding category...")
+      setAiStatus("Posting...")
       
       let categoryId = ''
       try {
@@ -359,7 +362,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
 
       // Step 3: Create the post
       setAiProgress(80)
-      setAiStatus("Creating post...")
+      setAiStatus("Posting...")
 
       // Prepare form data for the posts API (it expects FormData, not JSON)
       const formData = new FormData()
@@ -567,7 +570,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Uploading to Vercel Blob...
+                      Uploading...
                   </div>
                   <Progress value={uploadProgress} className="w-full" />
                 </div>
@@ -580,17 +583,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
                     <span className="text-sm font-medium text-gray-700">
                       Uploaded Images ({uploadedFiles.length})
                     </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={clearAllFiles}
-                      disabled={isUploading || isSubmitting}
-                      className="text-red-600 hover:text-red-700 smooth-transition hover-scale active:scale-95"
-                    >
-                      <X className="h-4 w-4 mr-1 transition-transform duration-200 hover:scale-110" />
-                      Clear All
-                    </Button>
+                    {/* Clear All button is already available in the upload controls above */}
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {uploadedFiles.map((file, index) => (
@@ -629,7 +622,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {aiStatus}
+                  {aiStatus ? aiStatus : "Posting..."}
                 </div>
                 <Progress value={aiProgress} className="w-full" />
               </div>
