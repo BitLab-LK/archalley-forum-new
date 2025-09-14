@@ -60,10 +60,13 @@ export default function HomePageInteractive({
   const [pagination, setPagination] = useState(initialPagination)
   const [isLoading, setIsLoading] = useState(false) // Start with false since we have initial data
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null)
+  const [hasConnectionError, setHasConnectionError] = useState(false)
   const router = useRouter()
 
-  const fetchPosts = useCallback(async (page: number = 1) => {
+  const fetchPosts = useCallback(async (page: number = 1, preserveExistingOnError = false) => {
     setIsLoading(true)
+    setHasConnectionError(false)
+    
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -81,38 +84,29 @@ export default function HomePageInteractive({
       if (!response.ok) {
         const errorText = await response.text()
         console.error('Failed to fetch posts:', response.status, errorText)
-        
-        // Handle 503 (Service Unavailable) errors more gracefully
-        if (response.status === 503) {
-          throw new Error(`Database service temporarily unavailable`)
-        } else {
-          throw new Error(`Failed to fetch posts: ${response.status}`)
-        }
+        throw new Error(`Failed to fetch posts: ${response.status} ${errorText}`)
       }
       const data = await response.json()
       setPosts(data.posts || [])
       setPagination(data.pagination || { total: 0, pages: 1, currentPage: 1, limit: 10 })
+      setHasConnectionError(false) // Clear error state on success
     } catch (error) {
       console.error('Homepage posts fetch error:', error)
+      setHasConnectionError(true)
       
-      // Handle different types of errors with appropriate user feedback
-      if (error instanceof Error) {
-        if (error.message.includes('Database service temporarily unavailable')) {
-          toast.error("Forum is temporarily busy. Please try again in a moment.")
-        } else {
-          toast.error("Failed to load posts")
-        }
-      } else {
+      // Only clear posts if we don't have existing posts to preserve
+      if (!preserveExistingOnError || posts.length === 0) {
         toast.error("Failed to load posts")
+        setPosts([])
+        setPagination({ total: 0, pages: 1, currentPage: 1, limit: 10 })
+      } else {
+        // Just show a warning toast if we're preserving existing posts
+        toast.warning("Unable to refresh posts. Showing cached content.")
       }
-      
-      // Set empty state on error to prevent infinite loading
-      setPosts([])
-      setPagination({ total: 0, pages: 1, currentPage: 1, limit: 10 })
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [posts.length])
 
   // Callbacks for search params handler
   const handlePageChange = useCallback((page: number) => {
@@ -200,66 +194,79 @@ export default function HomePageInteractive({
           <div className="lg:col-span-2 overflow-visible animate-slide-in-up animate-stagger-1">
             <div className="animate-fade-in-up animate-stagger-2 hover-lift smooth-transition">
               <PostCreator onPostCreated={async () => {
-                // Show immediate success feedback
-                toast.success("Post created successfully!")
-                
-                // Quick scroll to top
-                setTimeout(() => {
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                }, 100)
-                
-                // Attempt to refresh posts with retry logic for 503 errors
-                const attemptRefresh = async (retryCount = 0): Promise<void> => {
-                  try {
-                    const response = await fetch(`/api/posts?page=1&limit=${pagination?.limit || 10}`, {
-                      cache: 'no-store',
-                      headers: {
-                        'Cache-Control': 'no-cache',
-                        'Accept': 'application/json',
-                      }
-                    })
+                // Improved post creation handler with graceful error handling
+                try {
+                  const response = await fetch(`/api/posts?page=1&limit=${pagination?.limit || 10}`, {
+                    cache: 'no-store',
+                    headers: {
+                      'Cache-Control': 'no-cache',
+                      'Accept': 'application/json',
+                    }
+                  })
+                  
+                  if (response.ok) {
+                    const data = await response.json()
+                    setPosts(data.posts || [])
+                    setPagination(data.pagination || pagination)
                     
-                    if (response.ok) {
-                      const data = await response.json()
-                      setPosts(data.posts || [])
-                      setPagination(data.pagination || pagination)
-                      console.log('✅ Posts refreshed successfully after post creation')
-                    } else if (response.status === 503 && retryCount < 2) {
-                      // Database temporarily unavailable - retry after a short delay
-                      console.log(`⏳ Database temporarily unavailable (503), retrying in ${(retryCount + 1) * 2} seconds...`)
-                      if (retryCount === 0) {
-                        toast.info("Refreshing posts... This may take a moment.")
-                      }
-                      setTimeout(() => {
-                        attemptRefresh(retryCount + 1)
-                      }, (retryCount + 1) * 2000) // 2s, 4s delays
-                    } else {
-                      // Other errors or max retries reached
-                      console.warn('⚠️ Could not refresh posts automatically, but post was created')
-                      toast.info("Your post was created! Refresh the page to see it.")
-                    }
-                  } catch (error) {
-                    if (retryCount < 2) {
-                      // Network error - retry after delay
-                      console.log(`🔄 Network error, retrying in ${(retryCount + 1) * 2} seconds...`)
-                      if (retryCount === 0) {
-                        toast.info("Refreshing posts... This may take a moment.")
-                      }
-                      setTimeout(() => {
-                        attemptRefresh(retryCount + 1)
-                      }, (retryCount + 1) * 2000)
-                    } else {
-                      // Max retries reached
-                      console.warn('⚠️ Could not refresh posts after multiple attempts')
-                      toast.info("Your post was created! Please refresh the page to see it.")
-                    }
+                    // Quick scroll to top to show the new post
+                    setTimeout(() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }, 100)
+                    
+                    toast.success("Post created successfully!")
+                  } else {
+                    throw new Error('Failed to refresh posts')
+                  }
+                } catch (error) {
+                  console.error('Failed to refresh posts after creation:', error)
+                  
+                  // Use graceful fallback - preserve existing posts
+                  try {
+                    await fetchPosts(1, true) // Use preserveExistingOnError flag
+                    toast.success("Post created! Please refresh to see updates.")
+                  } catch (fallbackError) {
+                    console.error('Fallback fetch also failed:', fallbackError)
+                    // Even if refresh fails, show success message for post creation
+                    toast.success("Post created! Refresh the page to see your post.")
                   }
                 }
-                
-                // Start the refresh attempt
-                attemptRefresh()
               }} />
             </div>
+
+            {/* Connection Error Notice */}
+            {hasConnectionError && posts.length > 0 && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                        Connection Issue
+                      </h3>
+                      <div className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
+                        Unable to refresh posts. Showing cached content.
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fetchPosts(pagination.currentPage)}
+                      disabled={isLoading}
+                      className="text-yellow-800 border-yellow-300 hover:bg-yellow-100 dark:text-yellow-200 dark:border-yellow-600 dark:hover:bg-yellow-800/30"
+                    >
+                      {isLoading ? "Retrying..." : "Retry"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3 sm:space-y-4 overflow-visible">
               {isLoading ? (
@@ -280,6 +287,30 @@ export default function HomePageInteractive({
                       </div>
                     </div>
                   ))}
+                </div>
+              ) : posts.length === 0 ? (
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center shadow">
+                  <div className="max-w-md mx-auto">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01M8 20h.01M12 20h.01M16 20h.01" />
+                    </svg>
+                    <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">No posts found</h3>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      {hasConnectionError 
+                        ? "Unable to load posts due to connection issues. Please try again."
+                        : "Be the first to create a post in this community!"
+                      }
+                    </p>
+                    {hasConnectionError && (
+                      <Button
+                        onClick={() => fetchPosts(1)}
+                        disabled={isLoading}
+                        className="mt-4"
+                      >
+                        {isLoading ? "Loading..." : "Try Again"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 posts.map((post: Post) => (
