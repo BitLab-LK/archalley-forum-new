@@ -4,11 +4,12 @@ import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Suspense } from "react"
-import PostCreator from "@/components/post-creator"
+import LazyPostCreator from "@/components/lazy-post-creator"
 import PostCard from "@/components/post-card"
-import Sidebar from "@/components/sidebar"
+import LazySidebar from "@/components/lazy-sidebar"
 import SearchParamsHandler from "@/components/homepage-search-params"
 import { Button } from "@/components/ui/button"
+import { useIsHydrated } from "@/hooks/use-performance"
 
 interface Post {
   id: string
@@ -72,6 +73,7 @@ export default function HomePageInteractive({
   const [posts, setPosts] = useState<Post[]>(initialPosts || [])
   const [pagination, setPagination] = useState(initialPagination)
   const [isLoading, setIsLoading] = useState(false) // Start with false since we have initial data
+  const hasHydrated = useIsHydrated() // Track hydration status
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null)
   const router = useRouter()
 
@@ -85,16 +87,9 @@ export default function HomePageInteractive({
           limit: '10'
         })
         
-        // Add timestamp to prevent aggressive caching on first load
-        const isFirstLoad = page === 1 && posts.length === 0
-        if (isFirstLoad) {
-          params.set('_t', Date.now().toString())
-        }
-        
         const response = await fetch(`/api/posts?${params.toString()}`, {
-          cache: 'no-store', // Always fetch fresh data for reliability
+          // Use default caching for better performance on subsequent loads
           headers: {
-            'Cache-Control': 'no-cache',
             'Accept': 'application/json',
           },
           // Shorter timeout for faster retries
@@ -159,32 +154,16 @@ export default function HomePageInteractive({
     }
   }, [posts?.length]) // Use optional chaining to handle null/undefined posts
 
-  // Client-side fallback when SSR fails and returns empty posts
+  // Client-side fallback only when SSR completely fails (no initial data)
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout
-
-    if ((!posts || posts.length === 0) && !isLoading) {
-      // Start loading immediately for empty state
-      console.log("No posts from SSR, attempting client-side fetch...")
+    // Only fetch if we have no initial posts AND we've hydrated AND we're not already loading
+    if (hasHydrated && (!initialPosts || initialPosts.length === 0) && posts.length === 0 && !isLoading) {
+      console.log("No initial posts from SSR, attempting client-side fetch...")
       fetchPosts(1).catch(error => {
         console.error("Client-side fallback fetch failed:", error)
       })
-    } else if (posts && posts.length === 0 && !isLoading) {
-      // Empty array but not loading yet - wait a short moment then fetch
-      timeoutId = setTimeout(() => {
-        if (posts && posts.length === 0 && !isLoading) {
-          console.log('⏰ No posts after timeout, fetching from API...')
-          fetchPosts(1).catch(error => {
-            console.error("Timeout fallback fetch failed:", error)
-          })
-        }
-      }, 800) // Wait 800ms for potential hydration issues
     }
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId)
-    }
-  }, [fetchPosts, posts?.length, isLoading]) // Use optional chaining for dependencies
+  }, [hasHydrated, initialPosts, posts.length, isLoading, fetchPosts])
 
   // Callbacks for search params handler
   const handlePageChange = useCallback((page: number) => {
@@ -272,57 +251,96 @@ export default function HomePageInteractive({
     return range
   }
 
-  // Show skeleton loading when there are no posts and loading
-  if (isLoading && posts.length === 0) {
+  // Show skeleton loading when we're loading and have no posts, OR when we haven't hydrated yet
+  if ((isLoading && posts.length === 0) || !hasHydrated) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex gap-8">
-            {/* Main content */}
-            <div className="flex-1">
-              {/* Skeleton for PostCreator */}
+          <div className="homepage-layout">
+            {/* Main content - ensure consistent width */}
+            <div className="homepage-content skeleton-container">
+              {/* Skeleton for PostCreator - match actual PostCreator dimensions */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
                 <div className="animate-pulse">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
-                  <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-40 mb-4"></div>
+                  <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+                  <div className="flex gap-2">
+                    <div className="h-9 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                    <div className="h-9 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                  </div>
                 </div>
               </div>
 
-              {/* Skeleton for posts */}
+              {/* Skeleton for posts - match actual PostCard dimensions */}
               {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+                <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6 min-h-[200px]">
                   <div className="animate-pulse">
+                    {/* Header section */}
                     <div className="flex items-center space-x-3 mb-4">
-                      <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                      <div className="space-y-2">
+                      <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex-shrink-0"></div>
+                      <div className="flex-1 space-y-2">
                         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
                         <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
                       </div>
+                      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
                     </div>
-                    <div className="space-y-3 mb-4">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    
+                    {/* Content section */}
+                    <div className="space-y-3 mb-6">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
                       <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
-                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
-                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                    
+                    {/* Actions section */}
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
+                      <div className="flex items-center space-x-4">
+                        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                      </div>
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Sidebar skeleton */}
-            <div className="w-80 hidden lg:block">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="animate-pulse">
-                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-4"></div>
-                  <div className="space-y-3">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                    ))}
+            {/* Sidebar skeleton - ensure consistent width */}
+            <div className="homepage-sidebar skeleton-container">
+              <div className="space-y-6">
+                {/* Categories skeleton */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                  <div className="animate-pulse">
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-4"></div>
+                    <div className="space-y-3">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="flex items-center space-x-3">
+                          <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded flex-1"></div>
+                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-8"></div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Trending posts skeleton */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                  <div className="animate-pulse">
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-4"></div>
+                    <div className="space-y-4">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="space-y-2">
+                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -336,10 +354,10 @@ export default function HomePageInteractive({
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
-          {/* Main content */}
-          <div className="flex-1">
-            <PostCreator onPostCreated={(result) => {
+        <div className="homepage-layout">
+          {/* Main content - consistent width with skeleton */}
+          <div className="homepage-content layout-stable">
+            <LazyPostCreator onPostCreated={(result) => {
               if (result?.success) {
                 // Refresh posts to show the new post
                 fetchPosts(1).catch(console.error)
@@ -418,9 +436,9 @@ export default function HomePageInteractive({
             )}
           </div>
 
-          {/* Sidebar */}
-          <div className="w-80 hidden lg:block">
-            <Sidebar />
+          {/* Sidebar - consistent width with skeleton */}
+          <div className="homepage-sidebar layout-stable">
+            <LazySidebar />
           </div>
         </div>
       </div>

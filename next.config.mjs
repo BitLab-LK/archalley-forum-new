@@ -61,16 +61,26 @@ const nextConfig = {
         pathname: '/**',
       }
     ],
-    formats: ['image/webp'],
-    minimumCacheTTL: 60,
+    formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 300, // 5 minutes cache for better performance
     dangerouslyAllowSVG: false,
     unoptimized: false,
   },
   
-  // Experimental features
+  // Experimental features for better performance
   experimental: {
     optimizeCss: true,
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    optimizeServerReact: true,
+    serverMinification: true,
+    serverSourceMaps: false,
+  },
+
+  // Compiler optimizations
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error']
+    } : false,
   },
   
   // Webpack configuration

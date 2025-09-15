@@ -60,8 +60,9 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
     const limit = 10
     const skip = 0
     
-    // Get posts with all necessary relations (matching the API structure)
-    const [posts, total, voteCounts, attachments] = await Promise.all([
+    // Use Promise.allSettled for better error handling - some data is better than no data
+    const results = await Promise.allSettled([
+      // Get posts with all necessary relations (matching the API structure)
       prisma.post.findMany({
         take: limit,
         skip: skip,
@@ -113,15 +114,34 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
       })
     ])
 
-    // Get multiple categories for all posts (matching API logic)
+    // Extract results, handling failures gracefully
+    const posts = results[0].status === 'fulfilled' ? results[0].value : []
+    const total = results[1].status === 'fulfilled' ? results[1].value : 0
+    const voteCounts = results[2].status === 'fulfilled' ? results[2].value : []
+    const attachments = results[3].status === 'fulfilled' ? results[3].value : []
+
+    // Log any failures
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.warn(`⚠️ SSR: Query ${index} failed:`, result.reason)
+      }
+    })
+
+    // Get multiple categories for all posts (matching API logic) - also with error handling
     const allCategoryIds = posts.flatMap(post => post.categoryIds || [])
     const uniqueCategoryIds = [...new Set(allCategoryIds)]
-    const multipleCategories = uniqueCategoryIds.length > 0 
-      ? await prisma.categories.findMany({
+    let multipleCategories: any[] = []
+    
+    if (uniqueCategoryIds.length > 0) {
+      try {
+        multipleCategories = await prisma.categories.findMany({
           where: { id: { in: uniqueCategoryIds } },
           select: { id: true, name: true, color: true, slug: true }
         })
-      : []
+      } catch (error) {
+        console.warn('⚠️ SSR: Failed to fetch multiple categories:', error)
+      }
+    }
     
     // Create a map for quick category lookup
     const categoryMap = new Map(multipleCategories.map(cat => [cat.id, cat]))
@@ -234,7 +254,7 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
       limit
     }
 
-    console.log(`✅ SSR: Successfully fetched ${formattedPosts.length} posts`)
+    console.log(`✅ SSR: Successfully fetched ${formattedPosts.length} posts out of ${total} total`)
     return { posts: formattedPosts, pagination }
   } catch (error) {
     console.error('❌ SSR: Error fetching initial posts:', error)
@@ -249,13 +269,32 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
 
 // Main page component - Now a server component with SSR
 export default async function HomePage() {
-  // Fetch initial posts on the server
-  const { posts: initialPosts, pagination: initialPagination } = await getInitialPosts()
+  // Fetch initial posts on the server with timeout to prevent slow renders
+  let initialData
+  
+  try {
+    // Add a timeout to prevent SSR from taking too long
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('SSR timeout')), 5000) // 5 second timeout
+    )
+    
+    initialData = await Promise.race([
+      getInitialPosts(),
+      timeoutPromise
+    ])
+  } catch (error) {
+    console.warn('⚠️ SSR: Timeout or error, using fallback:', error)
+    // Fallback to empty state - client will handle loading
+    initialData = {
+      posts: [],
+      pagination: { total: 0, pages: 1, currentPage: 1, limit: 10 }
+    }
+  }
 
   return (
     <HomePageInteractive 
-      initialPosts={initialPosts} 
-      initialPagination={initialPagination} 
+      initialPosts={initialData.posts} 
+      initialPagination={initialData.pagination} 
     />
   )
 }

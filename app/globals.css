@@ -219,3 +219,55 @@
 .animate-stagger-3 { animation-delay: 0.3s; }
 .animate-stagger-4 { animation-delay: 0.4s; }
 .animate-stagger-5 { animation-delay: 0.5s; }
+
+/* Layout stability and cumulative layout shift prevention */
+.layout-stable {
+  /* Prevent layout shifts during loading */
+  contain: layout style;
+}
+
+.skeleton-container {
+  /* Ensure skeleton and real content have same dimensions */
+  min-height: inherit;
+  width: 100%;
+}
+
+/* Prevent content reflow during hydration */
+.hydration-stable {
+  /* Keep dimensions stable during hydration */
+  contain: layout;
+  min-height: var(--min-content-height, auto);
+}
+
+/* Consistent spacing for homepage layout */
+.homepage-layout {
+  /* Prevent layout shifts in main content area */
+  display: flex;
+  gap: 2rem;
+  min-height: 100vh;
+}
+
+.homepage-content {
+  /* Main content area with consistent width */
+  flex: 1;
+  max-width: 64rem; /* 4xl */
+  min-width: 0; /* Allow flexbox shrinking */
+}
+
+.homepage-sidebar {
+  /* Sidebar with fixed width to prevent shifts */
+  width: 20rem; /* 80 */
+  flex-shrink: 0;
+}
+
+/* Optimize image loading to prevent layout shifts */
+.post-image-container {
+  /* Reserve space for images during loading */
+  position: relative;
+  aspect-ratio: var(--image-aspect-ratio, 16/9);
+  background-color: rgb(243 244 246); /* gray-100 */
+}
+
+.dark .post-image-container {
+  background-color: rgb(31 41 55); /* gray-800 */
+}
