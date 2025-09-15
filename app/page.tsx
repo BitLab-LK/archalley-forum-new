@@ -56,6 +56,7 @@ interface Pagination {
 // Server-side function to get initial posts
 async function getInitialPosts(): Promise<{ posts: Post[], pagination: Pagination }> {
   try {
+    console.log('🔄 SSR: Starting initial posts fetch...')
     const limit = 10
     const skip = 0
     
@@ -233,9 +234,12 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
       limit
     }
 
+    console.log(`✅ SSR: Successfully fetched ${formattedPosts.length} posts`)
     return { posts: formattedPosts, pagination }
   } catch (error) {
-    console.error('Error fetching initial posts:', error)
+    console.error('❌ SSR: Error fetching initial posts:', error)
+    // Return empty state but let client-side handle the loading
+    console.log('⚠️ SSR: Returning empty state, client will handle loading')
     return {
       posts: [],
       pagination: { total: 0, pages: 1, currentPage: 1, limit: 10 }

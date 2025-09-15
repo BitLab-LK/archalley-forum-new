@@ -69,13 +69,13 @@ export default function HomePageInteractive({
   initialPosts: Post[];
   initialPagination: Pagination;
 }) {
-  const [posts, setPosts] = useState(initialPosts)
+  const [posts, setPosts] = useState<Post[]>(initialPosts || [])
   const [pagination, setPagination] = useState(initialPagination)
   const [isLoading, setIsLoading] = useState(false) // Start with false since we have initial data
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null)
   const router = useRouter()
 
-  const fetchPosts = useCallback(async (page: number = 1, retries: number = 2) => {
+  const fetchPosts = useCallback(async (page: number = 1, retries: number = 3) => {
     setIsLoading(true)
     
     for (let attempt = 0; attempt <= retries; attempt++) {
@@ -85,12 +85,20 @@ export default function HomePageInteractive({
           limit: '10'
         })
         
+        // Add timestamp to prevent aggressive caching on first load
+        const isFirstLoad = page === 1 && posts.length === 0
+        if (isFirstLoad) {
+          params.set('_t', Date.now().toString())
+        }
+        
         const response = await fetch(`/api/posts?${params.toString()}`, {
-          cache: 'no-store',
+          cache: 'no-store', // Always fetch fresh data for reliability
           headers: {
             'Cache-Control': 'no-cache',
             'Accept': 'application/json',
-          }
+          },
+          // Shorter timeout for faster retries
+          signal: AbortSignal.timeout(10000) // 10 second timeout
         })
         
         if (!response.ok) {
@@ -108,6 +116,12 @@ export default function HomePageInteractive({
         }
         
         const data = await response.json()
+        
+        // Validate response data
+        if (!data || !Array.isArray(data.posts)) {
+          throw new Error('Invalid response format')
+        }
+        
         setPosts(data.posts || [])
         setPagination(data.pagination || { total: 0, pages: 1, currentPage: 1, limit: 10 })
         setIsLoading(false)
@@ -118,7 +132,19 @@ export default function HomePageInteractive({
         
         // If this is the last attempt, handle the error
         if (attempt === retries) {
-          toast.error("Failed to load posts")
+          const errorMessage = error instanceof Error ? error.message : 'Failed to load posts'
+          
+          // Show different messages based on error type
+          if (errorMessage.includes('503')) {
+            toast.error("Server is temporarily unavailable. Please try again in a few moments.")
+          } else if (errorMessage.includes('timeout') || errorMessage.includes('TimeoutError')) {
+            toast.error("Connection timeout. Please check your internet connection.")
+          } else if (errorMessage.includes('Failed to fetch')) {
+            toast.error("Network error. Please check your connection.")
+          } else {
+            toast.error("Failed to load posts. Please refresh the page.")
+          }
+          
           // Set empty state on error to prevent infinite loading
           setPosts([])
           setPagination({ total: 0, pages: 1, currentPage: 1, limit: 10 })
@@ -126,24 +152,39 @@ export default function HomePageInteractive({
           return
         }
         
-        // Wait before retry (progressive delay for 503s)
-        const delay = (error as Error).message?.includes('503') ? 2000 * (attempt + 1) : 1000 * (attempt + 1)
+        // Wait before retry with shorter delays for faster recovery
+        const delay = 500 * (attempt + 1) // 500ms, 1s, 1.5s delays
         await new Promise(resolve => setTimeout(resolve, delay))
       }
     }
-  }, [])
+  }, [posts?.length]) // Use optional chaining to handle null/undefined posts
 
   // Client-side fallback when SSR fails and returns empty posts
   useEffect(() => {
-    // Only trigger fallback if we have no posts AND we haven't started loading yet
-    // This prevents unnecessary refetches when posts are being updated optimistically
+    let timeoutId: NodeJS.Timeout
+
     if ((!posts || posts.length === 0) && !isLoading) {
+      // Start loading immediately for empty state
       console.log("No posts from SSR, attempting client-side fetch...")
       fetchPosts(1).catch(error => {
         console.error("Client-side fallback fetch failed:", error)
       })
+    } else if (posts && posts.length === 0 && !isLoading) {
+      // Empty array but not loading yet - wait a short moment then fetch
+      timeoutId = setTimeout(() => {
+        if (posts && posts.length === 0 && !isLoading) {
+          console.log('⏰ No posts after timeout, fetching from API...')
+          fetchPosts(1).catch(error => {
+            console.error("Timeout fallback fetch failed:", error)
+          })
+        }
+      }, 800) // Wait 800ms for potential hydration issues
     }
-  }, [fetchPosts, posts.length, isLoading]) // Added isLoading to dependencies
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId)
+    }
+  }, [fetchPosts, posts?.length, isLoading]) // Use optional chaining for dependencies
 
   // Callbacks for search params handler
   const handlePageChange = useCallback((page: number) => {
@@ -200,237 +241,197 @@ export default function HomePageInteractive({
     let start = Math.max(2, pagination.currentPage - 1)
     let end = Math.min(pagination.pages - 1, pagination.currentPage + 1)
 
-    // Add ellipsis if needed
-    if (start > 2) range.push("...")
-    
+    // Adjust range if current page is near the beginning or end
+    if (pagination.currentPage <= 3) {
+      end = Math.min(4, pagination.pages - 1)
+    }
+    if (pagination.currentPage >= pagination.pages - 2) {
+      start = Math.max(2, pagination.pages - 3)
+    }
+
+    // Add ellipsis after first page if needed
+    if (start > 2) {
+      range.push('...')
+    }
+
     // Add middle pages
     for (let i = start; i <= end; i++) {
       range.push(i)
     }
 
-    // Add ellipsis if needed
-    if (end < pagination.pages - 1) range.push("...")
-    
-    // Always show last page
-    if (pagination.pages > 1) range.push(pagination.pages)
+    // Add ellipsis before last page if needed
+    if (end < pagination.pages - 1) {
+      range.push('...')
+    }
+
+    // Always show last page (if it's not already shown)
+    if (pagination.pages > 1) {
+      range.push(pagination.pages)
+    }
 
     return range
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Suspense fallback={<div>Loading...</div>}>
-        <SearchParamsHandler 
-          onPageChange={handlePageChange} 
-          onHighlight={handleHighlight} 
-        />
-      </Suspense>
-      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 overflow-visible animate-slide-in-up animate-stagger-1">
-            <div className="animate-fade-in-up animate-stagger-2 hover-lift smooth-transition">
-              <PostCreator onPostCreated={async (result) => {
-                if (result && result.success && result.post) {
-                  // OPTIMIZATION: Immediately add post to UI for instant feedback
-                  const realPost = result.post
-                  
-                  console.log("Adding real post:", { realPost })
-                  
-                  // Transform the real API response to match UI expectations
-                  const transformedPost: Post = {
-                    id: realPost.id,
-                    author: {
-                      id: realPost.users?.id || realPost.authorId || '',
-                      name: realPost.users?.name || (realPost.isAnonymous ? 'Anonymous' : 'Unknown User'),
-                      avatar: realPost.users?.image || '/placeholder-user.jpg',
-                      isVerified: realPost.users?.isVerified || false,
-                      rank: realPost.users?.userBadges?.[0]?.badges?.name || 'Member',
-                      rankIcon: realPost.users?.userBadges?.[0]?.badges?.icon || '👤'
-                    },
-                    content: realPost.content || '',
-                    category: realPost.categories?.name || 'General',  // Primary category name
-                    categories: realPost.categories,                   // Primary category object
-                    allCategories: realPost.allCategories || [],       // Multiple categories array
-                    aiCategories: realPost.aiCategories || [],         // AI-suggested categories
-                    isAnonymous: realPost.isAnonymous || false,
-                    isPinned: false,
-                    upvotes: 0,
-                    downvotes: 0,  
-                    userVote: null,
-                    comments: realPost._count?.Comment || 0,
-                    timeAgo: 'just now',
-                    images: [] // Initialize empty, will be populated below
-                  }
-                  
-                  // CRITICAL FIX: Check for images from the response and handle properly
-                  if (realPost.attachments && realPost.attachments.length > 0) {
-                    console.log("✅ Found attachments in response:", realPost.attachments)
-                    transformedPost.images = realPost.attachments.map((att: any) => {
-                      // Clean the URL to remove any download parameters
-                      let cleanUrl = att.url
-                      if (cleanUrl.includes('blob.vercel-storage.com') && cleanUrl.includes('?download=1')) {
-                        cleanUrl = cleanUrl.replace('?download=1', '')
-                      }
-                      return cleanUrl
-                    })
-                    console.log("✅ Transformed images:", transformedPost.images)
-                  } else {
-                    console.log("⚠️ No attachments found in response:", realPost)
-                  }
-                  
-                  // Add real post to the beginning of the list immediately
-                  setPosts(prev => [transformedPost, ...prev])
-                  setPagination(prev => ({ 
-                    ...prev, 
-                    total: (prev?.total || 0) + 1 
-                  }))
-                  
-                  // Scroll to show the new post
-                  setTimeout(() => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }, 100)
-                  
-                  toast.success("Post created successfully!")
-                  
-                } else if (result && result.error) {
-                  // API call failed, show error
-                  console.error("Post creation failed:", result.error)
-                  toast.error(result.error || "Failed to create post")
-                  
-                } else {
-                  // Legacy fallback - refresh posts list
-                  console.log("Using legacy fallback to refresh posts")
-                  try {
-                    // Optimistically add a placeholder post first
-                    const placeholderPost: Post = {
-                      id: `temp-${Date.now()}`,
-                      author: {
-                        id: 'temp',
-                        name: 'Creating...',
-                        avatar: '/placeholder-user.jpg',
-                        isVerified: false,
-                        rank: 'Member',
-                        rankIcon: '⏳'
-                      },
-                      content: 'Post is being created...',
-                      category: 'General',
-                      isAnonymous: false,
-                      isPinned: false,
-                      upvotes: 0,
-                      downvotes: 0,
-                      userVote: null,
-                      comments: 0,
-                      timeAgo: 'just now'
-                    }
-                    
-                    setPosts(prev => [placeholderPost, ...prev])
-                    
-                    // Fetch fresh posts to replace placeholder
-                    const response = await fetch(`/api/posts?page=1&limit=${pagination?.limit || 10}`, {
-                      cache: 'no-store',
-                      headers: {
-                        'Cache-Control': 'no-cache',
-                        'Accept': 'application/json',
-                      }
-                    })
-                    
-                    if (response.ok) {
-                      const data = await response.json()
-                      setPosts(data.posts || [])
-                      setPagination(data.pagination || pagination)
-                      
-                      setTimeout(() => {
-                        window.scrollTo({ top: 0, behavior: 'smooth' })
-                      }, 100)
-                      
-                      toast.success("Post created successfully!")
-                    } else {
-                      // Remove placeholder on error
-                      setPosts(prev => prev.filter(p => p.id !== placeholderPost.id))
-                      throw new Error('Failed to refresh posts')
-                    }
-                  } catch (error) {
-                    console.error('Failed to refresh posts:', error)
-                    toast.error("Post created but failed to refresh feed. Please refresh the page.")
-                    // Remove any placeholder posts
-                    setPosts(prev => prev.filter(p => !p.id.startsWith('temp-')))
-                  }
-                }
-              }} />
-            </div>
+  // Show skeleton loading when there are no posts and loading
+  if (isLoading && posts.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex gap-8">
+            {/* Main content */}
+            <div className="flex-1">
+              {/* Skeleton for PostCreator */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
+                  <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                </div>
+              </div>
 
-            <div className="space-y-3 sm:space-y-4 overflow-visible">
-              {posts.map((post: Post) => (
-                <div 
-                  key={post.id}
-                  id={`post-${post.id}`}
-                  className={`hover-lift smooth-transition ${
-                    highlightedPostId === post.id ? 'ring-2 ring-primary ring-offset-2 bg-primary/5 transition-all duration-300' : ''
-                  }`}
-                >
-                  <PostCard 
-                    post={post} 
-                    onCommentCountChange={handleCommentCountChange}
-                  />
+              {/* Skeleton for posts */}
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+                  <div className="animate-pulse">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                      </div>
+                    </div>
+                    <div className="space-y-3 mb-4">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
 
-            {/* Pagination - Mobile Optimized */}
-            {pagination.pages > 1 && (
-              <div className="flex justify-center mt-6 sm:mt-8 px-2 animate-fade-in-up animate-delay-500">
-                <nav className="flex items-center space-x-1 sm:space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePaginationClick(pagination.currentPage - 1)}
-                    disabled={pagination.currentPage === 1}
-                    className="text-xs sm:text-sm px-2 sm:px-3 smooth-transition hover-lift"
-                  >
-                    <span className="hidden sm:inline">Previous</span>
-                    <span className="sm:hidden">Prev</span>
-                  </Button>
-                  
-                  {getPaginationRange().map((page, i) => (
-                    page === "..." ? (
-                      <span key={`ellipsis-${i}`} className="px-1 sm:px-2 text-xs sm:text-sm">...</span>
-                    ) : (
-                      <Button
-                        key={page}
-                        variant={pagination.currentPage === page ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handlePaginationClick(page as number)}
-                        className="text-xs sm:text-sm min-w-[32px] sm:min-w-[40px] px-2 sm:px-3 smooth-transition hover-lift"
-                      >
-                        {page}
-                      </Button>
-                    )
-                  ))}
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePaginationClick(pagination.currentPage + 1)}
-                    disabled={pagination.currentPage === pagination.pages}
-                    className="text-xs sm:text-sm px-2 sm:px-3 smooth-transition hover-lift"
-                  >
-                    <span className="hidden sm:inline">Next</span>
-                    <span className="sm:hidden">Next</span>
-                  </Button>
-                </nav>
+            {/* Sidebar skeleton */}
+            <div className="w-80 hidden lg:block">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="animate-pulse">
+                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-4"></div>
+                  <div className="space-y-3">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-
-          {/* Sidebar - Full interactive version */}
-          <div className="hidden lg:block lg:col-span-1 animate-slide-in-up animate-stagger-5">
-            <div className="hover-scale smooth-transition">
-              <Sidebar />
             </div>
           </div>
         </div>
-      </main>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex gap-8">
+          {/* Main content */}
+          <div className="flex-1">
+            <PostCreator onPostCreated={(result) => {
+              if (result?.success) {
+                // Refresh posts to show the new post
+                fetchPosts(1).catch(console.error)
+              }
+            }} />
+            
+            {posts.length === 0 && !isLoading ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📝</div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  No posts yet
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-6">
+                  Be the first to share something with the community!
+                </p>
+                <Button
+                  onClick={() => window.location.reload()}
+                  variant="outline"
+                >
+                  Refresh Page
+                </Button>
+              </div>
+            ) : (
+              <>
+                {posts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    onCommentCountChange={handleCommentCountChange}
+                  />
+                ))}
+
+                {/* Loading indicator for subsequent loads */}
+                {isLoading && posts.length > 0 && (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                )}
+
+                {/* Pagination */}
+                {pagination.pages > 1 && (
+                  <div className="flex items-center justify-center space-x-2 mt-8">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePaginationClick(pagination.currentPage - 1)}
+                      disabled={pagination.currentPage <= 1}
+                    >
+                      Previous
+                    </Button>
+
+                    {getPaginationRange().map((page, index) => (
+                      <Button
+                        key={index}
+                        variant={page === pagination.currentPage ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => typeof page === 'number' ? handlePaginationClick(page) : undefined}
+                        disabled={typeof page !== 'number'}
+                        className={typeof page !== 'number' ? 'cursor-default' : ''}
+                      >
+                        {page}
+                      </Button>
+                    ))}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePaginationClick(pagination.currentPage + 1)}
+                      disabled={pagination.currentPage >= pagination.pages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="w-80 hidden lg:block">
+            <Sidebar />
+          </div>
+        </div>
+      </div>
+
+      {/* Search params handler */}
+      <Suspense fallback={null}>
+        <SearchParamsHandler
+          onPageChange={handlePageChange}
+          onHighlight={handleHighlight}
+        />
+      </Suspense>
     </div>
   )
 }

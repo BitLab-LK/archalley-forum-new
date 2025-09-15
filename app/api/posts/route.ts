@@ -12,6 +12,107 @@ import { revalidatePath } from "next/cache"
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
+// Simple in-memory cache for posts (production should use Redis/Memcached)
+interface CacheEntry {
+  data: any
+  timestamp: number
+  etag: string
+}
+
+class PostsCache {
+  private cache = new Map<string, CacheEntry>()
+  private readonly ttl = 60 * 1000 // 60 seconds
+  private readonly maxSize = 100 // Maximum cache entries
+
+  generateKey(params: URLSearchParams): string {
+    const page = params.get('page') || '1'
+    const limit = params.get('limit') || '10'
+    const category = params.get('category') || 'all'
+    const sortBy = params.get('sortBy') || 'createdAt'
+    const sortOrder = params.get('sortOrder') || 'desc'
+    const authorId = params.get('authorId') || 'all'
+    
+    return `posts:${page}:${limit}:${category}:${sortBy}:${sortOrder}:${authorId}`
+  }
+
+  generateETag(data: any): string {
+    const content = JSON.stringify(data)
+    const hash = Buffer.from(content).toString('base64').slice(0, 16)
+    return `"${hash}"`
+  }
+
+  get(key: string, ifNoneMatch?: string): CacheEntry | null {
+    const entry = this.cache.get(key)
+    
+    if (!entry) return null
+    
+    // Check if cache entry has expired
+    if (Date.now() - entry.timestamp > this.ttl) {
+      this.cache.delete(key)
+      return null
+    }
+    
+    // Check ETag for conditional requests
+    if (ifNoneMatch && ifNoneMatch === entry.etag) {
+      console.log("✅ Posts Cache: ETag match, returning 304")
+      return entry
+    }
+    
+    console.log("✅ Posts Cache: Cache hit for key:", key.substring(0, 50) + "...")
+    return entry
+  }
+
+  set(key: string, data: any): CacheEntry {
+    // Remove oldest entries if cache is full
+    if (this.cache.size >= this.maxSize) {
+      const oldestKey = this.cache.keys().next().value
+      if (oldestKey) {
+        this.cache.delete(oldestKey)
+      }
+    }
+    
+    const etag = this.generateETag(data)
+    const entry: CacheEntry = {
+      data,
+      timestamp: Date.now(),
+      etag
+    }
+    
+    this.cache.set(key, entry)
+    console.log("💾 Posts Cache: Stored data for key:", key.substring(0, 50) + "...")
+    return entry
+  }
+
+  clear(): void {
+    this.cache.clear()
+    console.log("🗑️ Posts Cache: Cache cleared")
+  }
+
+  getStats(): { size: number; maxSize: number; keys: string[] } {
+    return {
+      size: this.cache.size,
+      maxSize: this.maxSize,
+      keys: Array.from(this.cache.keys()).map(k => k.substring(0, 30) + "...")
+    }
+  }
+}
+
+// Global cache instance
+const postsCache = new PostsCache()
+
+// Clear cache when posts are created/updated
+let cacheInvalidationTimeout: NodeJS.Timeout | null = null
+function invalidateCache() {
+  if (cacheInvalidationTimeout) {
+    clearTimeout(cacheInvalidationTimeout)
+  }
+  
+  // Debounce cache invalidation to avoid clearing too frequently
+  cacheInvalidationTimeout = setTimeout(() => {
+    postsCache.clear()
+  }, 1000)
+}
+
 const createPostSchema = z.object({
   content: z.string().min(1, "Content is required"),
   categoryId: z.string().min(1, "Category is required"), // Primary category
@@ -128,13 +229,42 @@ export async function POST(request: Request) {
     }
 
     // OPTIMIZATION: Use frontend AI classification but enhance with background processing
-    // This provides immediate proper categorization with background enhancement
+    // For non-English content, do backend AI classification immediately
     
-    // Use the selected category as the AI suggestion (frontend already did classification)
-    const quickAiSuggestion = {
-      categories: [primaryCategory.name],
-      confidence: 0.9, // High confidence since frontend AI classified it
-      reasoning: "Frontend AI classification with backend enhancement"
+    let quickAiSuggestion: any
+    
+    // If content is not in English, do proper AI classification on backend
+    if (data.originalLanguage && data.originalLanguage.toLowerCase() !== 'english') {
+      console.log(`🌍 Non-English content detected (${data.originalLanguage}), doing backend AI classification...`)
+      try {
+        const categoryNames = allCategories.map(cat => cat.name)
+        const aiClassification = await classifyPost(data.content, categoryNames)
+        
+        console.log("🤖 Backend AI classification result:", aiClassification)
+        
+        quickAiSuggestion = {
+          categories: aiClassification.categories || [aiClassification.category],
+          confidence: aiClassification.confidence,
+          reasoning: `Backend AI translation and classification for ${data.originalLanguage}`,
+          translatedContent: aiClassification.translatedContent,
+          originalLanguage: aiClassification.originalLanguage
+        }
+      } catch (aiError) {
+        console.error("❌ Backend AI classification failed:", aiError)
+        // Fallback to frontend selection
+        quickAiSuggestion = {
+          categories: [primaryCategory.name],
+          confidence: 0.5,
+          reasoning: "Frontend selection (backend AI failed)"
+        }
+      }
+    } else {
+      // For English content, use the frontend classification
+      quickAiSuggestion = {
+        categories: [primaryCategory.name],
+        confidence: 0.9, // High confidence since frontend AI classified it
+        reasoning: "Frontend AI classification with backend enhancement"
+      }
     }
 
     // Create post with quick AI categories - optimization for speed
@@ -486,6 +616,9 @@ export async function POST(request: Request) {
       // Don't fail the post creation if revalidation fails
     }
 
+    // Invalidate posts cache to ensure fresh data
+    invalidateCache()
+
     const response = NextResponse.json(result, {
       status: 201,
       headers: jsonHeaders
@@ -582,6 +715,38 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
     
     const { searchParams } = new URL(request.url)
+    
+    // Check cache first (but skip cache if it's a timestamp-based request for first load)
+    const hasTimestamp = searchParams.has('_t')
+    const cacheKey = postsCache.generateKey(searchParams)
+    const ifNoneMatch = request.headers.get('if-none-match')
+    
+    if (!hasTimestamp) {
+      const cachedEntry = postsCache.get(cacheKey, ifNoneMatch || undefined)
+      if (cachedEntry) {
+        if (ifNoneMatch && ifNoneMatch === cachedEntry.etag) {
+          // Return 304 Not Modified
+          return new NextResponse(null, {
+            status: 304,
+            headers: {
+              'ETag': cachedEntry.etag,
+              'Cache-Control': 'public, max-age=60',
+            }
+          })
+        }
+        
+        // Return cached data
+        return NextResponse.json(cachedEntry.data, {
+          headers: {
+            'Content-Type': 'application/json',
+            'ETag': cachedEntry.etag,
+            'Cache-Control': 'public, max-age=60',
+            'X-Cache': 'HIT'
+          }
+        })
+      }
+    }
+    
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "10")
     const categoryId = searchParams.get("category")
@@ -589,7 +754,7 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "createdAt"
     const sortOrder = searchParams.get("sortOrder") || "desc"
 
-const skip = (page - 1) * limit
+    const skip = (page - 1) * limit
 
     // Build the where clause
     const where: any = {}
@@ -889,23 +1054,40 @@ const skip = (page - 1) * limit
         .slice(skip, skip + limit)
       }
 
-    const response = NextResponse.json({
+      const responseData = {
         posts: transformedPosts,
-      pagination: {
-        total,
+        pagination: {
+          total,
           pages: Math.ceil(total / limit),
           currentPage: page,
           limit,
-      },
-    })
+        },
+      }
 
-    // Add cache control headers for better performance and real-time updates
-    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
-    response.headers.set('Pragma', 'no-cache')
-    response.headers.set('Expires', '0')
-    response.headers.set('Last-Modified', new Date().toUTCString())
-    
-    return response
+      // Cache the response (unless it's a timestamped first-load request)
+      let cacheEntry: CacheEntry | null = null
+      if (!hasTimestamp) {
+        cacheEntry = postsCache.set(cacheKey, responseData)
+      }
+
+      const response = NextResponse.json(responseData)
+
+      // Add cache control headers for better performance and reliability
+      if (cacheEntry) {
+        response.headers.set('ETag', cacheEntry.etag)
+        response.headers.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120')
+        response.headers.set('X-Cache', 'MISS')
+      } else {
+        // For first-time loads, use short cache to avoid stale content but improve reliability
+        response.headers.set('Cache-Control', 'public, max-age=10, stale-while-revalidate=60')
+      }
+      
+      // Add reliability headers
+      response.headers.set('Last-Modified', new Date().toUTCString())
+      response.headers.set('X-Content-Type-Options', 'nosniff')
+      response.headers.set('X-Frame-Options', 'DENY')
+      
+      return response
     } catch (dbError) {
       console.error("Database error:", dbError)
       

@@ -29,6 +29,84 @@ const FALLBACK_CATEGORIES = [
   "Other"
 ]
 
+// Cache for AI classification results to improve performance
+class AICache {
+  private cache = new Map<string, { result: AIClassification, timestamp: number }>()
+  private readonly maxSize = 1000 // Maximum cache entries
+  private readonly ttl = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+
+  // Generate cache key from content and categories
+  private generateKey(content: string, categories?: string[]): string {
+    const normalizedContent = content.trim().toLowerCase().substring(0, 500) // First 500 chars for key
+    const categoriesKey = categories ? categories.sort().join(',') : 'default'
+    return Buffer.from(`${normalizedContent}:${categoriesKey}`).toString('base64').substring(0, 100)
+  }
+
+  // Get cached result if valid
+  get(content: string, categories?: string[]): AIClassification | null {
+    const key = this.generateKey(content, categories)
+    const cached = this.cache.get(key)
+    
+    if (!cached) return null
+    
+    // Check if cache entry has expired
+    if (Date.now() - cached.timestamp > this.ttl) {
+      this.cache.delete(key)
+      return null
+    }
+    
+    console.log("✅ AI Cache: Using cached classification for content:", content.substring(0, 50) + "...")
+    return cached.result
+  }
+
+  // Store result in cache
+  set(content: string, result: AIClassification, categories?: string[]): void {
+    const key = this.generateKey(content, categories)
+    
+    // Remove oldest entries if cache is full
+    if (this.cache.size >= this.maxSize) {
+      const oldestKeys = Array.from(this.cache.keys())
+      if (oldestKeys.length > 0) {
+        this.cache.delete(oldestKeys[0])
+      }
+    }
+    
+    this.cache.set(key, {
+      result,
+      timestamp: Date.now()
+    })
+    
+    console.log("💾 AI Cache: Stored classification for content:", content.substring(0, 50) + "...")
+  }
+
+  // Clear expired entries
+  cleanup(): void {
+    const now = Date.now()
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > this.ttl) {
+        this.cache.delete(key)
+      }
+    }
+  }
+
+  // Get cache stats
+  getStats(): { size: number, maxSize: number, hitRate: string } {
+    return {
+      size: this.cache.size,
+      maxSize: this.maxSize,
+      hitRate: 'N/A' // Could implement hit rate tracking if needed
+    }
+  }
+}
+
+// Global cache instance
+const aiCache = new AICache()
+
+// Cleanup expired cache entries every hour
+setInterval(() => {
+  aiCache.cleanup()
+}, 60 * 60 * 1000)
+
 interface TranslationResult {
   translatedText: string
   detectedLanguage: string
@@ -64,9 +142,11 @@ function extractJsonFromMarkdown(text: string): any {
 }
 
 async function detectAndTranslate(text: string): Promise<TranslationResult> {
+  console.log("🔄 Translation: Starting translation for text:", text.substring(0, 50) + "...")
+  
   // Check if API key and model are available
   if (!API_KEY || !model) {
-    console.warn("Google Gemini API key not configured, skipping translation")
+    console.warn("⚠️ Google Gemini API key not configured, skipping translation")
     return {
       translatedText: text,
       detectedLanguage: "English"
@@ -84,19 +164,29 @@ Return the response in this exact JSON format:
 }`
 
   try {
+    console.log("🤖 Translation: Sending request to Gemini...")
     const result = await model.generateContent(prompt)
     const response = await result.response
     const responseText = response.text()
     
+    console.log("📥 Translation: Raw response from Gemini:", responseText)
+    
     const data = extractJsonFromMarkdown(responseText)
+    console.log("📋 Translation: Parsed data:", data)
 
     if (!data.translatedText || !data.detectedLanguage) {
-      console.warn("Translation response missing required fields:", data)
+      console.warn("⚠️ Translation response missing required fields:", data)
       return {
         translatedText: text,
         detectedLanguage: "English"
       }
     }
+
+    console.log("✅ Translation: Success!", {
+      original: text.substring(0, 30) + "...",
+      translated: data.translatedText,
+      detectedLanguage: data.detectedLanguage
+    })
 
     return {
       translatedText: data.translatedText,
@@ -106,7 +196,7 @@ Return the response in this exact JSON format:
     console.error("❌ Translation error:", {
       error,
       message: error instanceof Error ? error.message : "Unknown error",
-      details: error instanceof Error ? error.stack : undefined
+      text: text.substring(0, 50) + "..."
     })
     // Fallback to original text if translation fails
     return {
@@ -123,9 +213,16 @@ export async function classifyPost(content: string, availableCategories?: string
   try {
     const categories = availableCategories || FALLBACK_CATEGORIES
     
+    // Check cache first
+    const cachedResult = aiCache.get(content, categories)
+    if (cachedResult) {
+      console.log("⚡ AI Service: Using cached result")
+      return cachedResult
+    }
+    
     if (!API_KEY || !model) {
       console.warn("⚠️ Google Gemini API key not configured, using fallback classification")
-      return {
+      const fallbackResult: AIClassification = {
         category: "Other",
         categories: ["Other"],
         tags: [],
@@ -133,6 +230,8 @@ export async function classifyPost(content: string, availableCategories?: string
         originalLanguage: "English",
         translatedContent: content
       }
+      // Don't cache fallback results
+      return fallbackResult
     }
 
     // Step 1: Detect language and translate if needed
@@ -313,12 +412,17 @@ Requirements:
       translatedContent: translatedText
     }
 
+    // Cache the result if confidence is reasonable
+    if (classification.confidence > 0.3) {
+      aiCache.set(content, classification, categories)
+    }
+
     console.log("✅ AI Service: Final classification result:", classification)
     return classification
 
   } catch (error) {
     console.error("❌ AI classification error:", error)
-    return {
+    const errorResult: AIClassification = {
       category: "Other",
       categories: ["Other"],
       tags: [],
@@ -326,6 +430,8 @@ Requirements:
       originalLanguage: "English",
       translatedContent: content
     }
+    // Don't cache error results
+    return errorResult
   }
 }
 
