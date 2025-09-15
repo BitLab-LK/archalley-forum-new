@@ -15,6 +15,62 @@ import { toast } from "sonner"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { useVercelBlobUpload } from "@/hooks/use-vercel-blob-upload"
 
+// Simple language detection function
+function detectLanguage(text: string): string {
+  if (!text || text.trim().length === 0) return "English"
+  
+  // Remove punctuation and spaces for analysis
+  const cleanText = text.replace(/[^\u0000-\u007F\u0080-\u00FF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF\u0900-\u097F\u0980-\u09FF\u0A00-\u0A7F\u0A80-\u0AFF\u0B00-\u0B7F\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F\u0D80-\u0DFF]/g, '')
+  
+  // Sinhala Unicode range: 0D80-0DFF
+  if (/[\u0D80-\u0DFF]/.test(cleanText)) {
+    return "Sinhala"
+  }
+  
+  // Tamil Unicode range: 0B80-0BFF
+  if (/[\u0B80-\u0BFF]/.test(cleanText)) {
+    return "Tamil"
+  }
+  
+  // Hindi/Devanagari Unicode range: 0900-097F
+  if (/[\u0900-\u097F]/.test(cleanText)) {
+    return "Hindi"
+  }
+  
+  // Bengali Unicode range: 0980-09FF
+  if (/[\u0980-\u09FF]/.test(cleanText)) {
+    return "Bengali"
+  }
+  
+  // Gujarati Unicode range: 0A80-0AFF
+  if (/[\u0A80-\u0AFF]/.test(cleanText)) {
+    return "Gujarati"
+  }
+  
+  // Punjabi Unicode range: 0A00-0A7F
+  if (/[\u0A00-\u0A7F]/.test(cleanText)) {
+    return "Punjabi"
+  }
+  
+  // Telugu Unicode range: 0C00-0C7F
+  if (/[\u0C00-\u0C7F]/.test(cleanText)) {
+    return "Telugu"
+  }
+  
+  // Kannada Unicode range: 0C80-0CFF
+  if (/[\u0C80-\u0CFF]/.test(cleanText)) {
+    return "Kannada"
+  }
+  
+  // Malayalam Unicode range: 0D00-0D7F
+  if (/[\u0D00-\u0D7F]/.test(cleanText)) {
+    return "Malayalam"
+  }
+  
+  // Default to English if no specific script is detected
+  return "English"
+}
+
 interface PostCreatorProps {
   onPostCreated: (result?: { success?: boolean; post?: any; error?: string }) => void
 }
@@ -87,7 +143,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
     try {
       // OPTIMIZATION: Do robust AI classification on frontend for proper categorization
       setAiProgress(30)
-      setAiStatus("Analyzing content...")
+      setAiStatus("Posting...")
       
       // Step 1: Get AI classification with proper timeout and fallback
       let classifiedCategory = 'informative' // Better fallback than 'other'
@@ -179,7 +235,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       }
       
       setAiProgress(50)
-      setAiStatus("Selecting category...")
+      setAiStatus("Posting...")
       
       // Step 2: Get categories and find the best match
       try {
@@ -258,9 +314,13 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
         throw new Error('No categories available. Please refresh the page and try again.')
       }
 
-      // Step 2: Create the post immediately
+      // Step 2: Detect language and create the post
       setAiProgress(60)
-      setAiStatus("Publishing...")
+      setAiStatus("Posting...")
+
+      // Detect language of the content
+      const detectedLanguage = detectLanguage(content.trim())
+      console.log("🗣️ Detected language:", detectedLanguage)
 
       // Prepare form data for the posts API
       const formData = new FormData()
@@ -268,7 +328,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       formData.append('categoryId', categoryId)
       formData.append('isAnonymous', isAnonymous.toString())
       formData.append("tags", JSON.stringify(selectedTags))
-      formData.append('originalLanguage', 'English') // Simplified for speed
+      formData.append('originalLanguage', detectedLanguage) // Use detected language
       
       // CRITICAL: Send AI-suggested categories to backend for immediate multiple category assignment
       if (suggestedCategories && suggestedCategories.length > 0) {
