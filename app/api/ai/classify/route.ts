@@ -47,6 +47,8 @@ export async function POST(req: Request) {
       })
       
       const categoryNames = categories.map(cat => cat.name)
+      console.log("📋 Available categories for AI:", categoryNames)
+      
       // Get AI classification with dynamic categories
       const classification = await classifyPost(content, categoryNames)
 

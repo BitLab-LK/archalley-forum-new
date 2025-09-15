@@ -22,6 +22,19 @@ interface Post {
   }
   content: string
   category: string
+  categories?: {    // Primary category object
+    id: string
+    name: string
+    color: string
+    slug: string
+  }
+  allCategories?: Array<{  // Multiple categories
+    id: string
+    name: string
+    color: string
+    slug: string
+  }>
+  aiCategories?: string[]  // AI-suggested category names
   isAnonymous: boolean
   isPinned: boolean
   upvotes: number
@@ -236,7 +249,10 @@ export default function HomePageInteractive({
                       rankIcon: realPost.users?.userBadges?.[0]?.badges?.icon || '👤'
                     },
                     content: realPost.content || '',
-                    category: realPost.categories?.name || 'General',
+                    category: realPost.categories?.name || 'General',  // Primary category name
+                    categories: realPost.categories,                   // Primary category object
+                    allCategories: realPost.allCategories || [],       // Multiple categories array
+                    aiCategories: realPost.aiCategories || [],         // AI-suggested categories
                     isAnonymous: realPost.isAnonymous || false,
                     isPinned: false,
                     upvotes: 0,

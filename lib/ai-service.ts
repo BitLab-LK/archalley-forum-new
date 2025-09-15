@@ -124,7 +124,7 @@ export async function classifyPost(content: string, availableCategories?: string
     const categories = availableCategories || FALLBACK_CATEGORIES
     
     if (!API_KEY || !model) {
-      console.warn("Google Gemini API key not configured, using default classification")
+      console.warn("⚠️ Google Gemini API key not configured, using fallback classification")
       return {
         category: "Other",
         categories: ["Other"],
@@ -139,40 +139,41 @@ export async function classifyPost(content: string, availableCategories?: string
     const { translatedText, detectedLanguage } = await detectAndTranslate(content)
     const originalLanguage = detectedLanguage
 
-    // Step 2: Analyze content for category and tags
-    const prompt = `CRITICAL: You are an expert content categorizer. Your job is to accurately classify content into specific categories.
+    // Step 2: Analyze content for category and tags with improved prompt
+    const prompt = `You are an expert content categorizer. Analyze the following content and classify it into appropriate categories.
 
-AVAILABLE CATEGORIES: ${categories.join(", ")}
+AVAILABLE CATEGORIES (choose 1-3 most relevant):
+${categories.map((cat, index) => `${index + 1}. ${cat}`).join('\n')}
 
-CONTENT TO ANALYZE: "${translatedText}"
+CONTENT TO ANALYZE:
+"${translatedText}"
 
-STRICT CATEGORIZATION RULES:
+CLASSIFICATION RULES:
+1. Select 1-3 most relevant categories from the list above
+2. Categories must match EXACTLY as written in the list (case-sensitive)
+3. If content is meaningful and relevant, select appropriate categories
+4. If content is unclear, random, or doesn't fit any category, use "Other"
+5. You can select multiple categories if content spans multiple domains
 
-1. FIRST, check if the content is meaningful:
-   - Random letters, gibberish, or nonsensical text → "Other"
-   - Very short meaningless posts (like "hi", "ok", "test") → "Other"
-   - Spam or irrelevant content → "Other"
+EXAMPLES:
+- "Looking for interior design tips" → ["Design"]
+- "Starting a freelance business as an architect" → ["Business", "Career", "Design"]
+- "University degree in construction management" → ["Academic", "Construction"]
+- "Job opening for software developer" → ["Jobs", "Career"]
+- "Random text abc123" → ["Other"]
 
-2. For MEANINGFUL content, analyze the content and select the most relevant categories from the AVAILABLE CATEGORIES list above:
-   - You can select 1-3 categories maximum
-   - Only use categories that appear in the AVAILABLE CATEGORIES list
-   - Multiple categories are allowed if content clearly spans multiple domains
-   - Categories should match EXACTLY as shown in the AVAILABLE CATEGORIES list
-
-3. CRITICAL RULES:
-   - If content is gibberish/random → "Other"
-   - If content is meaningful but doesn't clearly fit specific categories → "Other"
-   - Only use categories that exist in the AVAILABLE CATEGORIES list above
-   - Be precise and selective - don't over-categorize
-
-MANDATORY JSON RESPONSE FORMAT:
+Return your response as JSON in this exact format:
 {
   "categories": ["Category1", "Category2"],
-  "tags": ["relevant", "keywords", "here"],
-  "confidence": 0.9
+  "tags": ["keyword1", "keyword2", "keyword3"],
+  "confidence": 0.85
 }
 
-IMPORTANT: Categories must match EXACTLY from the AVAILABLE CATEGORIES list. If unsure, use "Other".`
+Requirements:
+- "categories" array must contain 1-3 exact category names from the list above
+- "tags" should be 3-5 relevant keywords from the content
+- "confidence" should be between 0.1 and 1.0
+- Use "Other" if content doesn't clearly fit available categories`
 
     const result = await model.generateContent(prompt)
     const response = await result.response
@@ -194,118 +195,118 @@ IMPORTANT: Categories must match EXACTLY from the AVAILABLE CATEGORIES list. If 
 
     const resultTags = Array.isArray(classificationResponse.tags) ? classificationResponse.tags : []
 
-    // Validate and filter categories
+    // Validate and filter categories with improved matching
     const validCategories = resultCategories
       .map((cat: string) => cat.trim())
       .map((cat: string) => {
-        const matchedCategory = categories.find(
+        // First try exact match (case-insensitive)
+        const exactMatch = categories.find(
           (availableCat: string) => availableCat.toLowerCase() === cat.toLowerCase()
         )
-        return matchedCategory || null
+        if (exactMatch) return exactMatch
+        
+        // Try partial match for common variations
+        const partialMatch = categories.find((availableCat: string) => {
+          const availableLower = availableCat.toLowerCase()
+          const catLower = cat.toLowerCase()
+          return availableLower.includes(catLower) || catLower.includes(availableLower)
+        })
+        
+        return partialMatch || null
       })
       .filter((cat: string | null) => cat !== null) as string[]
 
+    console.log("🔍 AI Category Validation:", {
+      aiSuggested: resultCategories,
+      availableCategories: categories,
+      validMatches: validCategories
+    })
+
     // If no valid categories found, use intelligent fallback logic
     if (validCategories.length === 0) {
+      console.log("⚠️ No valid AI categories found, using content analysis fallback")
+      
       // Try to match content to categories using keyword analysis
       const contentLower = translatedText.toLowerCase()
-      let bestMatch: string | null = null
+      const fallbackCategories: string[] = []
       
-      // Define keyword mappings for each category
-      const categoryKeywords = {
-        'Design': ['design', 'art', 'creative', 'visual', 'aesthetic', 'layout', 'graphic', 'ui', 'ux', 'color', 'style', 'beautiful', 'elegant'],
-        'Business': ['business', 'company', 'startup', 'entrepreneur', 'management', 'finance', 'marketing', 'strategy', 'profit', 'revenue', 'client', 'customer'],
-        'Career': ['career', 'professional', 'skill', 'development', 'networking', 'freelance', 'consultant', 'interview', 'resume', 'promotion', 'workplace'],
-        'Construction': ['construction', 'building', 'engineering', 'project', 'contractor', 'infrastructure', 'renovation', 'planning', 'materials', 'structural'],
-        'Academic': ['education', 'research', 'university', 'study', 'degree', 'course', 'learning', 'teaching', 'academic', 'scholar', 'thesis', 'student'],
-        'Informative': ['tutorial', 'guide', 'how-to', 'tip', 'advice', 'instruction', 'explanation', 'help', 'learn', 'knowledge', 'information'],
-        'Jobs': ['hiring', 'recruitment', 'position', 'vacancy', 'opening', 'opportunity', 'apply', 'job posting', 'employment']
-      }
+      // Define keyword mappings for each category (using available categories)
+      const categoryKeywords: Record<string, string[]> = {}
+      
+      // Dynamically build keyword mappings based on available categories
+      categories.forEach(category => {
+        const categoryLower = category.toLowerCase()
+        switch (categoryLower) {
+          case 'design':
+            categoryKeywords[category] = ['design', 'art', 'creative', 'visual', 'aesthetic', 'layout', 'graphic', 'ui', 'ux', 'color', 'style', 'beautiful', 'elegant', 'interior']
+            break
+          case 'business':
+            categoryKeywords[category] = ['business', 'company', 'startup', 'entrepreneur', 'management', 'finance', 'marketing', 'strategy', 'profit', 'revenue', 'client', 'customer', 'commercial']
+            break
+          case 'career':
+            categoryKeywords[category] = ['career', 'professional', 'skill', 'development', 'networking', 'freelance', 'consultant', 'interview', 'resume', 'promotion', 'workplace', 'growth']
+            break
+          case 'construction':
+            categoryKeywords[category] = ['construction', 'building', 'engineering', 'project', 'contractor', 'infrastructure', 'renovation', 'planning', 'materials', 'structural', 'architecture']
+            break
+          case 'academic':
+            categoryKeywords[category] = ['academic', 'research', 'study', 'university', 'education', 'school', 'degree', 'student', 'learning', 'knowledge', 'thesis']
+            break
+          case 'jobs':
+            categoryKeywords[category] = ['job', 'hiring', 'vacancy', 'opportunity', 'employment', 'position', 'recruit', 'opening', 'work', 'apply']
+            break
+          case 'informative':
+            categoryKeywords[category] = ['information', 'guide', 'tutorial', 'how to', 'tips', 'advice', 'facts', 'knowledge', 'learn', 'educational']
+            break
+          default:
+            categoryKeywords[category] = [categoryLower]
+        }
+      })
       
       // Score each category based on keyword matches
-      let bestScore = 0
-      for (const [categoryName, keywords] of Object.entries(categoryKeywords)) {
-        if (categories.includes(categoryName)) {
-          const score = keywords.filter(keyword => contentLower.includes(keyword)).length
-          if (score > bestScore) {
-            bestScore = score
-            bestMatch = categoryName
-          }
+      const categoryScores: Record<string, number> = {}
+      
+      Object.entries(categoryKeywords).forEach(([category, keywords]) => {
+        const score = keywords.reduce((total, keyword) => {
+          const regex = new RegExp(`\\b${keyword}\\b`, 'gi')
+          const matches = contentLower.match(regex)
+          return total + (matches ? matches.length : 0)
+        }, 0)
+        
+        if (score > 0) {
+          categoryScores[category] = score
         }
+      })
+      
+      // Select top scoring categories (max 2)
+      const sortedCategories = Object.entries(categoryScores)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 2)
+        .map(([category,]) => category)
+      
+      if (sortedCategories.length > 0) {
+        fallbackCategories.push(...sortedCategories)
+        console.log("✅ Content analysis found categories:", fallbackCategories)
+      } else {
+        fallbackCategories.push("Other")
+        console.log("📂 No content matches found, using 'Other' category")
       }
       
-      // If we found a good match (at least 1 keyword), use it
-      if (bestMatch && bestScore > 0) {
-        validCategories.push(bestMatch)
-      } else {
-        // Check if content is meaningful before applying fallback
-        const isMeaningfulContent = contentLower.length > 2 && 
-                                   /[aeiou]/.test(contentLower) && // Has vowels
-                                   !/^[^a-z\s]*$/.test(contentLower) && // Not just symbols/numbers
-                                   !(/^[a-z]{1,3}$/.test(contentLower.trim())) && // Not just short random letters
-                                   !(contentLower.length > 10 && !/\s/.test(contentLower) && /^[a-z]+$/.test(contentLower)) // Not long strings without spaces
-        
-        if (!isMeaningfulContent) {
-          // Random letters, gibberish, or very short content should be "Other"
-          validCategories.push("Other")
-        } else {
-          // Try partial matching with AI suggestions as last resort
-          if (resultCategories.length > 0) {
-            const firstSuggestion = resultCategories[0].toLowerCase()
-            const partialMatch = categories.find((cat: string) => 
-              cat.toLowerCase().includes(firstSuggestion) || 
-              firstSuggestion.includes(cat.toLowerCase())
-            )
-            if (partialMatch && partialMatch !== 'Other') {
-              validCategories.push(partialMatch)
-            } else {
-              // For meaningful content that doesn't fit elsewhere, use "Informative"
-              validCategories.push("Informative")
-            }
-          } else {
-            // Default to "Informative" only for meaningful content
-            validCategories.push("Informative")
-          }
-        }
-      }
+      validCategories.push(...fallbackCategories)
     }
 
-    // Create final classification result with forced multiple categories for certain content
-    let finalCategories = validCategories
-    
-    // FORCE multiple categories for known multi-domain content
-    const contentLower = translatedText.toLowerCase()
-    const hasConstruction = contentLower.includes('construction') || contentLower.includes('building') || contentLower.includes('engineering')
-    const hasBusiness = contentLower.includes('business') || contentLower.includes('company') || contentLower.includes('budgeting') || contentLower.includes('management')
-    const hasCareer = contentLower.includes('career') || contentLower.includes('job') || contentLower.includes('freelance') || contentLower.includes('consultant')
-    const hasDesign = contentLower.includes('design') || contentLower.includes('interior') || contentLower.includes('architecture')
-    const hasAcademic = contentLower.includes('degree') || contentLower.includes('student') || contentLower.includes('university') || contentLower.includes('study')
-    
-    // Force multiple categories based on content analysis
-    const forcedCategories = new Set(finalCategories)
-    
-    if (hasConstruction && hasBusiness && categories.includes('Construction') && categories.includes('Business')) {
-      forcedCategories.add('Construction')
-      forcedCategories.add('Business')
+    // Remove duplicates and ensure we have at least one category
+    const finalCategories = [...new Set(validCategories)]
+    if (finalCategories.length === 0) {
+      finalCategories.push("Other")
     }
-    if (hasCareer && hasAcademic && categories.includes('Career') && categories.includes('Academic')) {
-      forcedCategories.add('Career')
-      forcedCategories.add('Academic')
-    }
-    if (hasCareer && hasBusiness && categories.includes('Career') && categories.includes('Business')) {
-      forcedCategories.add('Career')
-      forcedCategories.add('Business')
-    }
-    if (hasDesign && hasConstruction && categories.includes('Design') && categories.includes('Construction')) {
-      forcedCategories.add('Design')
-      forcedCategories.add('Construction')
-    }
-    
-    finalCategories = Array.from(forcedCategories)
+
+    // Limit to maximum 3 categories
+    const limitedCategories = finalCategories.slice(0, 3)
 
     const classification: AIClassification = {
-      category: finalCategories[0], // Primary category
-      categories: finalCategories, // All suggested categories
+      category: limitedCategories[0], // Primary category
+      categories: limitedCategories, // All suggested categories
       tags: resultTags || [],
       confidence: Math.min(Math.max(classificationResponse.confidence || 0.5, 0), 1),
       originalLanguage,
@@ -316,7 +317,7 @@ IMPORTANT: Categories must match EXACTLY from the AVAILABLE CATEGORIES list. If 
     return classification
 
   } catch (error) {
-    console.error("AI classification error:", error)
+    console.error("❌ AI classification error:", error)
     return {
       category: "Other",
       categories: ["Other"],

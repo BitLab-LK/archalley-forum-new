@@ -13,6 +13,19 @@ interface Post {
   }
   content: string
   category: string
+  categories?: {    // Primary category object
+    id: string
+    name: string
+    color: string
+    slug: string
+  }
+  allCategories?: Array<{  // Multiple categories
+    id: string
+    name: string
+    color: string
+    slug: string
+  }>
+  aiCategories?: string[]  // AI-suggested category names
   isAnonymous: boolean
   isPinned: boolean
   upvotes: number
@@ -71,12 +84,7 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
               }
             }
           },
-          categories: {
-            select: {
-              id: true,
-              name: true
-            }
-          },
+          categories: true,  // Primary category (full object)
           _count: {
             select: { Comment: true }
           }
@@ -103,6 +111,19 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
         }
       })
     ])
+
+    // Get multiple categories for all posts (matching API logic)
+    const allCategoryIds = posts.flatMap(post => post.categoryIds || [])
+    const uniqueCategoryIds = [...new Set(allCategoryIds)]
+    const multipleCategories = uniqueCategoryIds.length > 0 
+      ? await prisma.categories.findMany({
+          where: { id: { in: uniqueCategoryIds } },
+          select: { id: true, name: true, color: true, slug: true }
+        })
+      : []
+    
+    // Create a map for quick category lookup
+    const categoryMap = new Map(multipleCategories.map(cat => [cat.id, cat]))
 
     // Helper function to calculate time ago
     const timeAgo = (date: Date): string => {
@@ -170,6 +191,16 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
       const images = attachmentMap.get(post.id) || []
       const primaryBadge = getPrimaryBadge(post.users.userBadges || [])
 
+      // Get multiple categories for this post, avoiding duplicates
+      const postCategories = (post.categoryIds || [])
+        .map((id: string) => categoryMap.get(id))
+        .filter(Boolean) // Remove undefined values
+      
+      // Remove duplicate categories by creating a unique set based on category ID
+      const uniqueCategories = postCategories.filter((category: any, index: number, array: any[]) => 
+        array.findIndex((c: any) => c?.id === category?.id) === index
+      )
+
       return {
         id: post.id,
         author: {
@@ -181,7 +212,10 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
           rankIcon: primaryBadge?.badges?.icon || '🔰'
         },
         content: post.content,
-        category: post.categories.name,
+        category: post.categories.name,      // Primary category name
+        categories: post.categories,         // Primary category object  
+        allCategories: uniqueCategories,     // Multiple unique categories
+        aiCategories: post.aiCategories || [], // AI-suggested category names
         isAnonymous: post.isAnonymous,
         isPinned: post.isPinned,
         upvotes: voteCount.upvotes,
