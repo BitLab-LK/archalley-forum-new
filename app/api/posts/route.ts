@@ -6,8 +6,6 @@ import { z } from "zod"
 import { badgeService } from "@/lib/badge-service"
 import { geminiService } from "@/lib/gemini-service"
 import { classifyPost } from "@/lib/ai-service"
-import { join } from "path"
-import { stat } from "fs/promises"
 import { revalidatePath } from "next/cache"
 
 // Force dynamic rendering and disable caching
@@ -115,106 +113,98 @@ export async function POST(request: Request) {
       )
     }
 
-    // Step 1: Translate content to English for AI processing (if needed)
-    let translatedContent = data.content
-    if (data.originalLanguage && data.originalLanguage.toLowerCase() !== 'english') {
-      try {
-        translatedContent = await geminiService.translateToEnglish(data.content, data.originalLanguage)
-      } catch (error) {
-        console.error("Translation failed, using original content:", error)
-        translatedContent = data.content
-      }
+    // OPTIMIZATION: Create post first, then do AI processing asynchronously
+    // This dramatically reduces perceived post creation time for users
+    
+    // Quick fallback category suggestion for immediate post creation
+    const quickAiSuggestion = {
+      categories: [primaryCategory.name],
+      confidence: 0.8,
+      reasoning: "Quick categorization for fast posting"
     }
 
-    // Step 2: Get AI category suggestions
-    let aiCategorySuggestion
-    try {
-      const categoryNames = allCategories.map(cat => cat.name)
-      
-      // Use the updated AI service that supports multiple categories
-      const classification = await classifyPost(translatedContent, categoryNames)
-      
-      aiCategorySuggestion = {
-        categories: classification.categories || [classification.category],
-        confidence: classification.confidence,
-        reasoning: `AI classification with ${classification.confidence} confidence`
-      }
-    } catch (error) {
-      console.error("AI categorization failed:", error)
-      
-      // Fallback to gemini service if AI service fails
-      try {
-        const categoryNames = allCategories.map(cat => cat.name)
-        aiCategorySuggestion = await geminiService.categorizeContent(translatedContent, categoryNames)
-      } catch (fallbackError) {
-        console.error("Fallback categorization also failed:", fallbackError)
-        aiCategorySuggestion = {
-          categories: [primaryCategory.name],
-          confidence: 0.1,
-          reasoning: "Fallback to primary category due to AI error"
-        }
-      }
-    }
-
-    // Create post with AI categories and translation info
+    // Create post with quick AI categories - optimization for speed
     const result = await prisma.$transaction(async (tx) => {
-      // Convert AI-suggested category names to category IDs
-      const aiCategoryIds: string[] = []
-      if (aiCategorySuggestion.categories && aiCategorySuggestion.categories.length > 0) {
-        for (const categoryName of aiCategorySuggestion.categories) {
-          const category = allCategories.find(cat => 
-            cat.name.toLowerCase() === categoryName.toLowerCase()
-          )
-          if (category && !aiCategoryIds.includes(category.id)) {
-            aiCategoryIds.push(category.id)
-          }
-        }
-      }
+      // Use primary category for immediate posting - AI will enhance later
+      const initialCategoryIds = [data.categoryId]
       
-      // Combine primary category with AI-suggested categories, ensuring no duplicates
-      const allCategoryIds = [data.categoryId] // Start with primary category
-      aiCategoryIds.forEach(id => {
-        if (!allCategoryIds.includes(id)) {
-          allCategoryIds.push(id)
-        }
-      })
-      
-      // Ensure no duplicate categories in the array
-      const uniqueCategoryIds = [...new Set(allCategoryIds)]
-      
-      // Create the post
+      // Create the post immediately with minimal processing
       const newPost = await tx.post.create({
         data: {
           id: crypto.randomUUID(),
           content: data.content, // Keep original language
           authorId: session.user.id,
           categoryId: data.categoryId, // Primary category
-          categoryIds: uniqueCategoryIds, // Multiple unique categories (including primary)
+          categoryIds: initialCategoryIds, // Start with primary category only
           isAnonymous: data.isAnonymous,
           aiTags: data.tags,
-          aiCategory: aiCategorySuggestion.categories[0] || null, // Primary AI-suggested category
-          // Filter out AI categories that match the primary category to avoid duplicates
-          aiCategories: aiCategorySuggestion.categories.filter(categoryName => {
-            const primaryCategoryName = primaryCategory.name.toLowerCase()
-            return categoryName.toLowerCase() !== primaryCategoryName
-          }) || [],
+          aiCategory: primaryCategory.name, // Use primary as initial AI category
+          aiCategories: [], // Will be populated by background processing
           originalLanguage: data.originalLanguage,
-          translatedContent: translatedContent, // Store English translation for future AI processing
+          translatedContent: data.content, // Will be translated in background if needed
           updatedAt: new Date(),
         },
       })
 
-      // Update category post counts for all unique categories
-      await Promise.all(
-        uniqueCategoryIds.map(categoryId =>
-          tx.categories.update({
-            where: { id: categoryId },
-            data: { postCount: { increment: 1 } }
-          })
-        )
-      )
+      // Update category post counts for initial category only
+      await tx.categories.update({
+        where: { id: data.categoryId },
+        data: { postCount: { increment: 1 } }
+      })
 
-      // Fetch the complete post with relationships
+      // CRITICAL FIX: Create attachments BEFORE fetching the complete post
+      // Handle image uploads if any - keep this fast
+      const imageEntries = Array.from(formData.entries())
+        .filter(([key]) => key.startsWith("image") && key.endsWith("_url"))
+        .map(([_, value]) => value as string)
+
+      console.log("📋 Form data entries:", Array.from(formData.entries()).map(([k, v]) => `${k}: ${typeof v === 'string' ? v.substring(0, 50) + '...' : v}`))
+      console.log("🖼️ Found", imageEntries.length, "image entries:", imageEntries)
+
+      // Create attachments if any images were uploaded
+      let createdAttachments: any[] = []
+      if (imageEntries.length > 0) {
+        try {
+          console.log("📸 Creating attachments for", imageEntries.length, "images")
+          // Process image uploads quickly without extensive validation
+          const uploadPromises = imageEntries.map(async (imageUrl, index) => {
+            const nameKey = `image_${index}_name`
+            const filename = formData.get(nameKey) as string || imageUrl.split('/').pop() || 'unknown'
+            
+            const isBlobUrl = imageUrl.includes('blob.vercel-storage.com')
+            let fileSize = 0
+            let mimeType = 'image/jpeg'
+            
+            if (isBlobUrl) {
+              mimeType = getMimeType(filename)
+              fileSize = 0 // We'll skip file size calculation for speed
+            } else {
+              // Quick file type detection without full stats
+              mimeType = getMimeType(filename)
+            }
+
+            console.log("📎 Creating attachment:", { url: imageUrl, filename, mimeType })
+            return tx.attachments.create({
+              data: {
+                id: crypto.randomUUID(),
+                url: imageUrl,
+                filename: filename,
+                size: fileSize,
+                mimeType: mimeType,
+                postId: newPost.id,
+              },
+            })
+          })
+
+          createdAttachments = await Promise.all(uploadPromises)
+          console.log("✅ Created", createdAttachments.length, "attachments successfully")
+        } catch (error) {
+          console.error("❌ Error creating attachments:", error)
+          // Don't fail the post creation if attachments fail
+        }
+      }
+
+      // NOW fetch the complete post with relationships INCLUDING the just-created attachments
       const completePost = await tx.post.findUnique({
         where: { id: newPost.id },
         include: {
@@ -231,104 +221,133 @@ export async function POST(request: Request) {
             },
           },
           categories: true,  // Primary category
+          attachments: true, // Include attachments for immediate response
           _count: {
             select: { Comment: true }
           }
         },
       })
 
-      // Fetch multiple categories based on categoryIds
-      const multipleCategories = newPost.categoryIds && newPost.categoryIds.length > 0 
-        ? await tx.categories.findMany({
-            where: { id: { in: newPost.categoryIds } },
-            select: { id: true, name: true, color: true, slug: true }
-          })
-        : []
-
-      // Handle image uploads if any
-      const imageEntries = Array.from(formData.entries())
-        .filter(([key]) => key.startsWith("image") && key.endsWith("_url"))
-        .map(([_, value]) => value as string)
-
-      if (imageEntries.length > 0) {
-        try {
-          // Process image uploads
-          const uploadPromises = imageEntries.map(async (imageUrl, index) => {
-            // Extract filename from URL or get it from form data
-            const nameKey = `image_${index}_name`
-            const filename = formData.get(nameKey) as string || imageUrl.split('/').pop() || 'unknown'
-            
-            // Check if this is a Vercel Blob URL
-            const isBlobUrl = imageUrl.includes('blob.vercel-storage.com')
-            
-            let fileSize = 0
-            let mimeType = 'image/jpeg' // default
-            
-            if (isBlobUrl) {
-              // For Vercel Blob URLs, we don't have direct access to file stats
-              // We'll estimate or use default values
-              mimeType = getMimeType(filename)
-              fileSize = 0 // We could fetch this via HEAD request if needed
-            } else {
-              // Original logic for local files
-              const filePath = join(process.cwd(), "public", imageUrl)
-              const stats = await stat(filePath).catch(() => null)
-              
-              if (!stats) {
-                console.error(`File not found: ${filePath}`)
-                return null
-              }
-              
-              fileSize = stats.size
-              mimeType = getMimeType(filename)
-            }
-
-            return tx.attachments.create({
-              data: {
-                id: crypto.randomUUID(),
-                url: imageUrl,
-                filename: filename,
-                size: fileSize,
-                mimeType: mimeType,
-                postId: newPost.id,
-              },
-            })
-          })
-
-          const attachments = await Promise.all(uploadPromises)
-          // Filter out any failed attachments
-          const validAttachments = attachments.filter((a): a is NonNullable<typeof a> => a !== null)
-          
-          if (validAttachments.length !== imageEntries.length) {
-            console.warn(`Some attachments failed to create. Expected ${imageEntries.length}, got ${validAttachments.length}`)
-          }
-        } catch (error) {
-          console.error("Error creating attachments:", error)
-          // Don't fail the post creation if attachments fail
-        }
-      }
+      console.log("🔍 Complete post fetched with attachments:", completePost?.attachments?.length || 0)
 
       return {
         ...completePost,
-        // Add multiple categories to the response
-        allCategories: multipleCategories,
-        // Add AI categorization metadata with filtered categories to avoid duplicates
+        // Use attachments from the database query for immediate response
+        attachments: completePost?.attachments || [],
+        // Add minimal categories for immediate response
+        allCategories: [primaryCategory],
+        // Add placeholder AI categorization that will be enhanced later
         aiCategorization: {
-          suggestedCategories: aiCategorySuggestion.categories,
-          confidence: aiCategorySuggestion.confidence,
-          reasoning: aiCategorySuggestion.reasoning,
-          translationUsed: data.originalLanguage !== 'English'
+          suggestedCategories: quickAiSuggestion.categories,
+          confidence: quickAiSuggestion.confidence,
+          reasoning: quickAiSuggestion.reasoning,
+          translationUsed: false, // Will be updated by background processing
+          processingInBackground: true
         }
       }
     })
 
-    // Check and award badges after successful post creation
-    try {
-      await badgeService.checkAndAwardBadges(session.user.id)
-    } catch (error) {
+    // OPTIMIZATION: Start background AI processing after initial response
+    // This happens asynchronously without delaying the user
+    setImmediate(async () => {
+      try {
+        console.log("🤖 Starting background AI processing for post:", result.id)
+        
+        // Step 1: Translate content to English for AI processing (if needed)
+        let translatedContent = data.content
+        if (data.originalLanguage && data.originalLanguage.toLowerCase() !== 'english') {
+          try {
+            translatedContent = await geminiService.translateToEnglish(data.content, data.originalLanguage)
+          } catch (error) {
+            console.error("Background translation failed:", error)
+            translatedContent = data.content
+          }
+        }
+
+        // Step 2: Get comprehensive AI category suggestions
+        let enhancedAiSuggestion
+        try {
+          const categoryNames = allCategories.map(cat => cat.name)
+          const classification = await classifyPost(translatedContent, categoryNames)
+          
+          enhancedAiSuggestion = {
+            categories: classification.categories || [classification.category],
+            confidence: classification.confidence,
+            reasoning: `AI classification with ${classification.confidence} confidence`
+          }
+        } catch (error) {
+          console.error("Background AI categorization failed:", error)
+          // Skip background processing if AI fails
+          return
+        }
+
+        // Step 3: Update post with enhanced AI data
+        try {
+          // Convert AI-suggested category names to category IDs
+          const aiCategoryIds: string[] = []
+          if (enhancedAiSuggestion.categories && enhancedAiSuggestion.categories.length > 0) {
+            for (const categoryName of enhancedAiSuggestion.categories) {
+              const category = allCategories.find(cat => 
+                cat.name.toLowerCase() === categoryName.toLowerCase()
+              )
+              if (category && !aiCategoryIds.includes(category.id)) {
+                aiCategoryIds.push(category.id)
+              }
+            }
+          }
+          
+          // Combine primary category with AI-suggested categories
+          const allCategoryIds = [data.categoryId]
+          aiCategoryIds.forEach(id => {
+            if (!allCategoryIds.includes(id)) {
+              allCategoryIds.push(id)
+            }
+          })
+          
+          const uniqueCategoryIds = [...new Set(allCategoryIds)]
+          
+          // Update the post with enhanced AI data
+          await prisma.post.update({
+            where: { id: result.id },
+            data: {
+              categoryIds: uniqueCategoryIds,
+              aiCategory: enhancedAiSuggestion.categories[0] || null,
+              aiCategories: enhancedAiSuggestion.categories.filter(categoryName => {
+                const primaryCategoryName = primaryCategory.name.toLowerCase()
+                return categoryName.toLowerCase() !== primaryCategoryName
+              }) || [],
+              translatedContent: translatedContent,
+            }
+          })
+
+          // Update additional category post counts if new categories were added
+          const newCategoryIds = uniqueCategoryIds.filter(id => id !== data.categoryId)
+          if (newCategoryIds.length > 0) {
+            await Promise.all(
+              newCategoryIds.map(categoryId =>
+                prisma.categories.update({
+                  where: { id: categoryId },
+                  data: { postCount: { increment: 1 } }
+                }).catch(error => {
+                  console.error(`Failed to update category count for ${categoryId}:`, error)
+                })
+              )
+            )
+          }
+          
+          console.log("✅ Background AI processing completed for post:", result.id)
+        } catch (updateError) {
+          console.error("Failed to update post with AI enhancements:", updateError)
+        }
+      } catch (backgroundError) {
+        console.error("Background AI processing failed:", backgroundError)
+      }
+    })
+
+    // Check and award badges after successful post creation (also async)
+    badgeService.checkAndAwardBadges(session.user.id).catch(error => {
       console.error("Error checking badges:", error)
-      // Don't fail the post creation if badge checking fails
-    }
+    })
 
     // Send email notifications for mentions in the post
     try {

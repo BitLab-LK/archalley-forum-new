@@ -219,21 +219,21 @@ export default function HomePageInteractive({
             <div className="animate-fade-in-up animate-stagger-2 hover-lift smooth-transition">
               <PostCreator onPostCreated={async (result) => {
                 if (result && result.success && result.post) {
-                  // API call succeeded, add the real post
+                  // OPTIMIZATION: Immediately add post to UI for instant feedback
                   const realPost = result.post
                   
                   console.log("Adding real post:", { realPost })
                   
-                  // Transform the real API response
+                  // Transform the real API response to match UI expectations
                   const transformedPost: Post = {
                     id: realPost.id,
                     author: {
                       id: realPost.users?.id || realPost.authorId || '',
                       name: realPost.users?.name || (realPost.isAnonymous ? 'Anonymous' : 'Unknown User'),
                       avatar: realPost.users?.image || '/placeholder-user.jpg',
-                      isVerified: false,
-                      rank: 'Member',
-                      rankIcon: '👤'
+                      isVerified: realPost.users?.isVerified || false,
+                      rank: realPost.users?.userBadges?.[0]?.badges?.name || 'Member',
+                      rankIcon: realPost.users?.userBadges?.[0]?.badges?.icon || '👤'
                     },
                     content: realPost.content || '',
                     category: realPost.categories?.name || 'General',
@@ -244,10 +244,26 @@ export default function HomePageInteractive({
                     userVote: null,
                     comments: realPost._count?.Comment || 0,
                     timeAgo: 'just now',
-                    images: realPost.attachments?.map((att: any) => att.url) || []
+                    images: [] // Initialize empty, will be populated below
                   }
                   
-                  // Add real post to the beginning
+                  // CRITICAL FIX: Check for images from the response and handle properly
+                  if (realPost.attachments && realPost.attachments.length > 0) {
+                    console.log("✅ Found attachments in response:", realPost.attachments)
+                    transformedPost.images = realPost.attachments.map((att: any) => {
+                      // Clean the URL to remove any download parameters
+                      let cleanUrl = att.url
+                      if (cleanUrl.includes('blob.vercel-storage.com') && cleanUrl.includes('?download=1')) {
+                        cleanUrl = cleanUrl.replace('?download=1', '')
+                      }
+                      return cleanUrl
+                    })
+                    console.log("✅ Transformed images:", transformedPost.images)
+                  } else {
+                    console.log("⚠️ No attachments found in response:", realPost)
+                  }
+                  
+                  // Add real post to the beginning of the list immediately
                   setPosts(prev => [transformedPost, ...prev])
                   setPagination(prev => ({ 
                     ...prev, 
@@ -260,13 +276,41 @@ export default function HomePageInteractive({
                   }, 100)
                   
                   toast.success("Post created successfully!")
+                  
                 } else if (result && result.error) {
-                  // API call failed, just show error
+                  // API call failed, show error
                   console.error("Post creation failed:", result.error)
                   toast.error(result.error || "Failed to create post")
+                  
                 } else {
-                  // Legacy fallback - refresh posts
+                  // Legacy fallback - refresh posts list
+                  console.log("Using legacy fallback to refresh posts")
                   try {
+                    // Optimistically add a placeholder post first
+                    const placeholderPost: Post = {
+                      id: `temp-${Date.now()}`,
+                      author: {
+                        id: 'temp',
+                        name: 'Creating...',
+                        avatar: '/placeholder-user.jpg',
+                        isVerified: false,
+                        rank: 'Member',
+                        rankIcon: '⏳'
+                      },
+                      content: 'Post is being created...',
+                      category: 'General',
+                      isAnonymous: false,
+                      isPinned: false,
+                      upvotes: 0,
+                      downvotes: 0,
+                      userVote: null,
+                      comments: 0,
+                      timeAgo: 'just now'
+                    }
+                    
+                    setPosts(prev => [placeholderPost, ...prev])
+                    
+                    // Fetch fresh posts to replace placeholder
                     const response = await fetch(`/api/posts?page=1&limit=${pagination?.limit || 10}`, {
                       cache: 'no-store',
                       headers: {
@@ -286,11 +330,15 @@ export default function HomePageInteractive({
                       
                       toast.success("Post created successfully!")
                     } else {
+                      // Remove placeholder on error
+                      setPosts(prev => prev.filter(p => p.id !== placeholderPost.id))
                       throw new Error('Failed to refresh posts')
                     }
                   } catch (error) {
                     console.error('Failed to refresh posts:', error)
-                    toast.error("Post created but failed to refresh feed")
+                    toast.error("Post created but failed to refresh feed. Please refresh the page.")
+                    // Remove any placeholder posts
+                    setPosts(prev => prev.filter(p => !p.id.startsWith('temp-')))
                   }
                 }
               }} />

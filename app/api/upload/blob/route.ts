@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { put, del } from '@vercel/blob'
-import { generateSecureImageFilename, getExtensionFromMimeType, generateDisplayFilename } from "@/lib/utils"
+import { generateSecureImageFilename, getExtensionFromMimeType } from "@/lib/utils"
 
 // Rate limiting map (in production, use Redis or similar)
 const uploadAttempts = new Map<string, { count: number; resetTime: number }>()
@@ -53,143 +53,103 @@ export async function POST(request: NextRequest) {
     const maxDimensions = parseInt(process.env.UPLOAD_MAX_DIMENSIONS || "2048") // 2048px default
     const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"]
 
-const uploadPromises = files.map(async (file, index) => {
+    const uploadPromises = files.map(async (file) => {
       // Validate file type
       if (!allowedTypes.includes(file.type)) {
         throw new Error(`Invalid file type for ${file.name}: ${file.type}`)
       }
 
       let buffer = Buffer.from(await file.arrayBuffer()) as Buffer
-      let outputMime = "image/webp"
+      let outputMime = file.type // Keep original format for speed unless conversion needed
       
-      // Generate secure filename - short and clean
-      let filename = generateSecureImageFilename(getExtensionFromMimeType("image/webp"))
-      let processed = false
+      // Generate secure filename
+      let filename = generateSecureImageFilename(getExtensionFromMimeType(file.type))
 
-      // Always process images that are too large or not in optimal format
-      if (buffer.length > maxSize || file.type !== "image/webp") {
+      // OPTIMIZATION: Only process images if they're too large or in problematic format
+      // This reduces upload time significantly for most images
+      const needsProcessing = buffer.length > maxSize || 
+                             (file.type !== "image/webp" && file.type !== "image/jpeg" && file.type !== "image/png")
+
+      if (needsProcessing) {
         try {
           const sharp = (await import("sharp")).default
           let sharpImg = sharp(buffer).rotate()
           const metadata = await sharpImg.metadata()
 
-          // Resize if image dimensions are too large
-          if (metadata.width && metadata.width > maxDimensions) {
-            sharpImg = sharpImg.resize(maxDimensions, null, { withoutEnlargement: true })
-          }
-          if (metadata.height && metadata.height > maxDimensions) {
-            sharpImg = sharpImg.resize(null, maxDimensions, { withoutEnlargement: true })
-          }
-          
-          // Try WebP compression first
-          let quality = 85
-          let webpBuffer = await sharpImg.webp({ quality }).toBuffer()
-          
-          // If still too large, reduce quality progressively
-          while (webpBuffer.length > maxSize && quality > 20) {
-            quality -= 15
-            webpBuffer = await sharpImg.webp({ quality }).toBuffer()
+          // Quick resize if dimensions are too large
+          if ((metadata.width && metadata.width > maxDimensions) || 
+              (metadata.height && metadata.height > maxDimensions)) {
+            sharpImg = sharpImg.resize(maxDimensions, maxDimensions, { 
+              fit: 'inside', 
+              withoutEnlargement: true 
+            })
           }
           
-          if (webpBuffer.length <= maxSize) {
-            buffer = webpBuffer as Buffer
-            processed = true
-            // Keep the WebP filename as generated
+          // Try to keep original format if possible, only convert to WebP if too large
+          if (buffer.length > maxSize) {
+            // Try WebP compression
+            let quality = 85
+            let webpBuffer = await sharpImg.webp({ quality }).toBuffer()
             
+            // Quick quality reduction if still too large
+            if (webpBuffer.length > maxSize && quality > 50) {
+              quality = 70
+              webpBuffer = await sharpImg.webp({ quality }).toBuffer()
+            }
+            
+            if (webpBuffer.length <= maxSize) {
+              buffer = webpBuffer as Buffer
+              outputMime = "image/webp"
+              filename = generateSecureImageFilename(".webp")
+            } else {
+              // Fallback to JPEG if WebP still too large
+              let jpegBuffer = await sharpImg.jpeg({ quality: 70 }).toBuffer()
+              if (jpegBuffer.length <= maxSize) {
+                buffer = jpegBuffer as Buffer
+                outputMime = "image/jpeg"
+                filename = generateSecureImageFilename(".jpg")
+              } else {
+                throw new Error(`File ${file.name} is too large even after compression`)
+              }
+            }
           } else {
-            // If WebP still too large, try JPEG
-            outputMime = "image/jpeg"
-            filename = generateSecureImageFilename(getExtensionFromMimeType("image/jpeg"))
-            
-            quality = 85
-            let jpgBuffer = await sharpImg.jpeg({ quality }).toBuffer()
-            
-            while (jpgBuffer.length > maxSize && quality > 20) {
-              quality -= 15
-              jpgBuffer = await sharpImg.jpeg({ quality }).toBuffer()
-            }
-            
-            if (jpgBuffer.length <= maxSize) {
-              buffer = jpgBuffer as Buffer
-              processed = true
+            // Keep original format but apply resize if needed
+            if ((metadata.width && metadata.width > maxDimensions) || 
+                (metadata.height && metadata.height > maxDimensions)) {
+              if (file.type === "image/jpeg") {
+                buffer = await sharpImg.jpeg({ quality: 90 }).toBuffer()
+              } else if (file.type === "image/png") {
+                buffer = await sharpImg.png().toBuffer()
+              } else {
+                buffer = await sharpImg.webp({ quality: 90 }).toBuffer()
+                outputMime = "image/webp"
+                filename = generateSecureImageFilename(".webp")
+              }
             }
           }
-        } catch (err) {
-          console.error(`Image processing error for ${file.name}:`, err)
-          // If processing fails, we'll continue with original file
+        } catch (error) {
+          console.error(`Failed to process ${file.name}:`, error)
+          
+          // If processing fails but file is under size limit, use original
+          if (buffer.length <= maxSize) {
+            console.log(`Using original file for ${file.name} due to processing error`)
+          } else {
+            throw new Error(`Failed to process ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+          }
         }
-      }
-
-      // If not processed and still too large, try one more aggressive compression
-      if (!processed && buffer.length > maxSize) {
-        try {
-          const sharp = (await import("sharp")).default
-          let sharpImg = sharp(buffer).rotate()
-          
-          // Get metadata
-          const metadata = await sharpImg.metadata()
-          
-          // More aggressive resizing
-          let targetWidth = metadata.width
-          let targetHeight = metadata.height
-          
-          if (metadata.width && metadata.width > maxDimensions) {
-            targetWidth = maxDimensions
-          }
-          if (metadata.height && metadata.height > maxDimensions) {
-            targetHeight = maxDimensions
-          }
-          
-          sharpImg = sharpImg.resize(targetWidth, targetHeight, { withoutEnlargement: true })
-          
-          // Try very low quality compression with JPEG
-          outputMime = "image/jpeg"
-          filename = generateSecureImageFilename(getExtensionFromMimeType("image/jpeg"))
-          
-          let quality = 50
-          let compressedBuffer = await sharpImg.jpeg({ quality }).toBuffer()
-          
-          while (compressedBuffer.length > maxSize && quality > 10) {
-            quality -= 10
-            compressedBuffer = await sharpImg.jpeg({ quality }).toBuffer()
-          }
-          
-          if (compressedBuffer.length <= maxSize) {
-            buffer = compressedBuffer as Buffer
-            processed = true
-          }
-        } catch (err) {
-          console.error(`Final compression failed for ${file.name}:`, err)
-        }
-      }
-
-      // If still too large after all processing attempts, throw error
-      if (buffer.length > maxSize) {
-        throw new Error(`File too large after processing: ${file.name} (${buffer.length} bytes, max: ${maxSize} bytes)`)
       }
 
       try {
         // Upload to Vercel Blob
         const blob = await put(filename, buffer, {
           access: 'public',
-          addRandomSuffix: true, // Avoid filename conflicts
+          addRandomSuffix: true,
           cacheControlMaxAge: 60 * 60 * 24 * 30, // Cache for 30 days
         })
 
-        // Test if the blob is immediately accessible
-        try {
-          const testResponse = await fetch(blob.url, { method: 'HEAD' })
-          
-          if (!testResponse.ok) {
-            console.warn(`Blob may not be immediately accessible: ${testResponse.status}`)
-          }
-        } catch (testError) {
-          console.warn(`Could not test blob accessibility:`, testError)
-        }
-
         return {
-          url: blob.url, // Use regular URL for display, not downloadUrl
-          name: generateDisplayFilename(outputMime, files.length > 1 ? index : undefined), // User-friendly name for downloads
+          url: blob.url,
+          name: file.name, // Keep original name for user reference
           size: buffer.length,
           type: outputMime,
           pathname: blob.pathname,
@@ -198,7 +158,6 @@ const uploadPromises = files.map(async (file, index) => {
       } catch (blobError) {
         console.error(`Blob upload failed for ${filename}:`, blobError)
         
-        // Provide more specific error information
         let specificError = `Failed to upload to blob storage`
         if (blobError instanceof Error) {
           if (blobError.message.includes('unauthorized') || blobError.message.includes('403')) {
@@ -222,7 +181,6 @@ const uploadPromises = files.map(async (file, index) => {
     } catch (error) {
       console.error("File processing error:", error)
       
-      // Provide user-friendly error messages
       let errorMessage = "File processing failed"
       let errorDetails = ""
       
@@ -249,9 +207,8 @@ const uploadPromises = files.map(async (file, index) => {
         allowedTypes: allowedTypes
       }, { status: 400 })
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Upload error:", error)
-    
     return NextResponse.json({ 
       error: "Upload failed",
       message: "Failed to upload files. Please try again.",
@@ -284,7 +241,7 @@ export async function DELETE(request: NextRequest) {
     // Delete from Vercel Blob
     await del(url)
 
-return NextResponse.json({ message: "File deleted successfully" })
+    return NextResponse.json({ message: "File deleted successfully" })
   } catch (error) {
     console.error("Delete error:", error)
     return NextResponse.json({ 

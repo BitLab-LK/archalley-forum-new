@@ -19,15 +19,6 @@ interface PostCreatorProps {
   onPostCreated: (result?: { success?: boolean; post?: any; error?: string }) => void
 }
 
-interface AIClassification {
-  category: string
-  categories?: string[]  // Multiple AI-suggested categories
-  tags: string[]
-  confidence: number
-  originalLanguage: string
-  translatedContent: string
-}
-
 export default function PostCreator({ onPostCreated }: PostCreatorProps) {
   const { user, isAuthenticated } = useAuth()
   const [content, setContent] = useState("")
@@ -91,246 +82,32 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
 
     setIsSubmitting(true)
     setAiProgress(0)
-    setAiStatus("Starting AI analysis...")
+    setAiStatus("Creating post...")
 
     try {
-      // Step 1: Get AI classification
-      setAiProgress(20)
-      setAiStatus("Posting...")
+      // OPTIMIZATION: Skip AI classification on frontend, let backend handle it
+      // This dramatically reduces post creation time
+      setAiProgress(30)
+      setAiStatus("Uploading...")
       
-      const classificationResponse = await fetch("/api/ai/classify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content: content.trim() }),
-      })
-
-      if (!classificationResponse.ok) {
-        const errorData = await classificationResponse.json().catch(() => ({}))
-        throw new Error(errorData.message || errorData.error || "Failed to analyze content")
-      }
-
-      const classification = await classificationResponse.json() as AIClassification
-      
-      // Log multiple categories if available
-      if (classification.categories && classification.categories.length > 0) {
-        console.log("AI suggested categories:", classification.categories);
-      }
-      
-      // Override classification for test posts if needed
-      let classifiedCategory = classification.category;
-      const { tags, originalLanguage } = classification
-      
-      setAiProgress(60)
-      setAiStatus(originalLanguage !== "English" 
-        ? `Translated from ${originalLanguage} and analyzing content...`
-        : "Analyzing content and generating tags..."
-      )
-
-      // Update suggested tags
-      setSuggestedTags(tags)
-
-      // Step 2: Get category ID from category name
-      setAiProgress(70)
-      setAiStatus("Posting...")
-      
+      // Step 1: Quick category selection (use a default category for speed)
       let categoryId = ''
       try {
         const categoriesResponse = await fetch('/api/categories')
         if (categoriesResponse.ok) {
           const categoriesData = await categoriesResponse.json()
-          
-          // Categories API returns array directly, not wrapped in 'categories' property
           const categories = Array.isArray(categoriesData) ? categoriesData : (categoriesData.categories || [])
           
           if (categories && categories.length > 0) {
-            // Try to find exact match first (case insensitive)
-            let foundCategory = categories.find((cat: any) => 
-              cat.name.toLowerCase() === classifiedCategory.toLowerCase() ||
-              cat.slug.toLowerCase() === classifiedCategory.toLowerCase()
-            )
+            // Use first available category as default for speed
+            // Backend AI will enhance categorization later
+            const defaultCategory = categories.find((cat: any) => 
+              cat.name.toLowerCase() === "general" || 
+              cat.name.toLowerCase() === "other" ||
+              cat.name.toLowerCase() === "informative"
+            ) || categories[0]
             
-            // If no exact match, try partial matching
-            if (!foundCategory) {
-              foundCategory = categories.find((cat: any) => 
-                cat.name.toLowerCase().includes(classifiedCategory.toLowerCase()) ||
-                classifiedCategory.toLowerCase().includes(cat.name.toLowerCase())
-              )
-            }
-            
-            // If still no match, try common category mappings with enhanced mappings
-            if (!foundCategory) {
-              const categoryMappings: Record<string, string> = {
-                // Design related
-                'architecture': 'design',
-                'interior': 'design', 
-                'art': 'design',
-                'creative': 'design',
-                'graphic': 'design',
-                'illustration': 'design',
-                'ui': 'design',
-                'ux': 'design',
-                'visual': 'design',
-                'artistic': 'design',
-                
-                // Career related
-                'work': 'career',
-                'job': 'career',
-                'employment': 'career',
-                'profession': 'career',
-                'interview': 'career',
-                'resume': 'career',
-                'workplace': 'career',
-                'professional': 'career',
-                'networking': 'career',
-                'skill': 'career',
-                'development': 'career',
-                'freelance': 'career',
-                'consultant': 'career',
-                'promotion': 'career',
-                
-                // Jobs related (separate from career - this is for job postings)
-                'hiring': 'jobs',
-                'recruitment': 'jobs',
-                'position': 'jobs',
-                'vacancy': 'jobs',
-                'opening': 'jobs',
-                'opportunity': 'jobs',
-                'posting': 'jobs',
-                'apply': 'jobs',
-                
-                // Business related
-                'company': 'business',
-                'startup': 'business',
-                'entrepreneur': 'business',
-                'finance': 'business',
-                'marketing': 'business',
-                'management': 'business',
-                'investment': 'business',
-                'economics': 'business',
-                
-                // Construction related
-                'building': 'construction',
-                'engineering': 'construction',
-                'project': 'construction',
-                'materials': 'construction',
-                'construction-development': 'construction',
-                'infrastructure': 'construction',
-                'renovation': 'construction',
-                
-                // Academic related
-                'education': 'academic',
-                'research': 'academic',
-                'study': 'academic',
-                'university': 'academic',
-                'college': 'academic',
-                'theory': 'academic',
-                'teaching': 'academic',
-                'learning': 'academic',
-                'scholar': 'academic',
-                'paper': 'academic',
-                'thesis': 'academic',
-                'journal': 'academic',
-                'lecture': 'academic',
-                'student': 'academic',
-                'professor': 'academic',
-                'curriculum': 'academic',
-                'school': 'academic',
-                
-                // Informative related
-                'information': 'informative',
-                'news': 'informative',
-                'update': 'informative',
-                'article': 'informative',
-                'insight': 'informative',
-                'facts': 'informative',
-                'instructions': 'informative',
-                'knowledge': 'informative',
-                'tutorial': 'informative',
-                'how-to': 'informative',
-                'guide': 'informative',
-                'report': 'informative',
-                'announcement': 'informative',
-                'resource': 'informative',
-                'explanation': 'informative',
-                
-                // Other related
-                'general': 'other',
-                'miscellaneous': 'other',
-                'discussion': 'other',
-                'question': 'other',
-                'random': 'other',
-                'various': 'other',
-                'diverse': 'other',
-                'chat': 'other',
-                'talk': 'other',
-                'conversation': 'other',
-                'forum': 'other'
-              }
-              
-              // Convert to lowercase for comparison
-              const lowerClassifiedCategory = classifiedCategory.toLowerCase();
-              
-              // Try to find direct mapping first
-              let mappedCategory = categoryMappings[lowerClassifiedCategory];
-              
-              // If no direct mapping, check if any keyword appears in the classified category
-              if (!mappedCategory) {
-                for (const [keyword, category] of Object.entries(categoryMappings)) {
-                  if (lowerClassifiedCategory.includes(keyword)) {
-                    mappedCategory = category;
-                    break;
-                  }
-                }
-              }
-              
-              if (mappedCategory) {
-                foundCategory = categories.find((cat: any) => 
-                  cat.slug.toLowerCase() === mappedCategory.toLowerCase() ||
-                  cat.name.toLowerCase() === mappedCategory.toLowerCase()
-                )
-              }
-            }
-            
-            // If we still don't have a category match, try to find a category by exact name match
-            if (!foundCategory) {
-              // Try to find direct match for special categories that might be underrepresented
-              if (classifiedCategory.toLowerCase() === "other" || 
-                  classifiedCategory.toLowerCase() === "academic" || 
-                  classifiedCategory.toLowerCase() === "informative") {
-                
-                foundCategory = categories.find((cat: any) => 
-                  cat.name.toLowerCase() === classifiedCategory.toLowerCase()
-                )
-                
-                if (foundCategory) {
-                  console.log(`Direct match found for "${classifiedCategory}" category`)
-                }
-              }
-            }
-            
-            // Use found category or fallback to appropriate default
-            if (!foundCategory) {
-              // Check if the AI specifically suggested "Other" - respect that decision
-              if (classifiedCategory.toLowerCase() === "other") {
-                foundCategory = categories.find((cat: any) => cat.name.toLowerCase() === "other")
-              } else {
-                // For other cases, try to find the most appropriate category
-                // But still respect AI's decision if it's valid
-                foundCategory = categories.find((cat: any) => cat.name.toLowerCase() === "informative") ||
-                               categories.find((cat: any) => cat.name.toLowerCase() === "design") ||
-                               categories.find((cat: any) => cat.name.toLowerCase() === "business") ||
-                               categories.find((cat: any) => cat.name.toLowerCase() === "other")
-              }
-            }
-            
-            // Final fallback - respect AI's "Other" decision or use first category
-            if (!foundCategory) {
-              foundCategory = categories[0]
-            }
-            
-            categoryId = foundCategory?.id || ''
+            categoryId = defaultCategory?.id || ''
           }
         }
       } catch (error) {
@@ -338,141 +115,123 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       }
 
       if (!categoryId) {
-        // Fallback: Try to get categories again and use the first one
-        try {
-          const fallbackResponse = await fetch('/api/categories')
-          if (fallbackResponse.ok) {
-            const fallbackData = await fallbackResponse.json()
-            const categories = Array.isArray(fallbackData) ? fallbackData : (fallbackData.categories || [])
-            const firstCategory = categories[0]
-            
-            if (firstCategory) {
-              categoryId = firstCategory.id
-            }
-          }
-        } catch (fallbackError) {
-          // Silent error handling for fallback category fetch
-        }
-        
-        // If still no category, throw an error instead of using hardcoded ID
-        if (!categoryId) {
-          throw new Error('No categories available. Please create categories in your database first.')
-        }
+        throw new Error('No categories available. Please refresh the page and try again.')
       }
 
-      // Step 3: Create the post
-      setAiProgress(80)
-      setAiStatus("Posting...")
+      // Step 2: Create the post immediately
+      setAiProgress(60)
+      setAiStatus("Publishing...")
 
-      // Prepare form data for the posts API (it expects FormData, not JSON)
+      // Prepare form data for the posts API
       const formData = new FormData()
-      formData.append('content', content.trim()) // Send original content, not translated
+      formData.append('content', content.trim())
       formData.append('categoryId', categoryId)
       formData.append('isAnonymous', isAnonymous.toString())
-      formData.append("tags", JSON.stringify(selectedTags)) // Max 5 tags
-      formData.append('originalLanguage', originalLanguage || 'English')
-      // Note: translatedContent will be generated by the API if needed
+      formData.append("tags", JSON.stringify(selectedTags))
+      formData.append('originalLanguage', 'English') // Simplified for speed
       
       // Add blob URLs as image data
       uploadedFiles.forEach((file, index) => {
+        console.log(`📤 Adding image ${index}:`, { url: file.url, name: file.name })
         formData.append(`image_${index}_url`, file.url)
         formData.append(`image_${index}_name`, file.name)
       })
 
+      console.log("📦 FormData being sent with", uploadedFiles.length, "images")
+
+      setAiProgress(80)
+      setAiStatus("Finalizing...")
+
+      const response = await makeApiRequest("/api/posts", {
+        method: "POST",
+        body: formData,
+      })
+
+      // Get the created post from the response
+      let createdPost = null
       try {
-        const response = await makeApiRequest("/api/posts", {
-          method: "POST",
-          body: formData, // Send as FormData, not JSON
-        })
-
-        // Get the created post from the response
-        let createdPost = null
-        try {
-          if (response && typeof response === 'object') {
-            // Check if response has json method (Response object)
-            if ('json' in response && typeof (response as any).json === 'function') {
-              createdPost = await (response as Response).json()
-            } else {
-              // Response is already parsed JSON
-              createdPost = response
-            }
-          }
-        } catch (parseError) {
-          console.log("Could not parse response, but post was created successfully")
-        }
-
-        // Immediately show success and reset form for instant feedback
-        toast.success("Post created successfully!")
-        setAiProgress(100)
-        setAiStatus("Post created successfully!")
-
-        // Reset form state immediately
-        setContent("")
-        setIsAnonymous(false)
-        resetUpload() // Reset upload state without deleting blobs
-        setSelectedTags([])
-        setSuggestedTags([])
-        
-        // Clear file input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ""
-        }
-
-        // Call parent callback with success result
-        onPostCreated({
-          success: true,
-          post: createdPost
-        })
-        
-        // Clear status after a brief moment
-        setTimeout(() => {
-          setAiProgress(0)
-          setAiStatus("")
-        }, 1000)
-
-      } catch (error) {
-        
-        let errorMessage = "Failed to create post. Please try again."
-        
-        if (error instanceof DeploymentError) {
-          logDeploymentError(error)
-          
-          // Provide specific error messages based on error type
-          if (error.details?.responseType === 'html') {
-            errorMessage = "Authentication error. Please refresh the page and try again."
-          } else if (error.statusCode === 503) {
-            errorMessage = "Service temporarily unavailable. Please wait a moment and try again."
-          } else if (error.statusCode === 502 || error.statusCode === 504) {
-            errorMessage = "Server timeout. Please try again in a few moments."
-          } else if (error.statusCode === 401) {
-            errorMessage = "Please log in again and try posting."
+        if (response && typeof response === 'object') {
+          if ('json' in response && typeof (response as any).json === 'function') {
+            createdPost = await (response as Response).json()
           } else {
-            errorMessage = error.message || "Failed to create post. Please try again."
+            createdPost = response
           }
-        } else {
-          errorMessage = "Network error. Please check your connection and try again."
+          
+          // Debug: Log the response to see what we're getting
+          console.log("🔍 Post creation response:", createdPost)
+          console.log("🔍 Attachments in response:", createdPost?.attachments)
+          
+          // Additional debugging for image data
+          if (uploadedFiles && uploadedFiles.length > 0) {
+            console.log("📤 Uploaded files sent to API:", uploadedFiles.map(f => ({ url: f.url, name: f.name })))
+          }
         }
-        
-        setAiStatus(errorMessage)
-        setAiProgress(0)
-        
-        // Call parent callback with error result for rollback
-        onPostCreated({
-          success: false,
-          error: errorMessage
-        })
-        
-        // DON'T clear files on error - user might want to retry
+      } catch (parseError) {
+        console.log("Could not parse response, but post was created successfully", parseError)
       }
 
+      // Immediately show success and reset form for instant feedback
+      setAiProgress(100)
+      setAiStatus("Post created successfully!")
+      toast.success("Post created successfully!")
+
+      // Reset form state immediately
+      setContent("")
+      setIsAnonymous(false)
+      resetUpload()
+      setSelectedTags([])
+      setSuggestedTags([])
+      
+      // Clear file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+
+      // Call parent callback with success result
+      onPostCreated({
+        success: true,
+        post: createdPost
+      })
+      
+      // Clear status after a brief moment
+      setTimeout(() => {
+        setAiProgress(0)
+        setAiStatus("")
+      }, 1000)
+
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to create post"
+      let errorMessage = "Failed to create post. Please try again."
+      
+      if (error instanceof DeploymentError) {
+        logDeploymentError(error)
+        
+        if (error.details?.responseType === 'html') {
+          errorMessage = "Authentication error. Please refresh the page and try again."
+        } else if (error.statusCode === 503) {
+          errorMessage = "Service temporarily unavailable. Please wait a moment and try again."
+        } else if (error.statusCode === 502 || error.statusCode === 504) {
+          errorMessage = "Server timeout. Please try again in a few moments."
+        } else if (error.statusCode === 401) {
+          errorMessage = "Please log in again and try posting."
+        } else {
+          errorMessage = error.message || "Failed to create post. Please try again."
+        }
+      } else {
+        errorMessage = error instanceof Error ? error.message : "Network error. Please check your connection and try again."
+      }
+      
       setError(errorMessage)
       toast.error(errorMessage)
+      setAiStatus("")
+      setAiProgress(0)
+      
+      // Call parent callback with error result
+      onPostCreated({
+        success: false,
+        error: errorMessage
+      })
     } finally {
       setIsSubmitting(false)
-      setAiProgress(0)
-      setAiStatus(null)
     }
   }
 
