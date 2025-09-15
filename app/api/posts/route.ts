@@ -24,6 +24,13 @@ const createPostSchema = z.object({
     }
   }).default("[]"),
   originalLanguage: z.string().optional().default("English"),
+  aiSuggestedCategories: z.string().transform((str) => {
+    try {
+      return JSON.parse(str) as string[]
+    } catch {
+      return []
+    }
+  }).default("[]"),
   // Remove translatedContent from schema as we'll generate it automatically
 })
 
@@ -71,7 +78,8 @@ export async function POST(request: Request) {
     const isAnonymous = formData.get("isAnonymous") === "true"
     const tags = formData.get("tags") as string
     const originalLanguage = formData.get("originalLanguage") as string || "English"
-
+    const aiSuggestedCategoriesStr = formData.get("aiSuggestedCategories") as string || "[]"
+    
     // Validate input
     const validationResult = createPostSchema.safeParse({
       content,
@@ -79,6 +87,7 @@ export async function POST(request: Request) {
       isAnonymous,
       tags,
       originalLanguage,
+      aiSuggestedCategories: aiSuggestedCategoriesStr,
     })
 
     if (!validationResult.success) {
@@ -93,11 +102,16 @@ export async function POST(request: Request) {
     }
 
     const { data } = validationResult
+    
+    // Use validated AI suggested categories
+    const aiSuggestedCategories = data.aiSuggestedCategories
+    console.log("🤖 Validated AI suggested categories:", aiSuggestedCategories)
 
     // Get all available categories for AI categorization
     const allCategories = await prisma.categories.findMany({
       select: { id: true, name: true }
     })
+    console.log("📊 Available database categories:", allCategories.map(cat => cat.name))
 
     // Check if primary category exists
     const primaryCategory = allCategories.find(cat => cat.id === data.categoryId)
@@ -113,20 +127,45 @@ export async function POST(request: Request) {
       )
     }
 
-    // OPTIMIZATION: Create post first, then do AI processing asynchronously
-    // This dramatically reduces perceived post creation time for users
+    // OPTIMIZATION: Use frontend AI classification but enhance with background processing
+    // This provides immediate proper categorization with background enhancement
     
-    // Quick fallback category suggestion for immediate post creation
+    // Use the selected category as the AI suggestion (frontend already did classification)
     const quickAiSuggestion = {
       categories: [primaryCategory.name],
-      confidence: 0.8,
-      reasoning: "Quick categorization for fast posting"
+      confidence: 0.9, // High confidence since frontend AI classified it
+      reasoning: "Frontend AI classification with backend enhancement"
     }
 
     // Create post with quick AI categories - optimization for speed
     const result = await prisma.$transaction(async (tx) => {
-      // Use primary category for immediate posting - AI will enhance later
+      // Convert AI-suggested category names to category IDs immediately
+      const aiCategoryIds: string[] = []
+      if (aiSuggestedCategories && aiSuggestedCategories.length > 0) {
+        for (const categoryName of aiSuggestedCategories) {
+          const category = allCategories.find(cat => 
+            cat.name.toLowerCase() === categoryName.toLowerCase()
+          )
+          if (category && !aiCategoryIds.includes(category.id)) {
+            aiCategoryIds.push(category.id)
+            console.log(`✅ Mapped AI category "${categoryName}" to ID: ${category.id}`)
+          }
+        }
+      }
+      
+      // Combine primary category with AI-suggested categories for immediate assignment
       const initialCategoryIds = [data.categoryId]
+      aiCategoryIds.forEach(id => {
+        if (!initialCategoryIds.includes(id)) {
+          initialCategoryIds.push(id)
+        }
+      })
+      
+      console.log("🎯 Creating post with multiple categories:", {
+        primary: data.categoryId,
+        all: initialCategoryIds,
+        aiSuggested: aiSuggestedCategories
+      })
       
       // Create the post immediately with minimal processing
       const newPost = await tx.post.create({
@@ -135,22 +174,30 @@ export async function POST(request: Request) {
           content: data.content, // Keep original language
           authorId: session.user.id,
           categoryId: data.categoryId, // Primary category
-          categoryIds: initialCategoryIds, // Start with primary category only
+          categoryIds: initialCategoryIds, // Start with all detected categories
           isAnonymous: data.isAnonymous,
           aiTags: data.tags,
           aiCategory: primaryCategory.name, // Use primary as initial AI category
-          aiCategories: [], // Will be populated by background processing
+          aiCategories: aiSuggestedCategories.filter(cat => cat.toLowerCase() !== primaryCategory.name.toLowerCase()), // Exclude primary category from AI categories
           originalLanguage: data.originalLanguage,
           translatedContent: data.content, // Will be translated in background if needed
           updatedAt: new Date(),
         },
       })
 
-      // Update category post counts for initial category only
-      await tx.categories.update({
-        where: { id: data.categoryId },
-        data: { postCount: { increment: 1 } }
-      })
+      // Update category post counts for all assigned categories
+      await Promise.all(
+        initialCategoryIds.map(categoryId =>
+          tx.categories.update({
+            where: { id: categoryId },
+            data: { postCount: { increment: 1 } }
+          }).catch(error => {
+            console.error(`Failed to update category count for ${categoryId}:`, error)
+          })
+        )
+      )
+      
+      console.log("📊 Updated post counts for categories:", initialCategoryIds)
 
       // CRITICAL FIX: Create attachments BEFORE fetching the complete post
       // Handle image uploads if any - keep this fast
@@ -230,15 +277,22 @@ export async function POST(request: Request) {
 
       console.log("🔍 Complete post fetched with attachments:", completePost?.attachments?.length || 0)
 
+      // Get all assigned categories for immediate response
+      const assignedCategories = await tx.categories.findMany({
+        where: { id: { in: initialCategoryIds } },
+        select: { id: true, name: true, color: true, slug: true }
+      })
+
       return {
         ...completePost,
         // Use attachments from the database query for immediate response
         attachments: completePost?.attachments || [],
-        // Add minimal categories for immediate response
-        allCategories: [primaryCategory],
-        // Add placeholder AI categorization that will be enhanced later
+        // Add all assigned categories for immediate response
+        allCategories: assignedCategories,
+        categoryIds: initialCategoryIds, // Include the categoryIds array
+        // Add AI categorization info
         aiCategorization: {
-          suggestedCategories: quickAiSuggestion.categories,
+          suggestedCategories: aiSuggestedCategories,
           confidence: quickAiSuggestion.confidence,
           reasoning: quickAiSuggestion.reasoning,
           translationUsed: false, // Will be updated by background processing
@@ -264,24 +318,37 @@ export async function POST(request: Request) {
           }
         }
 
-        // Step 2: Get comprehensive AI category suggestions
+        // Step 2: Get comprehensive AI category suggestions (only if frontend didn't provide good ones)
         let enhancedAiSuggestion
-        try {
-          const categoryNames = allCategories.map(cat => cat.name)
-          const classification = await classifyPost(translatedContent, categoryNames)
-          
+        
+        if (aiSuggestedCategories && aiSuggestedCategories.length > 0) {
+          // Frontend provided good AI suggestions, use those
           enhancedAiSuggestion = {
-            categories: classification.categories || [classification.category],
-            confidence: classification.confidence,
-            reasoning: `AI classification with ${classification.confidence} confidence`
+            categories: aiSuggestedCategories,
+            confidence: 0.9, // High confidence since frontend AI classified it
+            reasoning: "Frontend AI classification used"
           }
-        } catch (error) {
-          console.error("Background AI categorization failed:", error)
-          // Skip background processing if AI fails
-          return
+          console.log("✅ Using frontend AI classification:", aiSuggestedCategories)
+          } else {
+          // No frontend AI suggestions, run backend AI classification
+          try {
+            const categoryNames = allCategories.map(cat => cat.name)
+            const classification = await classifyPost(translatedContent, categoryNames)
+            
+            enhancedAiSuggestion = {
+              categories: classification.categories || [classification.category],
+              confidence: classification.confidence,
+              reasoning: `Backend AI classification with ${classification.confidence} confidence`
+            }
+            console.log("🤖 Backend AI classification result:", enhancedAiSuggestion)
+          } catch (error) {
+            console.error("Background AI categorization failed:", error)
+            // Skip background processing if AI fails
+            return
+          }
         }
 
-        // Step 3: Update post with enhanced AI data
+        // Step 3: Update post with enhanced AI data (only if needed)
         try {
           // Convert AI-suggested category names to category IDs
           const aiCategoryIds: string[] = []
@@ -296,8 +363,17 @@ export async function POST(request: Request) {
             }
           }
           
+          // Get current post to check existing categories
+          const currentPost = await prisma.post.findUnique({
+            where: { id: result.id },
+            select: { categoryIds: true }
+          })
+          
           // Combine primary category with AI-suggested categories
-          const allCategoryIds = [data.categoryId]
+          const existingCategoryIds = currentPost?.categoryIds || [data.categoryId]
+          const allCategoryIds = [...existingCategoryIds]
+          
+          // Add new AI categories that aren't already assigned
           aiCategoryIds.forEach(id => {
             if (!allCategoryIds.includes(id)) {
               allCategoryIds.push(id)
@@ -306,33 +382,50 @@ export async function POST(request: Request) {
           
           const uniqueCategoryIds = [...new Set(allCategoryIds)]
           
-          // Update the post with enhanced AI data
-          await prisma.post.update({
-            where: { id: result.id },
-            data: {
-              categoryIds: uniqueCategoryIds,
-              aiCategory: enhancedAiSuggestion.categories[0] || null,
-              aiCategories: enhancedAiSuggestion.categories.filter(categoryName => {
-                const primaryCategoryName = primaryCategory.name.toLowerCase()
-                return categoryName.toLowerCase() !== primaryCategoryName
-              }) || [],
-              translatedContent: translatedContent,
+          // Only update if categories changed or translation was needed
+          const categoriesChanged = JSON.stringify(existingCategoryIds.sort()) !== JSON.stringify(uniqueCategoryIds.sort())
+          const translationNeeded = translatedContent !== data.content
+          
+          if (categoriesChanged || translationNeeded) {
+            console.log("📝 Updating post with background processing:", {
+              existingCategories: existingCategoryIds.length,
+              newCategories: uniqueCategoryIds.length,
+              categoriesChanged,
+              translationNeeded
+            })
+            
+            // Update the post with enhanced AI data
+            await prisma.post.update({
+              where: { id: result.id },
+              data: {
+                ...(categoriesChanged && { categoryIds: uniqueCategoryIds }),
+                aiCategory: enhancedAiSuggestion.categories[0] || null,
+                aiCategories: enhancedAiSuggestion.categories.filter(categoryName => {
+                  const primaryCategoryName = primaryCategory.name.toLowerCase()
+                  return categoryName.toLowerCase() !== primaryCategoryName
+                }) || [],
+                ...(translationNeeded && { translatedContent: translatedContent }),
+              }
+            })
+            
+            // Update additional category post counts if new categories were added
+            if (categoriesChanged) {
+              const newCategoryIds = uniqueCategoryIds.filter(id => !existingCategoryIds.includes(id))
+              if (newCategoryIds.length > 0) {
+                await Promise.all(
+                  newCategoryIds.map(categoryId =>
+                    prisma.categories.update({
+                      where: { id: categoryId },
+                      data: { postCount: { increment: 1 } }
+                    }).catch(error => {
+                      console.error(`Failed to update category count for ${categoryId}:`, error)
+                    })
+                  )
+                )
+              }
             }
-          })
-
-          // Update additional category post counts if new categories were added
-          const newCategoryIds = uniqueCategoryIds.filter(id => id !== data.categoryId)
-          if (newCategoryIds.length > 0) {
-            await Promise.all(
-              newCategoryIds.map(categoryId =>
-                prisma.categories.update({
-                  where: { id: categoryId },
-                  data: { postCount: { increment: 1 } }
-                }).catch(error => {
-                  console.error(`Failed to update category count for ${categoryId}:`, error)
-                })
-              )
-            )
+          } else {
+            console.log("⏭️  No background updates needed - categories and content unchanged")
           }
           
           console.log("✅ Background AI processing completed for post:", result.id)

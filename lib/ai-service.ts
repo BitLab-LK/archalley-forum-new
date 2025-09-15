@@ -117,6 +117,9 @@ Return the response in this exact JSON format:
 }
 
 export async function classifyPost(content: string, availableCategories?: string[]): Promise<AIClassification> {
+  console.log("🤖 AI Service: Starting classification for content:", content.substring(0, 100) + "...")
+  console.log("📋 AI Service: Available categories:", availableCategories)
+  
   try {
     const categories = availableCategories || FALLBACK_CATEGORIES
     
@@ -150,20 +153,17 @@ STRICT CATEGORIZATION RULES:
    - Very short meaningless posts (like "hi", "ok", "test") → "Other"
    - Spam or irrelevant content → "Other"
 
-2. For MEANINGFUL content, analyze deeply:
-   - DESIGN: architecture, interior design, art, creative work, visual concepts, layouts, graphics, UI/UX, aesthetics
-   - BUSINESS: companies, startups, entrepreneurship, management, marketing, finance, budgeting, strategy, consulting
-   - CAREER: job searching, professional development, skills, networking, freelancing, interviews, workplace advice
-   - CONSTRUCTION: building, engineering, civil works, project management, materials, contractors, infrastructure
-   - ACADEMIC: education, research, universities, studies, degrees, courses, learning, teaching, scholarly work
-   - INFORMATIVE: tutorials, guides, how-to content, educational material, explanations, tips, knowledge sharing
-   - JOBS: job postings, hiring, recruitment, job opportunities, employment openings, positions available
+2. For MEANINGFUL content, analyze the content and select the most relevant categories from the AVAILABLE CATEGORIES list above:
+   - You can select 1-3 categories maximum
+   - Only use categories that appear in the AVAILABLE CATEGORIES list
+   - Multiple categories are allowed if content clearly spans multiple domains
+   - Categories should match EXACTLY as shown in the AVAILABLE CATEGORIES list
 
 3. CRITICAL RULES:
    - If content is gibberish/random → "Other"
-   - If content is meaningful but doesn't fit specific categories → "Other"
-   - Only use other categories when content clearly relates to them
-   - Multiple categories allowed if content spans domains
+   - If content is meaningful but doesn't clearly fit specific categories → "Other"
+   - Only use categories that exist in the AVAILABLE CATEGORIES list above
+   - Be precise and selective - don't over-categorize
 
 MANDATORY JSON RESPONSE FORMAT:
 {
@@ -172,7 +172,7 @@ MANDATORY JSON RESPONSE FORMAT:
   "confidence": 0.9
 }
 
-REMEMBER: Be strict about categorization. When in doubt, use "Other".`
+IMPORTANT: Categories must match EXACTLY from the AVAILABLE CATEGORIES list. If unsure, use "Other".`
 
     const result = await model.generateContent(prompt)
     const response = await result.response
@@ -312,7 +312,7 @@ REMEMBER: Be strict about categorization. When in doubt, use "Other".`
       translatedContent: translatedText
     }
 
-    return classification
+    console.log("✅ AI Service: Final classification result:", classification)
     return classification
 
   } catch (error) {

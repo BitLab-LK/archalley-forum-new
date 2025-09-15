@@ -85,13 +85,103 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
     setAiStatus("Creating post...")
 
     try {
-      // OPTIMIZATION: Skip AI classification on frontend, let backend handle it
-      // This dramatically reduces post creation time
+      // OPTIMIZATION: Do robust AI classification on frontend for proper categorization
       setAiProgress(30)
-      setAiStatus("Uploading...")
+      setAiStatus("Analyzing content...")
       
-      // Step 1: Quick category selection (use a default category for speed)
+      // Step 1: Get AI classification with proper timeout and fallback
+      let classifiedCategory = 'informative' // Better fallback than 'other'
       let categoryId = ''
+      let aiClassificationSuccess = false
+      let suggestedCategories: string[] = [] // Declare here so it's available in the outer scope
+      
+      try {
+        // Set a more reasonable timeout for AI classification (8 seconds)
+        const classificationPromise = fetch("/api/ai/classify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ content: content.trim() }),
+        })
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('AI classification timeout')), 8000)
+        )
+        
+        const classificationResponse = await Promise.race([classificationPromise, timeoutPromise]) as Response
+        
+        if (classificationResponse.ok) {
+          const classification = await classificationResponse.json()
+          console.log("🤖 AI Classification Response:", classification)
+          
+          // Handle both single category and multiple categories response
+          
+          if (classification.categories && Array.isArray(classification.categories) && classification.categories.length > 0) {
+            // New format with multiple categories
+            suggestedCategories = classification.categories
+            classifiedCategory = classification.categories[0] // Use first category as primary
+            aiClassificationSuccess = true
+            console.log("✅ AI classified with multiple categories:", classification.categories, "confidence:", classification.confidence)
+          } else if (classification.category && classification.category !== 'unknown' && classification.category !== 'other') {
+            // Old format with single category
+            classifiedCategory = classification.category
+            suggestedCategories = [classification.category]
+            aiClassificationSuccess = true
+            console.log("✅ AI classified as single category:", classifiedCategory, "confidence:", classification.confidence)
+          } else {
+            console.log("⚠️ AI returned no valid category, using content-based fallback")
+          }
+        } else {
+          const errorText = await classificationResponse.text()
+          console.warn("⚠️ AI classification failed with status:", classificationResponse.status, errorText)
+        }
+      } catch (error) {
+        console.warn("⚠️ AI classification timeout or error, using content-based fallback:", error)
+      }
+      
+      // Step 1.5: Content-based fallback classification if AI fails
+      if (!aiClassificationSuccess) {
+        const lowerContent = content.toLowerCase()
+        const detectedCategories: string[] = []
+        
+        // Multi-category content analysis - can detect multiple categories
+        if (lowerContent.includes('job') || lowerContent.includes('hiring') || lowerContent.includes('vacancy') || lowerContent.includes('opportunity') || lowerContent.includes('employment')) {
+          detectedCategories.push('jobs')
+        }
+        if (lowerContent.includes('business') || lowerContent.includes('startup') || lowerContent.includes('entrepreneur') || lowerContent.includes('company') || lowerContent.includes('market') || lowerContent.includes('commercial')) {
+          detectedCategories.push('business')
+        }
+        if (lowerContent.includes('design') || lowerContent.includes('ui') || lowerContent.includes('ux') || lowerContent.includes('graphic') || lowerContent.includes('creative') || lowerContent.includes('visual')) {
+          detectedCategories.push('design')
+        }
+        if (lowerContent.includes('construction') || lowerContent.includes('building') || lowerContent.includes('architecture') || lowerContent.includes('engineer') || lowerContent.includes('project') || lowerContent.includes('infrastructure')) {
+          detectedCategories.push('construction')
+        }
+        if (lowerContent.includes('academic') || lowerContent.includes('research') || lowerContent.includes('study') || lowerContent.includes('university') || lowerContent.includes('education') || lowerContent.includes('school')) {
+          detectedCategories.push('academic')
+        }
+        if (lowerContent.includes('career') || lowerContent.includes('professional') || lowerContent.includes('skill') || lowerContent.includes('development') || lowerContent.includes('growth') || lowerContent.includes('advancement')) {
+          detectedCategories.push('career')
+        }
+        
+        // Assign detected categories or fallback to informative
+        if (detectedCategories.length > 0) {
+          suggestedCategories = detectedCategories
+          classifiedCategory = detectedCategories[0] // Use first category as primary
+          console.log("📝 Content-based classification found multiple categories:", detectedCategories)
+        } else {
+          // Fallback to informative for general content
+          suggestedCategories = ['informative']
+          classifiedCategory = 'informative'
+          console.log("📝 Content-based classification fallback to informative")
+        }
+      }
+      
+      setAiProgress(50)
+      setAiStatus("Selecting category...")
+      
+      // Step 2: Get categories and find the best match
       try {
         const categoriesResponse = await fetch('/api/categories')
         if (categoriesResponse.ok) {
@@ -99,19 +189,69 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
           const categories = Array.isArray(categoriesData) ? categoriesData : (categoriesData.categories || [])
           
           if (categories && categories.length > 0) {
-            // Use first available category as default for speed
-            // Backend AI will enhance categorization later
-            const defaultCategory = categories.find((cat: any) => 
-              cat.name.toLowerCase() === "general" || 
-              cat.name.toLowerCase() === "other" ||
-              cat.name.toLowerCase() === "informative"
-            ) || categories[0]
+            // Try to find the AI-classified primary category first
+            let foundCategory = categories.find((cat: any) => 
+              cat.name.toLowerCase() === classifiedCategory.toLowerCase() ||
+              cat.slug.toLowerCase() === classifiedCategory.toLowerCase()
+            )
             
-            categoryId = defaultCategory?.id || ''
+            // If we have multiple suggested categories from AI, try each one
+            if (!foundCategory && typeof suggestedCategories !== 'undefined') {
+              for (const suggestedCat of suggestedCategories) {
+                foundCategory = categories.find((cat: any) => 
+                  cat.name.toLowerCase() === suggestedCat.toLowerCase() ||
+                  cat.slug.toLowerCase() === suggestedCat.toLowerCase()
+                )
+                if (foundCategory) {
+                  classifiedCategory = suggestedCat // Update the primary category
+                  break
+                }
+              }
+            }
+            
+            // If no exact match, use smart category mapping
+            if (!foundCategory) {
+              const categoryMappings: Record<string, string> = {
+                'design': 'design',
+                'career': 'career', 
+                'business': 'business',
+                'construction': 'construction',
+                'academic': 'academic',
+                'informative': 'informative',
+                'jobs': 'jobs',
+                'other': 'other'
+              }
+              
+              const mappedCategory = categoryMappings[classifiedCategory.toLowerCase()]
+              if (mappedCategory) {
+                foundCategory = categories.find((cat: any) => 
+                  cat.name.toLowerCase() === mappedCategory ||
+                  cat.slug.toLowerCase() === mappedCategory
+                )
+              }
+            }
+            
+            // Final fallback - intelligent default based on content
+            if (!foundCategory) {
+              const contentLower = content.toLowerCase()
+              if (contentLower.includes('job') || contentLower.includes('hiring') || contentLower.includes('career')) {
+                foundCategory = categories.find((cat: any) => cat.name.toLowerCase().includes('job') || cat.name.toLowerCase().includes('career'))
+              } else if (contentLower.includes('design') || contentLower.includes('architecture')) {
+                foundCategory = categories.find((cat: any) => cat.name.toLowerCase().includes('design'))
+              } else if (contentLower.includes('business') || contentLower.includes('company')) {
+                foundCategory = categories.find((cat: any) => cat.name.toLowerCase().includes('business'))
+              } else {
+                // Default to informative for educational/info content
+                foundCategory = categories.find((cat: any) => cat.name.toLowerCase() === 'informative') || categories[0]
+              }
+            }
+            
+            categoryId = foundCategory?.id || categories[0]?.id || ''
+            console.log("✅ Selected category:", foundCategory?.name || 'Unknown')
           }
         }
       } catch (error) {
-        // Silent error handling for category fetch
+        console.error("Error fetching categories:", error)
       }
 
       if (!categoryId) {
@@ -129,6 +269,12 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       formData.append('isAnonymous', isAnonymous.toString())
       formData.append("tags", JSON.stringify(selectedTags))
       formData.append('originalLanguage', 'English') // Simplified for speed
+      
+      // CRITICAL: Send AI-suggested categories to backend for immediate multiple category assignment
+      if (suggestedCategories && suggestedCategories.length > 0) {
+        formData.append('aiSuggestedCategories', JSON.stringify(suggestedCategories))
+        console.log("🤖 Sending AI suggested categories to backend:", suggestedCategories)
+      }
       
       // Add blob URLs as image data
       uploadedFiles.forEach((file, index) => {
