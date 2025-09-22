@@ -80,15 +80,12 @@ export async function GET(request: NextRequest) {
         
         return {
           id: c.id,
-          author: {
-            name: c.users.name,
-            image: c.users.image,
-            rank: c.users.userBadges?.[0]?.badges?.name || "Member",
-            isVerified: c.users.userBadges?.some(ub => ub.badges.type === 'ACHIEVEMENT') || false,
-            badges: c.users.userBadges?.slice(0, 3) || []
-          },
+          author: c.users.name,
           authorId: c.users.id,
           authorImage: c.users.image,
+          authorRank: c.users.userBadges?.[0]?.badges?.name || "Member",
+          authorBadges: c.users.userBadges?.slice(0, 3) || [],
+          authorIsVerified: c.users.userBadges?.some(ub => ub.badges.type === 'ACHIEVEMENT') || false,
           content: c.content,
           createdAt: c.createdAt,
           parentId: c.parentId,

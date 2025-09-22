@@ -18,6 +18,7 @@ interface PostModalProps {
       isVerified: boolean
       rank: string
       rankIcon: string
+      badges?: any[]
     }
     content: string
     category: string

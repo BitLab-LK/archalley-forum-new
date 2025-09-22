@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThumbsUp, ThumbsDown, MessageCircle, Globe, Trash2, MoreHorizontal } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { cn } from "@/lib/utils"
+import { PostBadges } from "./post-badges"
 import { useGlobalVoteState } from "@/lib/vote-sync"
 import { activityEventManager } from "@/lib/activity-events"
 import {
@@ -33,6 +34,7 @@ interface TextPostModalProps {
       isVerified: boolean
       rank: string
       rankIcon: string
+      badges?: any[]
     }
     content: string
     category: string
@@ -57,15 +59,15 @@ interface TextPostModalProps {
 
 interface Comment {
   id: string
+  author: string
+  authorId: string
+  authorImage: string
+  authorRank?: string
+  authorBadges?: any[]
+  authorIsVerified?: boolean
   content: string
   createdAt: string
   parentId: string | null
-  author: {
-    id: string
-    name: string
-    image: string
-    rank?: string
-  }
   upvotes: number
   downvotes: number
   userVote?: "up" | "down" | null
@@ -781,26 +783,6 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
     return `${Math.floor(diffInSeconds / 86400)}d`
   }
 
-  // Format rank for display
-  const formatRank = (rank: string) => {
-    if (!rank) return 'Member';
-    return rank.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-  };
-
-  // Get rank color based on rank level
-  const getRankColor = (rank: string) => {
-    const rankColors = {
-      'NEW_MEMBER': 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-      'CONVERSATION_STARTER': 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-      'RISING_STAR': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-      'VISUAL_STORYTELLER': 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-      'VALUED_RESPONDER': 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
-      'COMMUNITY_EXPERT': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
-      'TOP_CONTRIBUTOR': 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
-    };
-    return rankColors[rank as keyof typeof rankColors] || rankColors.NEW_MEMBER;
-  };
-
   const renderComment = (comment: any, depth: number = 0) => {
     const hasReplies = comment.replies && comment.replies.length > 0
     const isExpanded = expandedReplies.has(comment.id)
@@ -823,7 +805,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
           <Avatar className={cn("flex-shrink-0", isNested ? "h-6 w-6" : "h-8 w-8")}>
             <AvatarImage src={comment.authorImage || "/placeholder-user.jpg"} />
             <AvatarFallback className="bg-orange-500 text-white text-xs">
-              {comment.author ? comment.author[0].toUpperCase() : "U"}
+              {comment.author && comment.author.length > 0 ? comment.author[0].toUpperCase() : "U"}
             </AvatarFallback>
           </Avatar>
           
@@ -844,15 +826,6 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                     )}>
                       {comment.author || "Anonymous"}
                     </span>
-                    {comment.authorRank && (
-                      <span className={cn(
-                        "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium",
-                        getRankColor(comment.authorRank),
-                        isNested ? "text-xs" : "text-xs"
-                      )}>
-                        {formatRank(comment.authorRank)}
-                      </span>
-                    )}
                     {isAuthor && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                         Author
@@ -1172,13 +1145,14 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                           </svg>
                         </div>
                       )}
-                      {!post.isAnonymous && post.author.rank && (
-                        <span className={cn(
-                          "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
-                          getRankColor(post.author.rank)
-                        )}>
-                          {formatRank(post.author.rank)}
-                        </span>
+                      {!post.isAnonymous && post.author.badges && post.author.badges.length > 0 && (
+                        <div className="flex-shrink-0">
+                          <PostBadges 
+                            badges={post.author.badges.map ? post.author.badges.map(b => b.badges) : post.author.badges}
+                            maxDisplay={2}
+                            size="xs"
+                          />
+                        </div>
                       )}
                     </div>
                     <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
@@ -1343,13 +1317,14 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                         </svg>
                       </div>
                     )}
-                    {!post.isAnonymous && post.author.rank && (
-                      <span className={cn(
-                        "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium",
-                        getRankColor(post.author.rank)
-                      )}>
-                        {formatRank(post.author.rank)}
-                      </span>
+                    {!post.isAnonymous && post.author.badges && post.author.badges.length > 0 && (
+                      <div className="flex-shrink-0">
+                        <PostBadges 
+                          badges={post.author.badges.map ? post.author.badges.map(b => b.badges) : post.author.badges}
+                          maxDisplay={2}
+                          size="xs"
+                        />
+                      </div>
                     )}
                   </div>
                   <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
