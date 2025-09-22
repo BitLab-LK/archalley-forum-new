@@ -330,6 +330,16 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       formData.append("tags", JSON.stringify(selectedTags))
       formData.append('originalLanguage', detectedLanguage) // Use detected language
       
+      // Log the data being sent for debugging
+      console.log("📦 FormData being sent:", {
+        content: content.trim().substring(0, 100) + "...",
+        categoryId,
+        isAnonymous,
+        tags: selectedTags,
+        originalLanguage: detectedLanguage,
+        uploadedFiles: uploadedFiles.length
+      })
+      
       // CRITICAL: Send AI-suggested categories to backend for immediate multiple category assignment
       if (suggestedCategories && suggestedCategories.length > 0) {
         formData.append('aiSuggestedCategories', JSON.stringify(suggestedCategories))
@@ -379,7 +389,16 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
       // Immediately show success and reset form for instant feedback
       setAiProgress(100)
       setAiStatus("Post created successfully!")
-      toast.success("Post created successfully!")
+      
+      // Show different success messages for image vs text posts
+      const hasImages = uploadedFiles && uploadedFiles.length > 0
+      const successMessage = hasImages 
+        ? `Image post with ${uploadedFiles.length} image${uploadedFiles.length > 1 ? 's' : ''} created successfully!`
+        : "Post created successfully!"
+      
+      toast.success(successMessage, {
+        duration: hasImages ? 4000 : 3000 // Longer duration for image posts
+      })
 
       // Reset form state immediately
       setContent("")
@@ -413,6 +432,19 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
         
         if (error.details?.responseType === 'html') {
           errorMessage = "Authentication error. Please refresh the page and try again."
+        } else if (error.statusCode === 400) {
+          // Handle validation errors more specifically
+          console.error("❌ Validation error details:", error.details)
+          if (error.details && typeof error.details === 'object') {
+            const details = error.details as any
+            if (details.details) {
+              errorMessage = "Validation error: " + JSON.stringify(details.details, null, 2)
+            } else {
+              errorMessage = error.message || "Please check your input and try again."
+            }
+          } else {
+            errorMessage = "Invalid input. Please check your content and try again."
+          }
         } else if (error.statusCode === 503) {
           errorMessage = "Service temporarily unavailable. Please wait a moment and try again."
         } else if (error.statusCode === 502 || error.statusCode === 504) {

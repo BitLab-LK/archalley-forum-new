@@ -14,16 +14,33 @@ export async function GET() {
   }
 }
 
-// POST /api/badges - Award a badge manually (admin only)
+// POST /api/badges - Handle badge operations (admin only for manual awarding, or user badge checking)
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session?.user || session.user.role !== "ADMIN") {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { userId, badgeId } = await request.json()
+    const body = await request.json()
+    
+    // Handle different actions
+    if (body.action === 'checkMyBadges') {
+      // Redirect to proper endpoint for checking user badges
+      const result = await badgeService.checkAndAwardBadges(session.user.id)
+      return NextResponse.json({ 
+        message: `${result.awardedBadges.length} badges awarded`,
+        awardedBadges: result.awardedBadges 
+      })
+    }
+    
+    // Manual badge awarding (admin only)
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    }
+
+    const { userId, badgeId } = body
 
     if (!userId || !badgeId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -37,7 +54,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to award badge" }, { status: 400 })
     }
   } catch (error) {
-    console.error("Error awarding badge:", error)
+    console.error("Error in badges API:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
