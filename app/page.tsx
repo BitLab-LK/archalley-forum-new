@@ -230,7 +230,8 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
           avatar: post.users.image || '/placeholder-user.jpg',
           isVerified: post.users.isVerified,
           rank: primaryBadge?.badges?.name || 'Member',
-          rankIcon: primaryBadge?.badges?.icon || '🔰'
+          rankIcon: primaryBadge?.badges?.icon || '🔰',
+          badges: post.users.userBadges || []
         },
         content: post.content,
         category: post.categories.name,      // Primary category name

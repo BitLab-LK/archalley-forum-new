@@ -32,6 +32,9 @@ export function PostBadges({
   size = 'sm',
   className
 }: PostBadgesProps) {
+  // Debug log to see what badges are being passed
+  console.log('PostBadges DEBUG:', { badges, badgesLength: badges?.length });
+  
   if (!badges || badges.length === 0) return null
 
   // Map size to ProfessionalBadgeSystem's expected sizes
@@ -56,6 +59,8 @@ export function PostBadges({
     badges: badge,
     earnedAt: new Date()
   }))
+
+  console.log('PostBadges converted userBadges:', userBadges);
 
   return (
     <ProfessionalBadgeSystem

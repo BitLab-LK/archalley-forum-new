@@ -852,9 +852,22 @@ export async function POST(request: Request) {
       }
     })
 
-    // Check and award badges after successful post creation (also async)
-    badgeService.checkAndAwardBadges(session.user.id).catch(error => {
-      console.error("Error checking badges:", error)
+    // Check and award badges after successful post creation (async with better error handling)
+    setImmediate(async () => {
+      try {
+        console.log("🏆 Checking badges for user after post creation:", session.user.id)
+        const result = await badgeService.checkAndAwardBadges(session.user.id)
+        
+        if (result.awardedBadges && result.awardedBadges.length > 0) {
+          console.log("✅ Awarded badges:", result.awardedBadges.map(b => b?.badges?.name || 'Unknown Badge'))
+          
+          // In a real-time system, you could broadcast badge updates via Socket.IO here
+          // socket.emit('badge-awarded', { userId: session.user.id, badges: result.awardedBadges })
+        }
+      } catch (error) {
+        console.error("❌ Error checking badges after post creation:", error)
+        // Don't fail the post creation if badge checking fails
+      }
     })
 
     // Send email notifications for mentions in the post

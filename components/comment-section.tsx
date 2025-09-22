@@ -11,7 +11,22 @@ import { Badge } from "@/components/ui/badge"
 import { AuthGuard } from "@/components/auth-guard"
 import { useAuth } from "@/lib/auth-context"
 import { useSocket } from "@/lib/socket-context"
+import { PostBadges } from "@/components/post-badges"
 import { ArrowUp, ArrowDown, Reply, Flag, Award } from "lucide-react"
+
+interface UserBadge {
+  id: string
+  badges: {
+    id: string
+    name: string
+    description: string
+    icon: string
+    color: string
+    level: string
+    type: string
+  }
+  earnedAt: Date
+}
 
 interface Comment {
   id: string
@@ -21,6 +36,7 @@ interface Comment {
     image?: string
     rank: string
     isVerified: boolean
+    badges?: UserBadge[]
   }
   isAnonymous: boolean
   createdAt: string
@@ -196,6 +212,14 @@ export default function CommentSection({ postId, comments: initialComments, canM
                     <Award className="w-3 h-3 mr-1" />
                     Best Answer
                   </Badge>
+                )}
+                {/* User badges */}
+                {!comment.isAnonymous && comment.author?.badges && comment.author.badges.length > 0 && (
+                  <PostBadges 
+                    badges={comment.author.badges.map(b => b.badges)} 
+                    maxDisplay={2} 
+                    size="xs"
+                  />
                 )}
                 <span className="text-xs text-muted-foreground">
                   {new Date(comment.createdAt).toLocaleDateString()}

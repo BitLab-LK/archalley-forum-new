@@ -140,59 +140,79 @@ export class BadgeService {
   }
 
   async checkAndAwardBadges(userId: string) {
-    const userStats = await this.getUserStats(userId)
-    const availableBadges = await this.getAllBadges()
-    const userBadges = await this.getUserBadges(userId)
-    const userBadgeIds = userBadges.map((ub: any) => ub.badgeId)
-    
-    const newlyAwardedBadges = []
-
-    for (const badge of availableBadges) {
-      // Skip if user already has this badge
-      if (userBadgeIds.includes(badge.id)) {
-        continue
-      }
-
-      const criteria = badge.criteria as any
-      let eligible = false
-
-      // Check eligibility based on criteria
-      if (criteria.postsCount && userStats.postsCount >= criteria.postsCount) {
-        eligible = true
-      }
+    try {
+      console.log(`🏆 Starting badge check for user: ${userId}`)
       
-      if (criteria.commentsCount && userStats.commentsCount >= criteria.commentsCount) {
-        eligible = true
-      }
+      const userStats = await this.getUserStats(userId)
+      console.log('📊 User stats:', userStats)
       
-      if (criteria.upvotesReceived && userStats.upvotesReceived >= criteria.upvotesReceived) {
-        eligible = true
-      }
+      const availableBadges = await this.getAllBadges()
+      const userBadges = await this.getUserBadges(userId)
+      const userBadgeIds = userBadges.map((ub: any) => ub.badgeId)
       
-      if (criteria.imagePostsCount && userStats.imagePostsCount >= criteria.imagePostsCount) {
-        eligible = true
-      }
+      console.log(`🎖️ User has ${userBadges.length} existing badges`)
       
-      if (criteria.daysAsActiveMember && userStats.daysAsActiveMember >= criteria.daysAsActiveMember) {
-        eligible = true
-      }
+      const newlyAwardedBadges = []
 
-      // Skip manually awarded badges
-      if (criteria.manuallyAwarded) {
-        eligible = false
-      }
+      for (const badge of availableBadges) {
+        // Skip if user already has this badge
+        if (userBadgeIds.includes(badge.id)) {
+          continue
+        }
 
-      if (eligible) {
-        const result = await this.awardBadge(userId, badge.id, 'system')
-        if (result.success) {
-          newlyAwardedBadges.push(result.userBadge)
+        const criteria = badge.criteria as any
+        let eligible = false
+
+        // Check eligibility based on criteria - improved logic with AND conditions
+        if (criteria.postsCount && userStats.postsCount >= criteria.postsCount) {
+          eligible = true
+        }
+        
+        if (criteria.commentsCount && userStats.commentsCount >= criteria.commentsCount) {
+          eligible = true
+        }
+        
+        if (criteria.upvotesReceived && userStats.upvotesReceived >= criteria.upvotesReceived) {
+          eligible = true
+        }
+        
+        if (criteria.imagePostsCount && userStats.imagePostsCount >= criteria.imagePostsCount) {
+          eligible = true
+        }
+        
+        if (criteria.daysAsActiveMember && userStats.daysAsActiveMember >= criteria.daysAsActiveMember) {
+          eligible = true
+        }
+
+        // Skip manually awarded badges
+        if (criteria.manuallyAwarded) {
+          eligible = false
+        }
+
+        if (eligible) {
+          console.log(`✅ User eligible for badge: ${badge.name}`)
+          const result = await this.awardBadge(userId, badge.id, 'system')
+          if (result.success) {
+            newlyAwardedBadges.push(result.userBadge)
+            console.log(`🎉 Awarded badge: ${badge.name}`)
+          } else {
+            console.warn(`⚠️ Failed to award badge ${badge.name}: ${result.message}`)
+          }
         }
       }
-    }
 
-    return {
-      userStats,
-      awardedBadges: newlyAwardedBadges
+      console.log(`🏆 Badge check completed. Awarded ${newlyAwardedBadges.length} new badges`)
+      
+      return {
+        userStats,
+        awardedBadges: newlyAwardedBadges
+      }
+    } catch (error) {
+      console.error('❌ Error in checkAndAwardBadges:', error)
+      return {
+        userStats: null,
+        awardedBadges: []
+      }
     }
   }
 

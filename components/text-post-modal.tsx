@@ -783,6 +783,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
 
   // Format rank for display
   const formatRank = (rank: string) => {
+    if (!rank) return 'Member';
     return rank.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
   };
 

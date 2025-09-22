@@ -43,7 +43,18 @@ export async function GET(request: NextRequest) {
       where: { postId },
       orderBy: { createdAt: "asc" },
       include: {
-        users: { select: { name: true, image: true, id: true } }
+        users: { 
+          select: { 
+            name: true, 
+            image: true, 
+            id: true,
+            userBadges: {
+              take: 3,
+              include: { badges: true },
+              orderBy: { earnedAt: 'desc' }
+            }
+          } 
+        }
       }
     })
     
@@ -69,7 +80,13 @@ export async function GET(request: NextRequest) {
         
         return {
           id: c.id,
-          author: c.users.name,
+          author: {
+            name: c.users.name,
+            image: c.users.image,
+            rank: c.users.userBadges?.[0]?.badges?.name || "Member",
+            isVerified: c.users.userBadges?.some(ub => ub.badges.type === 'ACHIEVEMENT') || false,
+            badges: c.users.userBadges?.slice(0, 3) || []
+          },
           authorId: c.users.id,
           authorImage: c.users.image,
           content: c.content,
