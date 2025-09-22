@@ -135,6 +135,9 @@ export default function HomePageInteractive({
   // Loading state - starts false since we have initial SSR data
   const [isLoading, setIsLoading] = useState(false)
   
+  // Track if we've attempted fallback fetch to prevent infinite loops
+  const [fallbackFetchAttempted, setFallbackFetchAttempted] = useState(false)
+  
   // Hydration tracking - ensures client-side logic only runs after hydration
   const hasHydrated = useIsHydrated()
   
@@ -489,19 +492,21 @@ export default function HomePageInteractive({
    * Ensures the homepage still functions even without server-side rendering
    */
   useEffect(() => {
-    // Only fetch if we have no initial posts AND we've hydrated AND we're not already loading
+    // Only fetch if we have no initial posts AND we've hydrated AND we haven't attempted fallback yet
     const shouldFallbackFetch = hasHydrated && 
                                (!initialPosts || initialPosts.length === 0) && 
                                posts.length === 0 && 
-                               !isLoading
+                               !isLoading &&
+                               !fallbackFetchAttempted
     
     if (shouldFallbackFetch) {
       console.log("🔄 No initial posts from SSR, attempting client-side fallback fetch...")
+      setFallbackFetchAttempted(true)
       fetchPosts(1).catch(error => {
         console.error("❌ Client-side fallback fetch failed:", error)
       })
     }
-  }, [hasHydrated, initialPosts, posts.length, isLoading, fetchPosts])
+  }, [hasHydrated, initialPosts, isLoading, fallbackFetchAttempted, fetchPosts])
 
   /**
    * Page change handler for search params
@@ -789,7 +794,6 @@ export default function HomePageInteractive({
             {/* Handle empty state when no posts are available */}
             {combinedPosts.length === 0 && !isLoading ? (
               <div className="text-center py-12">
-                <div className="text-6xl mb-4">📝</div>
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                   No posts yet
                 </h3>

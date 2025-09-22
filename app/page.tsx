@@ -210,7 +210,7 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
     const formattedPosts: Post[] = posts.map((post: any) => {
       const voteCount = voteCountMap.get(post.id) || { upvotes: 0, downvotes: 0 }
       const images = attachmentMap.get(post.id) || []
-      const primaryBadge = getPrimaryBadge(post.users.userBadges || [])
+      const primaryBadge = getPrimaryBadge(post.users?.userBadges || [])
 
       // Get multiple categories for this post, avoiding duplicates
       const postCategories = (post.categoryIds || [])
@@ -225,24 +225,24 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
       return {
         id: post.id,
         author: {
-          id: post.users.id,
-          name: post.isAnonymous ? "Anonymous" : (post.users.name || 'Anonymous'),
-          avatar: post.users.image || '/placeholder-user.jpg',
-          isVerified: post.users.isVerified,
+          id: post.users?.id || '',
+          name: post.isAnonymous ? "Anonymous" : (post.users?.name || 'Anonymous'),
+          avatar: post.users?.image || '/placeholder-user.jpg',
+          isVerified: post.users?.isVerified || false,
           rank: primaryBadge?.badges?.name || 'Member',
           rankIcon: primaryBadge?.badges?.icon || '🔰',
-          badges: post.users.userBadges || []
+          badges: post.users?.userBadges || []
         },
-        content: post.content,
-        category: post.categories.name,      // Primary category name
-        categories: post.categories,         // Primary category object  
+        content: post.content || '',
+        category: post.categories?.name || 'General',      // Primary category name with fallback
+        categories: post.categories || { id: '', name: 'General', color: '#gray', slug: 'general' },         // Primary category object with fallback
         allCategories: uniqueCategories,     // Multiple unique categories
         aiCategories: post.aiCategories || [], // AI-suggested category names
-        isAnonymous: post.isAnonymous,
-        isPinned: post.isPinned,
+        isAnonymous: post.isAnonymous || false,
+        isPinned: post.isPinned || false,
         upvotes: voteCount.upvotes,
         downvotes: voteCount.downvotes,
-        comments: post._count.Comment,
+        comments: post._count?.Comment || 0,
         timeAgo: timeAgo(post.createdAt),
         images: images.length > 0 ? images : undefined
       }
