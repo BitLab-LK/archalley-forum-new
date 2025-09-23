@@ -476,96 +476,196 @@ export async function POST(request: Request) {
       )
     }
 
-    // OPTIMIZATION: Use frontend AI classification but enhance with background processing
-    // For non-English content, do backend AI classification immediately
+    // ENHANCED OPTIMIZATION: Use frontend AI classification but enhance with background processing
+    // For non-English content, do comprehensive backend AI classification immediately
     
     let quickAiSuggestion: any
     
-    // If content is not in English, do proper AI classification on backend
+    // Enhanced logic for non-English content categorization
     if (data.originalLanguage && data.originalLanguage.toLowerCase() !== 'english') {
-      console.log(`🌍 Non-English content detected (${data.originalLanguage}), doing backend AI classification...`)
+      console.log(`🌍 Non-English content detected (${data.originalLanguage}), performing enhanced backend AI classification...`)
       try {
         const categoryNames = allCategories.map(cat => cat.name)
+        console.log("📋 Available category names for AI:", categoryNames)
+        
+        // Use the enhanced AI classification service
         const aiClassification = await classifyPost(data.content, categoryNames)
         
-        console.log("🤖 Backend AI classification result:", aiClassification)
+        console.log("🤖 Enhanced backend AI classification result:", {
+          originalLanguage: aiClassification.originalLanguage,
+          detectedCategories: aiClassification.categories,
+          primaryCategory: aiClassification.category,
+          confidence: aiClassification.confidence,
+          translatedContent: aiClassification.translatedContent?.substring(0, 100) + "..."
+        })
+        
+        // Enhanced AI suggestion with better categorization
+        quickAiSuggestion = {
+          categories: aiClassification.categories || [aiClassification.category || primaryCategory.name],
+          confidence: aiClassification.confidence,
+          reasoning: `Enhanced backend AI classification for ${data.originalLanguage} content (confidence: ${aiClassification.confidence})`,
+          translatedContent: aiClassification.translatedContent,
+          originalLanguage: aiClassification.originalLanguage,
+          primaryCategory: aiClassification.category || primaryCategory.name
+        }
+        
+        // Ensure we have at least the primary category if AI failed
+        if (!quickAiSuggestion.categories || quickAiSuggestion.categories.length === 0) {
+          quickAiSuggestion.categories = [primaryCategory.name]
+        }
+        
+        console.log("✅ Enhanced AI suggestion prepared:", quickAiSuggestion)
+        
+      } catch (aiError) {
+        console.error("❌ Enhanced backend AI classification failed:", aiError)
+        // Enhanced fallback with better category detection
+        const fallbackCategories = [primaryCategory.name]
+        
+        // Try to detect additional categories based on content keywords for non-English content
+        const contentLower = data.content.toLowerCase()
+        const additionalCategories: string[] = []
+        
+        // Enhanced keyword detection for common categories
+        if (contentLower.includes('පරිසර') || contentLower.includes('සැලසුම') || contentLower.includes('design') || 
+            contentLower.includes('architecture') || contentLower.includes('ගෘහ') || contentLower.includes('building')) {
+          const designCat = allCategories.find(cat => cat.name.toLowerCase() === 'design')
+          if (designCat && !fallbackCategories.includes(designCat.name)) {
+            additionalCategories.push(designCat.name)
+          }
+        }
+        
+        if (contentLower.includes('ව්‍යාපාර') || contentLower.includes('business') || contentLower.includes('කර්මාන්ත') ||
+            contentLower.includes('company') || contentLower.includes('සමාගම')) {
+          const businessCat = allCategories.find(cat => cat.name.toLowerCase() === 'business')
+          if (businessCat && !fallbackCategories.includes(businessCat.name)) {
+            additionalCategories.push(businessCat.name)
+          }
+        }
+        
+        if (contentLower.includes('අධ්‍යාපන') || contentLower.includes('education') || contentLower.includes('ඉගෙනීම') ||
+            contentLower.includes('learning') || contentLower.includes('පාසල') || contentLower.includes('university')) {
+          const academicCat = allCategories.find(cat => cat.name.toLowerCase() === 'academic')
+          if (academicCat && !fallbackCategories.includes(academicCat.name)) {
+            additionalCategories.push(academicCat.name)
+          }
+        }
+        
+        if (contentLower.includes('වෘත්තීය') || contentLower.includes('career') || contentLower.includes('රැකියා') ||
+            contentLower.includes('job') || contentLower.includes('කාර්යාල')) {
+          const careerCat = allCategories.find(cat => cat.name.toLowerCase() === 'career')
+          if (careerCat && !fallbackCategories.includes(careerCat.name)) {
+            additionalCategories.push(careerCat.name)
+          }
+        }
+        
+        // Add detected additional categories
+        fallbackCategories.push(...additionalCategories)
         
         quickAiSuggestion = {
-          categories: aiClassification.categories || [aiClassification.category],
-          confidence: aiClassification.confidence,
-          reasoning: `Backend AI translation and classification for ${data.originalLanguage}`,
-          translatedContent: aiClassification.translatedContent,
-          originalLanguage: aiClassification.originalLanguage
+          categories: fallbackCategories,
+          confidence: additionalCategories.length > 0 ? 0.6 : 0.3,
+          reasoning: `Enhanced fallback categorization with keyword detection for ${data.originalLanguage} content`,
+          primaryCategory: primaryCategory.name
         }
-      } catch (aiError) {
-        console.error("❌ Backend AI classification failed:", aiError)
-        // Fallback to frontend selection
-        quickAiSuggestion = {
-          categories: [primaryCategory.name],
-          confidence: 0.5,
-          reasoning: "Frontend selection (backend AI failed)"
-        }
+        
+        console.log("🔄 Enhanced fallback suggestion:", quickAiSuggestion)
       }
     } else {
-      // For English content, use the frontend classification
+      // For English content, use the frontend classification with potential enhancement
+      const frontendCategories = aiSuggestedCategories && aiSuggestedCategories.length > 0 
+        ? aiSuggestedCategories 
+        : [primaryCategory.name]
+        
       quickAiSuggestion = {
-        categories: [primaryCategory.name],
+        categories: frontendCategories,
         confidence: 0.9, // High confidence since frontend AI classified it
-        reasoning: "Frontend AI classification with backend enhancement"
+        reasoning: "Frontend AI classification with backend validation",
+        primaryCategory: primaryCategory.name
       }
+      
+      console.log("🎯 English content using frontend classification:", quickAiSuggestion)
     }
 
-    // Create post with quick AI categories - optimization for speed
+    // Create post with enhanced AI categories - optimization for speed and accuracy
     const result = await prisma.$transaction(async (tx) => {
-      // Convert AI-suggested category names to category IDs immediately
+      // Enhanced category mapping: Convert AI-suggested category names to category IDs immediately
       const aiCategoryIds: string[] = []
-      if (aiSuggestedCategories && aiSuggestedCategories.length > 0) {
-        for (const categoryName of aiSuggestedCategories) {
+      const enhancedCategories = quickAiSuggestion.categories || []
+      
+      console.log("🎯 Processing enhanced AI categories:", enhancedCategories)
+      
+      // Map all AI-suggested categories to IDs
+      if (enhancedCategories && enhancedCategories.length > 0) {
+        for (const categoryName of enhancedCategories) {
           const category = allCategories.find(cat => 
             cat.name.toLowerCase() === categoryName.toLowerCase()
           )
           if (category && !aiCategoryIds.includes(category.id)) {
             aiCategoryIds.push(category.id)
-            console.log(`✅ Mapped AI category "${categoryName}" to ID: ${category.id}`)
+            console.log(`✅ Enhanced mapping: "${categoryName}" → ID: ${category.id}`)
+          } else {
+            console.log(`⚠️ Category not found or already included: "${categoryName}"`)
           }
         }
       }
       
-      // Combine primary category with AI-suggested categories for immediate assignment
-      const initialCategoryIds = [data.categoryId]
+      // Enhanced category assignment: Combine primary category with AI-suggested categories
+      const enhancedCategoryIds = [data.categoryId] // Start with primary category
+      
+      // Add AI-detected categories that aren't the primary category
       aiCategoryIds.forEach(id => {
-        if (!initialCategoryIds.includes(id)) {
-          initialCategoryIds.push(id)
+        if (!enhancedCategoryIds.includes(id)) {
+          enhancedCategoryIds.push(id)
         }
       })
       
-      console.log("🎯 Creating post with multiple categories:", {
+      // Also include any frontend AI suggestions that weren't already processed
+      if (aiSuggestedCategories && aiSuggestedCategories.length > 0) {
+        for (const categoryName of aiSuggestedCategories) {
+          const category = allCategories.find((cat: { id: string; name: string }) => 
+            cat.name.toLowerCase() === categoryName.toLowerCase()
+          )
+          if (category && !enhancedCategoryIds.includes(category.id)) {
+            enhancedCategoryIds.push(category.id)
+            console.log(`✅ Frontend AI category added: "${categoryName}" → ID: ${category.id}`)
+          }
+        }
+      }
+      
+      // Ensure we don't exceed reasonable limits (max 4 categories)
+      const finalCategoryIds = enhancedCategoryIds.slice(0, 4)
+      
+      console.log("🎯 Creating post with enhanced multiple categories:", {
         primary: data.categoryId,
-        all: initialCategoryIds,
-        aiSuggested: aiSuggestedCategories
+        all: finalCategoryIds,
+        aiSuggested: enhancedCategories,
+        frontendAI: aiSuggestedCategories,
+        confidence: quickAiSuggestion.confidence
       })
       
-      // Create the post immediately with minimal processing
+      // Create the post with enhanced categorization
       const newPost = await tx.post.create({
         data: {
           id: crypto.randomUUID(),
           content: data.content, // Keep original language
           authorId: session.user.id,
           categoryId: data.categoryId, // Primary category
-          categoryIds: initialCategoryIds, // Start with all detected categories
+          categoryIds: finalCategoryIds, // Enhanced multiple categories
           isAnonymous: data.isAnonymous,
           aiTags: data.tags,
-          aiCategory: primaryCategory.name, // Use primary as initial AI category
-          aiCategories: aiSuggestedCategories.filter(cat => cat.toLowerCase() !== primaryCategory.name.toLowerCase()), // Exclude primary category from AI categories
+          aiCategory: quickAiSuggestion.primaryCategory || primaryCategory.name, // Enhanced primary AI category
+          aiCategories: enhancedCategories.filter((cat: string) => 
+            cat.toLowerCase() !== primaryCategory.name.toLowerCase()
+          ), // Enhanced AI categories (excluding primary)
           originalLanguage: data.originalLanguage,
-          translatedContent: data.content, // Will be translated in background if needed
+          translatedContent: quickAiSuggestion.translatedContent || data.content, // Use enhanced translation if available
           updatedAt: new Date(),
         },
       })
 
       // Update category post counts for all assigned categories
       await Promise.all(
-        initialCategoryIds.map(categoryId =>
+        finalCategoryIds.map(categoryId =>
           tx.categories.update({
             where: { id: categoryId },
             data: { postCount: { increment: 1 } }
@@ -575,7 +675,7 @@ export async function POST(request: Request) {
         )
       )
       
-      console.log("📊 Updated post counts for categories:", initialCategoryIds)
+      console.log("📊 Updated post counts for enhanced categories:", finalCategoryIds)
 
       // CRITICAL FIX: Create attachments BEFORE fetching the complete post
       // Handle image uploads if any - keep this fast
@@ -657,7 +757,7 @@ export async function POST(request: Request) {
 
       // Get all assigned categories for immediate response
       const assignedCategories = await tx.categories.findMany({
-        where: { id: { in: initialCategoryIds } },
+        where: { id: { in: finalCategoryIds } },
         select: { id: true, name: true, color: true, slug: true }
       })
 
@@ -667,7 +767,7 @@ export async function POST(request: Request) {
         attachments: completePost?.attachments || [],
         // Add all assigned categories for immediate response
         allCategories: assignedCategories,
-        categoryIds: initialCategoryIds, // Include the categoryIds array
+        categoryIds: finalCategoryIds, // Include the categoryIds array
         // Add AI categorization info
         aiCategorization: {
           suggestedCategories: aiSuggestedCategories,

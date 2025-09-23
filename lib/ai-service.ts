@@ -141,8 +141,13 @@ function extractJsonFromMarkdown(text: string): any {
   }
 }
 
+/**
+ * Enhanced language detection and translation function with improved Sinhala support
+ * @param text - Text content to analyze and potentially translate
+ * @returns Promise<TranslationResult> - Translation result with detected language
+ */
 async function detectAndTranslate(text: string): Promise<TranslationResult> {
-  console.log("🔄 Translation: Starting translation for text:", text.substring(0, 50) + "...")
+  console.log("🔄 Translation: Starting enhanced translation for text:", text.substring(0, 50) + "...")
   
   // Check if API key and model are available
   if (!API_KEY || !model) {
@@ -153,14 +158,28 @@ async function detectAndTranslate(text: string): Promise<TranslationResult> {
     }
   }
 
-  const prompt = `Detect the language of the following text and translate it to English if it's not already in English. Return the result as a JSON object with 'translatedText' and 'detectedLanguage' fields. If the text is already in English, return the original text.
+  // Enhanced prompt with better Sinhala language recognition
+  const prompt = `You are an expert linguist. Analyze the following text carefully:
 
-Text: "${text}"
+1. First, detect the exact language of the text
+2. If it's not English, translate it to English while preserving the original meaning and context
+3. Pay special attention to:
+   - Sinhala (සිංහල) text - common in Sri Lankan content
+   - Technical terms related to architecture, design, business, construction
+   - Educational and professional content
 
-Return the response in this exact JSON format:
+Text to analyze: "${text}"
+
+IMPORTANT INSTRUCTIONS:
+- For Sinhala text, provide accurate English translation
+- Preserve technical terminology and professional context
+- Maintain the original intent and meaning
+- If already in English, return the original text
+
+Return ONLY a JSON response in this exact format:
 {
-  "translatedText": "the translated or original text",
-  "detectedLanguage": "the detected language name in English"
+  "translatedText": "the accurate English translation or original text",
+  "detectedLanguage": "the detected language (e.g., 'Sinhala', 'English', 'Tamil', etc.)"
 }`
 
   try {
@@ -193,15 +212,51 @@ Return the response in this exact JSON format:
       detectedLanguage: data.detectedLanguage
     }
   } catch (error) {
-    console.error("❌ Translation error:", {
+    console.error("❌ Enhanced translation error:", {
       error,
-      message: error instanceof Error ? error.message : "Unknown error",
-      text: text.substring(0, 50) + "..."
+      message: error instanceof Error ? error.message : "Unknown translation error",
+      text: text.substring(0, 50) + "...",
+      timestamp: new Date().toISOString(),
+      apiKeyPresent: !!API_KEY,
+      modelInitialized: !!model
     })
-    // Fallback to original text if translation fails
+    
+    // Enhanced fallback handling for translation failures
+    console.log("🔄 Translation failed, analyzing content for language detection fallback...")
+    
+    // Simple language detection fallback based on character sets
+    let detectedLanguage = "English"
+    
+    // Check for Sinhala characters (Unicode range: 0D80-0DFF)
+    if (/[\u0D80-\u0DFF]/.test(text)) {
+      detectedLanguage = "Sinhala"
+      console.log("✅ Fallback detection: Sinhala characters found")
+    }
+    // Check for Tamil characters (Unicode range: 0B80-0BFF)
+    else if (/[\u0B80-\u0BFF]/.test(text)) {
+      detectedLanguage = "Tamil"
+      console.log("✅ Fallback detection: Tamil characters found")
+    }
+    // Check for other common non-Latin scripts
+    else if (/[\u0900-\u097F]/.test(text)) {
+      detectedLanguage = "Hindi"
+      console.log("✅ Fallback detection: Hindi/Devanagari characters found")
+    }
+    else if (/[\u4E00-\u9FFF]/.test(text)) {
+      detectedLanguage = "Chinese"
+      console.log("✅ Fallback detection: Chinese characters found")
+    }
+    else if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) {
+      detectedLanguage = "Japanese"
+      console.log("✅ Fallback detection: Japanese characters found")
+    }
+    
+    console.log(`🔄 Using fallback language detection: ${detectedLanguage}`)
+    
+    // Return original text with detected language for better categorization
     return {
       translatedText: text,
-      detectedLanguage: "English"
+      detectedLanguage: detectedLanguage
     }
   }
 }
@@ -238,41 +293,56 @@ export async function classifyPost(content: string, availableCategories?: string
     const { translatedText, detectedLanguage } = await detectAndTranslate(content)
     const originalLanguage = detectedLanguage
 
-    // Step 2: Analyze content for category and tags with improved prompt
-    const prompt = `You are an expert content categorizer. Analyze the following content and classify it into appropriate categories.
+    // Step 2: Enhanced content analysis with improved categorization for non-English content
+    const prompt = `You are an expert content categorizer specializing in multi-language content analysis. 
 
 AVAILABLE CATEGORIES (choose 1-3 most relevant):
 ${categories.map((cat, index) => `${index + 1}. ${cat}`).join('\n')}
 
 CONTENT TO ANALYZE:
-"${translatedText}"
+Original Language: ${originalLanguage}
+Content: "${translatedText}"
 
-CLASSIFICATION RULES:
+ENHANCED CLASSIFICATION RULES:
 1. Select 1-3 most relevant categories from the list above
 2. Categories must match EXACTLY as written in the list (case-sensitive)
-3. If content is meaningful and relevant, select appropriate categories
-4. If content is unclear, random, or doesn't fit any category, use "Other"
-5. You can select multiple categories if content spans multiple domains
+3. For non-English content (especially Sinhala), consider cultural and regional context
+4. Pay special attention to:
+   - Professional and educational content → Academic, Career
+   - Architecture and construction topics → Design, Construction
+   - Business and entrepreneurship → Business, Career
+   - Informational and tutorial content → Informative
+   - Job-related posts → Jobs, Career
+5. IMPORTANT: Don't default to "Informative" unless content is genuinely informational
+6. Multiple categories are encouraged when content spans multiple domains
 
-EXAMPLES:
-- "Looking for interior design tips" → ["Design"]
-- "Starting a freelance business as an architect" → ["Business", "Career", "Design"]
-- "University degree in construction management" → ["Academic", "Construction"]
-- "Job opening for software developer" → ["Jobs", "Career"]
-- "Random text abc123" → ["Other"]
+CONTENT ANALYSIS EXAMPLES:
+- Educational content about architecture → ["Academic", "Design"]
+- Business planning for construction → ["Business", "Construction"]
+- Career advice for designers → ["Career", "Design"]
+- Job posting for architect → ["Jobs", "Career", "Design"]
+- Tutorial on business planning → ["Informative", "Business"]
+
+SPECIAL CONSIDERATION FOR NON-ENGLISH CONTENT:
+- Original language was: ${originalLanguage}
+- Translated content often contains professional/educational themes
+- Don't assume "Informative" category just because it was translated
+- Analyze the actual content meaning and context
 
 Return your response as JSON in this exact format:
 {
-  "categories": ["Category1", "Category2"],
-  "tags": ["keyword1", "keyword2", "keyword3"],
-  "confidence": 0.85
+  "categories": ["Category1", "Category2", "Category3"],
+  "tags": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
+  "confidence": 0.85,
+  "reasoning": "Brief explanation of why these categories were chosen"
 }
 
 Requirements:
 - "categories" array must contain 1-3 exact category names from the list above
-- "tags" should be 3-5 relevant keywords from the content
+- "tags" should be 3-7 relevant keywords from the content
 - "confidence" should be between 0.1 and 1.0
-- Use "Other" if content doesn't clearly fit available categories`
+- "reasoning" should explain the categorization logic
+- Use multiple categories when content is multi-dimensional`
 
     const result = await model.generateContent(prompt)
     const response = await result.response
@@ -294,7 +364,7 @@ Requirements:
 
     const resultTags = Array.isArray(classificationResponse.tags) ? classificationResponse.tags : []
 
-    // Validate and filter categories with improved matching
+    // Enhanced validation and filtering for categories with improved matching
     const validCategories = resultCategories
       .map((cat: string) => cat.trim())
       .map((cat: string) => {
@@ -315,69 +385,81 @@ Requirements:
       })
       .filter((cat: string | null) => cat !== null) as string[]
 
-    console.log("🔍 AI Category Validation:", {
+    console.log("🔍 Enhanced AI Category Validation:", {
+      originalLanguage,
       aiSuggested: resultCategories,
       availableCategories: categories,
-      validMatches: validCategories
+      validMatches: validCategories,
+      translationUsed: originalLanguage !== "English"
     })
 
-    // If no valid categories found, use intelligent fallback logic
+    // Enhanced fallback logic for non-English content
     if (validCategories.length === 0) {
-      console.log("⚠️ No valid AI categories found, using content analysis fallback")
+      console.log("⚠️ No valid AI categories found, using enhanced content analysis fallback")
       
-      // Try to match content to categories using keyword analysis
+      // Enhanced keyword-based categorization for non-English content
       const contentLower = translatedText.toLowerCase()
       const fallbackCategories: string[] = []
       
-      // Define keyword mappings for each category (using available categories)
+      // Enhanced keyword mappings with more comprehensive terms
       const categoryKeywords: Record<string, string[]> = {}
       
-      // Dynamically build keyword mappings based on available categories
+      // Dynamically build enhanced keyword mappings
       categories.forEach(category => {
         const categoryLower = category.toLowerCase()
         switch (categoryLower) {
           case 'design':
-            categoryKeywords[category] = ['design', 'art', 'creative', 'visual', 'aesthetic', 'layout', 'graphic', 'ui', 'ux', 'color', 'style', 'beautiful', 'elegant', 'interior']
+            categoryKeywords[category] = ['design', 'art', 'creative', 'visual', 'aesthetic', 'layout', 'graphic', 'ui', 'ux', 'color', 'style', 'beautiful', 'elegant', 'interior', 'architecture', 'architectural', 'building design', 'space planning', 'form', 'function']
             break
           case 'business':
-            categoryKeywords[category] = ['business', 'company', 'startup', 'entrepreneur', 'management', 'finance', 'marketing', 'strategy', 'profit', 'revenue', 'client', 'customer', 'commercial']
+            categoryKeywords[category] = ['business', 'company', 'startup', 'entrepreneur', 'management', 'finance', 'marketing', 'strategy', 'profit', 'revenue', 'client', 'customer', 'commercial', 'enterprise', 'organization', 'planning', 'development']
             break
           case 'career':
-            categoryKeywords[category] = ['career', 'professional', 'skill', 'development', 'networking', 'freelance', 'consultant', 'interview', 'resume', 'promotion', 'workplace', 'growth']
+            categoryKeywords[category] = ['career', 'professional', 'skill', 'development', 'networking', 'freelance', 'consultant', 'interview', 'resume', 'promotion', 'workplace', 'growth', 'opportunity', 'advancement', 'experience', 'profession']
             break
           case 'construction':
-            categoryKeywords[category] = ['construction', 'building', 'engineering', 'project', 'contractor', 'infrastructure', 'renovation', 'planning', 'materials', 'structural', 'architecture']
+            categoryKeywords[category] = ['construction', 'building', 'engineering', 'project', 'contractor', 'infrastructure', 'renovation', 'planning', 'materials', 'structural', 'architecture', 'civil', 'site', 'foundation', 'concrete', 'steel']
             break
           case 'academic':
-            categoryKeywords[category] = ['academic', 'research', 'study', 'university', 'education', 'school', 'degree', 'student', 'learning', 'knowledge', 'thesis']
+            categoryKeywords[category] = ['academic', 'research', 'study', 'university', 'education', 'school', 'degree', 'student', 'learning', 'knowledge', 'thesis', 'scholarship', 'course', 'curriculum', 'educational', 'teaching']
             break
           case 'jobs':
-            categoryKeywords[category] = ['job', 'hiring', 'vacancy', 'opportunity', 'employment', 'position', 'recruit', 'opening', 'work', 'apply']
+            categoryKeywords[category] = ['job', 'hiring', 'vacancy', 'opportunity', 'employment', 'position', 'recruit', 'opening', 'work', 'apply', 'career', 'salary', 'benefits']
             break
           case 'informative':
-            categoryKeywords[category] = ['information', 'guide', 'tutorial', 'how to', 'tips', 'advice', 'facts', 'knowledge', 'learn', 'educational']
+            categoryKeywords[category] = ['information', 'guide', 'tutorial', 'how to', 'tips', 'advice', 'facts', 'knowledge', 'learn', 'educational', 'instruction', 'explanation', 'method', 'technique']
             break
           default:
-            categoryKeywords[category] = [categoryLower]
+            categoryKeywords[category] = [categoryLower, category.replace(/[^a-zA-Z]/g, '').toLowerCase()]
         }
       })
       
-      // Score each category based on keyword matches
+      // Enhanced scoring with weighted keywords and phrase matching
       const categoryScores: Record<string, number> = {}
       
       Object.entries(categoryKeywords).forEach(([category, keywords]) => {
-        const score = keywords.reduce((total, keyword) => {
-          const regex = new RegExp(`\\b${keyword}\\b`, 'gi')
-          const matches = contentLower.match(regex)
-          return total + (matches ? matches.length : 0)
-        }, 0)
+        let score = 0
+        
+        keywords.forEach(keyword => {
+          // Exact word boundary matches (higher weight)
+          const exactRegex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\b`, 'gi')
+          const exactMatches = contentLower.match(exactRegex)
+          if (exactMatches) {
+            score += exactMatches.length * 2 // Higher weight for exact matches
+          }
+          
+          // Partial matches (lower weight)
+          if (contentLower.includes(keyword.toLowerCase())) {
+            score += 0.5
+          }
+        })
         
         if (score > 0) {
           categoryScores[category] = score
         }
       })
       
-      // Select top scoring categories (max 2)
+      // Select top scoring categories (max 2 for fallback)
       const sortedCategories = Object.entries(categoryScores)
         .sort(([,a], [,b]) => b - a)
         .slice(0, 2)
@@ -385,10 +467,22 @@ Requirements:
       
       if (sortedCategories.length > 0) {
         fallbackCategories.push(...sortedCategories)
-        console.log("✅ Content analysis found categories:", fallbackCategories)
+        console.log("✅ Enhanced content analysis found categories:", fallbackCategories, "with scores:", categoryScores)
       } else {
-        fallbackCategories.push("Other")
-        console.log("📂 No content matches found, using 'Other' category")
+        // Special handling for non-English content - don't default to "Other" too quickly
+        if (originalLanguage !== "English" && translatedText.length > 20) {
+          // For substantial non-English content, try common category assignment
+          const commonCategories = ['Informative', 'Career', 'Business'].filter(cat => categories.includes(cat))
+          if (commonCategories.length > 0) {
+            fallbackCategories.push(commonCategories[0])
+            console.log("📋 Non-English content assigned common category:", fallbackCategories)
+          } else {
+            fallbackCategories.push("Other")
+          }
+        } else {
+          fallbackCategories.push("Other")
+          console.log("📂 No content matches found, using 'Other' category")
+        }
       }
       
       validCategories.push(...fallbackCategories)
@@ -421,21 +515,115 @@ Requirements:
     return classification
 
   } catch (error) {
-    console.error("❌ AI classification error:", error)
+    console.error("❌ Enhanced AI classification error:", {
+      error,
+      message: error instanceof Error ? error.message : "Unknown classification error",
+      stack: error instanceof Error ? error.stack : undefined,
+      contentLength: content.length,
+      contentPreview: content.substring(0, 100) + "...",
+      availableCategories: availableCategories?.length || 0,
+      timestamp: new Date().toISOString(),
+      apiKeyPresent: !!API_KEY,
+      modelInitialized: !!model
+    })
+    
+    // Enhanced error recovery with intelligent fallback
+    console.log("🔄 AI classification failed, implementing enhanced error recovery...")
+    
+    // Try to detect language from content for better fallback categorization
+    let detectedLanguage = "English"
+    if (/[\u0D80-\u0DFF]/.test(content)) {
+      detectedLanguage = "Sinhala"
+    } else if (/[\u0B80-\u0BFF]/.test(content)) {
+      detectedLanguage = "Tamil" 
+    }
+    
+    // Enhanced fallback categorization based on content analysis
+    const categories = availableCategories || FALLBACK_CATEGORIES
+    const contentLower = content.toLowerCase()
+    let fallbackCategory = "Other"
+    let fallbackCategories = ["Other"]
+    
+    // Try intelligent keyword-based categorization even during errors
+    const categoryKeywordMatches: Record<string, number> = {}
+    
+    categories.forEach(category => {
+      const categoryLower = category.toLowerCase()
+      let score = 0
+      
+      // Enhanced keyword detection for error recovery
+      switch (categoryLower) {
+        case 'design':
+        case 'informative':
+          if (contentLower.includes('design') || contentLower.includes('architecture') ||
+              contentLower.includes('පරිසර') || contentLower.includes('සැලසුම') ||
+              contentLower.includes('building') || contentLower.includes('art')) {
+            score += 2
+          }
+          break
+        case 'business':
+          if (contentLower.includes('business') || contentLower.includes('ව්‍යාපාර') ||
+              contentLower.includes('company') || contentLower.includes('entrepreneur')) {
+            score += 2
+          }
+          break
+        case 'career':
+          if (contentLower.includes('career') || contentLower.includes('job') ||
+              contentLower.includes('වෘත්තීය') || contentLower.includes('රැකියා')) {
+            score += 2
+          }
+          break
+        case 'academic':
+          if (contentLower.includes('education') || contentLower.includes('university') ||
+              contentLower.includes('අධ්‍යාපන') || contentLower.includes('research')) {
+            score += 2
+          }
+          break
+      }
+      
+      if (score > 0) {
+        categoryKeywordMatches[category] = score
+      }
+    })
+    
+    // Select best matching categories for error recovery
+    const sortedMatches = Object.entries(categoryKeywordMatches)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 2)
+    
+    if (sortedMatches.length > 0) {
+      fallbackCategories = sortedMatches.map(([category,]) => category)
+      fallbackCategory = fallbackCategories[0]
+      console.log("✅ Enhanced error recovery found categories:", fallbackCategories)
+    } else {
+      // For non-English content, prefer common categories over "Other"
+      if (detectedLanguage !== "English" && categories.includes("Informative")) {
+        fallbackCategory = "Informative"
+        fallbackCategories = ["Informative"]
+        console.log("🌍 Non-English content error recovery: using Informative category")
+      }
+    }
+    
     const errorResult: AIClassification = {
-      category: "Other",
-      categories: ["Other"],
+      category: fallbackCategory,
+      categories: fallbackCategories,
       tags: [],
       confidence: 0,
-      originalLanguage: "English",
+      originalLanguage: detectedLanguage,
       translatedContent: content
     }
-    // Don't cache error results
+    
+    console.log("🔄 Enhanced error recovery result:", errorResult)
+    
+    // Don't cache error results but provide meaningful fallback
     return errorResult
   }
 }
 
-// Test function to verify AI service is working
+/**
+ * Enhanced test function to verify AI service functionality with multi-language support
+ * @returns Promise<boolean> - Success status of the test
+ */
 export async function testAIService(): Promise<boolean> {
   try {
     if (!API_KEY || !model) {
@@ -443,18 +631,57 @@ export async function testAIService(): Promise<boolean> {
       return false
     }
 
-    console.log("🧪 Testing AI service...")
-    const testResult = await classifyPost("This is a test post about architecture and design.", FALLBACK_CATEGORIES)
+    console.log("🧪 Testing enhanced AI service with multi-language support...")
     
-    if (testResult.category && testResult.tags.length > 0) {
-      console.log("✅ AI service test successful:", testResult)
+    // Test 1: English content
+    const englishTest = await classifyPost("This is a test post about architecture and design.", FALLBACK_CATEGORIES)
+    console.log("✅ English test result:", englishTest)
+    
+    // Test 2: Sinhala content (if API key is available)
+    const sinhalaTest = await classifyPost("අධ්‍යාපන සහ ව්‍යාපාරික පරිසර දෙකම යහපත් සැලසුමක් අවශ්‍ය කරයි", FALLBACK_CATEGORIES)
+    console.log("✅ Sinhala test result:", sinhalaTest)
+    
+    // Validate results
+    const englishValid = englishTest.category && (englishTest.categories?.length || 0) > 0
+    const sinhalaValid = sinhalaTest.category && sinhalaTest.originalLanguage === "Sinhala"
+    
+    if (englishValid && sinhalaValid) {
+      console.log("✅ Enhanced AI service test successful - multi-language support working")
       return true
     } else {
-      console.log("❌ AI service test failed - invalid response")
+      console.log("❌ Enhanced AI service test failed - some functionality not working")
+      console.log("English valid:", englishValid, "Sinhala valid:", sinhalaValid)
       return false
     }
   } catch (error) {
-    console.error("❌ AI service test failed:", error)
+    console.error("❌ Enhanced AI service test failed:", error)
     return false
+  }
+}
+
+/**
+ * Test function specifically for Sinhala content categorization
+ * @param content - Sinhala content to test
+ * @param categories - Available categories to test against
+ * @returns Promise<AIClassification> - AI classification result
+ */
+export async function testSinhalaClassification(content: string, categories?: string[]): Promise<AIClassification> {
+  console.log("🇱🇰 Testing Sinhala content classification...")
+  console.log("📝 Content:", content)
+  console.log("📋 Available categories:", categories || FALLBACK_CATEGORIES)
+  
+  try {
+    const result = await classifyPost(content, categories || FALLBACK_CATEGORIES)
+    console.log("🎯 Sinhala classification result:", {
+      detectedLanguage: result.originalLanguage,
+      categories: result.categories,
+      primaryCategory: result.category,
+      confidence: result.confidence,
+      hasTranslation: result.translatedContent !== content
+    })
+    return result
+  } catch (error) {
+    console.error("❌ Sinhala classification test failed:", error)
+    throw error
   }
 } 

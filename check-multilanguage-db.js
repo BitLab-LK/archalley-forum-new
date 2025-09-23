@@ -16,9 +16,9 @@ async function checkNonEnglishPosts() {
       where: {
         OR: [
           { originalLanguage: { not: 'English' } },
-          { originalLanguage: { not: null } },
-          { aiCategories: { not: null } },
-          { categoryIds: { not: null } }
+          { originalLanguage: { not: null, not: 'English' } },
+          { aiCategories: { isEmpty: false } },
+          { categoryIds: { isEmpty: false } }
         ]
       },
       include: {
