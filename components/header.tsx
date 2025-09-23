@@ -349,7 +349,7 @@ export default function Header() {
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t safe-area-inset-bottom">
-        <div className="grid grid-cols-4 h-18">
+        <div className="grid grid-cols-3 h-18">
           {/* Home */}
           <Link 
             href="/" 

@@ -569,8 +569,8 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
                   )}
                 </div>
 
-                {/* Anonymous Toggle - Inline on the right */}
-                <div className="flex items-center space-x-2">
+                {/* Anonymous Toggle - Inline on the right for desktop */}
+                <div className="hidden sm:flex items-center space-x-2">
                   <Switch
                     id="anonymous"
                     checked={isAnonymous}
@@ -581,6 +581,19 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
                     Post anonymously
                   </Label>
                 </div>
+              </div>
+
+              {/* Anonymous Toggle - Under upload section for mobile */}
+              <div className="sm:hidden flex items-center space-x-2">
+                <Switch
+                  id="anonymous-mobile"
+                  checked={isAnonymous}
+                  onCheckedChange={setIsAnonymous}
+                  disabled={isSubmitting}
+                />
+                <Label htmlFor="anonymous-mobile" className="text-sm">
+                  Post anonymously
+                </Label>
               </div>
 
               <input

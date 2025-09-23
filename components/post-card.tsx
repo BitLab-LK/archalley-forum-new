@@ -919,16 +919,16 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
 
           {/* Post Actions */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 border-t space-y-3 sm:space-y-0">
-            {/* Mobile: Stacked layout, Desktop: Horizontal layout */}
-            <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide">
+            {/* Mobile and Desktop: All action buttons with equal spacing */}
+            <div className="flex items-center justify-between w-full px-2 sm:px-0 sm:justify-start sm:gap-4">
               {/* Vote buttons group */}
-              <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+              <div className="flex items-center space-x-1 flex-shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleCardVote("up")}
                   className={cn(
-                    "text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3 py-2 sm:px-3 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95 mobile-touch-target",
+                    "text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 py-2 sm:px-3 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95 mobile-touch-target",
                     userVote === "up" && "text-primary",
                     isVoting && "opacity-70 cursor-not-allowed"
                   )}
@@ -942,7 +942,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                   size="sm"
                   onClick={() => handleCardVote("down")}
                   className={cn(
-                    "text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-3 py-2 sm:px-3 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95 mobile-touch-target",
+                    "text-gray-600 hover:text-red-500 hover:bg-gray-100 rounded-full px-2 py-2 sm:px-3 transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95 mobile-touch-target",
                     userVote === "down" && "text-red-500",
                     isVoting && "opacity-70 cursor-not-allowed"
                   )}
@@ -958,7 +958,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                 variant="ghost"
                 size="sm"
                 onClick={() => openModal(0)}
-                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3 py-2 sm:px-3 flex-shrink-0 mobile-touch-target"
+                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 py-2 sm:px-3 flex-shrink-0 mobile-touch-target"
               >
                 <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                 <span className="text-xs sm:text-sm">Comment{commentCount > 0 ? ` ${commentCount}` : ''}</span>
@@ -969,7 +969,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                 post={post}
                 variant="ghost"
                 size="sm"
-                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-3 py-2 sm:px-3 flex-shrink-0 mobile-touch-target"
+                className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 py-2 sm:px-3 flex-shrink-0 mobile-touch-target"
               />
             </div>
           </div>

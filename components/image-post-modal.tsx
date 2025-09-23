@@ -1079,16 +1079,16 @@ export default function ImagePostModal({
                       </svg>
                     </div>
                   )}
-                  {!post.isAnonymous && post.author.badges && post.author.badges.length > 0 && (
-                    <div className="flex-shrink-0">
-                      <PostBadges 
-                        badges={post.author.badges.map ? post.author.badges.map(b => b.badges) : post.author.badges}
-                        maxDisplay={2}
-                        size="xs"
-                      />
-                    </div>
-                  )}
                 </div>
+                {!post.isAnonymous && post.author.badges && post.author.badges.length > 0 && (
+                  <div className="flex items-center mt-1">
+                    <PostBadges 
+                      badges={post.author.badges.map ? post.author.badges.map(b => b.badges) : post.author.badges}
+                      maxDisplay={2}
+                      size="xs"
+                    />
+                  </div>
+                )}
                 <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                   <span>{post.timeAgo}</span>
                   <span>•</span>
@@ -1126,44 +1126,44 @@ export default function ImagePostModal({
 
             {/* Action Buttons - Sticky */}
             <div className="sticky top-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 py-1 z-10">
-              <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center justify-center gap-2">
                 <button 
                   onClick={() => handleDebouncedVote("up")} 
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 font-medium active:scale-95",
+                    "flex items-center justify-center gap-1 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 font-medium active:scale-95 min-w-[70px]",
                     userVote === "up" 
                       ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950" 
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   )}
                 >
-                  <ThumbsUp className="w-5 h-5" />
-                  {upvotes > 0 && <span className="text-sm">{upvotes}</span>}
+                  <ThumbsUp className="w-4 h-4" />
+                  <span className="text-sm">{upvotes}</span>
                 </button>
                 <button 
                   onClick={() => handleDebouncedVote("down")} 
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 font-medium active:scale-95",
+                    "flex items-center justify-center gap-1 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 font-medium active:scale-95 min-w-[70px]",
                     userVote === "down" 
                       ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950" 
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   )}
                 >
-                  <ThumbsDown className="w-5 h-5" />
-                  {downvotes > 0 && <span className="text-sm">{downvotes}</span>}
+                  <ThumbsDown className="w-4 h-4" />
+                  <span className="text-sm">{downvotes}</span>
                 </button>
                 <button 
                   onClick={handleCommentClick} 
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95 min-w-0"
+                  className="flex items-center justify-center gap-1 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95 min-w-[90px]"
                 >
-                  <MessageCircle className="w-5 h-5 flex-shrink-0" />
+                  <MessageCircle className="w-4 h-4 flex-shrink-0" />
                   <span className="text-sm whitespace-nowrap">
-                    Comment{post.comments > 0 ? ` ${post.comments}` : ''}
+                    Comment {post.comments}
                   </span>
                 </button>
                 <ShareDropdown 
                   post={post}
                   variant="ghost"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
+                  className="flex items-center justify-center gap-1 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium min-w-[70px]"
                   showLabel={true}
                   context="modal"
                 />

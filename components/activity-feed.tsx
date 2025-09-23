@@ -310,14 +310,17 @@ activityEventManager.subscribe(userId, handleActivityEvent)
     <div className="space-y-4">
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-2">
+          <div className="mb-6">
+            {/* Header with title and loading indicator */}
+            <div className="flex items-center space-x-2 mb-3">
               <Clock className="w-5 h-5 text-gray-500" />
               <h3 className="text-lg font-semibold">Recent Activity</h3>
               {isRefreshing && (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
               )}
             </div>
+            
+            {/* Action buttons underneath the title */}
             <div className="flex items-center space-x-2">
               <Button
                 variant="ghost"

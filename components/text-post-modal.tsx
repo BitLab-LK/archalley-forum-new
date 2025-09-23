@@ -1145,16 +1145,16 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                           </svg>
                         </div>
                       )}
-                      {!post.isAnonymous && post.author.badges && post.author.badges.length > 0 && (
-                        <div className="flex-shrink-0">
-                          <PostBadges 
-                            badges={post.author.badges.map ? post.author.badges.map(b => b.badges) : post.author.badges}
-                            maxDisplay={2}
-                            size="xs"
-                          />
-                        </div>
-                      )}
                     </div>
+                    {!post.isAnonymous && post.author.badges && post.author.badges.length > 0 && (
+                      <div className="flex items-center mt-1">
+                        <PostBadges 
+                          badges={post.author.badges.map ? post.author.badges.map(b => b.badges) : post.author.badges}
+                          maxDisplay={2}
+                          size="xs"
+                        />
+                      </div>
+                    )}
                     <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
                       <span>{post.timeAgo}</span>
                       <span>•</span>
@@ -1206,11 +1206,11 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
 
               {/* Action Buttons */}
               <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-2 py-1">
-                <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center justify-center gap-1">
                   <button 
                     onClick={() => handleDebouncedVote("up")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 font-medium",
+                      "flex items-center justify-center gap-1 py-3 px-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 font-medium min-w-[80px]",
                       userVote === "up" 
                         ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950" 
                         : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white",
@@ -1218,13 +1218,13 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                     )}
                     disabled={isVoting}
                   >
-                    <ThumbsUp className={cn("w-5 h-5", userVote === "up" && "scale-110")} />
-                    {upvotes > 0 && <span className="text-sm">{upvotes}</span>}
+                    <ThumbsUp className={cn("w-4 h-4", userVote === "up" && "scale-110")} />
+                    <span className="text-sm">{upvotes}</span>
                   </button>
                   <button 
                     onClick={() => handleDebouncedVote("down")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 font-medium",
+                      "flex items-center justify-center gap-1 py-3 px-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 font-medium min-w-[80px]",
                       userVote === "down" 
                         ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950" 
                         : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white",
@@ -1232,19 +1232,19 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                     )}
                     disabled={isVoting}
                   >
-                    <ThumbsDown className={cn("w-5 h-5", userVote === "down" && "scale-110")} />
-                    {downvotes > 0 && <span className="text-sm">{downvotes}</span>}
+                    <ThumbsDown className={cn("w-4 h-4", userVote === "down" && "scale-110")} />
+                    <span className="text-sm">{downvotes}</span>
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium min-w-0">
-                    <MessageCircle className="w-5 h-5 flex-shrink-0" />
-                    <span className="text-sm whitespace-nowrap font-semibold text-gray-900 dark:text-white">
-                      Comment{totalCommentCount > 0 ? ` ${totalCommentCount}` : ''}
+                  <button className="flex items-center justify-center gap-1 py-3 px-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium min-w-[80px]">
+                    <MessageCircle className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {totalCommentCount}
                     </span>
                   </button>
                   <ShareDropdown 
                     post={post}
                     variant="ghost"
-                    className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
+                    className="flex items-center justify-center gap-1 py-3 px-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium min-w-[80px]"
                     showLabel={true}
                     context="modal"
                   />
@@ -1317,16 +1317,16 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                         </svg>
                       </div>
                     )}
-                    {!post.isAnonymous && post.author.badges && post.author.badges.length > 0 && (
-                      <div className="flex-shrink-0">
-                        <PostBadges 
-                          badges={post.author.badges.map ? post.author.badges.map(b => b.badges) : post.author.badges}
-                          maxDisplay={2}
-                          size="xs"
-                        />
-                      </div>
-                    )}
                   </div>
+                  {!post.isAnonymous && post.author.badges && post.author.badges.length > 0 && (
+                    <div className="flex items-center mt-1">
+                      <PostBadges 
+                        badges={post.author.badges.map ? post.author.badges.map(b => b.badges) : post.author.badges}
+                        maxDisplay={2}
+                        size="xs"
+                      />
+                    </div>
+                  )}
                   <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                     <span>{post.timeAgo}</span>
                     <span>•</span>
@@ -1417,8 +1417,8 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                     {downvotes > 0 && <span className="text-sm">{downvotes}</span>}
                   </button>
                   <button className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95">
-                    <MessageCircle className="w-5 h-5" />
-                    <span className="font-medium">
+                    <MessageCircle className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm whitespace-nowrap">
                       Comment{totalCommentCount > 0 ? ` ${totalCommentCount}` : ''}
                     </span>
                   </button>
