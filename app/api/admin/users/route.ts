@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdminAccess, logAdminAction } from "@/lib/admin-security"
+import { onUserDeleted } from "@/lib/stats-service"
 import type { NextRequest } from "next/server"
 
 export async function GET(request: NextRequest) {
@@ -151,6 +152,9 @@ export async function DELETE(request: NextRequest) {
       prisma.post.deleteMany({ where: { authorId: userId } }),
       prisma.users.delete({ where: { id: userId } })
     ])
+
+    // Trigger real-time stats update
+    await onUserDeleted()
 
     return NextResponse.json({ 
       message: "User deleted successfully" 

@@ -63,6 +63,15 @@ app.prepare().then(async () => {
     connectTimeout: 10000 // 10 seconds connection timeout
   });
 
+  // Initialize stats service with Socket.IO
+  try {
+    const { setSocketIOServer } = require('./lib/stats-service');
+    setSocketIOServer(io);
+    console.log('✅ Stats service initialized with Socket.IO');
+  } catch (error) {
+    console.error('❌ Failed to initialize stats service:', error.message);
+  }
+
   // Authentication middleware
   io.use(async (socket, next) => {
     try {
@@ -93,6 +102,34 @@ app.prepare().then(async () => {
   // Socket.IO logic for comments with improved security
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id, "User ID:", socket.userId);
+
+    // Join admin stats room if user is admin
+    if (socket.userRole === 'ADMIN') {
+      socket.join('admin-stats');
+      console.log(`Admin user ${socket.userId} joined admin-stats room`);
+    }
+
+    // Handle admin stats room joining
+    socket.on("join-admin-stats", () => {
+      if (socket.userRole !== 'ADMIN') {
+        socket.emit("error", { message: "Admin access required" });
+        return;
+      }
+      
+      if (!checkSocketRateLimit(socket.id)) {
+        socket.emit("error", { message: "Rate limit exceeded" });
+        return;
+      }
+
+      socket.join('admin-stats');
+      console.log(`Admin user ${socket.userId} joined admin-stats room`);
+    });
+
+    // Handle leaving admin stats room
+    socket.on("leave-admin-stats", () => {
+      socket.leave('admin-stats');
+      console.log(`User ${socket.userId} left admin-stats room`);
+    });
 
     // Clean up rate limit data on disconnect
     socket.on("disconnect", () => {

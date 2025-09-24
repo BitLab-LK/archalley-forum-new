@@ -43,6 +43,7 @@ import { badgeService } from "@/lib/badge-service"
 import { geminiService } from "@/lib/gemini-service"
 import { classifyPost } from "@/lib/ai-service"
 import { sendNotificationEmail, extractMentions, getUserIdsByUsernames } from "@/lib/email-service"
+import { onPostCreated } from "@/lib/stats-service"
 import { revalidatePath } from "next/cache"
 
 // Force dynamic rendering and disable caching for real-time data
@@ -1022,6 +1023,9 @@ export async function POST(request: Request) {
       }
       
       console.log("✅ Post creation completed and broadcasted successfully")
+      
+      // Trigger real-time stats update
+      await onPostCreated()
       
       return NextResponse.json(transformedResult, { 
         status: 201, 

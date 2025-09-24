@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -10,8 +10,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Users, MessageSquare, TrendingUp, Eye, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal } from "lucide-react"
+import { Users, MessageSquare, TrendingUp, Eye, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal, RefreshCw } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { useSocket } from "@/lib/socket-context"
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -151,7 +152,9 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [loadingUsers, setLoadingUsers] = useState<Set<string>>(new Set())
+  const [statsRefreshing, setStatsRefreshing] = useState(false)
   const { user, isLoading: authLoading } = useAuth()
+  const { socket, isConnected } = useSocket()
   const { confirm } = useConfirmDialog()
   const router = useRouter()
 
@@ -288,6 +291,78 @@ export default function AdminDashboard() {
 
     setFilteredPosts(filtered)
   }, [posts, postSearchTerm, postStatusFilter])
+
+  // Manual refresh function for stats
+  const refreshStats = useCallback(async () => {
+    if (statsRefreshing) return
+    
+    setStatsRefreshing(true)
+    try {
+      const response = await fetch("/api/admin/stats")
+      if (!response.ok) {
+        throw new Error(`Stats API error: ${response.status}`)
+      }
+      const data = await response.json()
+      setStats(data)
+      setStatsError(null)
+      toast.success("Stats refreshed successfully")
+    } catch (error) {
+      console.error("Error refreshing stats:", error)
+      setStatsError(error instanceof Error ? error.message : "Failed to refresh statistics")
+      toast.error("Failed to refresh stats")
+    } finally {
+      setStatsRefreshing(false)
+    }
+  }, [statsRefreshing])
+
+  // Socket.IO real-time stats updates
+  useEffect(() => {
+    if (!socket || !isConnected || !user || user.role !== "ADMIN") {
+      return
+    }
+
+    // Join the admin stats room
+    socket.emit('join-admin-stats')
+
+    // Listen for stats updates
+    const handleStatsUpdate = (data: { stats: DashboardStats; eventType: string; timestamp: string }) => {
+      console.log('📊 Received real-time stats update:', data.eventType, data.stats)
+      setStats(data.stats)
+      setStatsError(null)
+      
+      // Show a subtle notification for the update
+      const eventMessages = {
+        user_created: 'New user registered',
+        user_deleted: 'User account deleted',
+        post_created: 'New post published',
+        post_deleted: 'Post deleted',
+        comment_created: 'New comment added',
+        comment_deleted: 'Comment deleted'
+      }
+      
+      const message = eventMessages[data.eventType as keyof typeof eventMessages] || 'Stats updated'
+      toast.success(`${message} - Stats refreshed`, {
+        duration: 3000,
+        position: 'bottom-right'
+      })
+    }
+
+    socket.on('stats-update', handleStatsUpdate)
+
+    // Handle socket errors
+    const handleSocketError = (error: any) => {
+      console.warn('Socket.IO error in admin stats:', error)
+    }
+
+    socket.on('error', handleSocketError)
+
+    // Cleanup
+    return () => {
+      socket.off('stats-update', handleStatsUpdate)
+      socket.off('error', handleSocketError)
+      socket.emit('leave-admin-stats')
+    }
+  }, [socket, isConnected, user])
 
   // Don't render anything if user is not admin (after all hooks are declared)
   if (authLoading || !user || user.role !== "ADMIN") {
@@ -455,6 +530,31 @@ export default function AdminDashboard() {
 
           {/* Statistics Tab */}
           <TabsContent value="statistics" className="space-y-4 sm:space-y-6">
+            {/* Stats Header with Refresh Button */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-lg font-semibold">Dashboard Statistics</h2>
+                <p className="text-sm text-muted-foreground">
+                  Real-time forum metrics {isConnected ? '(Live Updates Active)' : '(Live Updates Disconnected)'}
+                </p>
+                {stats.timestamp && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Last updated: {new Date(stats.timestamp).toLocaleString()}
+                  </p>
+                )}
+              </div>
+              <Button 
+                onClick={refreshStats} 
+                disabled={statsRefreshing || statsLoading}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${statsRefreshing ? 'animate-spin' : ''}`} />
+                {statsRefreshing ? 'Refreshing...' : 'Refresh Stats'}
+              </Button>
+            </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">

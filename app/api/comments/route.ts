@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { badgeService } from "@/lib/badge-service"
 import { createActivityNotification } from "@/lib/notification-service"
 import { sendNotificationEmail } from "@/lib/email-service"
+import { onCommentCreated } from "@/lib/stats-service"
 
 // GET /api/comments?postId=...
 export async function GET(request: NextRequest) {
@@ -313,5 +314,8 @@ export async function POST(request: NextRequest) {
     // Don't fail the comment creation if notifications fail
   }
 
+  // Trigger real-time stats update
+  await onCommentCreated()
+  
   return NextResponse.json({ comment })
 }

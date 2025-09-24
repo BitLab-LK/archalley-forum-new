@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
 import { validateAdminAccess, logAdminAction } from "@/lib/admin-security"
+import { getStatsData } from "@/lib/stats-service"
 import type { NextRequest } from "next/server"
 
 export async function GET(request: NextRequest) {
@@ -18,51 +18,11 @@ export async function GET(request: NextRequest) {
       ip: request.headers.get("x-forwarded-for") || "unknown"
     })
 
-    // Calculate the date 24 hours ago
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-    
-    // Use Promise.all for better performance with parallel queries
-    const [totalUsers, totalPosts, totalComments, activeUsers, recentActivity] = await Promise.all([
-      // Get total users (exclude suspended users)
-      prisma.users.count({
-        where: {
-          isSuspended: false
-        }
-      }),
-      
-      // Get total posts (exclude deleted posts if applicable)
-      prisma.post.count(),
-      
-      // Get total comments
-      prisma.comment.count(),
-      
-      // Get active users (users who have been active within the last 24 hours)
-      prisma.users.count({
-        where: {
-          lastActiveAt: {
-            gte: twentyFourHoursAgo
-          },
-          isSuspended: false
-        }
-      }),
-      
-      // Get recent activity stats for additional insights
-      prisma.post.count({
-        where: {
-          createdAt: {
-            gte: twentyFourHoursAgo
-          }
-        }
-      })
-    ])
+    // Get stats using the service (with caching)
+    const stats = await getStatsData()
 
     return NextResponse.json({
-      totalUsers,
-      totalPosts,
-      totalComments,
-      activeUsers,
-      recentPosts: recentActivity,
-      timestamp: new Date().toISOString(),
+      ...stats,
       success: true
     })
   } catch (error) {

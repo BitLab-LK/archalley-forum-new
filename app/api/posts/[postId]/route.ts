@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { NextRequest } from "next/server"
 import { cleanupPostBlobs } from "@/lib/utils"
+import { onPostDeleted, onCommentDeleted } from "@/lib/stats-service"
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ postId: string }> }) {
   try {
@@ -103,6 +104,13 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     ])
 
     console.log("✅ Post deleted successfully")
+    
+    // Trigger real-time stats updates (post deletion also removes comments)
+    await Promise.all([
+      onPostDeleted(),
+      onCommentDeleted() // Comments were also deleted with the post
+    ])
+    
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("❌ Error deleting post:", error)

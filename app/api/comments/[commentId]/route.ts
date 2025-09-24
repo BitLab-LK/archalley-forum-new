@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { onCommentDeleted } from "@/lib/stats-service"
 
 export async function DELETE(
   _request: NextRequest,
@@ -43,6 +44,9 @@ export async function DELETE(
       }
     })
 
+    // Trigger real-time stats update
+    await onCommentDeleted()
+    
     return NextResponse.json({ message: "Comment deleted successfully" })
   } catch (error) {
     console.error("Error deleting comment:", error)
