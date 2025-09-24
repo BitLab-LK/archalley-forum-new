@@ -29,7 +29,20 @@ function checkSocketRateLimit(socketId) {
   return true;
 }
 
-app.prepare().then(() => {
+app.prepare().then(async () => {
+  // Initialize email service on startup
+  try {
+    const { initializeEmailService } = require('./lib/email-service');
+    const emailResult = await initializeEmailService();
+    if (emailResult.success) {
+      console.log('✅ Email service initialized successfully');
+    } else {
+      console.warn('⚠️ Email service initialization failed:', emailResult.error);
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize email service:', error.message);
+  }
+
   const server = createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
     handle(req, res, parsedUrl);

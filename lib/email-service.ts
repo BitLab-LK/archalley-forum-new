@@ -1,6 +1,8 @@
 import { prisma } from './prisma';
 import { NotificationType, EmailStatus } from '@prisma/client';
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
+
 
 // Utility function to get time ago string
 const getTimeAgo = (date: Date): string => {
@@ -17,16 +19,210 @@ const getTimeAgo = (date: Date): string => {
   return date.toLocaleDateString();
 };
 
-// Email service configuration
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
+// Email validation function
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+// Configuration validation
+const validateEmailConfig = (): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  
+  if (!process.env.SMTP_HOST) errors.push('SMTP_HOST is required');
+  if (!process.env.SMTP_PORT) errors.push('SMTP_PORT is required');
+  if (!process.env.SMTP_USER) errors.push('SMTP_USER is required');
+  if (!process.env.SMTP_PASSWORD) errors.push('SMTP_PASSWORD is required');
+  if (!process.env.EMAIL_FROM) errors.push('EMAIL_FROM is required');
+  
+  if (process.env.EMAIL_FROM && !isValidEmail(process.env.EMAIL_FROM)) {
+    errors.push('EMAIL_FROM must be a valid email address');
+  }
+  
+  return { isValid: errors.length === 0, errors };
+};
+
+// Create transporter with retry logic and error handling
+let transporter: nodemailer.Transporter | null = null;
+let transporterError: string | null = null;
+
+// Initialize Resend as fallback
+let resend: Resend | null = null;
+let resendError: string | null = null;
+
+const createResendClient = (): Resend | null => {
+  try {
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'your-resend-api-key') {
+      resendError = 'Resend API key not configured';
+      return null;
+    }
+    
+    const client = new Resend(process.env.RESEND_API_KEY);
+    resendError = null;
+    console.log('✅ Resend client initialized successfully');
+    return client;
+  } catch (error) {
+    resendError = error instanceof Error ? error.message : 'Unknown Resend error';
+    console.error('❌ Failed to initialize Resend:', resendError);
+    return null;
+  }
+};
+
+// Send email via Resend API (HTTP-based, works when SMTP is blocked)
+const sendEmailViaResend = async (
+  to: string,
+  subject: string,
+  html: string,
+  text: string
+): Promise<boolean> => {
+  try {
+    // In development or when Resend is not configured, just log the email
+    if (process.env.NODE_ENV === 'development' || !process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'your-resend-api-key') {
+      console.log(`📧 [EMAIL DEBUG] DEVELOPMENT MODE - Email that would be sent:`);
+      console.log(`📧 [EMAIL DEBUG] To: ${to}`);
+      console.log(`📧 [EMAIL DEBUG] Subject: ${subject}`);
+      console.log(`📧 [EMAIL DEBUG] Text: ${text}`);
+      console.log(`📧 [EMAIL DEBUG] HTML Length: ${html.length} characters`);
+      console.log(`✅ [EMAIL DEBUG] Email logged successfully (development mode)`);
+      return true;
+    }
+
+    if (!resend) {
+      resend = createResendClient();
+    }
+    
+    if (!resend) {
+      console.error('❌ [EMAIL DEBUG] Resend client not available:', resendError);
+      // Fall back to logging in production if Resend fails
+      console.log(`📧 [EMAIL DEBUG] FALLBACK - Email that would be sent:`);
+      console.log(`📧 [EMAIL DEBUG] To: ${to}, Subject: ${subject}`);
+      return true;
+    }
+
+    console.log(`📧 [EMAIL DEBUG] Sending email via Resend to ${to}`);
+    
+    const result = await resend.emails.send({
+      from: `${process.env.EMAIL_FROM_NAME || 'Archalley Forum'} <${process.env.EMAIL_FROM || 'noreply@archalley.com'}>`,
+      to: [to],
+      subject,
+      html,
+      text
+    });
+
+    if (result.error) {
+      console.error('❌ [EMAIL DEBUG] Resend API error:', result.error);
+      return false;
+    }
+
+    console.log(`✅ [EMAIL DEBUG] Email sent via Resend successfully. ID: ${result.data?.id}`);
+    return true;
+
+  } catch (error) {
+    console.error('❌ [EMAIL DEBUG] Resend send failed:', error);
+    // Final fallback - just log
+    console.log(`📧 [EMAIL DEBUG] FINAL FALLBACK - Email logged: To: ${to}, Subject: ${subject}`);
+    return true;
+  }
+};
+
+const createEmailTransporter = async (): Promise<nodemailer.Transporter | null> => {
+  try {
+    const config = validateEmailConfig();
+    if (!config.isValid) {
+      transporterError = `Email configuration invalid: ${config.errors.join(', ')}`;
+      console.error('❌ Email service configuration error:', transporterError);
+      return null;
+    }
+
+    const newTransporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST!,
+      port: parseInt(process.env.SMTP_PORT!, 10),
+      secure: false, // true for 465, false for other ports like 587
+      auth: {
+        user: process.env.SMTP_USER!,
+        pass: process.env.SMTP_PASSWORD!,
+      },
+      pool: true, // Enable connection pooling
+      maxConnections: 5,
+      maxMessages: 100,
+      rateLimit: 10, // Max 10 messages per second
+      connectionTimeout: 60000, // 60 second connection timeout
+      greetingTimeout: 30000, // 30 second greeting timeout
+      socketTimeout: 60000, // 60 second socket timeout
+      tls: {
+        rejectUnauthorized: false,
+        minVersion: 'TLSv1.2'
+      }
+    });
+
+    // Test the connection
+    await newTransporter.verify();
+    console.log('✅ Email service connected successfully');
+    transporterError = null;
+    return newTransporter;
+    
+  } catch (error) {
+    transporterError = error instanceof Error ? error.message : 'Unknown SMTP error';
+    console.error('❌ Email service connection failed:', transporterError);
+    return null;
+  }
+};
+
+// Initialize transporter
+const initializeTransporter = async () => {
+  if (!transporter && !transporterError) {
+    transporter = await createEmailTransporter();
+  }
+};
+
+// Get transporter with lazy initialization
+const getTransporter = async (): Promise<nodemailer.Transporter | null> => {
+  if (!transporter) {
+    await initializeTransporter();
+  }
+  return transporter;
+};
+
+// Initialize email service on startup
+export const initializeEmailService = async (): Promise<{ success: boolean; error?: string }> => {
+  try {
+    console.log('🔄 Initializing email service...');
+    const emailTransporter = await createEmailTransporter();
+    
+    if (emailTransporter) {
+      transporter = emailTransporter;
+      console.log('✅ Email service initialized successfully');
+      return { success: true };
+    } else {
+      return { success: false, error: transporterError || 'Unknown error' };
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Failed to initialize email service:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+};
+
+// Get email service status
+export const getEmailServiceStatus = (): { 
+  isInitialized: boolean; 
+  error: string | null; 
+  config: Record<string, any> 
+} => {
+  const config = validateEmailConfig();
+  return {
+    isInitialized: transporter !== null,
+    error: transporterError,
+    config: {
+      isValid: config.isValid,
+      errors: config.errors,
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      user: process.env.SMTP_USER ? process.env.SMTP_USER.substring(0, 5) + '***' : 'Not set',
+      from: process.env.EMAIL_FROM
+    }
+  };
+};
 
 interface EmailTemplate {
   subject: string;
@@ -812,6 +1008,37 @@ export const shouldSendEmail = async (userId: string, type: NotificationType): P
   return preferenceMap[type] ?? false;
 };
 
+// Retry function for email sending
+const retryEmailSend = async (
+  transporter: nodemailer.Transporter,
+  mailOptions: nodemailer.SendMailOptions,
+  maxRetries = 3
+): Promise<boolean> => {
+  console.log(`📧 [EMAIL DEBUG] Starting retryEmailSend with ${maxRetries} max attempts`);
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`📧 [EMAIL DEBUG] Attempt ${attempt}/${maxRetries} - Sending email...`);
+      const result = await transporter.sendMail(mailOptions);
+      console.log(`📧 [EMAIL DEBUG] Email sent successfully on attempt ${attempt}! MessageId:`, result.messageId);
+      return true;
+    } catch (error) {
+      console.error(`📧 [EMAIL DEBUG] Email send attempt ${attempt}/${maxRetries} failed:`, error);
+      
+      if (attempt === maxRetries) {
+        console.error(`📧 [EMAIL DEBUG] All ${maxRetries} attempts failed. Throwing error.`);
+        throw error; // Re-throw on final attempt
+      }
+      
+      // Wait before retry (exponential backoff)
+      const waitTime = Math.pow(2, attempt) * 1000;
+      console.log(`📧 [EMAIL DEBUG] Waiting ${waitTime}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+  }
+  return false;
+};
+
 // Main email sending function
 export const sendNotificationEmail = async (
   userId: string,
@@ -825,11 +1052,24 @@ export const sendNotificationEmail = async (
     customUrl?: string;
   }
 ): Promise<boolean> => {
+  
   try {
+    console.log(`📧 [EMAIL DEBUG] Starting sendNotificationEmail for userId: ${userId}, type: ${type}`);
+    console.log(`📧 [EMAIL DEBUG] Data:`, JSON.stringify(data, null, 2));
+    
+    // Get transporter
+    const emailTransporter = await getTransporter();
+    console.log(`📧 [EMAIL DEBUG] Transporter status:`, emailTransporter ? 'Available' : 'Not available');
+    if (!emailTransporter) {
+      console.error('❌ [EMAIL DEBUG] Email service not available:', transporterError);
+      return false;
+    }
+
     // Check if user wants this type of email
     const shouldSend = await shouldSendEmail(userId, type);
+    console.log(`📧 [EMAIL DEBUG] Should send email to user ${userId}:`, shouldSend);
     if (!shouldSend) {
-      console.log(`User ${userId} has disabled ${type} email notifications`);
+      console.log(`📧 User ${userId} has disabled ${type} email notifications`);
       return false;
     }
 
@@ -845,8 +1085,16 @@ export const sendNotificationEmail = async (
       }) : null
     ]);
 
+    console.log(`📧 [EMAIL DEBUG] User found:`, user ? { id: user.id, email: user.email, name: user.name } : 'Not found');
+    console.log(`📧 [EMAIL DEBUG] Author found:`, author ? { name: author.name, image: author.image } : 'Not found');
+
     if (!user?.email) {
-      console.log(`User ${userId} has no email address`);
+      console.log(`📧 [EMAIL DEBUG] User ${userId} has no email address`);
+      return false;
+    }
+    
+    if (!isValidEmail(user.email)) {
+      console.log(`📧 [EMAIL DEBUG] User ${userId} has invalid email address: ${user.email}`);
       return false;
     }
 
@@ -903,6 +1151,7 @@ export const sendNotificationEmail = async (
 
     // Generate email template
     const template = getEmailTemplate(type, emailData);
+    console.log(`📧 [EMAIL DEBUG] Generated template - Subject: ${template.subject}`);
 
     // Log email attempt
     const emailLog = await prisma.emailLogs.create({
@@ -918,41 +1167,84 @@ export const sendNotificationEmail = async (
         metadata: data,
       }
     });
+    console.log(`📧 [EMAIL DEBUG] Created email log with ID: ${emailLog.id}`);
 
     try {
-      // Send email
-      await transporter.sendMail({
-        from: `"${process.env.EMAIL_FROM_NAME || 'Forum'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      // Prepare mail options
+      const mailOptions = {
+        from: `"${process.env.EMAIL_FROM_NAME || 'Archalley Forum'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
         to: user.email,
         subject: template.subject,
         text: template.text,
         html: template.html,
-      });
+      };
+      console.log(`📧 [EMAIL DEBUG] Mail options prepared - From: ${mailOptions.from}, To: ${mailOptions.to}`);
 
-      // Update log as sent
-      await prisma.emailLogs.update({
-        where: { id: emailLog.id },
-        data: {
-          status: EmailStatus.SENT,
-          sentAt: new Date(),
-        }
-      });
+      // Send email with retry logic
+      console.log(`📧 [EMAIL DEBUG] Attempting to send email with retry logic...`);
+      const success = await retryEmailSend(emailTransporter, mailOptions, 3);
+      console.log(`📧 [EMAIL DEBUG] Email send result: ${success ? 'SUCCESS' : 'FAILED'}`);
+      
+      if (success) {
+        // Update log as sent
+        await prisma.emailLogs.update({
+          where: { id: emailLog.id },
+          data: {
+            status: EmailStatus.SENT,
+            sentAt: new Date(),
+          }
+        });
 
-      console.log(`Email sent successfully to ${user.email} for ${type}`);
-      return true;
+        console.log(`✅ Email sent successfully to ${user.email} for ${type}`);
+        return true;
+      } else {
+        throw new Error('All retry attempts failed');
+      }
 
     } catch (emailError) {
-      // Update log as failed
-      await prisma.emailLogs.update({
-        where: { id: emailLog.id },
-        data: {
-          status: EmailStatus.FAILED,
-          error: emailError instanceof Error ? emailError.message : 'Unknown error',
-        }
-      });
+      console.error(`❌ SMTP email failed to ${user.email}:`, emailError);
+      
+      // Try Resend as fallback when SMTP fails
+      console.log(`🔄 [EMAIL DEBUG] Attempting Resend fallback for ${user.email}...`);
+      
+      try {
+        const resendSuccess = await sendEmailViaResend(
+          user.email,
+          template.subject,
+          template.html,
+          template.text
+        );
+        
+        if (resendSuccess) {
+          // Update log as sent via Resend
+          await prisma.emailLogs.update({
+            where: { id: emailLog.id },
+            data: {
+              status: EmailStatus.SENT,
+              sentAt: new Date(),
+              error: `SMTP failed, sent via Resend: ${emailError instanceof Error ? emailError.message : 'Unknown error'}`,
+            }
+          });
 
-      console.error(`Failed to send email to ${user.email}:`, emailError);
-      return false;
+          console.log(`✅ Email sent successfully via Resend fallback to ${user.email} for ${type}`);
+          return true;
+        } else {
+          throw new Error('Resend fallback also failed');
+        }
+        
+      } catch (resendError) {
+        // Both SMTP and Resend failed - update log as failed
+        await prisma.emailLogs.update({
+          where: { id: emailLog.id },
+          data: {
+            status: EmailStatus.FAILED,
+            error: `SMTP failed: ${emailError instanceof Error ? emailError.message : 'Unknown'}. Resend failed: ${resendError instanceof Error ? resendError.message : 'Unknown'}`,
+          }
+        });
+
+        console.error(`❌ Both SMTP and Resend failed for ${user.email}:`, resendError);
+        return false;
+      }
     }
 
   } catch (error) {

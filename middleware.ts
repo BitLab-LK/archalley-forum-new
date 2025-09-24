@@ -1,12 +1,36 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { getToken } from "next-auth/jwt"
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   console.log('🔍 Middleware processing:', {
     path: request.nextUrl.pathname,
     method: request.method,
     userAgent: request.headers.get('user-agent')?.substring(0, 50)
   })
+
+  // Check admin route protection
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    try {
+      const token = await getToken({ 
+        req: request, 
+        secret: process.env.NEXTAUTH_SECRET 
+      })
+      
+      if (!token || token.role !== 'ADMIN') {
+        console.log('🚫 Admin access denied:', { 
+          hasToken: !!token, 
+          role: token?.role 
+        })
+        return NextResponse.redirect(new URL('/', request.url))
+      }
+      
+      console.log('✅ Admin access granted:', token.email)
+    } catch (error) {
+      console.error('❌ Token verification failed:', error)
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+  }
 
   // Add security headers to all responses
   const response = NextResponse.next()

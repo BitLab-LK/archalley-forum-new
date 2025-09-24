@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { badgeService } from "@/lib/badge-service"
 import { createActivityNotification } from "@/lib/notification-service"
+import { sendNotificationEmail } from "@/lib/email-service"
 
 // GET /api/comments?postId=...
 export async function GET(request: NextRequest) {
@@ -217,24 +218,19 @@ export async function POST(request: NextRequest) {
         }
       );
 
-      // Send email notification
+      // Send email notification directly
       notificationPromises.push(
-        fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'POST_COMMENT',
-            userId: post.authorId,
-            data: {
-              postId,
-              commentId: comment.id,
-              authorId: session.user.id,
-              authorName: currentUser.name || 'Someone',
-              postTitle: postDescription,
-              commentContent: content
-            }
-          })
-        })
+        sendNotificationEmail(
+          post.authorId,
+          'POST_COMMENT',
+          {
+            postId,
+            commentId: comment.id,
+            authorId: session.user.id,
+            postTitle: postDescription,
+            commentContent: content
+          }
+        )
       );
     }
 
@@ -265,41 +261,47 @@ export async function POST(request: NextRequest) {
         }
       );
 
-      // Send email notification
+      // Send email notification directly
       notificationPromises.push(
-        fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'COMMENT_REPLY',
-            userId: parentComment.authorId,
-            data: {
-              postId,
-              commentId: comment.id,
-              authorId: session.user.id,
-              authorName: currentUser.name || 'Someone',
-              postTitle: post?.title || 'Untitled Post',
-              commentContent: content
-            }
-          })
-        })
+        sendNotificationEmail(
+          parentComment.authorId,
+          'COMMENT_REPLY',
+          {
+            postId,
+            commentId: comment.id,
+            authorId: session.user.id,
+            postTitle: postDescription,
+            commentContent: content
+          }
+        )
       );
     }
 
-    // 3. Send mention notifications (email only for now)
-    notificationPromises.push(
-      fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/email`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content,
-          authorId: session.user.id,
-          authorName: currentUser?.name || 'Someone',
-          postId,
-          postTitle: post?.title || 'Untitled Post'
-        })
-      })
-    );
+    // 3. Send mention notifications directly
+    const { extractMentions, getUserIdsByUsernames } = await import('@/lib/email-service');
+    const mentionedUsernames = extractMentions(content);
+    
+    if (mentionedUsernames.length > 0) {
+      try {
+        const mentionedUserIds = await getUserIdsByUsernames(mentionedUsernames);
+        notificationPromises.push(
+          ...mentionedUserIds.map(mentionUserId => 
+            sendNotificationEmail(
+              mentionUserId,
+              'MENTION',
+              {
+                postId,
+                authorId: session.user.id,
+                postTitle: post?.title || 'Untitled Post',
+                commentContent: content
+              }
+            )
+          )
+        );
+      } catch (error) {
+        console.error('Error processing mentions:', error);
+      }
+    }
 
     // Execute all notification promises
     const results = await Promise.allSettled(notificationPromises);

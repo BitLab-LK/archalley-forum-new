@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import HomePageInteractive from "./homepage-interactive"
 
 interface Post {
@@ -54,7 +56,7 @@ interface Pagination {
 }
 
 // Server-side function to get initial posts
-async function getInitialPosts(): Promise<{ posts: Post[], pagination: Pagination }> {
+async function getInitialPosts(session: any = null): Promise<{ posts: Post[], pagination: Pagination }> {
   try {
     console.log('🔄 SSR: Starting initial posts fetch...')
     const limit = 10
@@ -146,6 +148,33 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
     // Create a map for quick category lookup
     const categoryMap = new Map(multipleCategories.map(cat => [cat.id, cat]))
 
+    // Get user votes if authenticated (matching API logic)
+    const userVoteMap = new Map<string, string>()
+    if (session?.user?.id) {
+      try {
+        const userVotes = await prisma.votes.findMany({
+          where: {
+            userId: session.user.id,
+            postId: {
+              in: posts.map((post: any) => post.id)
+            }
+          },
+          select: {
+            postId: true,
+            type: true
+          }
+        })
+        
+        userVotes.forEach(vote => {
+          if (vote.postId) {
+            userVoteMap.set(vote.postId, vote.type)
+          }
+        })
+      } catch (error) {
+        console.warn('⚠️ SSR: Failed to fetch user votes:', error)
+      }
+    }
+
     // Helper function to calculate time ago
     const timeAgo = (date: Date): string => {
       const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
@@ -209,6 +238,7 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
 
     const formattedPosts: Post[] = posts.map((post: any) => {
       const voteCount = voteCountMap.get(post.id) || { upvotes: 0, downvotes: 0 }
+      const userVote = userVoteMap.get(post.id)?.toLowerCase() || null // Include user vote
       const images = attachmentMap.get(post.id) || []
       const primaryBadge = getPrimaryBadge(post.users?.userBadges || [])
 
@@ -242,6 +272,7 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
         isPinned: post.isPinned || false,
         upvotes: voteCount.upvotes,
         downvotes: voteCount.downvotes,
+        userVote: userVote as "up" | "down" | null, // Add user vote to SSR data
         comments: post._count?.Comment || 0,
         timeAgo: timeAgo(post.createdAt),
         images: images.length > 0 ? images : undefined
@@ -270,6 +301,9 @@ async function getInitialPosts(): Promise<{ posts: Post[], pagination: Paginatio
 
 // Main page component - Now a server component with SSR
 export default async function HomePage() {
+  // Get user session for authentication-aware SSR
+  const session = await getServerSession(authOptions)
+  
   // Fetch initial posts on the server with timeout to prevent slow renders
   let initialData
   
@@ -280,7 +314,7 @@ export default async function HomePage() {
     )
     
     initialData = await Promise.race([
-      getInitialPosts(),
+      getInitialPosts(session),
       timeoutPromise
     ])
   } catch (error) {

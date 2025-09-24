@@ -42,6 +42,7 @@ import { z } from "zod"
 import { badgeService } from "@/lib/badge-service"
 import { geminiService } from "@/lib/gemini-service"
 import { classifyPost } from "@/lib/ai-service"
+import { sendNotificationEmail, extractMentions, getUserIdsByUsernames } from "@/lib/email-service"
 import { revalidatePath } from "next/cache"
 
 // Force dynamic rendering and disable caching for real-time data
@@ -970,22 +971,26 @@ export async function POST(request: Request) {
       }
     })
 
-    // Send email notifications for mentions in the post
+    // Send email notifications for mentions in the post directly
     try {
-      const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/email`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: data.content,
-          authorId: session.user.id,
-          postId: result.id,
-          postTitle: result.title || 'New Post'
-        })
-      });
+      const mentionedUsernames = extractMentions(data.content);
       
-      if (response.ok) {
-        const notificationResult = await response.json();
-        console.log(`📧 Mention notifications sent: ${notificationResult.mentionsSent}/${notificationResult.totalMentions}`);
+      if (mentionedUsernames.length > 0) {
+        const mentionedUserIds = await getUserIdsByUsernames(mentionedUsernames);
+        
+        const mentionResults = await Promise.allSettled(
+          mentionedUserIds.map(userId => 
+            sendNotificationEmail(userId, 'MENTION', {
+              postId: result.id,
+              authorId: session.user.id,
+              postTitle: result.title || 'New Post',
+              commentContent: data.content
+            })
+          )
+        );
+        
+        const sent = mentionResults.filter(r => r.status === 'fulfilled' && r.value === true).length;
+        console.log(`📧 Mention notifications sent: ${sent}/${mentionedUserIds.length}`);
       }
     } catch (error) {
       console.error("Error sending mention notifications:", error);

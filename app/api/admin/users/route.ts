@@ -1,15 +1,22 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { validateAdminAccess, logAdminAction } from "@/lib/admin-security"
+import type { NextRequest } from "next/server"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return new NextResponse("Unauthorized", { status: 401 })
+    const validation = await validateAdminAccess(request)
+    
+    if (!validation.isValid) {
+      return validation.response!
     }
+
+    const { user } = validation
+    
+    // Log admin action
+    logAdminAction("VIEW_USERS", user!.id, {
+      ip: request.headers.get("x-forwarded-for") || "unknown"
+    })
 
     // Get recent users with their roles and join dates
     const users = await prisma.users.findMany({
@@ -55,20 +62,29 @@ export async function GET() {
 }
 
 // Update user role
-export async function PATCH(req: Request) {
+export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return new NextResponse("Unauthorized", { status: 401 })
+    const validation = await validateAdminAccess(request)
+    
+    if (!validation.isValid) {
+      return validation.response!
     }
 
-    const body = await req.json()
+    const { user } = validation
+
+    const body = await request.json()
     const { userId, role } = body
 
     if (!userId || !role) {
       return new NextResponse("Missing required fields", { status: 400 })
     }
+    
+    // Log admin action
+    logAdminAction("UPDATE_USER_ROLE", user!.id, {
+      targetUserId: userId,
+      newRole: role,
+      ip: request.headers.get("x-forwarded-for") || "unknown"
+    })
 
     // Validate role
     if (!["MEMBER", "MODERATOR", "ADMIN"].includes(role)) {
@@ -88,8 +104,18 @@ export async function PATCH(req: Request) {
         createdAt: true
       }
     })
+    
+    // Log admin action
+    logAdminAction("UPDATE_USER_ROLE", user!.id, {
+      targetUserId: userId,
+      newRole: role,
+      ip: request.headers.get("x-forwarded-for") || "unknown"
+    })
 
-    return NextResponse.json(updatedUser)
+    return NextResponse.json({ 
+      message: "User role updated successfully", 
+      user: updatedUser 
+    })
   } catch (error) {
     console.error("[ADMIN_USERS_UPDATE]", error)
     return new NextResponse("Internal Error", { status: 500 })
@@ -97,20 +123,27 @@ export async function PATCH(req: Request) {
 }
 
 // Delete user
-export async function DELETE(req: Request) {
+export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return new NextResponse("Unauthorized", { status: 401 })
+    const validation = await validateAdminAccess(request)
+    
+    if (!validation.isValid) {
+      return validation.response!
     }
 
-    const { searchParams } = new URL(req.url)
+    const { user } = validation
+    const { searchParams } = new URL(request.url)
     const userId = searchParams.get("userId")
 
     if (!userId) {
       return new NextResponse("Missing user ID", { status: 400 })
     }
+    
+    // Log admin action
+    logAdminAction("DELETE_USER", user!.id, {
+      targetUserId: userId,
+      ip: request.headers.get("x-forwarded-for") || "unknown"
+    })
 
     // Delete user's posts, comments, and other related data first
     await prisma.$transaction([
@@ -119,7 +152,9 @@ export async function DELETE(req: Request) {
       prisma.users.delete({ where: { id: userId } })
     ])
 
-    return new NextResponse(null, { status: 204 })
+    return NextResponse.json({ 
+      message: "User deleted successfully" 
+    })
   } catch (error) {
     console.error("[ADMIN_USERS_DELETE]", error)
     return new NextResponse("Internal Error", { status: 500 })

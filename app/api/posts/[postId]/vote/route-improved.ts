@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createActivityNotification } from "@/lib/notification-service"
+import { sendNotificationEmail } from "@/lib/email-service"
 import { z } from "zod"
 
 // Enhanced validation schema
@@ -231,22 +232,18 @@ export async function POST(
             }
           );
 
-          // Send email notification
-          await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/email`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'POST_LIKE',
-              userId: post.authorId,
-              data: {
-                postId,
-                authorId: userId,
-                authorName: reactingUser.name || 'Someone',
-                postTitle: post.title || 'Untitled Post'
-              }
-            })
-          });
-          console.log(`📧 Like notification sent to post author`);
+          // Send email notification directly
+          const emailSent = await sendNotificationEmail(
+            post.authorId,
+            'POST_LIKE',
+            {
+              postId,
+              authorId: userId,
+              postTitle: postDescription,
+              customUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/posts/${postId}`
+            }
+          );
+          console.log(`📧 Like notification ${emailSent ? 'sent successfully' : 'failed'} to post author`);
         }
       } catch (error) {
         console.error("Error sending like notification:", error);
