@@ -72,8 +72,9 @@ export async function POST(
       );
     }
 
-    // Prevent admin account deletion
-    if (user.role === 'ADMIN') {
+    // Prevent admin and super admin account deletion
+    const userRole = user.role as string;
+    if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
       return NextResponse.json(
         { error: 'Admin accounts cannot be deleted' },
         { status: 403 }

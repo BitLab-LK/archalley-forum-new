@@ -571,7 +571,7 @@ export default function ImagePostModal({
                 </div>
                 
                 {/* Delete button for comment author or admin */}
-                {(user?.id === comment.authorId || user?.role === "ADMIN") && (
+                {(user?.id === comment.authorId || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && (
                   <div className="relative">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

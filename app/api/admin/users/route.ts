@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { validateAdminAccess, logAdminAction } from "@/lib/admin-security"
 import { onUserDeleted } from "@/lib/stats-service"
 import { updateUserActivityAsync } from "@/lib/activity-service"
+import { validateSuperAdminOperation, logSuperAdminOperation } from "@/lib/super-admin-utils"
 import type { NextRequest } from "next/server"
 
 export async function GET(request: NextRequest) {
@@ -81,6 +82,12 @@ export async function PATCH(request: NextRequest) {
 
     const { user } = validation
 
+    // Check super admin privileges for user role modification
+    const superAdminValidation = validateSuperAdminOperation(user, "MODIFY_ROLES")
+    if (!superAdminValidation.isValid) {
+      return new NextResponse(superAdminValidation.errorMessage, { status: 403 })
+    }
+
     const body = await request.json()
     const { userId, role } = body
 
@@ -96,8 +103,23 @@ export async function PATCH(request: NextRequest) {
     })
 
     // Validate role
-    if (!["MEMBER", "MODERATOR", "ADMIN"].includes(role)) {
+    if (!["MEMBER", "MODERATOR", "ADMIN", "SUPER_ADMIN"].includes(role)) {
       return new NextResponse("Invalid role", { status: 400 })
+    }
+
+    // Prevent non-super-admins from creating super admins
+    if (role === "SUPER_ADMIN" && (user!.role as string) !== "SUPER_ADMIN") {
+      return new NextResponse("Only super admins can assign super admin role", { status: 403 })
+    }
+
+    // Prevent modification of other super admins by non-super-admins
+    const targetUser = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { role: true, email: true }
+    })
+    
+    if ((targetUser?.role as string) === "SUPER_ADMIN" && (user!.role as string) !== "SUPER_ADMIN") {
+      return new NextResponse("Only super admins can modify super admin accounts", { status: 403 })
     }
 
     // Update user role
@@ -141,16 +163,39 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { user } = validation
+
+    // Check super admin privileges for user deletion
+    const superAdminValidation = validateSuperAdminOperation(user, "DELETE_USER")
+    if (!superAdminValidation.isValid) {
+      return new NextResponse(superAdminValidation.errorMessage, { status: 403 })
+    }
+
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get("userId")
 
     if (!userId) {
       return new NextResponse("Missing user ID", { status: 400 })
     }
+
+    // Prevent deletion of super admin accounts by non-super-admins
+    const targetUser = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { role: true, email: true }
+    })
     
-    // Log admin action
-    logAdminAction("DELETE_USER", user!.id, {
-      targetUserId: userId,
+    if ((targetUser?.role as string) === "SUPER_ADMIN" && (user!.role as string) !== "SUPER_ADMIN") {
+      return new NextResponse("Super admin accounts cannot be deleted by non-super-admins", { status: 403 })
+    }
+
+    // Prevent self-deletion
+    if (userId === user!.id) {
+      return new NextResponse("Cannot delete your own account", { status: 400 })
+    }
+    
+    // Log super admin operation
+    logSuperAdminOperation("DELETE_USER", user!.id, userId, {
+      targetUserRole: targetUser?.role,
+      targetUserEmail: targetUser?.email,
       ip: request.headers.get("x-forwarded-for") || "unknown"
     })
 

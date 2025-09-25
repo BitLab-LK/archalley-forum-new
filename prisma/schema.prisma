@@ -366,6 +366,7 @@ enum BadgeLevel {
 }
 
 enum UserRole {
+  SUPER_ADMIN
   ADMIN
   MODERATOR
   MEMBER

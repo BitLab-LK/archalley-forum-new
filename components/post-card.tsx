@@ -261,7 +261,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     const categoryName = post.category || 'general'
     return getCategoryBackground(categoryName.toLowerCase())
   }, [post.category, post.images])
-  const isAdmin = useMemo(() => user?.role === "ADMIN", [user?.role])
+  const isAdmin = useMemo(() => user?.role === "ADMIN" || user?.role === "SUPER_ADMIN", [user?.role])
   const canDelete = useMemo(() => isAuthor || isAdmin, [isAuthor, isAdmin])
   
   // ========================================================================

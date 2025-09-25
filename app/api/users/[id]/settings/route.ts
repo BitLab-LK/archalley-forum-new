@@ -21,7 +21,8 @@ export async function PUT(
       select: { id: true, role: true }
     });
 
-    if (!currentUser || (currentUser.id !== userId && currentUser.role !== 'ADMIN')) {
+    const currentUserRole = currentUser?.role as string;
+    if (!currentUser || (currentUser.id !== userId && currentUserRole !== 'ADMIN' && currentUserRole !== 'SUPER_ADMIN')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -71,7 +72,8 @@ export async function GET(
       select: { id: true, role: true }
     });
 
-    if (!currentUser || (currentUser.id !== userId && currentUser.role !== 'ADMIN')) {
+    const currentUserRole = currentUser?.role as string;
+    if (!currentUser || (currentUser.id !== userId && currentUserRole !== 'ADMIN' && currentUserRole !== 'SUPER_ADMIN')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

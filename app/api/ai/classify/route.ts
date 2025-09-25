@@ -92,7 +92,8 @@ export async function GET() {
     }
 
     // Only allow admins to test AI service
-    if (session.user.role !== "ADMIN") {
+    const userRole = session.user.role as string;
+    if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 }

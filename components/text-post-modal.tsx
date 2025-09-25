@@ -840,7 +840,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
                   </p>
                 </div>
                 {/* Delete button for comment author or admin */}
-                {(user?.id === comment.authorId || user?.role === "ADMIN") && (
+                {(user?.id === comment.authorId || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && (
                   <div className="relative">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -1037,7 +1037,7 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
   }
 
   // Check if user can delete this post (author or admin)
-  const canDeletePost = user && (user.id === post.author.id || user.role === "ADMIN")
+  const canDeletePost = user && (user.id === post.author.id || user.role === "ADMIN" || user.role === "SUPER_ADMIN")
 
   // Calculate total comment count including replies
   const totalCommentCount = comments.reduce((total, comment) => {

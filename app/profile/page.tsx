@@ -329,7 +329,7 @@ export default function ProfilePage() {
                       <h1 className="text-2xl font-bold">{profileData.name}</h1>
                       {user?.isVerified && <CheckCircle className="w-6 h-6 text-yellow-500" />}
                     </div>
-                    {(user?.role === 'ADMIN' || user?.isAdmin) && (
+                    {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.isAdmin) && (
                       <Badge variant="outline">Public Profile</Badge>
                     )}
                   </div>

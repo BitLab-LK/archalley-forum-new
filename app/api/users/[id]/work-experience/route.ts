@@ -42,7 +42,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const { id } = await params
     // Check if user can update this profile
-    if (session.user.id !== id && session.user.role !== "ADMIN") {
+    const userRole = session.user.role as string;
+    if (session.user.id !== id && userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 

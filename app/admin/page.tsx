@@ -9,13 +9,14 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
 import { Users, MessageSquare, TrendingUp, Eye, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal, RefreshCw } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useSocket } from "@/lib/socket-context"
-import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
+
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { checkSuperAdminPrivileges } from "@/lib/super-admin-utils"
 
 interface DashboardStats {
   totalUsers: number
@@ -27,18 +28,7 @@ interface DashboardStats {
   success?: boolean
 }
 
-interface User {
-  id: string
-  name: string
-  email: string
-  role: string
-  joinDate: string
-  lastLogin: string
-  postCount: number
-  commentCount: number
-  image?: string
-  isActive?: boolean
-}
+
 
 interface Settings {
   siteTitle: string
@@ -138,9 +128,7 @@ export default function AdminDashboard() {
   })
   const [statsError, setStatsError] = useState<string | null>(null)
   const [statsLoading, setStatsLoading] = useState(true)
-  const [users, setUsers] = useState<User[]>([])
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
+
   const [settings, setSettings] = useState<Settings>({} as Settings)
   const [pages, setPages] = useState<Page[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -152,20 +140,23 @@ export default function AdminDashboard() {
   const [postsLoading, setPostsLoading] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [loadingUsers, setLoadingUsers] = useState<Set<string>>(new Set())
+
   const [statsRefreshing, setStatsRefreshing] = useState(false)
   const { user, isLoading: authLoading } = useAuth()
   const { socket, isConnected } = useSocket()
-  const { confirm } = useConfirmDialog()
-  const router = useRouter()
 
-  // Early security check - redirect immediately if not admin
+  const router = useRouter()
+  
+  // Super admin privileges check
+  const superAdminPrivileges = checkSuperAdminPrivileges(user)
+
+  // Early security check - redirect immediately if not admin or super admin
   useEffect(() => {
-    if (!authLoading && (!user || user.role !== "ADMIN")) {
+    if (!authLoading && (!user || !superAdminPrivileges.isAdmin)) {
       router.replace("/")
       return
     }
-  }, [user, authLoading, router])
+  }, [user, authLoading, router, superAdminPrivileges.isAdmin])
 
   // Fetch dashboard data effect - must be declared before any early returns
   useEffect(() => {
@@ -193,8 +184,7 @@ export default function AdminDashboard() {
         }
 
         // Fetch other data in parallel
-        const [usersResponse, settingsResponse, pagesResponse, categoriesResponse, postsResponse] = await Promise.all([
-          fetch("/api/admin/users"),
+        const [settingsResponse, pagesResponse, categoriesResponse, postsResponse] = await Promise.all([
           fetch("/api/admin/settings"),
           fetch("/api/admin/pages"),
           fetch("/api/admin/categories"),
@@ -203,19 +193,14 @@ export default function AdminDashboard() {
         ])
 
         // Handle other responses
-        if (!usersResponse.ok || !settingsResponse.ok || !pagesResponse.ok) {
+        if (!settingsResponse.ok || !pagesResponse.ok) {
           throw new Error("Failed to fetch some dashboard data")
         }
 
-        const [usersData, settingsData, pagesData] = await Promise.all([
-          usersResponse.json(),
+        const [settingsData, pagesData] = await Promise.all([
           settingsResponse.json(),
           pagesResponse.json()
         ])
-
-        const usersList = usersData.users || []
-        setUsers(usersList)
-        setFilteredUsers(usersList)
         setSettings(settingsData || {})
         setPages(pagesData.pages || [])
 
@@ -247,53 +232,7 @@ export default function AdminDashboard() {
     }
   }, [user, router])
 
-  // Periodic refresh for Recent Users to keep active indicators updated
-  useEffect(() => {
-    if (!user || user.role !== "ADMIN") return
 
-    const refreshRecentUsers = async () => {
-      try {
-        const usersResponse = await fetch("/api/admin/users")
-        if (usersResponse.ok) {
-          const usersData = await usersResponse.json()
-          const usersList = usersData.users || []
-          setUsers(usersList)
-          setFilteredUsers(() => {
-            // Preserve search filtering if active
-            if (searchTerm.trim()) {
-              return usersList.filter((user: User) => 
-                user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                user.email.toLowerCase().includes(searchTerm.toLowerCase())
-              )
-            }
-            return usersList
-          })
-        }
-      } catch (error) {
-        console.warn('Failed to refresh recent users list:', error)
-      }
-    }
-
-    // Refresh every 30 seconds to keep active indicators up-to-date
-    const interval = setInterval(refreshRecentUsers, 30000)
-
-    // Cleanup interval on unmount
-    return () => clearInterval(interval)
-  }, [user, searchTerm])
-
-  // Filter users based on search term
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredUsers(users)
-    } else {
-      const filtered = users.filter(user => 
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.role.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      setFilteredUsers(filtered)
-    }
-  }, [users, searchTerm])
 
   // Filter posts based on search term and status
   useEffect(() => {
@@ -327,17 +266,13 @@ export default function AdminDashboard() {
     setFilteredPosts(filtered)
   }, [posts, postSearchTerm, postStatusFilter])
 
-  // Manual refresh function for stats and recent users
+  // Manual refresh function for stats
   const refreshStats = useCallback(async () => {
     if (statsRefreshing) return
     
     setStatsRefreshing(true)
     try {
-      // Fetch both stats and users data in parallel
-      const [statsResponse, usersResponse] = await Promise.all([
-        fetch("/api/admin/stats"),
-        fetch("/api/admin/users")
-      ])
+      const statsResponse = await fetch("/api/admin/stats")
       
       if (!statsResponse.ok) {
         throw new Error(`Stats API error: ${statsResponse.status}`)
@@ -346,18 +281,7 @@ export default function AdminDashboard() {
       const statsData = await statsResponse.json()
       setStats(statsData)
       setStatsError(null)
-      
-      // Update users list if users API succeeded
-      if (usersResponse.ok) {
-        const usersData = await usersResponse.json()
-        const usersList = usersData.users || []
-        setUsers(usersList)
-        setFilteredUsers(usersList)
-        toast.success("Stats and Recent Users refreshed successfully")
-      } else {
-        // Stats updated but users failed
-        toast.success("Stats refreshed successfully (Recent Users refresh failed)")
-      }
+      toast.success("Stats refreshed successfully")
     } catch (error) {
       console.error("Error refreshing stats:", error)
       setStatsError(error instanceof Error ? error.message : "Failed to refresh statistics")
@@ -382,20 +306,7 @@ export default function AdminDashboard() {
       setStats(data.stats)
       setStatsError(null)
       
-      // For user-related events, also refresh the Recent Users list to update active indicators
-      if (data.eventType === 'user_created' || data.eventType === 'user_deleted' || data.eventType.includes('user')) {
-        try {
-          const usersResponse = await fetch("/api/admin/users")
-          if (usersResponse.ok) {
-            const usersData = await usersResponse.json()
-            const usersList = usersData.users || []
-            setUsers(usersList)
-            setFilteredUsers(usersList)
-          }
-        } catch (error) {
-          console.warn('Failed to refresh users list after real-time update:', error)
-        }
-      }
+
       
       // Show a subtle notification for the update
       const eventMessages = {
@@ -462,100 +373,7 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleUserRoleUpdate = async (userId: string, newRole: string) => {
-    // Prevent multiple simultaneous updates
-    if (loadingUsers.has(userId)) {
-      return
-    }
 
-    // Add to loading set
-    setLoadingUsers(prev => new Set([...prev, userId]))
-
-    try {
-      const response = await fetch("/api/admin/users", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, role: newRole })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.text()
-        throw new Error(`Failed to update user role: ${response.status} ${errorData}`)
-      }
-
-      await response.json() // Consume response
-      
-      // Update local state
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, role: newRole } : user
-      ))
-
-      toast.success(`User role updated to ${newRole} successfully`)
-    } catch (error) {
-      console.error("Error updating user role:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to update user role")
-      
-      // Revert the role change in UI if it failed
-      // Force a re-render to show the original role
-      setUsers([...users])
-    } finally {
-      // Remove from loading set
-      setLoadingUsers(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(userId)
-        return newSet
-      })
-    }
-  }
-
-  const handleUserDelete = async (userId: string) => {
-    const userToDelete = users.find(u => u.id === userId)
-    
-    const confirmed = await confirm({
-      title: "Delete User",
-      description: `Are you sure you want to delete ${userToDelete?.name || 'this user'}? This will permanently delete their account, posts, and comments. This action cannot be undone.`,
-      confirmText: "Delete",
-      cancelText: "Cancel",
-      variant: "destructive"
-    })
-    
-    if (!confirmed) {
-      return
-    }
-
-    // Prevent multiple simultaneous deletions
-    if (loadingUsers.has(userId)) {
-      return
-    }
-
-    // Add to loading set
-    setLoadingUsers(prev => new Set([...prev, userId]))
-
-    try {
-      const response = await fetch(`/api/admin/users?userId=${userId}`, {
-        method: "DELETE"
-      })
-
-      if (!response.ok) {
-        const errorData = await response.text()
-        throw new Error(`Failed to delete user: ${response.status} ${errorData}`)
-      }
-
-      // Update local state
-      setUsers(users.filter(user => user.id !== userId))
-      toast.success(`User ${userToDelete?.name || 'account'} deleted successfully`)
-    } catch (error) {
-      console.error("Error deleting user:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to delete user")
-    } finally {
-      // Remove from loading set
-      setLoadingUsers(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(userId)
-        return newSet
-      })
-    }
-  }
 
   if (isLoading) {
     return (
@@ -579,14 +397,26 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <div className="mb-4 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Manage your forum settings and content</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Manage your forum settings and content</p>
+            </div>
+            <div className="text-right">
+              <Badge 
+                variant={superAdminPrivileges.isSuperAdmin ? "default" : "secondary"}
+                className={superAdminPrivileges.isSuperAdmin ? "bg-red-500 text-white" : ""}
+              >
+                {superAdminPrivileges.isSuperAdmin ? "SUPER ADMIN" : "ADMIN"}
+              </Badge>
+
+            </div>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 gap-1">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7 gap-1">
             <TabsTrigger value="statistics" className="text-xs sm:text-sm">Stats</TabsTrigger>
-            <TabsTrigger value="users" className="text-xs sm:text-sm">Users</TabsTrigger>
             <TabsTrigger value="categories" className="text-xs sm:text-sm">Categories</TabsTrigger>
             <TabsTrigger value="posts" className="text-xs sm:text-sm">Posts</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs sm:text-sm">Settings</TabsTrigger>
@@ -602,7 +432,7 @@ export default function AdminDashboard() {
               <div>
                 <h2 className="text-lg font-semibold">Dashboard Statistics</h2>
                 <p className="text-sm text-muted-foreground">
-                  Real-time forum metrics {isConnected ? '(Live Updates Active)' : '(Live Updates Disconnected)'}
+                  Real-time forum metrics and user activity monitoring
                 </p>
                 {stats.timestamp && (
                   <p className="text-xs text-muted-foreground mt-1">
@@ -615,7 +445,7 @@ export default function AdminDashboard() {
                 disabled={statsRefreshing || statsLoading}
                 variant="outline"
                 size="sm"
-                className="gap-2"
+                className="gap-2 border-yellow-500 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700"
               >
                 <RefreshCw className={`h-4 w-4 ${statsRefreshing ? 'animate-spin' : ''}`} />
                 {statsRefreshing ? 'Refreshing...' : 'Refresh Stats'}
@@ -626,7 +456,7 @@ export default function AdminDashboard() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
                   <CardTitle className="text-xs sm:text-sm font-medium">Total Users</CardTitle>
-                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
                 </CardHeader>
                 <CardContent className="p-3 sm:p-6">
                   {statsLoading ? (
@@ -651,7 +481,7 @@ export default function AdminDashboard() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
                   <CardTitle className="text-xs sm:text-sm font-medium">Total Posts</CardTitle>
-                  <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                  <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
                 </CardHeader>
                 <CardContent className="p-3 sm:p-6">
                   {statsLoading ? (
@@ -676,7 +506,7 @@ export default function AdminDashboard() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
                   <CardTitle className="text-xs sm:text-sm font-medium">Total Comments</CardTitle>
-                  <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                  <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
                 </CardHeader>
                 <CardContent className="p-3 sm:p-6">
                   {statsLoading ? (
@@ -699,24 +529,24 @@ export default function AdminDashboard() {
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Active Users</CardTitle>
+                  <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-6">
                   {statsLoading ? (
                     <div className="space-y-2">
-                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                      <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                       <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
                     </div>
                   ) : statsError ? (
                     <div className="space-y-1">
-                      <div className="text-2xl font-bold text-red-500">--</div>
+                      <div className="text-lg sm:text-2xl font-bold text-red-500">--</div>
                       <p className="text-xs text-red-500">Error loading</p>
                     </div>
                   ) : (
                     <>
-                      <div className="text-2xl font-bold">{stats.activeUsers.toLocaleString()}</div>
+                      <div className="text-lg sm:text-2xl font-bold">{stats.activeUsers.toLocaleString()}</div>
                       <p className="text-xs text-muted-foreground">Active in last 24 hours</p>
                     </>
                   )}
@@ -724,52 +554,7 @@ export default function AdminDashboard() {
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Users</CardTitle>
-                <CardDescription>Latest forum registrations</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {users.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="relative">
-                          <Avatar>
-                            <AvatarImage src={user.image || "/placeholder.svg?height=32&width=32"} />
-                            <AvatarFallback>{user.name[0]}</AvatarFallback>
-                          </Avatar>
-                          {user.isActive && (
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                          )}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{user.name}</p>
-                            {user.isActive && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Active
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-500">{user.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge
-                          variant={
-                            user.role === "ADMIN" ? "default" : user.role === "MODERATOR" ? "secondary" : "outline"
-                          }
-                        >
-                          {user.role}
-                        </Badge>
-                        <span className="text-sm text-gray-500">{user.joinDate}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+
           </TabsContent>
 
           {/* Settings Tab */}
@@ -935,106 +720,11 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex justify-end">
-              <Button onClick={handleSettingsSave} disabled={isSaving}>
+              <Button onClick={handleSettingsSave} disabled={isSaving} className="bg-yellow-500 hover:bg-yellow-600 text-white disabled:bg-yellow-300">
                 {isSaving ? "Saving..." : "Save Settings"}
                 <Save className="ml-2 h-4 w-4" />
               </Button>
             </div>
-          </TabsContent>
-
-          {/* Users Tab */}
-          <TabsContent value="users" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>Manage forum users and their roles</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <Input 
-                      placeholder="Search users by name, email, or role..." 
-                      className="max-w-sm" 
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    {searchTerm && (
-                      <div className="text-sm text-gray-500">
-                        {filteredUsers.length} of {users.length} users
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="border rounded-lg">
-                    <div className="grid grid-cols-6 gap-4 p-4 font-medium border-b">
-                      <div>User</div>
-                      <div>Email</div>
-                      <div>Role</div>
-                      <div>Join Date</div>
-                      <div>Last Login</div>
-                      <div>Actions</div>
-                    </div>
-
-                    {filteredUsers.length === 0 ? (
-                      <div className="p-8 text-center text-gray-500">
-                        {searchTerm ? `No users found matching "${searchTerm}"` : "No users found"}
-                      </div>
-                    ) : (
-                      filteredUsers.map((user) => {
-                        const isLoading = loadingUsers.has(user.id)
-                        return (
-                          <div key={user.id} className={`grid grid-cols-6 gap-4 p-4 border-b last:border-b-0 ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
-                            <div className="flex items-center space-x-2">
-                              <Avatar className="w-8 h-8">
-                                <AvatarImage src={user.image || "/placeholder.svg?height=32&width=32"} />
-                                <AvatarFallback>{user.name?.[0] || '?'}</AvatarFallback>
-                              </Avatar>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{user.name}</span>
-                                <span className="text-xs text-gray-500">{user.postCount} posts, {user.commentCount} comments</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center">
-                              <span className="truncate">{user.email}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <select
-                                value={user.role}
-                                onChange={(e) => handleUserRoleUpdate(user.id, e.target.value)}
-                                disabled={isLoading || user.id === user?.id} // Prevent admin from changing their own role
-                                className="bg-transparent border rounded px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                <option value="MEMBER">Member</option>
-                                <option value="MODERATOR">Moderator</option>
-                                <option value="ADMIN">Admin</option>
-                              </select>
-                              {isLoading && <div className="ml-2 w-4 h-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>}
-                            </div>
-                            <div className="flex items-center text-sm text-gray-600">{user.joinDate}</div>
-                            <div className="flex items-center text-sm text-gray-600">{user.lastLogin}</div>
-                            <div className="flex space-x-2 items-center">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleUserDelete(user.id)}
-                                disabled={isLoading || user.id === user?.id} // Prevent admin from deleting themselves
-                                className="text-red-500 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {isLoading ? (
-                                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent"></div>
-                                ) : (
-                                  <Trash2 className="w-4 h-4" />
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        )
-                      })
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {/* Pages Tab */}
@@ -1048,7 +738,7 @@ export default function AdminDashboard() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium">Existing Pages</h4>
-                    <Button onClick={() => router.push("/admin/pages/new")}>Create New Page</Button>
+                    <Button onClick={() => router.push("/admin/pages/new")} className="bg-yellow-500 hover:bg-yellow-600 text-white">Create New Page</Button>
                   </div>
 
                   <div className="space-y-2">
@@ -1101,7 +791,7 @@ export default function AdminDashboard() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium">Categories ({categories.length})</h4>
-                    <Button>Create New Category</Button>
+                    <Button className="bg-yellow-500 hover:bg-yellow-600 text-white">Create New Category</Button>
                   </div>
 
                   {categoriesLoading ? (

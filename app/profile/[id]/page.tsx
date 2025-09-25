@@ -424,7 +424,7 @@ export default function UserProfilePage() {
                       />
                     </div>
                   )}
-                  {!isOwnProfile && (currentUser?.role === 'ADMIN' || currentUser?.isAdmin) && (
+                  {!isOwnProfile && (currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN' || currentUser?.isAdmin) && (
                     <Badge variant="outline">
                       Public Profile
                     </Badge>

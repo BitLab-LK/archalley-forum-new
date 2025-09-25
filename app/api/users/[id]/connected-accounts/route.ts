@@ -17,7 +17,8 @@ export async function GET(
     const { id } = await params
 
     // Check if user is requesting their own data or is admin
-    if (session.user.id !== id && session.user.role !== "ADMIN") {
+    const userRole = session.user.role as string;
+    if (session.user.id !== id && userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 

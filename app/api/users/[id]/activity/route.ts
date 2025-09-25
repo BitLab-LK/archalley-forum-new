@@ -56,7 +56,8 @@ export async function GET(
     // 2. Target profile is public (no session required)
     // 3. Requester is admin (requires session)
     const isOwnProfile = session?.user?.id === userId
-    const isAdmin = session?.user?.role === "ADMIN"
+    const userRole = session?.user?.role as string;
+    const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN"
     const isPublicProfile = targetUser.profileVisibility
     
     const canView = isOwnProfile || isPublicProfile || isAdmin

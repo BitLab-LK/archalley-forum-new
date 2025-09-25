@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Search, Moon, Sun, LogOut, User, Shield, Home, Users } from "lucide-react"
+import { Search, Moon, Sun, LogOut, User, Shield, Home, Users, Crown } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/lib/auth-context"
 import NotificationDropdown from "@/components/notification-dropdown"
@@ -221,6 +221,14 @@ export default function Header() {
                         <span>Settings</span>
                       </Link>
                     </DropdownMenuItem> */}
+                    {user?.role === "SUPER_ADMIN" && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/super-admin">
+                          <Crown className="mr-2 h-4 w-4" />
+                          <span>Super Admin</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     {(user?.role === "ADMIN" || user?.role === "MODERATOR") && (
                       <DropdownMenuItem asChild>
                         <Link href="/admin">
