@@ -4,6 +4,7 @@ import FacebookProvider from "next-auth/providers/facebook"
 import LinkedInProvider from "next-auth/providers/linkedin"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
+import { updateUserActivityAsync } from "@/lib/activity-service"
 import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
@@ -213,9 +214,21 @@ export const authOptions: NextAuthOptions = {
   events: {
     async signIn({ user, account, isNewUser }) {
       console.log('SignIn event:', { user: user.email, provider: account?.provider, isNewUser })
+      
+      // Update user activity on sign in
+      if (user?.id) {
+        updateUserActivityAsync(user.id)
+      }
     },
     async signOut({ session, token }) {
       console.log('SignOut event:', { userEmail: session?.user?.email || token?.email })
+      
+      // Update user activity on sign out (they were active when they signed out)
+      const userId = session?.user?.id || token?.id
+      if (userId) {
+        updateUserActivityAsync(userId as string)
+      }
+      
       // Clear any additional session data if needed
     },
   },

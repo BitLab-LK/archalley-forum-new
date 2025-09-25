@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma, ensureDbConnection } from "@/lib/prisma"
+import { updateUserActivityAsync } from "@/lib/activity-service"
 
 // Utility function to format time ago
 const getTimeAgo = (date: Date): string => {
@@ -129,6 +130,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Update user activity for active user tracking
+    updateUserActivityAsync(session.user.id)
+
     const body = await request.json()
     const { notificationIds, markAsRead, markAll } = body
 
@@ -169,6 +173,9 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    // Update user activity for active user tracking
+    updateUserActivityAsync(session.user.id)
 
     const { searchParams } = new URL(request.url)
     const notificationId = searchParams.get("id")

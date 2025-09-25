@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdminAccess, logAdminAction } from "@/lib/admin-security"
 import { onUserDeleted } from "@/lib/stats-service"
+import { updateUserActivityAsync } from "@/lib/activity-service"
 import type { NextRequest } from "next/server"
 
 export async function GET(request: NextRequest) {
@@ -14,10 +15,16 @@ export async function GET(request: NextRequest) {
 
     const { user } = validation
     
+    // Update admin activity for active user tracking
+    updateUserActivityAsync(user!.id)
+    
     // Log admin action
     logAdminAction("VIEW_USERS", user!.id, {
       ip: request.headers.get("x-forwarded-for") || "unknown"
     })
+
+    // Calculate the date 24 hours ago for active user detection
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
     // Get recent users with their roles and join dates
     const users = await prisma.users.findMany({
@@ -42,7 +49,7 @@ export async function GET(request: NextRequest) {
       take: 10 // Limit to 10 most recent users
     })
 
-    // Format the user data
+    // Format the user data with active status
     const formattedUsers = users.map(user => ({
       id: user.id,
       name: user.name,
@@ -52,7 +59,8 @@ export async function GET(request: NextRequest) {
       joinDate: user.createdAt.toISOString().split("T")[0],
       lastLogin: user.lastActiveAt?.toISOString().split("T")[0] || "Never",
       postCount: user._count.Post,
-      commentCount: user._count.Comment
+      commentCount: user._count.Comment,
+      isActive: user.lastActiveAt ? user.lastActiveAt >= twentyFourHoursAgo : false
     }))
 
     return NextResponse.json({ users: formattedUsers })

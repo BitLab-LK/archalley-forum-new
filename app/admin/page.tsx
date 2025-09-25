@@ -37,6 +37,7 @@ interface User {
   postCount: number
   commentCount: number
   image?: string
+  isActive?: boolean
 }
 
 interface Settings {
@@ -246,6 +247,40 @@ export default function AdminDashboard() {
     }
   }, [user, router])
 
+  // Periodic refresh for Recent Users to keep active indicators updated
+  useEffect(() => {
+    if (!user || user.role !== "ADMIN") return
+
+    const refreshRecentUsers = async () => {
+      try {
+        const usersResponse = await fetch("/api/admin/users")
+        if (usersResponse.ok) {
+          const usersData = await usersResponse.json()
+          const usersList = usersData.users || []
+          setUsers(usersList)
+          setFilteredUsers(() => {
+            // Preserve search filtering if active
+            if (searchTerm.trim()) {
+              return usersList.filter((user: User) => 
+                user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                user.email.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+            }
+            return usersList
+          })
+        }
+      } catch (error) {
+        console.warn('Failed to refresh recent users list:', error)
+      }
+    }
+
+    // Refresh every 30 seconds to keep active indicators up-to-date
+    const interval = setInterval(refreshRecentUsers, 30000)
+
+    // Cleanup interval on unmount
+    return () => clearInterval(interval)
+  }, [user, searchTerm])
+
   // Filter users based on search term
   useEffect(() => {
     if (!searchTerm.trim()) {
@@ -292,20 +327,37 @@ export default function AdminDashboard() {
     setFilteredPosts(filtered)
   }, [posts, postSearchTerm, postStatusFilter])
 
-  // Manual refresh function for stats
+  // Manual refresh function for stats and recent users
   const refreshStats = useCallback(async () => {
     if (statsRefreshing) return
     
     setStatsRefreshing(true)
     try {
-      const response = await fetch("/api/admin/stats")
-      if (!response.ok) {
-        throw new Error(`Stats API error: ${response.status}`)
+      // Fetch both stats and users data in parallel
+      const [statsResponse, usersResponse] = await Promise.all([
+        fetch("/api/admin/stats"),
+        fetch("/api/admin/users")
+      ])
+      
+      if (!statsResponse.ok) {
+        throw new Error(`Stats API error: ${statsResponse.status}`)
       }
-      const data = await response.json()
-      setStats(data)
+      
+      const statsData = await statsResponse.json()
+      setStats(statsData)
       setStatsError(null)
-      toast.success("Stats refreshed successfully")
+      
+      // Update users list if users API succeeded
+      if (usersResponse.ok) {
+        const usersData = await usersResponse.json()
+        const usersList = usersData.users || []
+        setUsers(usersList)
+        setFilteredUsers(usersList)
+        toast.success("Stats and Recent Users refreshed successfully")
+      } else {
+        // Stats updated but users failed
+        toast.success("Stats refreshed successfully (Recent Users refresh failed)")
+      }
     } catch (error) {
       console.error("Error refreshing stats:", error)
       setStatsError(error instanceof Error ? error.message : "Failed to refresh statistics")
@@ -325,10 +377,25 @@ export default function AdminDashboard() {
     socket.emit('join-admin-stats')
 
     // Listen for stats updates
-    const handleStatsUpdate = (data: { stats: DashboardStats; eventType: string; timestamp: string }) => {
+    const handleStatsUpdate = async (data: { stats: DashboardStats; eventType: string; timestamp: string }) => {
       console.log('📊 Received real-time stats update:', data.eventType, data.stats)
       setStats(data.stats)
       setStatsError(null)
+      
+      // For user-related events, also refresh the Recent Users list to update active indicators
+      if (data.eventType === 'user_created' || data.eventType === 'user_deleted' || data.eventType.includes('user')) {
+        try {
+          const usersResponse = await fetch("/api/admin/users")
+          if (usersResponse.ok) {
+            const usersData = await usersResponse.json()
+            const usersList = usersData.users || []
+            setUsers(usersList)
+            setFilteredUsers(usersList)
+          }
+        } catch (error) {
+          console.warn('Failed to refresh users list after real-time update:', error)
+        }
+      }
       
       // Show a subtle notification for the update
       const eventMessages = {
@@ -667,12 +734,24 @@ export default function AdminDashboard() {
                   {users.map((user) => (
                     <div key={user.id} className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <Avatar>
-                          <AvatarImage src={user.image || "/placeholder.svg?height=32&width=32"} />
-                          <AvatarFallback>{user.name[0]}</AvatarFallback>
-                        </Avatar>
+                        <div className="relative">
+                          <Avatar>
+                            <AvatarImage src={user.image || "/placeholder.svg?height=32&width=32"} />
+                            <AvatarFallback>{user.name[0]}</AvatarFallback>
+                          </Avatar>
+                          {user.isActive && (
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                          )}
+                        </div>
                         <div>
-                          <p className="font-medium">{user.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{user.name}</p>
+                            {user.isActive && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Active
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-500">{user.email}</p>
                         </div>
                       </div>

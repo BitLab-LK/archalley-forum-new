@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createActivityNotification } from "@/lib/notification-service"
 import { sendNotificationEmail } from "@/lib/email-service"
+import { updateUserActivityAsync } from "@/lib/activity-service"
 import { z } from "zod"
 
 // Enhanced validation schema
@@ -83,6 +84,9 @@ export async function POST(
         { status: 401 }
       )
     }
+
+    // Update user activity for active user tracking
+    updateUserActivityAsync(session.user.id)
 
     // Parse and validate request
     const body = await request.json()

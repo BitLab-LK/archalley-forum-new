@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { updateUserActivityAsync } from "@/lib/activity-service"
 import { z } from "zod"
 
 const voteSchema = z.object({
@@ -20,6 +21,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    // Update user activity for active user tracking
+    updateUserActivityAsync(session.user.id)
     const body = await request.json()
     const { voteType } = voteSchema.parse(body)
     const { commentId } = await params

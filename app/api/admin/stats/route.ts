@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { validateAdminAccess, logAdminAction } from "@/lib/admin-security"
 import { getStatsData } from "@/lib/stats-service"
+import { updateUserActivityAsync } from "@/lib/activity-service"
 import type { NextRequest } from "next/server"
 
 export async function GET(request: NextRequest) {
@@ -12,6 +13,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { user } = validation
+    
+    // Update admin activity for active user tracking
+    updateUserActivityAsync(user!.id)
     
     // Log admin action
     logAdminAction("VIEW_STATS", user!.id, {

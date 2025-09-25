@@ -6,6 +6,7 @@ import { badgeService } from "@/lib/badge-service"
 import { createActivityNotification } from "@/lib/notification-service"
 import { sendNotificationEmail } from "@/lib/email-service"
 import { onCommentCreated } from "@/lib/stats-service"
+import { updateUserActivityAsync } from "@/lib/activity-service"
 
 // GET /api/comments?postId=...
 export async function GET(request: NextRequest) {
@@ -141,6 +142,9 @@ export async function POST(request: NextRequest) {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  
+  // Update user activity for active user tracking
+  updateUserActivityAsync(session.user.id)
   const body = await request.json()
   const { postId, content, parentId } = body
   if (!postId || !content) {

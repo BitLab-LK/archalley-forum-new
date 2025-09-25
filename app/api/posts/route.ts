@@ -44,6 +44,7 @@ import { geminiService } from "@/lib/gemini-service"
 import { classifyPost } from "@/lib/ai-service"
 import { sendNotificationEmail, extractMentions, getUserIdsByUsernames } from "@/lib/email-service"
 import { onPostCreated } from "@/lib/stats-service"
+import { updateUserActivityAsync } from "@/lib/activity-service"
 import { revalidatePath } from "next/cache"
 
 // Force dynamic rendering and disable caching for real-time data
@@ -407,6 +408,9 @@ export async function POST(request: Request) {
         { status: 401, headers: jsonHeaders }
       )
     }
+
+    // Update user activity for active user tracking
+    updateUserActivityAsync(session.user.id)
 
     let formData: FormData
     try {
