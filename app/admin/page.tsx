@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -155,21 +155,21 @@ export default function AdminDashboard() {
   const [isSaving, setIsSaving] = useState(false)
   const [loadingUsers, setLoadingUsers] = useState<Set<string>>(new Set())
   const [statsRefreshing, setStatsRefreshing] = useState(false)
-  const { user, isLoading: authLoading } = useAuth()
+  const { user: authenticatedUser, isLoading: authLoading } = useAuth()
   const { socket, isConnected } = useSocket()
   const { confirm } = useConfirmDialog()
   const router = useRouter()
   
   // Super admin privileges check
-  const superAdminPrivileges = checkSuperAdminPrivileges(user)
+  const superAdminPrivileges = checkSuperAdminPrivileges(authenticatedUser)
 
   // Early security check - redirect immediately if not admin or super admin
   useEffect(() => {
-    if (!authLoading && (!user || !superAdminPrivileges.isAdmin)) {
+    if (!authLoading && (!authenticatedUser || !superAdminPrivileges.isAdmin)) {
       router.replace("/")
       return
     }
-  }, [user, authLoading, router, superAdminPrivileges.isAdmin])
+  }, [authenticatedUser, authLoading, router, superAdminPrivileges.isAdmin])
 
   // Fetch dashboard data effect - must be declared before any early returns
   useEffect(() => {
@@ -246,14 +246,14 @@ export default function AdminDashboard() {
     }
 
     // Only fetch data if user is admin or super admin
-    if (user && superAdminPrivileges.isAdmin) {
+    if (authenticatedUser && superAdminPrivileges.isAdmin) {
       fetchDashboardData()
     }
-  }, [user, router, superAdminPrivileges.isAdmin])
+  }, [authenticatedUser, router, superAdminPrivileges.isAdmin])
 
   // Periodic refresh for Recent Users to keep active indicators updated
   useEffect(() => {
-    if (!user || !superAdminPrivileges.isAdmin) return
+    if (!authenticatedUser || !superAdminPrivileges.isAdmin) return
 
     const refreshRecentUsers = async () => {
       try {
@@ -283,7 +283,7 @@ export default function AdminDashboard() {
 
     // Cleanup interval on unmount
     return () => clearInterval(interval)
-  }, [user, searchTerm])
+  }, [authenticatedUser, searchTerm])
 
   // Filter users based on search term
   useEffect(() => {
@@ -373,7 +373,7 @@ export default function AdminDashboard() {
 
   // Socket.IO real-time stats updates
   useEffect(() => {
-    if (!socket || !isConnected || !user || !superAdminPrivileges.isAdmin) {
+    if (!socket || !isConnected || !authenticatedUser || !superAdminPrivileges.isAdmin) {
       return
     }
 
@@ -433,10 +433,10 @@ export default function AdminDashboard() {
       socket.off('error', handleSocketError)
       socket.emit('leave-admin-stats')
     }
-  }, [socket, isConnected, user, superAdminPrivileges.isAdmin])
+  }, [socket, isConnected, authenticatedUser, superAdminPrivileges.isAdmin])
 
   // Don't render anything if user is not admin (after all hooks are declared)
-  if (authLoading || !user || !superAdminPrivileges.isAdmin) {
+  if (authLoading || !authenticatedUser || !superAdminPrivileges.isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -757,32 +757,39 @@ export default function AdminDashboard() {
                 <CardDescription>Latest forum registrations</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {users.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between py-2">
-                      <div className="flex items-center space-x-3">
-                        <div className="relative">
-                          <Avatar>
-                            <AvatarImage src={user.image || "/placeholder.svg?height=32&width=32"} />
+                    <div key={user.id} className="flex items-center justify-between py-3 px-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <div className="flex items-center space-x-4">
+                        <div className="relative flex-shrink-0">
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage src={user.image || "/placeholder.svg?height=40&width=40"} />
                             <AvatarFallback>{user.name[0]}</AvatarFallback>
                           </Avatar>
                           {user.isActive && (
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
                           )}
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{user.name}</p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-gray-900 dark:text-white truncate" title={user.name}>
+                              {user.name}
+                            </p>
                             {user.isActive && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 flex-shrink-0">
                                 Active
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-gray-500">{user.email}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate" title={user.email}>
+                            {user.email}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                            {user.postCount} posts, {user.commentCount} comments
+                          </p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-4 flex-shrink-0">
                         <Badge
                           variant={
                             user.role === "SUPER_ADMIN" ? "default" : 
@@ -796,8 +803,8 @@ export default function AdminDashboard() {
                         >
                           {user.role === "SUPER_ADMIN" ? "SUPER ADMIN" : user.role}
                         </Badge>
-                        <div className="text-xs text-gray-500">
-                          <div>Joined: {user.joinDate}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 text-right">
+                          <div className="mb-0.5">Joined: {user.joinDate}</div>
                           <div>Last seen: {user.lastLogin}</div>
                         </div>
                       </div>
@@ -1001,14 +1008,19 @@ export default function AdminDashboard() {
                     )}
                   </div>
 
-                  <div className="border rounded-lg">
-                    <div className="grid grid-cols-6 gap-4 p-4 font-medium border-b">
-                      <div>User</div>
-                      <div>Email</div>
-                      <div>Role</div>
-                      <div>Join Date</div>
-                      <div>Last Login</div>
-                      <div>Actions</div>
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="hidden lg:grid grid-cols-6 gap-4 p-4 font-medium border-b bg-gray-50 dark:bg-gray-800">
+                      <div className="text-left min-w-0">User</div>
+                      <div className="text-center min-w-0">Email</div>
+                      <div className="text-center">Role</div>
+                      <div className="text-center">Join Date</div>
+                      <div className="text-center">Last Login</div>
+                      <div className="text-center">Actions</div>
+                    </div>
+                    <div className="lg:hidden grid grid-cols-3 gap-4 p-4 font-medium border-b bg-gray-50 dark:bg-gray-800">
+                      <div className="text-left">User</div>
+                      <div className="text-center">Role</div>
+                      <div className="text-center">Actions</div>
                     </div>
 
                     {filteredUsers.length === 0 ? (
@@ -1019,55 +1031,144 @@ export default function AdminDashboard() {
                       filteredUsers.map((user) => {
                         const isLoading = loadingUsers.has(user.id)
                         return (
-                          <div key={user.id} className={`grid grid-cols-6 gap-4 p-4 border-b last:border-b-0 ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
-                            <div className="flex items-center space-x-2">
-                              <Avatar className="w-8 h-8">
-                                <AvatarImage src={user.image || "/placeholder.svg?height=32&width=32"} />
-                                <AvatarFallback>{user.name?.[0] || '?'}</AvatarFallback>
-                              </Avatar>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{user.name}</span>
-                                <span className="text-xs text-gray-500">{user.postCount} posts, {user.commentCount} comments</span>
+                          <React.Fragment key={user.id}>
+                            {/* Desktop View */}
+                            <div className={`hidden lg:grid grid-cols-6 gap-4 p-4 border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+                              <div className="flex items-center space-x-3 min-w-0">
+                                <Avatar className="w-10 h-10 flex-shrink-0">
+                                  <AvatarImage src={user.image || "/placeholder.svg?height=40&width=40"} />
+                                  <AvatarFallback className="bg-yellow-100 text-yellow-700">{user.name?.[0] || '?'}</AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0 flex-1">
+                                  <div 
+                                    className="font-medium text-gray-900 dark:text-white truncate cursor-help" 
+                                    title={user.name}
+                                  >
+                                    {user.name}
+                                  </div>
+                                  <div className="text-xs text-gray-500 mt-0.5">
+                                    {user.postCount} posts, {user.commentCount} comments
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-center min-w-0">
+                                <span 
+                                  className="text-sm text-gray-600 dark:text-gray-300 truncate cursor-help max-w-full" 
+                                  title={user.email}
+                                >
+                                  {user.email}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-center">
+                                <div className="flex items-center space-x-2">
+                                  <select
+                                    value={user.role}
+                                    onChange={(e) => handleUserRoleUpdate(user.id, e.target.value)}
+                                    disabled={isLoading || user.id === authenticatedUser?.id || !superAdminPrivileges.canModifyRoles}
+                                    className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                                  >
+                                    <option value="MEMBER">Member</option>
+                                    <option value="MODERATOR">Moderator</option>
+                                    <option value="ADMIN">Admin</option>
+                                    {superAdminPrivileges.isSuperAdmin && (
+                                      <option value="SUPER_ADMIN">Super Admin</option>
+                                    )}
+                                  </select>
+                                  {isLoading && <div className="w-4 h-4 animate-spin rounded-full border-2 border-yellow-500 border-t-transparent"></div>}
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-center text-sm text-gray-600 dark:text-gray-300">
+                                {user.joinDate}
+                              </div>
+                              <div className="flex items-center justify-center text-sm text-gray-600 dark:text-gray-300">
+                                {user.lastLogin}
+                              </div>
+                              <div className="flex items-center justify-center">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleUserDelete(user.id)}
+                                  disabled={isLoading || user.id === authenticatedUser?.id || !superAdminPrivileges.canDeleteUsers}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed p-2 rounded-md transition-colors"
+                                  title={!superAdminPrivileges.canDeleteUsers ? "Super admin privileges required" : "Delete user"}
+                                >
+                                  {isLoading ? (
+                                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent"></div>
+                                  ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                  )}
+                                </Button>
                               </div>
                             </div>
-                            <div className="flex items-center">
-                              <span className="truncate">{user.email}</span>
+                            
+                            {/* Mobile View */}
+                            <div className={`lg:hidden border-b last:border-b-0 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+                              <div className="grid grid-cols-3 gap-4 items-start">
+                                {/* User Info */}
+                                <div className="flex items-start space-x-3">
+                                  <Avatar className="w-10 h-10 flex-shrink-0">
+                                    <AvatarImage src={user.image || "/placeholder.svg?height=40&width=40"} />
+                                    <AvatarFallback className="bg-yellow-100 text-yellow-700">{user.name?.[0] || '?'}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="min-w-0 flex-1">
+                                    <div 
+                                      className="font-medium text-gray-900 dark:text-white text-sm truncate cursor-help" 
+                                      title={user.name}
+                                    >
+                                      {user.name}
+                                    </div>
+                                    <div 
+                                      className="text-xs text-gray-600 dark:text-gray-400 truncate cursor-help" 
+                                      title={user.email}
+                                    >
+                                      {user.email}
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      {user.postCount} posts, {user.commentCount} comments
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Joined: {user.joinDate} | Last: {user.lastLogin}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Role */}
+                                <div className="flex items-center justify-center">
+                                  <select
+                                    value={user.role}
+                                    onChange={(e) => handleUserRoleUpdate(user.id, e.target.value)}
+                                    disabled={isLoading || user.id === authenticatedUser?.id || !superAdminPrivileges.canModifyRoles}
+                                    className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 w-full"
+                                  >
+                                    <option value="MEMBER">Member</option>
+                                    <option value="MODERATOR">Moderator</option>
+                                    <option value="ADMIN">Admin</option>
+                                    {superAdminPrivileges.isSuperAdmin && (
+                                      <option value="SUPER_ADMIN">Super Admin</option>
+                                    )}
+                                  </select>
+                                </div>
+                                
+                                {/* Actions */}
+                                <div className="flex items-center justify-center">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleUserDelete(user.id)}
+                                    disabled={isLoading || user.id === authenticatedUser?.id || !superAdminPrivileges.canDeleteUsers}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed p-2 rounded-md transition-colors"
+                                    title={!superAdminPrivileges.canDeleteUsers ? "Super admin privileges required" : "Delete user"}
+                                  >
+                                    {isLoading ? (
+                                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent"></div>
+                                    ) : (
+                                      <Trash2 className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center">
-                              <select
-                                value={user.role}
-                                onChange={(e) => handleUserRoleUpdate(user.id, e.target.value)}
-                                disabled={isLoading || user.id === user?.id || !superAdminPrivileges.canModifyRoles} // Only super admins can modify roles
-                                className="bg-transparent border rounded px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                <option value="MEMBER">Member</option>
-                                <option value="MODERATOR">Moderator</option>
-                                <option value="ADMIN">Admin</option>
-                                {superAdminPrivileges.isSuperAdmin && (
-                                  <option value="SUPER_ADMIN">Super Admin</option>
-                                )}
-                              </select>
-                              {isLoading && <div className="ml-2 w-4 h-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>}
-                            </div>
-                            <div className="flex items-center text-sm text-gray-600">{user.joinDate}</div>
-                            <div className="flex items-center text-sm text-gray-600">{user.lastLogin}</div>
-                            <div className="flex space-x-2 items-center">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleUserDelete(user.id)}
-                                disabled={isLoading || user.id === user?.id || !superAdminPrivileges.canDeleteUsers} // Only super admins can delete users
-                                className="text-red-500 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                title={!superAdminPrivileges.canDeleteUsers ? "Super admin privileges required" : "Delete user"}
-                              >
-                                {isLoading ? (
-                                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent"></div>
-                                ) : (
-                                  <Trash2 className="w-4 h-4" />
-                                )}
-                              </Button>
-                            </div>
-                          </div>
+                          </React.Fragment>
                         )
                       })
                     )}
