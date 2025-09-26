@@ -69,31 +69,7 @@ export default function Header() {
     }
   }
 
-  const getRankColor = (rank: string) => {
-    const colors = {
-      NEW_MEMBER: "bg-gray-500",
-      CONVERSATION_STARTER: "bg-blue-500",
-      RISING_STAR: "bg-green-500",
-      VISUAL_STORYTELLER: "bg-purple-500",
-      VALUED_RESPONDER: "bg-yellow-500",
-      COMMUNITY_EXPERT: "bg-red-500",
-      TOP_CONTRIBUTOR: "bg-orange-500",
-    }
-    return colors[rank as keyof typeof colors] || "bg-gray-500"
-  }
 
-  const getRankName = (rank: string) => {
-    const names = {
-      NEW_MEMBER: "New Member",
-      CONVERSATION_STARTER: "Conversation Starter",
-      RISING_STAR: "Rising Star",
-      VISUAL_STORYTELLER: "Visual Storyteller",
-      VALUED_RESPONDER: "Valued Responder",
-      COMMUNITY_EXPERT: "Community Expert",
-      TOP_CONTRIBUTOR: "Top Contributor",
-    }
-    return names[rank as keyof typeof names] || "Member"
-  }
 
   // Helper function to check if a path is active
   const isActivePath = (path: string) => {
@@ -204,7 +180,17 @@ export default function Header() {
                           )}
                         </div>
                         <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                        <Badge className={`text-xs w-fit ${getRankColor(user?.rank)}`}>{getRankName(user?.rank)}</Badge>
+                        <Badge className={`text-xs w-fit flex items-center gap-1 ${
+                          user?.role === "SUPER_ADMIN" ? "bg-red-500 text-white hover:bg-red-600" :
+                          user?.role === "ADMIN" ? "bg-yellow-500 text-white hover:bg-yellow-600" :
+                          user?.role === "MODERATOR" ? "bg-blue-500 text-white hover:bg-blue-600" :
+                          "bg-gray-500 text-white"
+                        }`}>
+                          {user?.role === "SUPER_ADMIN" && <Crown className="h-3 w-3" />}
+                          {user?.role === "SUPER_ADMIN" ? "Super Admin" :
+                           user?.role === "ADMIN" ? "Admin" :
+                           user?.role === "MODERATOR" ? "Moderator" : "Member"}
+                        </Badge>
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -221,15 +207,7 @@ export default function Header() {
                         <span>Settings</span>
                       </Link>
                     </DropdownMenuItem> */}
-                    {user?.role === "SUPER_ADMIN" && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/super-admin">
-                          <Crown className="mr-2 h-4 w-4" />
-                          <span>Super Admin</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                    {(user?.role === "ADMIN" || user?.role === "MODERATOR") && (
+                    {(user?.role === "ADMIN" || user?.role === "SUPER_ADMIN" || user?.role === "MODERATOR") && (
                       <DropdownMenuItem asChild>
                         <Link href="/admin">
                           <Shield className="mr-2 h-4 w-4" />

@@ -9,7 +9,8 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user || session.user.role !== "ADMIN") {
+    const userRole = session?.user?.role as string;
+    if (!session?.user || (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN")) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
@@ -31,7 +32,8 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user || session.user.role !== "ADMIN") {
+    const userRole = session?.user?.role as string;
+    if (!session?.user || (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN")) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
@@ -75,7 +77,8 @@ export async function PATCH(req: Request) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user || session.user.role !== "ADMIN") {
+    const userRole = session?.user?.role as string;
+    if (!session?.user || (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN")) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
@@ -121,7 +124,8 @@ export async function DELETE(req: Request) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user || session.user.role !== "ADMIN") {
+    const userRole = session?.user?.role as string;
+    if (!session?.user || (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN")) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 

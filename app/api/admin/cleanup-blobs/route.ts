@@ -13,7 +13,8 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     
     // Only allow admins to run cleanup
-    if (!session?.user || session.user.role !== "ADMIN") {
+    const userRole = session?.user?.role as string;
+    if (!session?.user || (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN")) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
@@ -103,7 +104,8 @@ export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session?.user || session.user.role !== "ADMIN") {
+    const userRole = session?.user?.role as string;
+    if (!session?.user || (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN")) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 

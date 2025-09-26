@@ -9,31 +9,7 @@ export async function middleware(request: NextRequest) {
     userAgent: request.headers.get('user-agent')?.substring(0, 50)
   })
 
-  // Check super-admin route protection (SUPER_ADMIN only)
-  if (request.nextUrl.pathname.startsWith('/super-admin')) {
-    try {
-      const token = await getToken({ 
-        req: request, 
-        secret: process.env.NEXTAUTH_SECRET 
-      })
-      
-      const userRole = token?.role as string;
-      if (!token || userRole !== 'SUPER_ADMIN') {
-        console.log('🚫 Super Admin access denied:', { 
-          hasToken: !!token, 
-          role: token?.role 
-        })
-        return NextResponse.redirect(new URL('/', request.url))
-      }
-      
-      console.log('✅ Super Admin access granted:', token.email)
-    } catch (error) {
-      console.error('❌ Token verification failed:', error)
-      return NextResponse.redirect(new URL('/', request.url))
-    }
-  }
-
-  // Check admin route protection (ADMIN and SUPER_ADMIN)
+  // Check admin route protection
   if (request.nextUrl.pathname.startsWith('/admin')) {
     try {
       const token = await getToken({ 
@@ -81,7 +57,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/admin/:path*",
-    "/super-admin/:path*",
     "/api/:path*",
   ],
 }

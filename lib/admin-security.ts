@@ -26,8 +26,9 @@ export async function validateAdminAccess(request?: NextRequest) {
       }
     }
 
-    // Check if user has admin role
-    if (session.user.role !== "ADMIN") {
+    // Check if user has admin role (ADMIN or SUPER_ADMIN)
+    const userRole = session.user.role as string;
+    if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
       console.warn("🚫 Admin API access denied:", {
         userId: session.user.id,
         email: session.user.email,
