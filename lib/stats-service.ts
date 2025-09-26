@@ -93,7 +93,7 @@ export function setSocketIOServer(server: SocketIOServer) {
   io = server
 }
 
-export async function broadcastStatsUpdate(eventType: 'user_created' | 'user_deleted' | 'post_created' | 'post_deleted' | 'comment_created' | 'comment_deleted') {
+export async function broadcastStatsUpdate(eventType: 'user_created' | 'user_deleted' | 'user_role_updated' | 'post_created' | 'post_deleted' | 'comment_created' | 'comment_deleted') {
   if (!io) {
     console.warn('Socket.IO server not available for stats broadcast')
     return
@@ -147,4 +147,8 @@ export async function onCommentCreated() {
 
 export async function onCommentDeleted() {
   await broadcastStatsUpdate('comment_deleted')
+}
+
+export async function onUserRoleUpdated() {
+  await broadcastStatsUpdate('user_role_updated')
 }

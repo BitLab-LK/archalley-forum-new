@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdminAccess, logAdminAction } from "@/lib/admin-security"
-import { onUserDeleted } from "@/lib/stats-service"
+import { onUserDeleted, onUserRoleUpdated } from "@/lib/stats-service"
 import { updateUserActivityAsync } from "@/lib/activity-service"
 import { validateSuperAdminOperation, logSuperAdminOperation } from "@/lib/super-admin-utils"
 import type { NextRequest } from "next/server"
@@ -142,6 +142,9 @@ export async function PATCH(request: NextRequest) {
       newRole: role,
       ip: request.headers.get("x-forwarded-for") || "unknown"
     })
+
+    // Broadcast real-time update to all admin dashboard users
+    await onUserRoleUpdated()
 
     return NextResponse.json({ 
       message: "User role updated successfully", 

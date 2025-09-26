@@ -251,39 +251,44 @@ export default function AdminDashboard() {
     }
   }, [authenticatedUser, router, superAdminPrivileges.isAdmin])
 
+  // Function to refresh users list from server
+  const refreshUsersList = useCallback(async () => {
+    try {
+      console.log('🔄 Refreshing users list from server...')
+      const usersResponse = await fetch("/api/admin/users")
+      if (usersResponse.ok) {
+        const usersData = await usersResponse.json()
+        const usersList = usersData.users || []
+        setUsers(usersList)
+        
+        // Preserve search filtering if active
+        if (searchTerm.trim()) {
+          const filtered = usersList.filter((user: User) => 
+            user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.role.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+          setFilteredUsers(filtered)
+        } else {
+          setFilteredUsers(usersList)
+        }
+        console.log('✅ Users list refreshed successfully')
+      }
+    } catch (error) {
+      console.warn('❌ Failed to refresh users list:', error)
+    }
+  }, [searchTerm])
+
   // Periodic refresh for Recent Users to keep active indicators updated
   useEffect(() => {
     if (!authenticatedUser || !superAdminPrivileges.isAdmin) return
 
-    const refreshRecentUsers = async () => {
-      try {
-        const usersResponse = await fetch("/api/admin/users")
-        if (usersResponse.ok) {
-          const usersData = await usersResponse.json()
-          const usersList = usersData.users || []
-          setUsers(usersList)
-          setFilteredUsers(() => {
-            // Preserve search filtering if active
-            if (searchTerm.trim()) {
-              return usersList.filter((user: User) => 
-                user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                user.email.toLowerCase().includes(searchTerm.toLowerCase())
-              )
-            }
-            return usersList
-          })
-        }
-      } catch (error) {
-        console.warn('Failed to refresh recent users list:', error)
-      }
-    }
-
     // Refresh every 30 seconds to keep active indicators up-to-date
-    const interval = setInterval(refreshRecentUsers, 30000)
+    const interval = setInterval(refreshUsersList, 30000)
 
     // Cleanup interval on unmount
     return () => clearInterval(interval)
-  }, [authenticatedUser, searchTerm])
+  }, [authenticatedUser, refreshUsersList])
 
   // Filter users based on search term
   useEffect(() => {
@@ -387,14 +392,24 @@ export default function AdminDashboard() {
       setStatsError(null)
       
       // For user-related events, also refresh the Recent Users list to update active indicators
-      if (data.eventType === 'user_created' || data.eventType === 'user_deleted' || data.eventType.includes('user')) {
+      if (data.eventType === 'user_created' || data.eventType === 'user_deleted' || data.eventType === 'user_role_updated' || data.eventType.includes('user')) {
         try {
           const usersResponse = await fetch("/api/admin/users")
           if (usersResponse.ok) {
             const usersData = await usersResponse.json()
             const usersList = usersData.users || []
             setUsers(usersList)
-            setFilteredUsers(usersList)
+            // Preserve search filtering if active
+            if (searchTerm.trim()) {
+              const filtered = usersList.filter((user: User) => 
+                user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                user.role.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              setFilteredUsers(filtered)
+            } else {
+              setFilteredUsers(usersList)
+            }
           }
         } catch (error) {
           console.warn('Failed to refresh users list after real-time update:', error)
@@ -405,6 +420,7 @@ export default function AdminDashboard() {
       const eventMessages = {
         user_created: 'New user registered',
         user_deleted: 'User account deleted',
+        user_role_updated: 'User role updated',
         post_created: 'New post published',
         post_deleted: 'Post deleted',
         comment_created: 'New comment added',
@@ -467,8 +483,11 @@ export default function AdminDashboard() {
   }
 
   const handleUserRoleUpdate = async (userId: string, newRole: string) => {
+    console.log(`🔄 Updating role for user ${userId} to ${newRole}`)
+    
     // Prevent multiple simultaneous updates
     if (loadingUsers.has(userId)) {
+      console.log(`⏳ Role update already in progress for user ${userId}`)
       return
     }
 
@@ -476,32 +495,32 @@ export default function AdminDashboard() {
     setLoadingUsers(prev => new Set([...prev, userId]))
 
     try {
+      console.log(`📡 Sending PATCH request to /api/admin/users`)
       const response = await fetch("/api/admin/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, role: newRole })
       })
 
+      console.log(`📨 Response status: ${response.status}`)
+
       if (!response.ok) {
         const errorData = await response.text()
+        console.error(`❌ API Error: ${response.status} - ${errorData}`)
         throw new Error(`Failed to update user role: ${response.status} ${errorData}`)
       }
 
-      await response.json() // Consume response
+      const responseData = await response.json()
+      console.log(`✅ Role update successful:`, responseData)
       
-      // Update local state
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, role: newRole } : user
-      ))
+      // Refresh the entire user list from server to ensure data consistency
+      await refreshUsersList()
 
+      console.log(`🔄 User list refreshed after role update for user ${userId}`)
       toast.success(`User role updated to ${newRole} successfully`)
     } catch (error) {
-      console.error("Error updating user role:", error)
+      console.error("❌ Error updating user role:", error)
       toast.error(error instanceof Error ? error.message : "Failed to update user role")
-      
-      // Revert the role change in UI if it failed
-      // Force a re-render to show the original role
-      setUsers([...users])
     } finally {
       // Remove from loading set
       setLoadingUsers(prev => {
@@ -509,6 +528,7 @@ export default function AdminDashboard() {
         newSet.delete(userId)
         return newSet
       })
+      console.log(`🏁 Role update process completed for user ${userId}`)
     }
   }
 
@@ -597,8 +617,8 @@ export default function AdminDashboard() {
             </div>
             <div className="text-right">
               <Badge 
-                variant={superAdminPrivileges.isSuperAdmin ? "default" : "secondary"}
-                className={`flex items-center gap-1 ${superAdminPrivileges.isSuperAdmin ? "bg-red-500 text-white" : ""}`}
+                variant="default"
+                className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md ${superAdminPrivileges.isSuperAdmin ? "bg-red-500 text-white hover:bg-red-600" : "bg-yellow-500 text-white hover:bg-yellow-600"}`}
               >
                 {superAdminPrivileges.isSuperAdmin && <Crown className="h-3 w-3" />}
                 {superAdminPrivileges.isSuperAdmin ? "SUPER ADMIN" : "ADMIN"}
@@ -642,7 +662,7 @@ export default function AdminDashboard() {
                 disabled={statsRefreshing || statsLoading}
                 variant="outline"
                 size="sm"
-                className="gap-2 border-yellow-500 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700"
+                className="gap-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white hover:border-yellow-600 transition-colors"
               >
                 <RefreshCw className={`h-4 w-4 ${statsRefreshing ? 'animate-spin' : ''}`} />
                 {statsRefreshing ? 'Refreshing...' : 'Refresh Stats'}
@@ -1010,7 +1030,7 @@ export default function AdminDashboard() {
 
                   <div className="border rounded-lg overflow-hidden">
                     <div className="hidden lg:grid grid-cols-6 gap-4 p-4 font-medium border-b bg-gray-50 dark:bg-gray-800">
-                      <div className="text-left min-w-0">User</div>
+                      <div className="text-center min-w-0">User</div>
                       <div className="text-center min-w-0">Email</div>
                       <div className="text-center">Role</div>
                       <div className="text-center">Join Date</div>
@@ -1070,9 +1090,13 @@ export default function AdminDashboard() {
                                     <option value="MEMBER">Member</option>
                                     <option value="MODERATOR">Moderator</option>
                                     <option value="ADMIN">Admin</option>
-                                    {superAdminPrivileges.isSuperAdmin && (
-                                      <option value="SUPER_ADMIN">Super Admin</option>
-                                    )}
+                                    <option 
+                                      value="SUPER_ADMIN" 
+                                      disabled={!superAdminPrivileges.isSuperAdmin}
+                                      style={!superAdminPrivileges.isSuperAdmin ? { color: '#6B7280' } : {}}
+                                    >
+                                      Super Admin
+                                    </option>
                                   </select>
                                   {isLoading && <div className="w-4 h-4 animate-spin rounded-full border-2 border-yellow-500 border-t-transparent"></div>}
                                 </div>
@@ -1143,9 +1167,13 @@ export default function AdminDashboard() {
                                     <option value="MEMBER">Member</option>
                                     <option value="MODERATOR">Moderator</option>
                                     <option value="ADMIN">Admin</option>
-                                    {superAdminPrivileges.isSuperAdmin && (
-                                      <option value="SUPER_ADMIN">Super Admin</option>
-                                    )}
+                                    <option 
+                                      value="SUPER_ADMIN" 
+                                      disabled={!superAdminPrivileges.isSuperAdmin}
+                                      style={!superAdminPrivileges.isSuperAdmin ? { color: '#6B7280' } : {}}
+                                    >
+                                      Super Admin
+                                    </option>
                                   </select>
                                 </div>
                                 
