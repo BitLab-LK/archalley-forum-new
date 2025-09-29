@@ -130,6 +130,110 @@ interface Post {
 }
 
 export default function AdminDashboard() {
+  // Category modal state and handlers
+  const [showCategoryModal, setShowCategoryModal] = useState<{ mode: 'create' | 'edit'; category: Category | null } | null>(null)
+
+  // Save category (create or edit)
+  const handleSaveCategory = async (categoryData: Partial<Category> & { id?: string }) => {
+    try {
+      let response
+      if (showCategoryModal?.mode === 'create') {
+        response = await fetch('/api/admin/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(categoryData)
+        })
+      } else if (showCategoryModal?.mode === 'edit' && showCategoryModal.category) {
+        response = await fetch(`/api/admin/categories/${showCategoryModal.category.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(categoryData)
+        })
+      }
+      if (!response || !response.ok) throw new Error('Failed to save category')
+      toast.success('Category saved successfully')
+      setShowCategoryModal(null)
+      // Refresh categories
+      const categoriesResponse = await fetch('/api/admin/categories')
+      if (categoriesResponse.ok) {
+        const categoriesData = await categoriesResponse.json()
+        setCategories(categoriesData.categories || [])
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to save category')
+    }
+  }
+
+  // Delete category (only if no posts)
+  const handleDeleteCategory = async (category: Category) => {
+    if (category.postCount > 0) {
+      toast.error('Cannot delete category with associated posts')
+      return
+    }
+    const confirmed = await confirm({
+      title: 'Delete Category',
+      description: `Are you sure you want to delete "${category.name}"? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'destructive'
+    })
+    if (!confirmed) return
+    try {
+      const response = await fetch(`/api/admin/categories/${category.id}`, {
+        method: 'DELETE'
+      })
+      if (!response.ok) throw new Error('Failed to delete category')
+      toast.success('Category deleted successfully')
+      // Refresh categories
+      const categoriesResponse = await fetch('/api/admin/categories')
+      if (categoriesResponse.ok) {
+        const categoriesData = await categoriesResponse.json()
+        setCategories(categoriesData.categories || [])
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete category')
+    }
+  }
+
+  // CategoryModal component (inline for now)
+  function CategoryModal({ mode, category, onClose, onSave }: { mode: 'create' | 'edit'; category: Category | null; onClose: () => void; onSave: (data: Partial<Category>) => void }) {
+    const [name, setName] = useState(category?.name || '')
+    const [description, setDescription] = useState(category?.description || '')
+    const [color, setColor] = useState(category?.color || '#FFD700')
+    const [saving, setSaving] = useState(false)
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault()
+      setSaving(true)
+      await onSave({ id: category?.id, name, description, color })
+      setSaving(false)
+      onClose()
+    }
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-md shadow-lg">
+          <h2 className="text-lg font-bold mb-4">{mode === 'create' ? 'Create Category' : 'Edit Category'}</h2>
+          <div className="mb-3">
+            <label className="block text-sm font-medium mb-1">Name</label>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full border rounded px-2 py-1" />
+          </div>
+          <div className="mb-3">
+            <label className="block text-sm font-medium mb-1">Description</label>
+            <input type="text" value={description} onChange={e => setDescription(e.target.value)} className="w-full border rounded px-2 py-1" />
+          </div>
+          <div className="mb-3">
+            <label className="block text-sm font-medium mb-1">Color</label>
+            <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-12 h-8 p-0 border-none" />
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
+            <Button type="submit" className="bg-yellow-500 hover:bg-yellow-600 text-white" disabled={saving}>{saving ? 'Saving...' : (mode === 'create' ? 'Create' : 'Save')}</Button>
+          </div>
+        </form>
+      </div>
+    )
+  }
   const [activeTab, setActiveTab] = useState("statistics")
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
@@ -1264,49 +1368,62 @@ export default function AdminDashboard() {
                   <Tag className="w-5 h-5" />
                   Category Management
                 </CardTitle>
-                <CardDescription>Create and manage forum categories</CardDescription>
+                <CardDescription>Create, edit, and delete forum categories</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium">Categories ({categories.length})</h4>
-                    <Button className="bg-yellow-500 hover:bg-yellow-600 text-white">Create New Category</Button>
+                    <Button className="bg-yellow-500 hover:bg-yellow-600 text-white" onClick={() => setShowCategoryModal({ mode: 'create', category: null })}>Create New Category</Button>
                   </div>
 
                   {categoriesLoading ? (
                     <div className="text-center py-8">Loading categories...</div>
                   ) : (
                     <div className="space-y-2">
-                      {categories.map((category) => (
-                        <div key={category.id} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <div 
-                              className="w-4 h-4 rounded" 
-                              style={{ backgroundColor: category.color }}
-                            />
-                            <div className="space-y-1">
-                              <div className="font-medium">{category.name}</div>
-                              <div className="text-sm text-gray-500">{category.description}</div>
+                      {categories.map((category) => {
+                        const postCount = posts.filter(post => post.category && post.category.name === category.name).length
+                        const hasPosts = postCount > 0
+                        return (
+                          <div key={category.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-4 h-4 rounded" style={{ backgroundColor: category.color }} />
+                              <div className="space-y-1">
+                                <div className="font-medium">{category.name}</div>
+                                <div className="text-sm text-gray-500">{category.description}</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-4">
+                              <Badge variant="secondary">{postCount} posts</Badge>
+                              <div className="flex space-x-2">
+                                <Button size="sm" variant="outline" onClick={() => setShowCategoryModal({ mode: 'edit', category })}>Edit</Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  disabled={hasPosts}
+                                  title={hasPosts ? "Cannot delete: posts exist" : "Delete category"}
+                                  onClick={() => handleDeleteCategory(category)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-4">
-                            <Badge variant="secondary">
-                              {category.postCount} posts
-                            </Badge>
-                            <div className="flex space-x-2">
-                              <Button size="sm" variant="ghost">
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button size="sm" variant="ghost">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </div>
+
+                {/* Category Modal for Create/Edit */}
+                {showCategoryModal && (
+                  <CategoryModal
+                    mode={showCategoryModal.mode}
+                    category={showCategoryModal.category}
+                    onClose={() => setShowCategoryModal(null)}
+                    onSave={handleSaveCategory}
+                  />
+                )}
               </CardContent>
             </Card>
           </TabsContent>
