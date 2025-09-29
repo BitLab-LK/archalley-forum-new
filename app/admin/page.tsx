@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Users, MessageSquare, TrendingUp, Eye, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal, RefreshCw, Crown } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useSocket } from "@/lib/socket-context"
@@ -85,6 +86,7 @@ interface Category {
   icon: string
   slug: string
   postCount: number
+  actualPostCount?: number
   createdAt: string
   updatedAt: string
 }
@@ -130,110 +132,6 @@ interface Post {
 }
 
 export default function AdminDashboard() {
-  // Category modal state and handlers
-  const [showCategoryModal, setShowCategoryModal] = useState<{ mode: 'create' | 'edit'; category: Category | null } | null>(null)
-
-  // Save category (create or edit)
-  const handleSaveCategory = async (categoryData: Partial<Category> & { id?: string }) => {
-    try {
-      let response
-      if (showCategoryModal?.mode === 'create') {
-        response = await fetch('/api/admin/categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(categoryData)
-        })
-      } else if (showCategoryModal?.mode === 'edit' && showCategoryModal.category) {
-        response = await fetch(`/api/admin/categories/${showCategoryModal.category.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(categoryData)
-        })
-      }
-      if (!response || !response.ok) throw new Error('Failed to save category')
-      toast.success('Category saved successfully')
-      setShowCategoryModal(null)
-      // Refresh categories
-      const categoriesResponse = await fetch('/api/admin/categories')
-      if (categoriesResponse.ok) {
-        const categoriesData = await categoriesResponse.json()
-        setCategories(categoriesData.categories || [])
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to save category')
-    }
-  }
-
-  // Delete category (only if no posts)
-  const handleDeleteCategory = async (category: Category) => {
-    if (category.postCount > 0) {
-      toast.error('Cannot delete category with associated posts')
-      return
-    }
-    const confirmed = await confirm({
-      title: 'Delete Category',
-      description: `Are you sure you want to delete "${category.name}"? This action cannot be undone.`,
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-      variant: 'destructive'
-    })
-    if (!confirmed) return
-    try {
-      const response = await fetch(`/api/admin/categories/${category.id}`, {
-        method: 'DELETE'
-      })
-      if (!response.ok) throw new Error('Failed to delete category')
-      toast.success('Category deleted successfully')
-      // Refresh categories
-      const categoriesResponse = await fetch('/api/admin/categories')
-      if (categoriesResponse.ok) {
-        const categoriesData = await categoriesResponse.json()
-        setCategories(categoriesData.categories || [])
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete category')
-    }
-  }
-
-  // CategoryModal component (inline for now)
-  function CategoryModal({ mode, category, onClose, onSave }: { mode: 'create' | 'edit'; category: Category | null; onClose: () => void; onSave: (data: Partial<Category>) => void }) {
-    const [name, setName] = useState(category?.name || '')
-    const [description, setDescription] = useState(category?.description || '')
-    const [color, setColor] = useState(category?.color || '#FFD700')
-    const [saving, setSaving] = useState(false)
-
-    const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault()
-      setSaving(true)
-      await onSave({ id: category?.id, name, description, color })
-      setSaving(false)
-      onClose()
-    }
-
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-md shadow-lg">
-          <h2 className="text-lg font-bold mb-4">{mode === 'create' ? 'Create Category' : 'Edit Category'}</h2>
-          <div className="mb-3">
-            <label className="block text-sm font-medium mb-1">Name</label>
-            <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full border rounded px-2 py-1" />
-          </div>
-          <div className="mb-3">
-            <label className="block text-sm font-medium mb-1">Description</label>
-            <input type="text" value={description} onChange={e => setDescription(e.target.value)} className="w-full border rounded px-2 py-1" />
-          </div>
-          <div className="mb-3">
-            <label className="block text-sm font-medium mb-1">Color</label>
-            <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-12 h-8 p-0 border-none" />
-          </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
-            <Button type="submit" className="bg-yellow-500 hover:bg-yellow-600 text-white" disabled={saving}>{saving ? 'Saving...' : (mode === 'create' ? 'Create' : 'Save')}</Button>
-          </div>
-        </form>
-      </div>
-    )
-  }
   const [activeTab, setActiveTab] = useState("statistics")
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
@@ -259,6 +157,17 @@ export default function AdminDashboard() {
   const [isSaving, setIsSaving] = useState(false)
   const [loadingUsers, setLoadingUsers] = useState<Set<string>>(new Set())
   const [statsRefreshing, setStatsRefreshing] = useState(false)
+  const [categoryFormOpen, setCategoryFormOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [categoryForm, setCategoryForm] = useState({
+    name: '',
+    description: '',
+    color: '#3B82F6',
+    icon: '📁',
+    slug: ''
+  })
+  const [categorySaving, setCategorySaving] = useState(false)
+  const [deletingCategories, setDeletingCategories] = useState<Set<string>>(new Set())
   const { user: authenticatedUser, isLoading: authLoading } = useAuth()
   const { socket, isConnected } = useSocket()
   const { confirm } = useConfirmDialog()
@@ -680,6 +589,140 @@ export default function AdminDashboard() {
       setLoadingUsers(prev => {
         const newSet = new Set(prev)
         newSet.delete(userId)
+        return newSet
+      })
+    }
+  }
+
+  // Category management handlers
+  const handleCategoryCreate = () => {
+    setEditingCategory(null)
+    setCategoryForm({
+      name: '',
+      description: '',
+      color: '#3B82F6',
+      icon: '📁',
+      slug: ''
+    })
+    setCategoryFormOpen(true)
+  }
+
+  const handleCategoryEdit = (category: Category) => {
+    setEditingCategory(category)
+    setCategoryForm({
+      name: category.name,
+      description: category.description,
+      color: category.color,
+      icon: category.icon,
+      slug: category.slug
+    })
+    setCategoryFormOpen(true)
+  }
+
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9 -]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+  }
+
+  const handleCategorySave = async () => {
+    if (!categoryForm.name.trim()) {
+      toast.error("Category name is required")
+      return
+    }
+
+    if (!categoryForm.slug.trim()) {
+      setCategoryForm(prev => ({ ...prev, slug: generateSlug(categoryForm.name) }))
+      return
+    }
+
+    setCategorySaving(true)
+    try {
+      const url = "/api/admin/categories"
+      const method = editingCategory ? "PATCH" : "POST"
+      const body = editingCategory 
+        ? { categoryId: editingCategory.id, ...categoryForm }
+        : categoryForm
+
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || `Failed to ${editingCategory ? 'update' : 'create'} category`)
+      }
+
+      await response.json()
+      
+      // Refresh categories list
+      const categoriesResponse = await fetch("/api/admin/categories")
+      if (categoriesResponse.ok) {
+        const categoriesData = await categoriesResponse.json()
+        setCategories(categoriesData.categories || [])
+      }
+
+      toast.success(`Category ${editingCategory ? 'updated' : 'created'} successfully`)
+      setCategoryFormOpen(false)
+      setEditingCategory(null)
+    } catch (error) {
+      console.error("Error saving category:", error)
+      toast.error(error instanceof Error ? error.message : `Failed to ${editingCategory ? 'update' : 'create'} category`)
+    } finally {
+      setCategorySaving(false)
+    }
+  }
+
+  const handleCategoryDelete = async (category: Category) => {
+    const confirmed = await confirm({
+      title: "Delete Category",
+      description: `Are you sure you want to delete the "${category.name}" category? ${category.postCount > 0 ? `This category has ${category.postCount} posts and cannot be deleted.` : 'This action cannot be undone.'}`,
+      confirmText: category.postCount > 0 ? "OK" : "Delete",
+      cancelText: "Cancel",
+      variant: category.postCount > 0 ? "default" : "destructive"
+    })
+    
+    if (!confirmed || category.postCount > 0) {
+      if (category.postCount > 0) {
+        toast.error(`Cannot delete category with ${category.postCount} posts. Move posts to another category first.`)
+      }
+      return
+    }
+
+    // Prevent multiple simultaneous deletions
+    if (deletingCategories.has(category.id)) {
+      return
+    }
+
+    // Add to loading set
+    setDeletingCategories(prev => new Set([...prev, category.id]))
+
+    try {
+      const response = await fetch(`/api/admin/categories?categoryId=${category.id}`, {
+        method: "DELETE"
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || "Failed to delete category")
+      }
+
+      // Update local state
+      setCategories(categories.filter(cat => cat.id !== category.id))
+      toast.success(`Category "${category.name}" deleted successfully`)
+    } catch (error) {
+      console.error("Error deleting category:", error)
+      toast.error(error instanceof Error ? error.message : "Failed to delete category")
+    } finally {
+      // Remove from loading set
+      setDeletingCategories(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(category.id)
         return newSet
       })
     }
@@ -1368,43 +1411,82 @@ export default function AdminDashboard() {
                   <Tag className="w-5 h-5" />
                   Category Management
                 </CardTitle>
-                <CardDescription>Create, edit, and delete forum categories</CardDescription>
+                <CardDescription>Create and manage forum categories</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium">Categories ({categories.length})</h4>
-                    <Button className="bg-yellow-500 hover:bg-yellow-600 text-white" onClick={() => setShowCategoryModal({ mode: 'create', category: null })}>Create New Category</Button>
+                    <Button 
+                      onClick={handleCategoryCreate}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                    >
+                      Create New Category
+                    </Button>
                   </div>
 
                   {categoriesLoading ? (
                     <div className="text-center py-8">Loading categories...</div>
+                  ) : categories.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      No categories found. Create your first category to get started.
+                    </div>
                   ) : (
                     <div className="space-y-2">
                       {categories.map((category) => {
-                        const postCount = posts.filter(post => post.category && post.category.name === category.name).length
-                        const hasPosts = postCount > 0
+                        const isDeleting = deletingCategories.has(category.id)
+                        const actualPostCount = category.actualPostCount ?? category.postCount
+                        
                         return (
-                          <div key={category.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div key={category.id} className={`flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}>
                             <div className="flex items-center space-x-3">
-                              <div className="w-4 h-4 rounded" style={{ backgroundColor: category.color }} />
+                              <div className="flex items-center space-x-2">
+                                <span className="text-lg">{category.icon}</span>
+                                <div 
+                                  className="w-4 h-4 rounded-full border-2 border-white dark:border-gray-800" 
+                                  style={{ backgroundColor: category.color }}
+                                />
+                              </div>
                               <div className="space-y-1">
                                 <div className="font-medium">{category.name}</div>
                                 <div className="text-sm text-gray-500">{category.description}</div>
+                                <div className="text-xs text-gray-400">Slug: /{category.slug}</div>
                               </div>
                             </div>
                             <div className="flex items-center space-x-4">
-                              <Badge variant="secondary">{postCount} posts</Badge>
+                              <Badge 
+                                variant={actualPostCount > 0 ? "default" : "secondary"}
+                                className={actualPostCount > 0 ? "bg-green-100 text-green-800 hover:bg-green-200" : ""}
+                              >
+                                {actualPostCount} posts
+                              </Badge>
+                              <div className="text-xs text-gray-500">
+                                Created: {new Date(category.createdAt).toLocaleDateString()}
+                              </div>
                               <div className="flex space-x-2">
-                                <Button size="sm" variant="outline" onClick={() => setShowCategoryModal({ mode: 'edit', category })}>Edit</Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  disabled={hasPosts}
-                                  title={hasPosts ? "Cannot delete: posts exist" : "Delete category"}
-                                  onClick={() => handleDeleteCategory(category)}
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  onClick={() => handleCategoryEdit(category)}
+                                  disabled={isDeleting}
+                                  className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                  title="Edit category"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  onClick={() => handleCategoryDelete(category)}
+                                  disabled={isDeleting}
+                                  className={`${actualPostCount > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
+                                  title={actualPostCount > 0 ? `Cannot delete category with ${actualPostCount} posts` : "Delete category"}
+                                >
+                                  {isDeleting ? (
+                                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent"></div>
+                                  ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                  )}
                                 </Button>
                               </div>
                             </div>
@@ -1414,18 +1496,149 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
-
-                {/* Category Modal for Create/Edit */}
-                {showCategoryModal && (
-                  <CategoryModal
-                    mode={showCategoryModal.mode}
-                    category={showCategoryModal.category}
-                    onClose={() => setShowCategoryModal(null)}
-                    onSave={handleSaveCategory}
-                  />
-                )}
               </CardContent>
             </Card>
+
+            {/* Category Form Dialog */}
+            <Dialog open={categoryFormOpen} onOpenChange={setCategoryFormOpen}>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingCategory ? 'Edit Category' : 'Create New Category'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {editingCategory 
+                      ? 'Update the category details below.' 
+                      : 'Fill in the details to create a new forum category.'
+                    }
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="category-name" className="text-right">
+                      Name *
+                    </Label>
+                    <Input
+                      id="category-name"
+                      value={categoryForm.name}
+                      onChange={(e) => {
+                        const name = e.target.value
+                        setCategoryForm(prev => ({ 
+                          ...prev, 
+                          name,
+                          slug: prev.slug || generateSlug(name)
+                        }))
+                      }}
+                      className="col-span-3"
+                      placeholder="Enter category name"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="category-slug" className="text-right">
+                      Slug *
+                    </Label>
+                    <Input
+                      id="category-slug"
+                      value={categoryForm.slug}
+                      onChange={(e) => setCategoryForm(prev => ({ ...prev, slug: e.target.value }))}
+                      className="col-span-3"
+                      placeholder="category-slug"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-start gap-4">
+                    <Label htmlFor="category-description" className="text-right pt-2">
+                      Description
+                    </Label>
+                    <Textarea
+                      id="category-description"
+                      value={categoryForm.description}
+                      onChange={(e) => setCategoryForm(prev => ({ ...prev, description: e.target.value }))}
+                      className="col-span-3"
+                      placeholder="Brief description of this category"
+                      rows={3}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="category-icon" className="text-right">
+                      Icon
+                    </Label>
+                    <Input
+                      id="category-icon"
+                      value={categoryForm.icon}
+                      onChange={(e) => setCategoryForm(prev => ({ ...prev, icon: e.target.value }))}
+                      className="col-span-3"
+                      placeholder="📁"
+                      maxLength={2}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="category-color" className="text-right">
+                      Color
+                    </Label>
+                    <div className="col-span-3 flex items-center space-x-2">
+                      <Input
+                        id="category-color"
+                        type="color"
+                        value={categoryForm.color}
+                        onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
+                        className="w-16 h-10 rounded border"
+                      />
+                      <Input
+                        value={categoryForm.color}
+                        onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
+                        className="flex-1"
+                        placeholder="#3B82F6"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Preview */}
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">Preview</Label>
+                    <div className="col-span-3 flex items-center space-x-3 p-3 border rounded-lg bg-gray-50 dark:bg-gray-800">
+                      <span className="text-lg">{categoryForm.icon || '📁'}</span>
+                      <div 
+                        className="w-4 h-4 rounded-full border-2 border-white dark:border-gray-800" 
+                        style={{ backgroundColor: categoryForm.color }}
+                      />
+                      <div>
+                        <div className="font-medium">{categoryForm.name || 'Category Name'}</div>
+                        <div className="text-sm text-gray-500">{categoryForm.description || 'Category description'}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setCategoryFormOpen(false)}
+                    disabled={categorySaving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleCategorySave}
+                    disabled={categorySaving || !categoryForm.name.trim()}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                  >
+                    {categorySaving ? (
+                      <>
+                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2"></div>
+                        {editingCategory ? 'Updating...' : 'Creating...'}
+                      </>
+                    ) : (
+                      editingCategory ? 'Update Category' : 'Create Category'
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* Posts Tab */}
