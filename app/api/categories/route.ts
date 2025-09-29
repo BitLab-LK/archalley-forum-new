@@ -12,20 +12,19 @@ const createCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
   color: z.string().min(1, "Color is required"),
-  icon: z.string().min(1, "Icon is required"),
   slug: z.string().min(1, "Slug is required"),
 })
 
 // Fallback categories for when database is not available
 const FALLBACK_CATEGORIES = [
-  { id: "design", name: "Design", color: "bg-purple-500", icon: "🎨", slug: "design", count: 4 },
-  { id: "informative", name: "Informative", color: "bg-cyan-500", icon: "📚", slug: "informative", count: 8 },
-  { id: "business", name: "Business", color: "bg-blue-500", icon: "💼", slug: "business", count: 6 },
-  { id: "career", name: "Career", color: "bg-green-500", icon: "📈", slug: "career", count: 3 },
-  { id: "construction", name: "Construction", color: "bg-yellow-500", icon: "�️", slug: "construction", count: 2 },
-  { id: "academic", name: "Academic", color: "bg-indigo-500", icon: "🎓", slug: "academic", count: 1 },
-  { id: "jobs", name: "Jobs", color: "bg-red-500", icon: "💼", slug: "jobs", count: 0 },
-  { id: "other", name: "Other", color: "bg-gray-500", icon: "📂", slug: "other", count: 15 },
+  { id: "design", name: "Design", color: "bg-purple-500", slug: "design", count: 4 },
+  { id: "informative", name: "Informative", color: "bg-cyan-500", slug: "informative", count: 8 },
+  { id: "business", name: "Business", color: "bg-blue-500", slug: "business", count: 6 },
+  { id: "career", name: "Career", color: "bg-green-500", slug: "career", count: 3 },
+  { id: "construction", name: "Construction", color: "bg-yellow-500", slug: "construction", count: 2 },
+  { id: "academic", name: "Academic", color: "bg-indigo-500", slug: "academic", count: 1 },
+  { id: "jobs", name: "Jobs", color: "bg-red-500", slug: "jobs", count: 0 },
+  { id: "other", name: "Other", color: "bg-gray-500", slug: "other", count: 15 },
 ]
 
 export async function GET(request: NextRequest) {
@@ -67,7 +66,6 @@ export async function GET(request: NextRequest) {
           id: true,
           name: true,
           color: true,
-          icon: true,
           slug: true,
           postCount: true,
           _count: {
@@ -87,7 +85,6 @@ export async function GET(request: NextRequest) {
           id: category.id,
           name: category.name,
           color: category.color,
-          icon: category.icon,
           slug: category.slug,
           count: category._count.Post
         }
@@ -100,7 +97,6 @@ export async function GET(request: NextRequest) {
         id: true,
         name: true,
         color: true,
-        icon: true,
         slug: true,
         postCount: true,
         _count: {
@@ -119,7 +115,6 @@ export async function GET(request: NextRequest) {
       id: category.id,
       name: category.name,
       color: category.color,
-      icon: category.icon,
       slug: category.slug,
       count: category._count.Post // Use actual post count from relationship
     }))
@@ -149,7 +144,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, description, color, icon, slug } = createCategorySchema.parse(body)
+    const { name, description, color, slug } = createCategorySchema.parse(body)
 
     // Check if category with same name or slug exists
     const existingCategory = await prisma.categories.findFirst({
@@ -168,7 +163,6 @@ export async function POST(request: NextRequest) {
         name,
         description,
         color,
-        icon,
         slug,
         updatedAt: new Date(),
       },

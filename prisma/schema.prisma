@@ -40,27 +40,27 @@ model Comment {
 }
 
 model Post {
-  id                String         @id @default(cuid())
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  id                String        @id @default(cuid())
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
   title             String?
   content           String
-  isAnonymous       Boolean        @default(false)
-  isPinned          Boolean        @default(false)
-  isLocked          Boolean        @default(false)
+  isAnonymous       Boolean       @default(false)
+  isPinned          Boolean       @default(false)
+  isLocked          Boolean       @default(false)
   aiCategory        String?
   aiTags            String[]
-  originalLanguage  String         @default("English")
+  originalLanguage  String        @default("English")
   translatedContent String?
-  viewCount         Int            @default(0)
-  shareCount        Int            @default(0)
+  viewCount         Int           @default(0)
+  shareCount        Int           @default(0)
   authorId          String
-  categoryId        String         // Primary category
-  categoryIds       String[]       // Multiple categories (including primary)
-  aiCategories      String[]       // AI-suggested category names
+  categoryId        String
+  aiCategories      String[]
+  categoryIds       String[]
   Comment           Comment[]
-  users             users          @relation(fields: [authorId], references: [id])
-  categories        categories     @relation(fields: [categoryId], references: [id])
+  users             users         @relation(fields: [authorId], references: [id])
+  categories        categories    @relation(fields: [categoryId], references: [id])
   attachments       attachments[]
 
   @@index([authorId])
@@ -98,13 +98,12 @@ model attachments {
 }
 
 model categories {
-  id          String @id
-  name        String @unique
+  id          String   @id
+  name        String   @unique
   description String
   color       String
-  icon        String
-  slug        String @unique
-  postCount   Int    @default(0)
+  slug        String   @unique
+  postCount   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   Post        Post[]
@@ -366,10 +365,10 @@ enum BadgeLevel {
 }
 
 enum UserRole {
-  SUPER_ADMIN
   ADMIN
   MODERATOR
   MEMBER
+  SUPER_ADMIN
 }
 
 enum VoteType {

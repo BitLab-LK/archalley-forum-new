@@ -80,8 +80,7 @@ export async function GET(request: NextRequest) {
         categories: {
           select: {
             name: true,
-            color: true,
-            icon: true
+            color: true
           }
         },
         _count: {
@@ -145,8 +144,7 @@ export async function GET(request: NextRequest) {
         },
         category: post.categories ? {
           name: post.categories.name,
-          color: post.categories.color,
-          icon: post.categories.icon
+          color: post.categories.color
         } : null,
         stats: {
           comments: post._count?.Comment || 0,

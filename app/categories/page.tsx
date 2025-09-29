@@ -4,13 +4,6 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { getCategoryColors, getCategoryLightBackground } from "@/lib/category-colors"
 import {
-  Briefcase,
-  Palette,
-  GraduationCap,
-  HardHat,
-  BookOpen,
-  Info,
-  MoreHorizontal,
   TrendingUp,
   MessageCircle,
   Clock,
@@ -21,7 +14,6 @@ const categories = [
     id: "business",
     name: "Business",
     description: "Discuss business strategies, entrepreneurship, and industry trends in architecture and construction.",
-    icon: Briefcase,
     color: "bg-blue-500",
     posts: 245,
     latestPost: {
@@ -34,7 +26,6 @@ const categories = [
     id: "design",
     name: "Design",
     description: "Share and discuss architectural designs, concepts, and creative inspiration.",
-    icon: Palette,
     color: "bg-purple-500",
     posts: 189,
     latestPost: {
@@ -47,7 +38,6 @@ const categories = [
     id: "career",
     name: "Career",
     description: "Career advice, job opportunities, and professional development in the industry.",
-    icon: GraduationCap,
     color: "bg-green-500",
     posts: 156,
     latestPost: {
@@ -60,7 +50,6 @@ const categories = [
     id: "construction",
     name: "Construction",
     description: "Construction techniques, materials, project management, and industry innovations.",
-    icon: HardHat,
     color: "bg-yellow-500",
     posts: 134,
     latestPost: {
@@ -73,7 +62,6 @@ const categories = [
     id: "academic",
     name: "Academic",
     description: "Academic discussions, research, theories, and educational resources.",
-    icon: BookOpen,
     color: "bg-indigo-500",
     posts: 98,
     latestPost: {
@@ -86,7 +74,6 @@ const categories = [
     id: "informative",
     name: "Informative",
     description: "News, updates, tutorials, and informational content about the industry.",
-    icon: Info,
     color: "bg-cyan-500",
     posts: 87,
     latestPost: {
@@ -99,7 +86,6 @@ const categories = [
     id: "other",
     name: "Other",
     description: "General discussions and topics that don't fit into other categories.",
-    icon: MoreHorizontal,
     color: "bg-gray-500",
     posts: 76,
     latestPost: {
@@ -158,7 +144,6 @@ export default function CategoriesPage() {
         {/* Categories Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
           {categories.map((category) => {
-            const IconComponent = category.icon
             const categoryColors = getCategoryColors(category.id)
             const backgroundClasses = getCategoryLightBackground(category.id)
             
@@ -167,8 +152,7 @@ export default function CategoriesPage() {
                 <CardHeader className="p-3 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2 sm:space-x-3">
-                      <div className={`w-8 h-8 sm:w-12 sm:h-12 ${categoryColors.primary} rounded-lg flex items-center justify-center`}>
-                        <IconComponent className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+                      <div className={`w-8 h-8 sm:w-12 sm:h-12 ${categoryColors.primary} rounded-lg`}>
                       </div>
                       <div>
                         <CardTitle className="text-base sm:text-xl">{category.name}</CardTitle>

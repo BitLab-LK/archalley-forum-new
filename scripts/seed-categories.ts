@@ -8,7 +8,6 @@ const predefinedCategories = [
     name: 'Business',
     description: 'Business discussions, strategies, and industry insights',
     color: '#059669', // Green
-    icon: '💼',
     slug: 'business'
   },
   {
@@ -16,7 +15,6 @@ const predefinedCategories = [
     name: 'Design',
     description: 'Architectural design, interior design, and creative concepts',
     color: '#7C3AED', // Purple
-    icon: '🎨',
     slug: 'design'
   },
   {
@@ -24,7 +22,6 @@ const predefinedCategories = [
     name: 'Informative',
     description: 'Educational content, tutorials, and informational resources',
     color: '#0D9488', // Teal
-    icon: '📚',
     slug: 'informative'
   },
   {
@@ -32,7 +29,6 @@ const predefinedCategories = [
     name: 'Career',
     description: 'Career development, professional growth, and networking',
     color: '#0EA5E9', // Blue
-    icon: '📈',
     slug: 'career'
   },
   {
@@ -40,7 +36,6 @@ const predefinedCategories = [
     name: 'Jobs',
     description: 'Job postings, opportunities, and recruitment',
     color: '#DC2626', // Red
-    icon: '💼',
     slug: 'jobs'
   },
   {
@@ -48,7 +43,6 @@ const predefinedCategories = [
     name: 'Construction',
     description: 'Construction techniques, projects, and industry updates',
     color: '#EA580C', // Orange
-    icon: '🏗️',
     slug: 'construction'
   },
   {
@@ -56,7 +50,6 @@ const predefinedCategories = [
     name: 'Academic',
     description: 'Academic research, education, and learning resources',
     color: '#7C2D12', // Brown
-    icon: '🎓',
     slug: 'academic'
   },
   {
@@ -64,7 +57,6 @@ const predefinedCategories = [
     name: 'Other',
     description: 'General discussions and topics that don\'t fit other categories',
     color: '#6B7280', // Gray
-    icon: '💬',
     slug: 'other'
   }
 ]
@@ -86,7 +78,6 @@ async function seedCategories() {
             name: category.name,
             description: category.description,
             color: category.color,
-            icon: category.icon,
             slug: category.slug,
             updatedAt: new Date()
           }

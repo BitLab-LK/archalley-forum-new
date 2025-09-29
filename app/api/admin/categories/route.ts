@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
         name: true,
         description: true,
         color: true,
-        icon: true,
         slug: true,
         postCount: true,
         createdAt: true,
@@ -65,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     const { user } = validation
     const body = await request.json()
-    const { name, description, color, icon, slug } = body
+    const { name, description, color, slug } = body
 
     if (!name || !slug) {
       return new NextResponse("Name and slug are required", { status: 400 })
@@ -92,7 +91,7 @@ export async function POST(request: NextRequest) {
         name,
         description: description || "",
         color: color || "#3B82F6",
-        icon: icon || "📁",
+
         slug,
         postCount: 0,
         updatedAt: new Date()
@@ -120,7 +119,7 @@ export async function PATCH(request: NextRequest) {
 
     const { user } = validation
     const body = await request.json()
-    const { categoryId, name, description, color, icon, slug } = body
+    const { categoryId, name, description, color, slug } = body
 
     if (!categoryId) {
       return new NextResponse("Category ID is required", { status: 400 })
@@ -128,7 +127,7 @@ export async function PATCH(request: NextRequest) {
 
     logAdminAction("UPDATE_CATEGORY", user!.id, {
       categoryId,
-      changes: { name, description, color, icon, slug },
+      changes: { name, description, color, slug },
       ip: request.headers.get("x-forwarded-for") || "unknown"
     })
 
@@ -152,7 +151,7 @@ export async function PATCH(request: NextRequest) {
         ...(name && { name }),
         ...(description !== undefined && { description }),
         ...(color && { color }),
-        ...(icon && { icon }),
+
         ...(slug && { slug }),
         updatedAt: new Date()
       }

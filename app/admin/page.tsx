@@ -83,7 +83,6 @@ interface Category {
   name: string
   description: string
   color: string
-  icon: string
   slug: string
   postCount: number
   actualPostCount?: number
@@ -104,7 +103,6 @@ interface Post {
   category: {
     name: string
     color: string
-    icon: string
   } | null
   stats: {
     comments: number
@@ -163,7 +161,6 @@ export default function AdminDashboard() {
     name: '',
     description: '',
     color: '#3B82F6',
-    icon: '📁',
     slug: ''
   })
   const [categorySaving, setCategorySaving] = useState(false)
@@ -601,7 +598,6 @@ export default function AdminDashboard() {
       name: '',
       description: '',
       color: '#3B82F6',
-      icon: '📁',
       slug: ''
     })
     setCategoryFormOpen(true)
@@ -613,7 +609,6 @@ export default function AdminDashboard() {
       name: category.name,
       description: category.description,
       color: category.color,
-      icon: category.icon,
       slug: category.slug
     })
     setCategoryFormOpen(true)
@@ -1440,13 +1435,10 @@ export default function AdminDashboard() {
                         return (
                           <div key={category.id} className={`flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}>
                             <div className="flex items-center space-x-3">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-lg">{category.icon}</span>
-                                <div 
-                                  className="w-4 h-4 rounded-full border-2 border-white dark:border-gray-800" 
-                                  style={{ backgroundColor: category.color }}
-                                />
-                              </div>
+                              <div 
+                                className="w-4 h-4 rounded-full border-2 border-white dark:border-gray-800" 
+                                style={{ backgroundColor: category.color }}
+                              />
                               <div className="space-y-1">
                                 <div className="font-medium">{category.name}</div>
                                 <div className="text-sm text-gray-500">{category.description}</div>
@@ -1562,19 +1554,6 @@ export default function AdminDashboard() {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="category-icon" className="text-right">
-                      Icon
-                    </Label>
-                    <Input
-                      id="category-icon"
-                      value={categoryForm.icon}
-                      onChange={(e) => setCategoryForm(prev => ({ ...prev, icon: e.target.value }))}
-                      className="col-span-3"
-                      placeholder="📁"
-                      maxLength={2}
-                    />
-                  </div>
                   
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="category-color" className="text-right">
@@ -1601,7 +1580,6 @@ export default function AdminDashboard() {
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label className="text-right">Preview</Label>
                     <div className="col-span-3 flex items-center space-x-3 p-3 border rounded-lg bg-gray-50 dark:bg-gray-800">
-                      <span className="text-lg">{categoryForm.icon || '📁'}</span>
                       <div 
                         className="w-4 h-4 rounded-full border-2 border-white dark:border-gray-800" 
                         style={{ backgroundColor: categoryForm.color }}
