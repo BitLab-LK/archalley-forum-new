@@ -77,8 +77,10 @@ function Sidebar() {
     academic: "bg-indigo-500",
     informative: "bg-cyan-500",
     jobs: "bg-red-500",
+    technology: "bg-blue-600",
     other: "bg-gray-500",
   } as const
+
 
   // Load sidebar data with staggered loading for better perceived performance
   useEffect(() => {
@@ -244,6 +246,8 @@ function Sidebar() {
         return 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-200 dark:hover:bg-cyan-900/50'
       case 'bg-red-500':
         return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800 hover:bg-red-200 dark:hover:bg-red-900/50'
+      case 'bg-blue-600':
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-900/50'
       case 'bg-gray-500':
       default:
         return 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-900/50'
