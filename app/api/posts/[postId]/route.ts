@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth"
 import { NextRequest } from "next/server"
 import { cleanupPostBlobs } from "@/lib/utils"
 import { onPostDeleted, onCommentDeleted } from "@/lib/stats-service"
+import { incrementCategoryPostCounts } from "@/lib/category-count-utils"
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ postId: string }> }) {
   try {
@@ -29,10 +30,15 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get the post to check ownership
+    // Get the post to check ownership and categories
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      select: { authorId: true, id: true }
+      select: { 
+        authorId: true, 
+        id: true,
+        categoryId: true,
+        categoryIds: true
+      }
     })
 
     console.log("Post found:", { postId, post })
@@ -70,6 +76,14 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
     console.log("✅ Authorization passed, deleting post...")
 
+    // Get all category IDs for this post to update counts
+    const allCategoryIds = post.categoryIds || []
+    if (post.categoryId && !allCategoryIds.includes(post.categoryId)) {
+      allCategoryIds.push(post.categoryId)
+    }
+
+    console.log("📊 Will decrement counts for categories:", allCategoryIds)
+
     // Clean up Vercel Blob files before deleting database records
     try {
       await cleanupPostBlobs(postId)
@@ -80,28 +94,34 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     }
 
     // Delete related data from database (foreign key constraints)
-    await prisma.$transaction([
+    await prisma.$transaction(async (tx) => {
       // Delete votes first
-      prisma.votes.deleteMany({
+      await tx.votes.deleteMany({
         where: { postId: postId }
-      }),
+      })
       // Delete comments
-      prisma.comment.deleteMany({
+      await tx.comment.deleteMany({
         where: { postId: postId }
-      }),
+      })
       // Delete attachments (database records)
-      prisma.attachments.deleteMany({
+      await tx.attachments.deleteMany({
         where: { postId: postId }
-      }),
+      })
       // Delete flags
-      prisma.flags.deleteMany({
+      await tx.flags.deleteMany({
         where: { postId: postId }
-      }),
+      })
       // Finally delete the post
-      prisma.post.delete({
+      await tx.post.delete({
         where: { id: postId }
       })
-    ])
+      
+      // Update category post counts (decrement by 1)
+      if (allCategoryIds.length > 0) {
+        await incrementCategoryPostCounts(tx, allCategoryIds, -1)
+        console.log("📉 Decremented post counts for categories:", allCategoryIds)
+      }
+    })
 
     console.log("✅ Post deleted successfully")
     

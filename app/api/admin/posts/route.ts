@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { validateAdminAccess, logAdminAction } from '@/lib/admin-security'
+import { incrementCategoryPostCounts } from '@/lib/category-count-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -281,7 +282,12 @@ export async function DELETE(request: NextRequest) {
     // Check if post exists
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      select: { title: true, authorId: true }
+      select: { 
+        title: true, 
+        authorId: true,
+        categoryId: true,
+        categoryIds: true
+      }
     })
 
     if (!post) {
@@ -291,14 +297,26 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
+    // Get all category IDs for this post to update counts
+    const allCategoryIds = post.categoryIds || []
+    if (post.categoryId && !allCategoryIds.includes(post.categoryId)) {
+      allCategoryIds.push(post.categoryId)
+    }
+
     // Delete post and related data in transaction
-    await prisma.$transaction([
-      prisma.flags.deleteMany({ where: { postId } }),
-      prisma.comment.deleteMany({ where: { postId } }),
-      prisma.votes.deleteMany({ where: { postId } }),
-      prisma.attachments.deleteMany({ where: { postId } }),
-      prisma.post.delete({ where: { id: postId } })
-    ])
+    await prisma.$transaction(async (tx) => {
+      await tx.flags.deleteMany({ where: { postId } })
+      await tx.comment.deleteMany({ where: { postId } })
+      await tx.votes.deleteMany({ where: { postId } })
+      await tx.attachments.deleteMany({ where: { postId } })
+      await tx.post.delete({ where: { id: postId } })
+      
+      // Update category post counts (decrement by 1)
+      if (allCategoryIds.length > 0) {
+        await incrementCategoryPostCounts(tx, allCategoryIds, -1)
+        console.log('📉 Admin: Decremented post counts for categories:', allCategoryIds)
+      }
+    })
 
     await logAdminAction(session.user.id, 'POST_DELETED', {
       postId,

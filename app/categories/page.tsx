@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -164,8 +164,6 @@ export default function CategoriesPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="p-3 sm:p-6 pt-0">
-                  <CardDescription className="text-sm sm:text-base mb-3 sm:mb-4">{category.description}</CardDescription>
-
                   <div className={`${categoryColors.accent} ${categoryColors.accentDark} rounded-lg p-3 sm:p-4 mb-3 sm:mb-4`}>
                     <h4 className="font-medium text-xs sm:text-sm mb-2">Latest Post</h4>
                     <p className="text-xs sm:text-sm font-medium mb-1 line-clamp-2">{category.latestPost.title}</p>

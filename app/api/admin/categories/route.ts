@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdminAccess, logAdminAction } from "@/lib/admin-security"
+import { clearCategoryCache } from "@/lib/ai-service"
 import type { NextRequest } from "next/server"
 
 // GET - List all categories
@@ -23,7 +24,6 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        description: true,
         color: true,
         slug: true,
         postCount: true,
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     const { user } = validation
     const body = await request.json()
-    const { name, description, color, slug } = body
+    const { name, color, slug } = body
 
     if (!name || !slug) {
       return new NextResponse("Name and slug are required", { status: 400 })
@@ -89,14 +89,16 @@ export async function POST(request: NextRequest) {
       data: {
         id: `cat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name,
-        description: description || "",
         color: color || "#3B82F6",
-
         slug,
         postCount: 0,
         updatedAt: new Date()
       }
     })
+
+    // Clear AI category cache to ensure new category is immediately available for AI categorization
+    clearCategoryCache()
+    console.log("✨ Category cache cleared after creating:", category.name)
 
     return NextResponse.json({ 
       message: "Category created successfully", 
@@ -119,7 +121,7 @@ export async function PATCH(request: NextRequest) {
 
     const { user } = validation
     const body = await request.json()
-    const { categoryId, name, description, color, slug } = body
+    const { categoryId, name, color, slug } = body
 
     if (!categoryId) {
       return new NextResponse("Category ID is required", { status: 400 })
@@ -127,7 +129,7 @@ export async function PATCH(request: NextRequest) {
 
     logAdminAction("UPDATE_CATEGORY", user!.id, {
       categoryId,
-      changes: { name, description, color, slug },
+      changes: { name, color, slug },
       ip: request.headers.get("x-forwarded-for") || "unknown"
     })
 
@@ -149,13 +151,15 @@ export async function PATCH(request: NextRequest) {
       where: { id: categoryId },
       data: {
         ...(name && { name }),
-        ...(description !== undefined && { description }),
         ...(color && { color }),
-
         ...(slug && { slug }),
         updatedAt: new Date()
       }
     })
+
+    // Clear AI category cache to ensure updated category is reflected in AI categorization
+    clearCategoryCache()
+    console.log("✨ Category cache cleared after updating:", updatedCategory.name)
 
     return NextResponse.json({ 
       message: "Category updated successfully", 
@@ -201,6 +205,10 @@ export async function DELETE(request: NextRequest) {
     await prisma.categories.delete({
       where: { id: categoryId }
     })
+
+    // Clear AI category cache to ensure deleted category is removed from AI categorization
+    clearCategoryCache()
+    console.log("✨ Category cache cleared after deleting category:", categoryId)
 
     return NextResponse.json({ 
       message: "Category deleted successfully" 

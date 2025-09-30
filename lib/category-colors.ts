@@ -61,6 +61,16 @@ export const categoryColors = {
     accent: 'bg-cyan-100',
     accentDark: 'dark:bg-cyan-900/30'
   },
+  technology: {
+    primary: 'bg-blue-600',
+    light: 'bg-blue-50',
+    lightDark: 'dark:bg-blue-950/20',
+    border: 'border-blue-200',
+    text: 'text-blue-700',
+    textDark: 'dark:text-blue-300',
+    accent: 'bg-blue-100',
+    accentDark: 'dark:bg-blue-900/30'
+  },
   other: {
     primary: 'bg-gray-500',
     light: 'bg-gray-50',

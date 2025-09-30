@@ -100,7 +100,6 @@ model attachments {
 model categories {
   id          String   @id
   name        String   @unique
-  description String
   color       String
   slug        String   @unique
   postCount   Int      @default(0)

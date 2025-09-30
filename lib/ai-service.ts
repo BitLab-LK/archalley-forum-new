@@ -17,17 +17,74 @@ const model = genAI ? genAI.getGenerativeModel({
   }
 }) : null
 
-// Fallback categories when database is unavailable
-const FALLBACK_CATEGORIES = [
-  "Design",
-  "Informative", 
-  "Business",
-  "Career",
-  "Construction",
-  "Academic",
-  "Jobs",
-  "Other"
-]
+// Dynamic category management - categories are fetched from database in real-time
+// No more hardcoded fallback categories to ensure admin changes are immediately reflected
+
+/**
+ * Dynamically fetch categories from database with smart caching
+ * This ensures AI categorization always uses the latest categories from admin dashboard
+ */
+let categoryCache: { categories: string[], timestamp: number } | null = null
+const CATEGORY_CACHE_TTL = 5 * 60 * 1000 // 5 minutes cache
+
+async function getDynamicCategories(): Promise<string[]> {
+  // Check if cache is valid
+  if (categoryCache && (Date.now() - categoryCache.timestamp) < CATEGORY_CACHE_TTL) {
+    console.log("📋 Using cached categories:", categoryCache.categories)
+    return categoryCache.categories
+  }
+
+  try {
+    // Import prisma dynamically to avoid circular dependencies
+    const { prisma } = await import('@/lib/prisma')
+    
+    const dbCategories = await prisma.categories.findMany({
+      select: { name: true },
+      orderBy: { name: 'asc' }
+    })
+    
+    const categoryNames = dbCategories.map(cat => cat.name)
+    
+    // Always ensure we have at least "Other" category as absolute fallback
+    if (categoryNames.length === 0) {
+      categoryNames.push("Other")
+      console.warn("⚠️ No categories found in database, using minimal fallback")
+    }
+    
+    // Update cache
+    categoryCache = {
+      categories: categoryNames,
+      timestamp: Date.now()
+    }
+    
+    console.log("✅ Fetched fresh categories from database:", categoryNames)
+    return categoryNames
+    
+  } catch (error) {
+    console.error("❌ Failed to fetch categories from database:", error)
+    
+    // If database is completely unavailable, use minimal fallback
+    const minimalFallback = ["Other"]
+    
+    // If we have cached data, use it even if expired
+    if (categoryCache) {
+      console.log("🔄 Database unavailable, using expired cache:", categoryCache.categories)
+      return categoryCache.categories
+    }
+    
+    console.log("🚨 Using minimal fallback categories:", minimalFallback)
+    return minimalFallback
+  }
+}
+
+/**
+ * Clear category cache to force refresh
+ * Call this when categories are added/updated/deleted in admin dashboard
+ */
+export function clearCategoryCache(): void {
+  categoryCache = null
+  console.log("🗑️ Category cache cleared - next request will fetch fresh data")
+}
 
 // Cache for AI classification results to improve performance
 class AICache {
@@ -263,10 +320,18 @@ Return ONLY a JSON response in this exact format:
 
 export async function classifyPost(content: string, availableCategories?: string[]): Promise<AIClassification> {
   console.log("🤖 AI Service: Starting classification for content:", content.substring(0, 100) + "...")
-  console.log("📋 AI Service: Available categories:", availableCategories)
+  console.log("📋 AI Service: Received categories:", availableCategories)
   
   try {
-    const categories = availableCategories || FALLBACK_CATEGORIES
+    // Use provided categories or fetch dynamically from database
+    let categories: string[]
+    if (availableCategories && availableCategories.length > 0) {
+      categories = availableCategories
+      console.log("📋 Using provided categories:", categories)
+    } else {
+      categories = await getDynamicCategories()
+      console.log("📋 Using dynamic categories from database:", categories)
+    }
     
     // Check cache first
     const cachedResult = aiCache.get(content, categories)
@@ -311,6 +376,7 @@ ENHANCED CLASSIFICATION RULES:
    - Professional and educational content → Academic, Career
    - Architecture and construction topics → Design, Construction
    - Business and entrepreneurship → Business, Career
+   - Technology, software, and innovation content → Technology
    - Informational and tutorial content → Informative
    - Job-related posts → Jobs, Career
 5. IMPORTANT: Don't default to "Informative" unless content is genuinely informational
@@ -322,6 +388,9 @@ CONTENT ANALYSIS EXAMPLES:
 - Career advice for designers → ["Career", "Design"]
 - Job posting for architect → ["Jobs", "Career", "Design"]
 - Tutorial on business planning → ["Informative", "Business"]
+- Technology innovations and software engineering → ["Technology"]
+- AI and cybersecurity updates → ["Technology"]
+- Programming tutorials → ["Technology", "Informative"]
 
 SPECIAL CONSIDERATION FOR NON-ENGLISH CONTENT:
 - Original language was: ${originalLanguage}
@@ -428,6 +497,9 @@ Requirements:
             break
           case 'informative':
             categoryKeywords[category] = ['information', 'guide', 'tutorial', 'how to', 'tips', 'advice', 'facts', 'knowledge', 'learn', 'educational', 'instruction', 'explanation', 'method', 'technique']
+            break
+          case 'technology':
+            categoryKeywords[category] = ['technology', 'tech', 'software', 'programming', 'digital', 'innovation', 'cloud', 'computing', 'cybersecurity', 'data', 'ai', 'artificial intelligence', 'machine learning', 'engineering', 'development', 'coding', 'algorithm', 'database', 'network', 'internet', 'web', 'mobile', 'app', 'system', 'automation', 'analytics', 'blockchain', 'iot', 'api', 'framework']
             break
           default:
             categoryKeywords[category] = [categoryLower, category.replace(/[^a-zA-Z]/g, '').toLowerCase()]
@@ -539,7 +611,8 @@ Requirements:
     }
     
     // Enhanced fallback categorization based on content analysis
-    const categories = availableCategories || FALLBACK_CATEGORIES
+    // Try to get categories from cache or use minimal fallback
+    const categories = availableCategories || (categoryCache?.categories) || ["Other"]
     const contentLower = content.toLowerCase()
     let fallbackCategory = "Other"
     let fallbackCategories = ["Other"]
@@ -547,7 +620,7 @@ Requirements:
     // Try intelligent keyword-based categorization even during errors
     const categoryKeywordMatches: Record<string, number> = {}
     
-    categories.forEach(category => {
+    categories.forEach((category: string) => {
       const categoryLower = category.toLowerCase()
       let score = 0
       
@@ -576,6 +649,16 @@ Requirements:
         case 'academic':
           if (contentLower.includes('education') || contentLower.includes('university') ||
               contentLower.includes('අධ්‍යාපන') || contentLower.includes('research')) {
+            score += 2
+          }
+          break
+        case 'technology':
+          if (contentLower.includes('technology') || contentLower.includes('software') ||
+              contentLower.includes('programming') || contentLower.includes('digital') ||
+              contentLower.includes('innovation') || contentLower.includes('cloud') ||
+              contentLower.includes('cybersecurity') || contentLower.includes('data') ||
+              contentLower.includes('ai') || contentLower.includes('artificial intelligence') ||
+              contentLower.includes('engineering') || contentLower.includes('computing')) {
             score += 2
           }
           break
@@ -633,12 +716,16 @@ export async function testAIService(): Promise<boolean> {
 
     console.log("🧪 Testing enhanced AI service with multi-language support...")
     
+    // Get dynamic categories for testing
+    const testCategories = await getDynamicCategories()
+    console.log("📋 Testing with dynamic categories:", testCategories)
+    
     // Test 1: English content
-    const englishTest = await classifyPost("This is a test post about architecture and design.", FALLBACK_CATEGORIES)
+    const englishTest = await classifyPost("This is a test post about architecture and design.", testCategories)
     console.log("✅ English test result:", englishTest)
     
     // Test 2: Sinhala content (if API key is available)
-    const sinhalaTest = await classifyPost("අධ්‍යාපන සහ ව්‍යාපාරික පරිසර දෙකම යහපත් සැලසුමක් අවශ්‍ය කරයි", FALLBACK_CATEGORIES)
+    const sinhalaTest = await classifyPost("අධ්‍යාපන සහ ව්‍යාපාරික පරිසර දෙකම යහපත් සැලසුමක් අවශ්‍ය කරයි", testCategories)
     console.log("✅ Sinhala test result:", sinhalaTest)
     
     // Validate results
@@ -668,10 +755,13 @@ export async function testAIService(): Promise<boolean> {
 export async function testSinhalaClassification(content: string, categories?: string[]): Promise<AIClassification> {
   console.log("🇱🇰 Testing Sinhala content classification...")
   console.log("📝 Content:", content)
-  console.log("📋 Available categories:", categories || FALLBACK_CATEGORIES)
+  
+  // Use provided categories or fetch dynamically
+  const testCategories = categories || await getDynamicCategories()
+  console.log("📋 Available categories:", testCategories)
   
   try {
-    const result = await classifyPost(content, categories || FALLBACK_CATEGORIES)
+    const result = await classifyPost(content, testCategories)
     console.log("🎯 Sinhala classification result:", {
       detectedLanguage: result.originalLanguage,
       categories: result.categories,

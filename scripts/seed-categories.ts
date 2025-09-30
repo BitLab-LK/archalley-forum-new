@@ -6,56 +6,48 @@ const predefinedCategories = [
   {
     id: 'business',
     name: 'Business',
-    description: 'Business discussions, strategies, and industry insights',
     color: '#059669', // Green
     slug: 'business'
   },
   {
     id: 'design',
     name: 'Design',
-    description: 'Architectural design, interior design, and creative concepts',
     color: '#7C3AED', // Purple
     slug: 'design'
   },
   {
     id: 'informative',
     name: 'Informative',
-    description: 'Educational content, tutorials, and informational resources',
     color: '#0D9488', // Teal
     slug: 'informative'
   },
   {
     id: 'career',
     name: 'Career',
-    description: 'Career development, professional growth, and networking',
     color: '#0EA5E9', // Blue
     slug: 'career'
   },
   {
     id: 'jobs',
     name: 'Jobs',
-    description: 'Job postings, opportunities, and recruitment',
     color: '#DC2626', // Red
     slug: 'jobs'
   },
   {
     id: 'construction',
     name: 'Construction',
-    description: 'Construction techniques, projects, and industry updates',
     color: '#EA580C', // Orange
     slug: 'construction'
   },
   {
     id: 'academic',
     name: 'Academic',
-    description: 'Academic research, education, and learning resources',
     color: '#7C2D12', // Brown
     slug: 'academic'
   },
   {
     id: 'other',
     name: 'Other',
-    description: 'General discussions and topics that don\'t fit other categories',
     color: '#6B7280', // Gray
     slug: 'other'
   }
@@ -76,7 +68,6 @@ async function seedCategories() {
           where: { id: category.id },
           data: {
             name: category.name,
-            description: category.description,
             color: category.color,
             slug: category.slug,
             updatedAt: new Date()

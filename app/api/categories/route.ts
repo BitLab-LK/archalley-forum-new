@@ -10,7 +10,6 @@ export const revalidate = 0
 
 const createCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
-  description: z.string().min(1, "Description is required"),
   color: z.string().min(1, "Color is required"),
   slug: z.string().min(1, "Slug is required"),
 })
@@ -144,7 +143,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, description, color, slug } = createCategorySchema.parse(body)
+    const { name, color, slug } = createCategorySchema.parse(body)
 
     // Check if category with same name or slug exists
     const existingCategory = await prisma.categories.findFirst({
@@ -161,7 +160,6 @@ export async function POST(request: NextRequest) {
       data: {
         id: `cat-${Date.now()}`,
         name,
-        description,
         color,
         slug,
         updatedAt: new Date(),

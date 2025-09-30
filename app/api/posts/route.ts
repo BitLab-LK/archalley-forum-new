@@ -43,6 +43,7 @@ import { badgeService } from "@/lib/badge-service"
 import { geminiService } from "@/lib/gemini-service"
 import { classifyPost } from "@/lib/ai-service"
 import { sendNotificationEmail, extractMentions, getUserIdsByUsernames } from "@/lib/email-service"
+import { incrementCategoryPostCounts } from "@/lib/category-count-utils"
 import { onPostCreated } from "@/lib/stats-service"
 import { updateUserActivityAsync } from "@/lib/activity-service"
 import { revalidatePath } from "next/cache"
@@ -669,18 +670,8 @@ export async function POST(request: Request) {
         },
       })
 
-      // Update category post counts for all assigned categories
-      await Promise.all(
-        finalCategoryIds.map(categoryId =>
-          tx.categories.update({
-            where: { id: categoryId },
-            data: { postCount: { increment: 1 } }
-          }).catch(error => {
-            console.error(`Failed to update category count for ${categoryId}:`, error)
-          })
-        )
-      )
-      
+      // Update category post counts for all assigned categories using utility function
+      await incrementCategoryPostCounts(tx, finalCategoryIds, 1)
       console.log("📊 Updated post counts for enhanced categories:", finalCategoryIds)
 
       // CRITICAL FIX: Create attachments BEFORE fetching the complete post

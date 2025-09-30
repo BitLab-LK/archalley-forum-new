@@ -81,7 +81,6 @@ interface Page {
 interface Category {
   id: string
   name: string
-  description: string
   color: string
   slug: string
   postCount: number
@@ -159,7 +158,6 @@ export default function AdminDashboard() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [categoryForm, setCategoryForm] = useState({
     name: '',
-    description: '',
     color: '#3B82F6',
     slug: ''
   })
@@ -596,7 +594,6 @@ export default function AdminDashboard() {
     setEditingCategory(null)
     setCategoryForm({
       name: '',
-      description: '',
       color: '#3B82F6',
       slug: ''
     })
@@ -607,7 +604,6 @@ export default function AdminDashboard() {
     setEditingCategory(category)
     setCategoryForm({
       name: category.name,
-      description: category.description,
       color: category.color,
       slug: category.slug
     })
@@ -1441,7 +1437,6 @@ export default function AdminDashboard() {
                               />
                               <div className="space-y-1">
                                 <div className="font-medium">{category.name}</div>
-                                <div className="text-sm text-gray-500">{category.description}</div>
                                 <div className="text-xs text-gray-400">Slug: /{category.slug}</div>
                               </div>
                             </div>
@@ -1540,20 +1535,6 @@ export default function AdminDashboard() {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-4 items-start gap-4">
-                    <Label htmlFor="category-description" className="text-right pt-2">
-                      Description
-                    </Label>
-                    <Textarea
-                      id="category-description"
-                      value={categoryForm.description}
-                      onChange={(e) => setCategoryForm(prev => ({ ...prev, description: e.target.value }))}
-                      className="col-span-3"
-                      placeholder="Brief description of this category"
-                      rows={3}
-                    />
-                  </div>
-                  
                   
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="category-color" className="text-right">
@@ -1586,7 +1567,6 @@ export default function AdminDashboard() {
                       />
                       <div>
                         <div className="font-medium">{categoryForm.name || 'Category Name'}</div>
-                        <div className="text-sm text-gray-500">{categoryForm.description || 'Category description'}</div>
                       </div>
                     </div>
                   </div>

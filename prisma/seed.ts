@@ -63,7 +63,6 @@ async function main() {
       data: {
         id: "design",
         name: "Design",
-        description: "Architecture and design discussions",
         color: "#8B5CF6",
         slug: "design",
         updatedAt: new Date(),
@@ -73,7 +72,6 @@ async function main() {
       data: {
         id: "business",
         name: "Business",
-        description: "Business and entrepreneurship topics",
         color: "#3B82F6",
         slug: "business",
         updatedAt: new Date(),
@@ -83,7 +81,6 @@ async function main() {
       data: {
         id: "career",
         name: "Career",
-        description: "Career development and opportunities",
         color: "#10B981",
         slug: "career",
         updatedAt: new Date(),
@@ -93,7 +90,6 @@ async function main() {
       data: {
         id: "construction",
         name: "Construction",
-        description: "Construction and engineering discussions",
         color: "#F59E0B",
         slug: "construction",
         updatedAt: new Date(),
