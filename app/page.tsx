@@ -88,7 +88,12 @@ async function getInitialPosts(session: any = null): Promise<{ posts: Post[], pa
               }
             }
           },
-          categories: true,  // Primary category (full object)
+          primaryCategory: true,  // Primary category (full object)
+          postCategories: {
+            include: {
+              category: true
+            }
+          },
           _count: {
             select: { Comment: true }
           }
@@ -264,10 +269,10 @@ async function getInitialPosts(session: any = null): Promise<{ posts: Post[], pa
           badges: post.users?.userBadges || []
         },
         content: post.content || '',
-        category: post.categories?.name || 'General',      // Primary category name with fallback
-        categories: post.categories || { id: '', name: 'General', color: '#gray', slug: 'general' },         // Primary category object with fallback
+        category: post.primaryCategory?.name || 'General',      // Primary category name with fallback
+        categories: post.primaryCategory || { id: '', name: 'General', color: '#gray', slug: 'general' },         // Primary category object with fallback
         allCategories: uniqueCategories,     // Multiple unique categories
-        aiCategories: post.aiCategories || [], // AI-suggested category names
+        aiCategories: [], // AI-suggested category names (deprecated, use aiSuggestions)
         isAnonymous: post.isAnonymous || false,
         isPinned: post.isPinned || false,
         upvotes: voteCount.upvotes,

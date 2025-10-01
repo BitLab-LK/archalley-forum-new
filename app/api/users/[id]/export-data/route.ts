@@ -33,7 +33,12 @@ export async function POST(
         Post: {
           include: {
             Comment: true,
-            categories: true
+            primaryCategory: true,
+            postCategories: {
+              include: {
+                category: true
+              }
+            }
           }
         },
         Comment: {
@@ -93,7 +98,7 @@ export async function POST(
         updatedAt: post.updatedAt,
         isAnonymous: post.isAnonymous,
         commentsCount: post.Comment.length,
-        categoryName: post.categories.name
+        categoryName: post.primaryCategory?.name || 'Other'
       })),
       comments: userData.Comment.map(comment => ({
         id: comment.id,

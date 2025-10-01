@@ -40,31 +40,32 @@ model Comment {
 }
 
 model Post {
-  id                String        @id @default(cuid())
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  id                String         @id @default(cuid())
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
   title             String?
   content           String
-  isAnonymous       Boolean       @default(false)
-  isPinned          Boolean       @default(false)
-  isLocked          Boolean       @default(false)
-  aiCategory        String?
+  isAnonymous       Boolean        @default(false)
+  isPinned          Boolean        @default(false)
+  isLocked          Boolean        @default(false)
   aiTags            String[]
-  originalLanguage  String        @default("English")
+  originalLanguage  String         @default("English")
   translatedContent String?
-  viewCount         Int           @default(0)
-  shareCount        Int           @default(0)
+  viewCount         Int            @default(0)
+  shareCount        Int            @default(0)
   authorId          String
-  categoryId        String
-  aiCategories      String[]
-  categoryIds       String[]
+  categoryIds       String[]       @default([])
+  aiSuggestions     Json?
+  primaryCategoryId String?
   Comment           Comment[]
-  users             users         @relation(fields: [authorId], references: [id])
-  categories        categories    @relation(fields: [categoryId], references: [id])
+  users             users          @relation(fields: [authorId], references: [id])
+  primaryCategory   categories?    @relation("PrimaryCategory", fields: [primaryCategoryId], references: [id])
+  postCategories    PostCategory[]
   attachments       attachments[]
 
   @@index([authorId])
-  @@index([categoryId])
+  @@index([categoryIds])
+  @@index([primaryCategoryId])
 }
 
 model Session {
@@ -98,14 +99,28 @@ model attachments {
 }
 
 model categories {
-  id          String   @id
-  name        String   @unique
-  color       String
-  slug        String   @unique
-  postCount   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  Post        Post[]
+  id             String         @id
+  name           String         @unique
+  color          String
+  slug           String         @unique
+  postCount      Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  primaryPosts   Post[]         @relation("PrimaryCategory")
+  postCategories PostCategory[]
+}
+
+model PostCategory {
+  id         String     @id @default(cuid())
+  postId     String
+  categoryId String
+  createdAt  DateTime   @default(now())
+  category   categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  post       Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, categoryId])
+  @@index([postId])
+  @@index([categoryId])
 }
 
 model flags {

@@ -40,25 +40,42 @@ async function getDynamicCategories(): Promise<string[]> {
     
     const dbCategories = await prisma.categories.findMany({
       select: { name: true },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
+      where: {
+        // Only get active categories if there's an isActive field
+        // For now, get all categories
+      }
     })
     
     const categoryNames = dbCategories.map(cat => cat.name)
     
+    // Validate categories are non-empty strings
+    const validCategoryNames = categoryNames.filter(name => 
+      name && typeof name === 'string' && name.trim().length > 0
+    )
+    
     // Always ensure we have at least "Other" category as absolute fallback
-    if (categoryNames.length === 0) {
-      categoryNames.push("Other")
-      console.warn("⚠️ No categories found in database, using minimal fallback")
+    if (validCategoryNames.length === 0) {
+      console.warn("⚠️ No valid categories found in database, using minimal fallback")
+      const fallbackCategories = ["Other"]
+      
+      // Update cache with fallback
+      categoryCache = {
+        categories: fallbackCategories,
+        timestamp: Date.now()
+      }
+      
+      return fallbackCategories
     }
     
-    // Update cache
+    // Update cache with valid categories
     categoryCache = {
-      categories: categoryNames,
+      categories: validCategoryNames,
       timestamp: Date.now()
     }
     
-    console.log("✅ Fetched fresh categories from database:", categoryNames)
-    return categoryNames
+    console.log("✅ Fetched fresh categories from database:", validCategoryNames)
+    return validCategoryNames
     
   } catch (error) {
     console.error("❌ Failed to fetch categories from database:", error)
@@ -358,60 +375,60 @@ export async function classifyPost(content: string, availableCategories?: string
     const { translatedText, detectedLanguage } = await detectAndTranslate(content)
     const originalLanguage = detectedLanguage
 
-    // Step 2: Enhanced content analysis with improved categorization for non-English content
-    const prompt = `You are an expert content categorizer specializing in multi-language content analysis. 
+    // Step 2: Enhanced content analysis with improved categorization using exact database categories
+    const prompt = `You are an expert content categorizer. Your task is to analyze content and select the most appropriate categories from a predefined list.
 
-AVAILABLE CATEGORIES (choose 1-3 most relevant):
-${categories.map((cat, index) => `${index + 1}. ${cat}`).join('\n')}
+🎯 CRITICAL INSTRUCTION: You MUST only select categories from the exact list below. Do not create new categories or modify existing ones.
 
-CONTENT TO ANALYZE:
+📋 AVAILABLE CATEGORIES (Database Categories - SELECT ONLY FROM THIS LIST):
+${categories.map((cat, index) => `${index + 1}. "${cat}"`).join('\n')}
+
+📄 CONTENT TO ANALYZE:
 Original Language: ${originalLanguage}
 Content: "${translatedText}"
 
-ENHANCED CLASSIFICATION RULES:
-1. Select 1-3 most relevant categories from the list above
-2. Categories must match EXACTLY as written in the list (case-sensitive)
-3. For non-English content (especially Sinhala), consider cultural and regional context
-4. Pay special attention to:
-   - Professional and educational content → Academic, Career
-   - Architecture and construction topics → Design, Construction
-   - Business and entrepreneurship → Business, Career
-   - Technology, software, and innovation content → Technology
-   - Informational and tutorial content → Informative
-   - Job-related posts → Jobs, Career
-5. IMPORTANT: Don't default to "Informative" unless content is genuinely informational
-6. Multiple categories are encouraged when content spans multiple domains
+✅ CATEGORIZATION RULES:
+1. ⚠️  CRITICAL: Select 1-3 categories that match EXACTLY from the numbered list above
+2. 🎯 Categories must be copied EXACTLY as shown (including capitalization)
+3. 🌍 Consider cultural context for non-English content
+4. 📊 Analyze content theme, not just keywords
+5. 🔄 Multiple related categories are encouraged when content spans domains
 
-CONTENT ANALYSIS EXAMPLES:
-- Educational content about architecture → ["Academic", "Design"]
-- Business planning for construction → ["Business", "Construction"]
-- Career advice for designers → ["Career", "Design"]
-- Job posting for architect → ["Jobs", "Career", "Design"]
-- Tutorial on business planning → ["Informative", "Business"]
-- Technology innovations and software engineering → ["Technology"]
-- AI and cybersecurity updates → ["Technology"]
-- Programming tutorials → ["Technology", "Informative"]
+💡 CONTENT TYPE GUIDELINES:
+- Educational/Learning content → Look for "Academic", "Education", "Learning"
+- Work/Professional topics → Look for "Career", "Professional", "Jobs"
+- Business/Company topics → Look for "Business", "Entrepreneurship"
+- Technical/Software topics → Look for "Technology", "Tech", "Programming"
+- Building/Architecture → Look for "Architecture", "Construction", "Design"
+- Tutorials/How-to → Look for "Tutorial", "Guide", "Informative"
+- News/Updates → Look for "News", "Updates", "Current Events"
+- General info → Look for "General", "Other", "Miscellaneous"
 
-SPECIAL CONSIDERATION FOR NON-ENGLISH CONTENT:
-- Original language was: ${originalLanguage}
-- Translated content often contains professional/educational themes
-- Don't assume "Informative" category just because it was translated
-- Analyze the actual content meaning and context
+🌐 MULTI-LANGUAGE CONTENT SPECIAL HANDLING:
+- Original language: ${originalLanguage}
+- Content may contain professional/cultural context
+- Focus on content meaning, not translation artifacts
+- Don't default to generic categories for translated content
 
-Return your response as JSON in this exact format:
+📝 RESPONSE FORMAT (JSON only):
 {
-  "categories": ["Category1", "Category2", "Category3"],
+  "categories": ["ExactCategoryName1", "ExactCategoryName2"],
   "tags": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
   "confidence": 0.85,
-  "reasoning": "Brief explanation of why these categories were chosen"
+  "reasoning": "Explain why these specific categories from the database were selected"
 }
 
-Requirements:
-- "categories" array must contain 1-3 exact category names from the list above
-- "tags" should be 3-7 relevant keywords from the content
-- "confidence" should be between 0.1 and 1.0
-- "reasoning" should explain the categorization logic
-- Use multiple categories when content is multi-dimensional`
+⚠️  VALIDATION REQUIREMENTS:
+- "categories" must contain 1-3 category names that appear EXACTLY in the numbered list above
+- "tags" should be 3-7 relevant keywords extracted from content
+- "confidence" should be 0.1-1.0 based on how well content matches selected categories
+- "reasoning" should reference the specific database categories chosen and why
+
+🚫 DO NOT:
+- Create new category names
+- Modify existing category names
+- Use categories not in the provided list
+- Leave categories array empty`
 
     const result = await model.generateContent(prompt)
     const response = await result.response
@@ -433,24 +450,42 @@ Requirements:
 
     const resultTags = Array.isArray(classificationResponse.tags) ? classificationResponse.tags : []
 
-    // Enhanced validation and filtering for categories with improved matching
+    // Enhanced validation: Strict matching with database categories only
     const validCategories = resultCategories
       .map((cat: string) => cat.trim())
       .map((cat: string) => {
-        // First try exact match (case-insensitive)
+        // First try exact match (case-sensitive) - preferred for accuracy
         const exactMatch = categories.find(
+          (availableCat: string) => availableCat === cat
+        )
+        if (exactMatch) {
+          console.log(`✅ Exact category match found: "${cat}" → "${exactMatch}"`)
+          return exactMatch
+        }
+        
+        // Try case-insensitive exact match
+        const caseInsensitiveMatch = categories.find(
           (availableCat: string) => availableCat.toLowerCase() === cat.toLowerCase()
         )
-        if (exactMatch) return exactMatch
+        if (caseInsensitiveMatch) {
+          console.log(`✅ Case-insensitive match found: "${cat}" → "${caseInsensitiveMatch}"`)
+          return caseInsensitiveMatch
+        }
         
-        // Try partial match for common variations
+        // Only use partial matching as last resort and log it as potential issue
         const partialMatch = categories.find((availableCat: string) => {
           const availableLower = availableCat.toLowerCase()
           const catLower = cat.toLowerCase()
           return availableLower.includes(catLower) || catLower.includes(availableLower)
         })
         
-        return partialMatch || null
+        if (partialMatch) {
+          console.warn(`⚠️ Partial match used (may indicate prompt issue): "${cat}" → "${partialMatch}"`)
+          return partialMatch
+        }
+        
+        console.error(`❌ No match found for AI suggested category: "${cat}"`)
+        return null
       })
       .filter((cat: string | null) => cat !== null) as string[]
 
@@ -459,7 +494,8 @@ Requirements:
       aiSuggested: resultCategories,
       availableCategories: categories,
       validMatches: validCategories,
-      translationUsed: originalLanguage !== "English"
+      translationUsed: originalLanguage !== "English",
+      validationSuccess: validCategories.length > 0
     })
 
     // Enhanced fallback logic for non-English content

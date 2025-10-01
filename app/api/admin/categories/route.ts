@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
         updatedAt: true,
         _count: {
           select: {
-            Post: true
+            postCategories: true, // Count PostCategory junction entries
+            primaryPosts: true    // Count posts where this is primary category
           }
         }
       },
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     const formattedCategories = categories.map(category => ({
       ...category,
-      actualPostCount: category._count.Post,
+      actualPostCount: category._count.postCategories + category._count.primaryPosts,
       lastUpdated: category.updatedAt.toISOString().split("T")[0]
     }))
 
@@ -193,13 +194,20 @@ export async function DELETE(request: NextRequest) {
       ip: request.headers.get("x-forwarded-for") || "unknown"
     })
 
-    // Check if category has posts
-    const postsCount = await prisma.post.count({
-      where: { categoryId }
-    })
+    // Check if category has posts (either as primary category or in junction table)
+    const [primaryPostsCount, junctionPostsCount] = await Promise.all([
+      prisma.post.count({
+        where: { primaryCategoryId: categoryId }
+      }),
+      prisma.postCategory.count({
+        where: { categoryId }
+      })
+    ])
 
-    if (postsCount > 0) {
-      return new NextResponse(`Cannot delete category with ${postsCount} posts. Move posts to another category first.`, { status: 400 })
+    const totalPostsCount = primaryPostsCount + junctionPostsCount
+
+    if (totalPostsCount > 0) {
+      return new NextResponse(`Cannot delete category with ${totalPostsCount} posts. Move posts to another category first.`, { status: 400 })
     }
 
     await prisma.categories.delete({

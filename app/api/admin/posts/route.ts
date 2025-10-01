@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (category) {
-      whereClause.categoryId = category
+      whereClause.primaryCategoryId = category
     }
 
     if (author) {
@@ -69,7 +69,8 @@ export async function GET(request: NextRequest) {
         isAnonymous: true,
         viewCount: true,
         authorId: true,
-        categoryId: true,
+        primaryCategoryId: true,
+        categoryIds: true,
         users: {
           select: {
             name: true,
@@ -78,7 +79,7 @@ export async function GET(request: NextRequest) {
             role: true
           }
         },
-        categories: {
+        primaryCategory: {
           select: {
             name: true,
             color: true
@@ -143,9 +144,9 @@ export async function GET(request: NextRequest) {
           image: post.users?.image || null,
           role: post.users?.role || 'MEMBER'
         },
-        category: post.categories ? {
-          name: post.categories.name,
-          color: post.categories.color
+        category: post.primaryCategory ? {
+          name: post.primaryCategory.name,
+          color: post.primaryCategory.color
         } : null,
         stats: {
           comments: post._count?.Comment || 0,
@@ -285,7 +286,7 @@ export async function DELETE(request: NextRequest) {
       select: { 
         title: true, 
         authorId: true,
-        categoryId: true,
+        primaryCategoryId: true,
         categoryIds: true
       }
     })
@@ -298,9 +299,10 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get all category IDs for this post to update counts
+    // Get all category IDs (primary + additional categories)
     const allCategoryIds = post.categoryIds || []
-    if (post.categoryId && !allCategoryIds.includes(post.categoryId)) {
-      allCategoryIds.push(post.categoryId)
+    if (post.primaryCategoryId && !allCategoryIds.includes(post.primaryCategoryId)) {
+      allCategoryIds.push(post.primaryCategoryId)
     }
 
     // Delete post and related data in transaction

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { clearCategoryCache } from "@/lib/ai-service"
 
 // Force dynamic rendering and disable caching
 export const dynamic = "force-dynamic"
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
           postCount: true,
           _count: {
             select: {
-              Post: true
+              postCategories: true
             }
           }
         }
@@ -85,7 +86,7 @@ export async function GET(request: NextRequest) {
           name: category.name,
           color: category.color,
           slug: category.slug,
-          count: category._count.Post
+          count: category._count.postCategories
         }
       })
     }
@@ -100,7 +101,7 @@ export async function GET(request: NextRequest) {
         postCount: true,
         _count: {
           select: {
-            Post: true
+            postCategories: true
           }
         }
       },
@@ -115,7 +116,7 @@ export async function GET(request: NextRequest) {
       name: category.name,
       color: category.color,
       slug: category.slug,
-      count: category._count.Post // Use actual post count from relationship
+      count: category._count.postCategories // Use actual post count from relationship
     }))
 
     // Ensure "Other" category is always at the bottom
@@ -165,6 +166,10 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date(),
       },
     })
+
+    // Clear AI category cache so the new category is immediately available for categorization
+    clearCategoryCache()
+    console.log("✅ Created new category and cleared AI cache:", category.name)
 
     return NextResponse.json({ category }, { status: 201 })
   } catch (error) {

@@ -656,14 +656,15 @@ export async function POST(request: Request) {
           id: crypto.randomUUID(),
           content: data.content, // Keep original language
           authorId: session.user.id,
-          categoryId: data.categoryId, // Primary category
+          primaryCategoryId: data.categoryId, // Primary category
           categoryIds: finalCategoryIds, // Enhanced multiple categories
           isAnonymous: data.isAnonymous,
           aiTags: data.tags,
-          aiCategory: quickAiSuggestion.primaryCategory || primaryCategory.name, // Enhanced primary AI category
-          aiCategories: enhancedCategories.filter((cat: string) => 
-            cat.toLowerCase() !== primaryCategory.name.toLowerCase()
-          ), // Enhanced AI categories (excluding primary)
+          aiSuggestions: {
+            primaryCategory: quickAiSuggestion.primaryCategory || primaryCategory.name,
+            categories: enhancedCategories,
+            translatedContent: quickAiSuggestion.translatedContent || data.content
+          },
           originalLanguage: data.originalLanguage,
           translatedContent: quickAiSuggestion.translatedContent || data.content, // Use enhanced translation if available
           updatedAt: new Date(),
@@ -742,7 +743,12 @@ export async function POST(request: Request) {
               }
             },
           },
-          categories: true,  // Primary category
+          primaryCategory: true,  // Primary category
+          postCategories: {
+            include: {
+              category: true
+            }
+          },
           attachments: true, // Include attachments for immediate response
           _count: {
             select: { Comment: true }
@@ -797,7 +803,7 @@ export async function POST(request: Request) {
         badges: [],
       },
       // Add category field from the primary category
-      category: result.categories?.name || primaryCategory.name || 'General',
+      category: result.primaryCategory?.name || primaryCategory.name || 'General',
       // Remove the users field since we've transformed it to author
       users: undefined,
       // Add time formatting
@@ -911,11 +917,11 @@ export async function POST(request: Request) {
               where: { id: result.id },
               data: {
                 ...(categoriesChanged && { categoryIds: uniqueCategoryIds }),
-                aiCategory: enhancedAiSuggestion.categories[0] || null,
-                aiCategories: enhancedAiSuggestion.categories.filter(categoryName => {
-                  const primaryCategoryName = primaryCategory.name.toLowerCase()
-                  return categoryName.toLowerCase() !== primaryCategoryName
-                }) || [],
+                aiSuggestions: {
+                  categories: enhancedAiSuggestion.categories || [],
+                  primaryCategory: enhancedAiSuggestion.categories[0] || null,
+                  ...(translationNeeded && { translatedContent: translatedContent })
+                },
                 ...(translationNeeded && { translatedContent: translatedContent }),
               }
             })
@@ -1372,7 +1378,12 @@ export async function GET(request: NextRequest) {
             },
           },
           // Primary category relationship
-          categories: true,
+          primaryCategory: true,
+          postCategories: {
+            include: {
+              category: true
+            }
+          },
           // Comment count for engagement metrics
           _count: {
             select: {
@@ -1628,11 +1639,12 @@ export async function GET(request: NextRequest) {
             badges: post.users.userBadges?.slice(0, 3) || [], // Include top 3 badges
           },
           content: post.content,
-          category: post.categories.name, // Primary category name
-          categories: post.categories, // Primary category object (direct relationship)
+          category: post.primaryCategory?.name || 'Other', // Primary category name
+          categories: post.primaryCategory, // Primary category object (direct relationship)
           allCategories: uniqueCategories, // Multiple unique categories
-          aiCategories: post.aiCategories || [], // AI-suggested category names
-          aiCategory: post.aiCategory, // Primary AI category name
+          aiCategories: [], // AI-suggested category names (deprecated, use aiSuggestions)
+          aiCategory: null, // Primary AI category name (deprecated, use aiSuggestions)
+          aiSuggestions: post.aiSuggestions || null, // AI suggestions as JSON
           originalLanguage: post.originalLanguage || 'English',
           isAnonymous: post.isAnonymous,
           isPinned: post.isPinned,

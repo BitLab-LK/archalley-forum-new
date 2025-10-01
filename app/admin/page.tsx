@@ -181,7 +181,6 @@ export default function AdminDashboard() {
 
   // Fetch dashboard data effect - must be declared before any early returns
   useEffect(() => {
-
     const fetchDashboardData = async () => {
       try {
         // Fetch stats separately for better error handling
@@ -214,35 +213,79 @@ export default function AdminDashboard() {
           fetchStats() // Run stats fetch in parallel
         ])
 
-        // Handle other responses
-        if (!usersResponse.ok || !settingsResponse.ok || !pagesResponse.ok) {
-          throw new Error("Failed to fetch some dashboard data")
+        // Handle each response individually to prevent one failure from blocking others
+        
+        // Handle users
+        if (usersResponse.ok) {
+          try {
+            const usersData = await usersResponse.json()
+            const usersList = usersData.users || []
+            setUsers(usersList)
+            setFilteredUsers(usersList)
+          } catch (error) {
+            console.error("Error processing users data:", error)
+            toast.error("Failed to load users")
+          }
+        } else {
+          console.error("Users API failed:", usersResponse.status)
+          toast.error("Failed to load users")
         }
 
-        const [usersData, settingsData, pagesData] = await Promise.all([
-          usersResponse.json(),
-          settingsResponse.json(),
-          pagesResponse.json()
-        ])
+        // Handle settings
+        if (settingsResponse.ok) {
+          try {
+            const settingsData = await settingsResponse.json()
+            setSettings(settingsData || {})
+          } catch (error) {
+            console.error("Error processing settings data:", error)
+            toast.error("Failed to load settings")
+          }
+        } else {
+          console.error("Settings API failed:", settingsResponse.status)
+        }
 
-        const usersList = usersData.users || []
-        setUsers(usersList)
-        setFilteredUsers(usersList)
-        setSettings(settingsData || {})
-        setPages(pagesData.pages || [])
+        // Handle pages
+        if (pagesResponse.ok) {
+          try {
+            const pagesData = await pagesResponse.json()
+            setPages(pagesData.pages || [])
+          } catch (error) {
+            console.error("Error processing pages data:", error)
+            toast.error("Failed to load pages")
+          }
+        } else {
+          console.error("Pages API failed:", pagesResponse.status)
+        }
 
-        // Handle categories and posts separately to avoid blocking main UI
+        // Handle categories - ALWAYS process this regardless of other failures
         if (categoriesResponse.ok) {
-          const categoriesData = await categoriesResponse.json()
-          setCategories(categoriesData.categories || [])
+          try {
+            const categoriesData = await categoriesResponse.json()
+            setCategories(categoriesData.categories || [])
+            console.log("✅ Categories loaded:", categoriesData.categories?.length || 0)
+          } catch (error) {
+            console.error("Error processing categories data:", error)
+            toast.error("Failed to load categories")
+          }
+        } else {
+          console.error("Categories API failed:", categoriesResponse.status)
+          toast.error("Failed to load categories")
         }
         setCategoriesLoading(false)
 
+        // Handle posts
         if (postsResponse.ok) {
-          const postsData = await postsResponse.json()
-          const postsList = postsData.posts || []
-          setPosts(postsList)
-          setFilteredPosts(postsList)
+          try {
+            const postsData = await postsResponse.json()
+            const postsList = postsData.posts || []
+            setPosts(postsList)
+            setFilteredPosts(postsList)
+          } catch (error) {
+            console.error("Error processing posts data:", error)
+            toast.error("Failed to load posts")
+          }
+        } else {
+          console.error("Posts API failed:", postsResponse.status)
         }
         setPostsLoading(false)
       } catch (error) {
@@ -1731,3 +1774,5 @@ export default function AdminDashboard() {
     </div>
   )
 }
+
+
