@@ -36,7 +36,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
       select: { 
         authorId: true, 
         id: true,
-        categoryId: true,
+        primaryCategoryId: true,
         categoryIds: true
       }
     })
@@ -78,8 +78,8 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
     // Get all category IDs for this post to update counts
     const allCategoryIds = post.categoryIds || []
-    if (post.categoryId && !allCategoryIds.includes(post.categoryId)) {
-      allCategoryIds.push(post.categoryId)
+    if (post.primaryCategoryId && !allCategoryIds.includes(post.primaryCategoryId)) {
+      allCategoryIds.push(post.primaryCategoryId)
     }
 
     console.log("📊 Will decrement counts for categories:", allCategoryIds)
