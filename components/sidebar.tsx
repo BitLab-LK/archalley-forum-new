@@ -267,10 +267,18 @@ function Sidebar() {
                 "Other"
               ];
               
-              // Sort categories by the predefined order
+              // Sort categories by the predefined order with "Other" always last
               const sortedCategories = [...displayCategories].sort((a, b) => {
-                const aIndex = categoryOrder.findIndex(name => name.toLowerCase() === a.name.toLowerCase());
-                const bIndex = categoryOrder.findIndex(name => name.toLowerCase() === b.name.toLowerCase());
+                const aName = a.name.toLowerCase();
+                const bName = b.name.toLowerCase();
+                
+                // "Other" always goes to the bottom
+                if (aName === 'other') return 1;
+                if (bName === 'other') return -1;
+                
+                // Check if categories are in the predefined order
+                const aIndex = categoryOrder.findIndex(name => name.toLowerCase() === aName);
+                const bIndex = categoryOrder.findIndex(name => name.toLowerCase() === bName);
                 
                 // If both categories are in the order list, sort by order
                 if (aIndex !== -1 && bIndex !== -1) {
@@ -281,7 +289,8 @@ function Sidebar() {
                 if (aIndex !== -1) return -1;
                 if (bIndex !== -1) return 1;
                 
-                // Otherwise, sort alphabetically
+                // For new categories not in the predefined list, sort alphabetically
+                // but they will all appear before "Other" due to the check above
                 return a.name.localeCompare(b.name);
               });
               

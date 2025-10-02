@@ -113,9 +113,9 @@ export interface CategoryColorStyles {
 
 export function generateCategoryStyles(categoryColor: string): CategoryColorStyles {
   const textColor = getTextColorForBackground(categoryColor);
-  const lightBackground = lightenColor(categoryColor, 85); // Very light version
-  const accentBackground = lightenColor(categoryColor, 70); // Light version for accents
-  const borderColor = lightenColor(categoryColor, 60); // Slightly darker for borders
+  const lightBackground = lightenColor(categoryColor, 70); // More visible light version
+  const accentBackground = lightenColor(categoryColor, 50); // Medium version for accents
+  const borderColor = lightenColor(categoryColor, 40); // Slightly darker for borders
   
   return {
     backgroundColor: categoryColor,
