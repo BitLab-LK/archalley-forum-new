@@ -50,7 +50,7 @@ import { ThumbsUp, ThumbsDown, MessageCircle, Flag, CheckCircle, Trash2, MoreHor
 import { cn } from "@/lib/utils"
 import { useGlobalVoteState } from "@/lib/vote-sync"
 import { activityEventManager } from "@/lib/activity-events"
-import { getCategoryBackground } from "@/lib/category-colors"
+import { generateCategoryStyles } from "@/lib/color-utils"
 import { useSocket } from "@/lib/socket-context"
 import {
   DropdownMenu,
@@ -251,16 +251,23 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     // Card always has white/dark background for consistency
     return "shadow-sm border-0 overflow-visible bg-white dark:bg-gray-800"
   }, [])
-  const contentBackgroundClasses = useMemo(() => {
+  const contentBackgroundStyle = useMemo(() => {
     // Use light category-based background only for text posts (without images)
     const hasImages = post.images && post.images.length > 0
     if (hasImages) {
-      return ""
+      return {}
     }
-    // Add null check for post.category
-    const categoryName = post.category || 'general'
-    return getCategoryBackground(categoryName.toLowerCase())
-  }, [post.category, post.images])
+    
+    // Use database category color if available
+    const categoryColor = post.categories?.color || post.allCategories?.[0]?.color
+    if (categoryColor) {
+      const styles = generateCategoryStyles(categoryColor)
+      return { backgroundColor: styles.lightBackground }
+    }
+    
+    // Fallback to default light background
+    return { backgroundColor: '#f8fafc' }
+  }, [post.categories, post.allCategories, post.images])
   const isAdmin = useMemo(() => user?.role === "ADMIN" || user?.role === "SUPER_ADMIN", [user?.role])
   const canDelete = useMemo(() => isAuthor || isAdmin, [isAuthor, isAdmin])
   
@@ -811,34 +818,44 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
               <div className="flex items-center space-x-2 flex-wrap gap-1">
                 {post.allCategories && post.allCategories.length > 0 ? (
                   // Show all categories from allCategories array
-                  post.allCategories.map((category: any) => (
-                    <Badge 
-                      key={category.id}
-                      className={cn(
-                        "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1", 
-                        `category-${category.name.toLowerCase()}`
-                      )}
-                    >
-                      {category.name}
-                    </Badge>
-                  ))
+                  post.allCategories.map((category: any) => {
+                    const styles = generateCategoryStyles(category.color)
+                    return (
+                      <Badge 
+                        key={category.id}
+                        className="text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 border border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300"
+                        style={{
+                          backgroundColor: styles.lightBackground
+                        }}
+                      >
+                        {category.name}
+                      </Badge>
+                    )
+                  })
                 ) : post.categories ? (
                   // Fallback to single primary category
-                  <Badge 
-                    key={post.categories.id}
-                    className={cn(
-                      "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1", 
-                      `category-${post.categories.name.toLowerCase()}`
-                    )}
-                  >
-                    {post.categories.name}
-                  </Badge>
+                  (() => {
+                    const styles = generateCategoryStyles(post.categories.color)
+                    return (
+                      <Badge 
+                        key={post.categories.id}
+                        className="text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 border border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300"
+                        style={{
+                          backgroundColor: styles.lightBackground
+                        }}
+                      >
+                        {post.categories.name}
+                      </Badge>
+                    )
+                  })()
                 ) : (
                   // Final fallback to category string
-                  <Badge className={cn(
-                    "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1", 
-                    `category-${post.category.toLowerCase()}`
-                  )}>
+                  <Badge 
+                    className="text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 border border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300"
+                    style={{
+                      backgroundColor: '#f8fafc'
+                    }}
+                  >
                     {post.category}
                   </Badge>
                 )}
@@ -855,10 +872,10 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                     .map((categoryName, index) => (
                       <Badge 
                         key={`ai-${index}`}
-                        className={cn(
-                          "text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 border-dashed opacity-80", 
-                          `category-${categoryName.toLowerCase()}`
-                        )}
+                        className="text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 border-dashed border border-gray-200 dark:border-gray-700 opacity-80 text-gray-600 dark:text-gray-400"
+                        style={{
+                          backgroundColor: '#f8fafc'
+                        }}
                         title="AI-suggested category"
                       >
                         {categoryName}
@@ -899,7 +916,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
           </div>
 
           {/* Post Content */}
-          <div className={cn("mb-4 p-4 rounded-lg", contentBackgroundClasses)}>
+          <div className="mb-4 p-4 rounded-lg" style={contentBackgroundStyle}>
             <p 
               className={cn(
                 "text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed mb-4",

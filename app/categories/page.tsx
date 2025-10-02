@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { getCategoryColors, getCategoryLightBackground } from "@/lib/category-colors"
+import { generateCategoryStyles } from "@/lib/color-utils"
 import {
   TrendingUp,
   MessageCircle,
@@ -144,15 +144,21 @@ export default function CategoriesPage() {
         {/* Categories Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
           {categories.map((category) => {
-            const categoryColors = getCategoryColors(category.id)
-            const backgroundClasses = getCategoryLightBackground(category.id)
+            const categoryStyles = generateCategoryStyles(category.color)
             
             return (
-              <Card key={category.id} className={`hover:shadow-lg transition-shadow ${backgroundClasses}`}>
+              <Card 
+                key={category.id} 
+                className="hover:shadow-lg transition-shadow"
+                style={{ backgroundColor: categoryStyles.lightBackground }}
+              >
                 <CardHeader className="p-3 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2 sm:space-x-3">
-                      <div className={`w-8 h-8 sm:w-12 sm:h-12 ${categoryColors.primary} rounded-lg`}>
+                      <div 
+                        className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg"
+                        style={{ backgroundColor: category.color }}
+                      >
                       </div>
                       <div>
                         <CardTitle className="text-base sm:text-xl">{category.name}</CardTitle>
@@ -164,7 +170,10 @@ export default function CategoriesPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="p-3 sm:p-6 pt-0">
-                  <div className={`${categoryColors.accent} ${categoryColors.accentDark} rounded-lg p-3 sm:p-4 mb-3 sm:mb-4`}>
+                  <div 
+                    className="rounded-lg p-3 sm:p-4 mb-3 sm:mb-4"
+                    style={{ backgroundColor: categoryStyles.accentBackground }}
+                  >
                     <h4 className="font-medium text-xs sm:text-sm mb-2">Latest Post</h4>
                     <p className="text-xs sm:text-sm font-medium mb-1 line-clamp-2">{category.latestPost.title}</p>
                     <div className="flex items-center justify-between text-xs text-gray-500">

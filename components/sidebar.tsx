@@ -5,6 +5,7 @@ import { TrendingUp, Users, Award } from "lucide-react"
 import { useEffect, useState, memo } from "react"
 import { useSidebar } from "@/lib/sidebar-context"
 import { cn } from "@/lib/utils"
+import { generateCategoryStyles } from "@/lib/color-utils"
 
 interface Category {
   id: string
@@ -45,16 +46,16 @@ interface TopContributor {
 }
 
 function Sidebar() {
-  // Fallback categories to ensure they always display
+  // Fallback categories with database-compatible hex colors
   const FALLBACK_CATEGORIES: Category[] = [
-    { id: "design", name: "Design", color: "bg-purple-500", icon: "🎨", slug: "design", count: 0 },
-    { id: "informative", name: "Informative", color: "bg-cyan-500", icon: "ℹ️", slug: "informative", count: 0 },
-    { id: "business", name: "Business", color: "bg-blue-500", icon: "💼", slug: "business", count: 0 },
-    { id: "career", name: "Career", color: "bg-green-500", icon: "👔", slug: "career", count: 0 },
-    { id: "construction", name: "Construction", color: "bg-yellow-500", icon: "�️", slug: "construction", count: 0 },
-    { id: "academic", name: "Academic", color: "bg-indigo-500", icon: "🎓", slug: "academic", count: 0 },
-    { id: "jobs", name: "Jobs", color: "bg-red-500", icon: "💼", slug: "jobs", count: 0 },
-    { id: "other", name: "Other", color: "bg-gray-500", icon: "📂", slug: "other", count: 0 },
+    { id: "design", name: "Design", color: "#7C3AED", icon: "🎨", slug: "design", count: 0 },
+    { id: "informative", name: "Informative", color: "#0D9488", icon: "ℹ️", slug: "informative", count: 0 },
+    { id: "business", name: "Business", color: "#059669", icon: "💼", slug: "business", count: 0 },
+    { id: "career", name: "Career", color: "#0EA5E9", icon: "👔", slug: "career", count: 0 },
+    { id: "construction", name: "Construction", color: "#EA580C", icon: "🏗️", slug: "construction", count: 0 },
+    { id: "academic", name: "Academic", color: "#7C2D12", icon: "🎓", slug: "academic", count: 0 },
+    { id: "jobs", name: "Jobs", color: "#DC2626", icon: "💼", slug: "jobs", count: 0 },
+    { id: "other", name: "Other", color: "#6B7280", icon: "📂", slug: "other", count: 0 },
   ]
 
   const [categories, setCategories] = useState<Category[]>(FALLBACK_CATEGORIES)
@@ -68,18 +69,10 @@ function Sidebar() {
   // Use sidebar context for real-time updates
   const { categoriesKey, trendingKey } = useSidebar()
 
-  // Category color mapping consistent with post-card.tsx
-  const CATEGORY_COLORS = {
-    business: "bg-blue-500",
-    design: "bg-purple-500", 
-    career: "bg-green-500",
-    construction: "bg-yellow-500",
-    academic: "bg-indigo-500",
-    informative: "bg-cyan-500",
-    jobs: "bg-red-500",
-    technology: "bg-blue-600",
-    other: "bg-gray-500",
-  } as const
+  // Helper function to get category styles using database colors
+  const getCategoryStyles = (categoryColor: string) => {
+    return generateCategoryStyles(categoryColor)
+  }
 
 
   // Load sidebar data with staggered loading for better perceived performance
@@ -225,41 +218,6 @@ function Sidebar() {
     loadSidebarData()
   }, [categoriesKey, trendingKey, hasLoadedInitialData]) // Re-fetch when keys change
 
-  // Get light background color for categories
-  const getCategoryLightColor = (categoryName: string): string => {
-    const normalizedName = categoryName.toLowerCase()
-    const colorClass = CATEGORY_COLORS[normalizedName as keyof typeof CATEGORY_COLORS] ?? "bg-gray-500"
-    
-    // Map to light background versions
-    switch (colorClass) {
-      case 'bg-blue-500':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-900/50'
-      case 'bg-purple-500':
-        return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 hover:bg-purple-200 dark:hover:bg-purple-900/50'
-      case 'bg-green-500':
-        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-900/50'
-      case 'bg-yellow-500':
-        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
-      case 'bg-indigo-500':
-        return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-200 dark:hover:bg-indigo-900/50'
-      case 'bg-cyan-500':
-        return 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-200 dark:hover:bg-cyan-900/50'
-      case 'bg-red-500':
-        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800 hover:bg-red-200 dark:hover:bg-red-900/50'
-      case 'bg-blue-600':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-900/50'
-      case 'bg-gray-500':
-      default:
-        return 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-900/50'
-    }
-  }
-
-  // Get dot color for category indicator
-  const getCategoryDotColor = (categoryName: string): string => {
-    const normalizedName = categoryName.toLowerCase()
-    return CATEGORY_COLORS[normalizedName as keyof typeof CATEGORY_COLORS] ?? "bg-gray-500"
-  }
-
   return (
     <div className="space-y-6">
       {/* Categories */}
@@ -328,21 +286,26 @@ function Sidebar() {
               });
               
               return sortedCategories.map((category, index) => {
-                // Get the appropriate colors based on the category
-                const dotColor = getCategoryDotColor(category.name);
+                // Get category styles using database colors
+                const categoryStyles = getCategoryStyles(category.color);
                 
                 return (
                   <div
-  key={category.id}
-  className={`group flex items-center rounded-lg py-2 px-3 transition-all duration-200 cursor-pointer smooth-transition hover-lift animate-slide-in-up ${getCategoryLightColor(category.name)} max-w-[280px] mx-auto`}
-  style={{ animationDelay: `${index * 50}ms` }}
->
-  <div className="flex items-center space-x-2 w-full">
-    <div className={`w-3 h-3 rounded-full ${dotColor}`} />
-    <span className="text-base font-semibold">{category.name}</span>
-  </div>
-</div>
-
+                    key={category.id}
+                    className="group flex items-center rounded-lg py-2 px-3 transition-all duration-200 cursor-pointer smooth-transition hover-lift animate-slide-in-up max-w-[280px] mx-auto border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700"
+                    style={{ 
+                      animationDelay: `${index * 50}ms`,
+                      backgroundColor: categoryStyles.lightBackground
+                    }}
+                  >
+                    <div className="flex items-center space-x-2 w-full">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <span className="text-base font-semibold text-gray-700 dark:text-gray-300">{category.name}</span>
+                    </div>
+                  </div>
                 );
               });
             })()

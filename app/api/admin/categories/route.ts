@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       data: {
         id: `cat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name,
-        color: color || "#3B82F6",
+        color: color || "#E0F2FE",
         slug,
         postCount: 0,
         updatedAt: new Date()

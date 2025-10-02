@@ -158,7 +158,7 @@ export default function AdminDashboard() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [categoryForm, setCategoryForm] = useState({
     name: '',
-    color: '#3B82F6',
+    color: '#E0F2FE',
     slug: ''
   })
   const [categorySaving, setCategorySaving] = useState(false)
@@ -637,7 +637,7 @@ export default function AdminDashboard() {
     setEditingCategory(null)
     setCategoryForm({
       name: '',
-      color: '#3B82F6',
+      color: '#E0F2FE',
       slug: ''
     })
     setCategoryFormOpen(true)
@@ -1583,20 +1583,64 @@ export default function AdminDashboard() {
                     <Label htmlFor="category-color" className="text-right">
                       Color
                     </Label>
-                    <div className="col-span-3 flex items-center space-x-2">
-                      <Input
-                        id="category-color"
-                        type="color"
-                        value={categoryForm.color}
-                        onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
-                        className="w-16 h-10 rounded border"
-                      />
-                      <Input
-                        value={categoryForm.color}
-                        onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
-                        className="flex-1"
-                        placeholder="#3B82F6"
-                      />
+                    <div className="col-span-3 space-y-3">
+                      {/* Light Color Presets */}
+                      <div>
+                        <Label className="text-sm text-gray-600 dark:text-gray-400 mb-2 block">
+                          Choose from light colors:
+                        </Label>
+                        <div className="grid grid-cols-8 gap-2">
+                          {[
+                            '#E0F2FE', // Light Sky Blue
+                            '#F0F9FF', // Very Light Blue
+                            '#ECFDF5', // Light Green
+                            '#FEF3C7', // Light Yellow
+                            '#FCE7F3', // Light Pink
+                            '#F3E8FF', // Light Purple
+                            '#FFF7ED', // Light Orange
+                            '#F0FDF4', // Very Light Green
+                            '#EFF6FF', // Light Blue
+                            '#FDF2F8', // Light Rose
+                            '#F9FAFB', // Light Gray
+                            '#FEFCE8', // Light Lime
+                          ].map((color) => (
+                            <button
+                              key={color}
+                              type="button"
+                              className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
+                                categoryForm.color === color 
+                                  ? 'border-gray-800 dark:border-gray-200 ring-2 ring-offset-2 ring-gray-400' 
+                                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-500'
+                              }`}
+                              style={{ backgroundColor: color }}
+                              onClick={() => setCategoryForm(prev => ({ ...prev, color }))}
+                              title={`Select ${color}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Custom Color Picker */}
+                      <div>
+                        <Label className="text-sm text-gray-600 dark:text-gray-400 mb-2 block">
+                          Or choose custom color:
+                        </Label>
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            id="category-color"
+                            type="color"
+                            value={categoryForm.color}
+                            onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
+                            className="w-16 h-10 rounded border"
+                          />
+                          <Input
+                            value={categoryForm.color}
+                            onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
+                            className="flex-1"
+                            placeholder="#E0F2FE"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
