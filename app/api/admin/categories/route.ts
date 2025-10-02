@@ -77,9 +77,14 @@ export async function POST(request: NextRequest) {
       ip: request.headers.get("x-forwarded-for") || "unknown"
     })
 
-    // Check if slug already exists
-    const existingCategory = await prisma.categories.findUnique({
-      where: { slug }
+    // Check if slug already exists (slug will be used as ID)
+    const existingCategory = await prisma.categories.findFirst({
+      where: { 
+        OR: [
+          { slug },
+          { id: slug }
+        ]
+      }
     })
 
     if (existingCategory) {
@@ -88,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     const category = await prisma.categories.create({
       data: {
-        id: `cat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: slug, // Use slug as ID for consistency with existing categories
         name,
         color: color || "#E0F2FE",
         slug,
@@ -128,17 +133,43 @@ export async function PATCH(request: NextRequest) {
       return new NextResponse("Category ID is required", { status: 400 })
     }
 
+    // Check if category has posts before allowing name/slug changes
+    if (name || slug) {
+      const [primaryPostsCount, junctionPostsCount] = await Promise.all([
+        prisma.post.count({
+          where: { primaryCategoryId: categoryId }
+        }),
+        prisma.postCategory.count({
+          where: { categoryId }
+        })
+      ])
+
+      const totalPostsCount = primaryPostsCount + junctionPostsCount
+
+      if (totalPostsCount > 0) {
+        if (name) {
+          return new NextResponse(`Cannot change category name when it has ${totalPostsCount} posts. Only color changes are allowed.`, { status: 400 })
+        }
+        if (slug) {
+          return new NextResponse(`Cannot change category slug when it has ${totalPostsCount} posts. Only color changes are allowed.`, { status: 400 })
+        }
+      }
+    }
+
     logAdminAction("UPDATE_CATEGORY", user!.id, {
       categoryId,
       changes: { name, color, slug },
       ip: request.headers.get("x-forwarded-for") || "unknown"
     })
 
-    // If updating slug, check for conflicts
+    // If updating slug, check for conflicts and update ID as well
     if (slug) {
       const existingCategory = await prisma.categories.findFirst({
         where: { 
-          slug,
+          OR: [
+            { slug },
+            { id: slug }
+          ],
           NOT: { id: categoryId }
         }
       })
@@ -146,14 +177,65 @@ export async function PATCH(request: NextRequest) {
       if (existingCategory) {
         return new NextResponse("Category slug already exists", { status: 400 })
       }
+
+      // Get current category data for the transaction
+      const currentCategory = await prisma.categories.findUnique({
+        where: { id: categoryId }
+      })
+
+      if (!currentCategory) {
+        return new NextResponse("Category not found", { status: 404 })
+      }
+
+      // If slug is changing, we need to update the ID as well using a transaction
+      // This ensures data integrity across all related tables
+      const updatedCategory = await prisma.$transaction(async (tx) => {
+        // First, update all foreign key references
+        await tx.post.updateMany({
+          where: { primaryCategoryId: categoryId },
+          data: { primaryCategoryId: slug }
+        })
+
+        await tx.postCategory.updateMany({
+          where: { categoryId: categoryId },
+          data: { categoryId: slug }
+        })
+
+        // Then delete the old category
+        await tx.categories.delete({
+          where: { id: categoryId }
+        })
+
+        // Finally, create the new category with the new ID
+        return await tx.categories.create({
+          data: {
+            id: slug, // New ID matches the slug
+            name: name || currentCategory.name,
+            color: color || currentCategory.color,
+            slug: slug,
+            postCount: currentCategory.postCount,
+            createdAt: currentCategory.createdAt,
+            updatedAt: new Date()
+          }
+        })
+      })
+
+      // Clear AI category cache to ensure updated category is reflected in AI categorization
+      clearCategoryCache()
+      console.log("✨ Category cache cleared after updating with new ID:", updatedCategory.name)
+
+      return NextResponse.json({ 
+        message: "Category updated successfully with new ID", 
+        category: updatedCategory 
+      })
     }
 
+    // For non-slug updates (only name or color changes)
     const updatedCategory = await prisma.categories.update({
       where: { id: categoryId },
       data: {
         ...(name && { name }),
         ...(color && { color }),
-        ...(slug && { slug }),
         updatedAt: new Date()
       }
     })
