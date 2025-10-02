@@ -46,20 +46,8 @@ interface TopContributor {
 }
 
 function Sidebar() {
-  // Fallback categories with database-compatible hex colors
-  const FALLBACK_CATEGORIES: Category[] = [
-    { id: "design", name: "Design", color: "#7C3AED", icon: "🎨", slug: "design", count: 0 },
-    { id: "informative", name: "Informative", color: "#0D9488", icon: "ℹ️", slug: "informative", count: 0 },
-    { id: "business", name: "Business", color: "#059669", icon: "💼", slug: "business", count: 0 },
-    { id: "career", name: "Career", color: "#0EA5E9", icon: "👔", slug: "career", count: 0 },
-    { id: "construction", name: "Construction", color: "#EA580C", icon: "🏗️", slug: "construction", count: 0 },
-    { id: "academic", name: "Academic", color: "#7C2D12", icon: "🎓", slug: "academic", count: 0 },
-    { id: "jobs", name: "Jobs", color: "#DC2626", icon: "💼", slug: "jobs", count: 0 },
-    { id: "other", name: "Other", color: "#6B7280", icon: "📂", slug: "other", count: 0 },
-  ]
-
-  const [categories, setCategories] = useState<Category[]>(FALLBACK_CATEGORIES)
-  const [isLoading, setIsLoading] = useState(false) // Start with false, show fallback categories immediately
+  const [categories, setCategories] = useState<Category[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [trendingPosts, setTrendingPosts] = useState<TrendingPost[]>([])
   const [isTrendingLoading, setIsTrendingLoading] = useState(false) // Start with false, will be set to true when fetching
   const [topContributors, setTopContributors] = useState<TopContributor[]>([])
@@ -123,41 +111,22 @@ function Sidebar() {
     const loadSidebarData = async () => {
       setHasLoadedInitialData(true)
       
-      // 1. Load categories first (they're most important and we have fallbacks)
+      // 1. Load categories from database
       const fetchCategories = async () => {
-        // Only show loading skeleton if categories are empty (first load)
-        if (categories.length === 0) {
-          setIsLoading(true)
-        }
-        
         try {
           const response = await fetchWithRetry('/api/categories')
           const categoriesData = await response.json()
           
           if (categoriesData && Array.isArray(categoriesData) && categoriesData.length > 0) {
-            const categoryNames = categoriesData.map((cat: Category) => cat.name.toLowerCase());
-            const requiredCategories = FALLBACK_CATEGORIES.map(cat => cat.name.toLowerCase());
-            const missingCategories = requiredCategories.filter(name => !categoryNames.includes(name));
-            
-            if (missingCategories.length > 0) {
-              const combinedCategories = [...categoriesData];
-              for (const missingCategory of missingCategories) {
-                const fallbackCategory = FALLBACK_CATEGORIES.find(
-                  cat => cat.name.toLowerCase() === missingCategory
-                );
-                if (fallbackCategory) {
-                  combinedCategories.push(fallbackCategory);
-                }
-              }
-              setCategories(combinedCategories);
-            } else {
-              setCategories(categoriesData);
-            }
+            setCategories(categoriesData);
+          } else {
+            // If no categories in database, show empty state
+            setCategories([]);
           }
-          // If no data, keep existing fallback categories (don't override)
         } catch (error) {
           console.error('Sidebar: Error fetching categories:', error)
-          // Keep existing fallback categories, don't override with empty array
+          // On error, show empty state
+          setCategories([]);
         } finally {
           setIsLoading(false)
         }
@@ -249,26 +218,15 @@ function Sidebar() {
                 <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-10" />
               </div>
             ))
+          ) : categories.length === 0 ? (
+            <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-4 italic animate-fade-in">
+              No categories available. Create categories in the admin dashboard to get started.
+            </div>
           ) : (
-            // Display categories in a specific order - ensure all required categories are shown
+            // Display categories with "Other" always at the bottom
             (() => {
-              // Get categories to display - use fetched or fallback
-              const displayCategories = categories.length > 0 ? categories : FALLBACK_CATEGORIES;
-              
-              // Define the desired display order - "Other" should always be last
-              const categoryOrder = [
-                "Design",
-                "Informative", 
-                "Business", 
-                "Career", 
-                "Construction", 
-                "Academic",
-                "Jobs",
-                "Other"
-              ];
-              
-              // Sort categories by the predefined order with "Other" always last
-              const sortedCategories = [...displayCategories].sort((a, b) => {
+              // Sort categories: alphabetically, but "Other" always last
+              const sortedCategories = [...categories].sort((a, b) => {
                 const aName = a.name.toLowerCase();
                 const bName = b.name.toLowerCase();
                 
@@ -276,21 +234,7 @@ function Sidebar() {
                 if (aName === 'other') return 1;
                 if (bName === 'other') return -1;
                 
-                // Check if categories are in the predefined order
-                const aIndex = categoryOrder.findIndex(name => name.toLowerCase() === aName);
-                const bIndex = categoryOrder.findIndex(name => name.toLowerCase() === bName);
-                
-                // If both categories are in the order list, sort by order
-                if (aIndex !== -1 && bIndex !== -1) {
-                  return aIndex - bIndex;
-                }
-                
-                // If only one category is in the order list, prioritize it
-                if (aIndex !== -1) return -1;
-                if (bIndex !== -1) return 1;
-                
-                // For new categories not in the predefined list, sort alphabetically
-                // but they will all appear before "Other" due to the check above
+                // All other categories sorted alphabetically
                 return a.name.localeCompare(b.name);
               });
               

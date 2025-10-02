@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Users, MessageSquare, TrendingUp, Eye, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal, RefreshCw, Crown } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useSocket } from "@/lib/socket-context"
@@ -654,12 +654,14 @@ export default function AdminDashboard() {
   }
 
   const generateSlug = (name: string) => {
+    if (!name.trim()) return ''
     return name
       .toLowerCase()
-      .replace(/[^a-z0-9 -]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
       .trim()
+      .replace(/[^a-z0-9 -]/g, '') // Remove special characters except spaces and hyphens
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
   }
 
   const handleCategorySave = async () => {
@@ -713,17 +715,19 @@ export default function AdminDashboard() {
   }
 
   const handleCategoryDelete = async (category: Category) => {
+    const actualPostCount = category.actualPostCount ?? category.postCount
+    
     const confirmed = await confirm({
       title: "Delete Category",
-      description: `Are you sure you want to delete the "${category.name}" category? ${category.postCount > 0 ? `This category has ${category.postCount} posts and cannot be deleted.` : 'This action cannot be undone.'}`,
-      confirmText: category.postCount > 0 ? "OK" : "Delete",
+      description: `Are you sure you want to delete the "${category.name}" category? ${actualPostCount > 0 ? `This category has ${actualPostCount} posts and cannot be deleted.` : 'This action cannot be undone.'}`,
+      confirmText: actualPostCount > 0 ? "OK" : "Delete",
       cancelText: "Cancel",
-      variant: category.postCount > 0 ? "default" : "destructive"
+      variant: actualPostCount > 0 ? "default" : "destructive"
     })
     
-    if (!confirmed || category.postCount > 0) {
-      if (category.postCount > 0) {
-        toast.error(`Cannot delete category with ${category.postCount} posts. Move posts to another category first.`)
+    if (!confirmed || actualPostCount > 0) {
+      if (actualPostCount > 0) {
+        toast.error(`Cannot delete category with ${actualPostCount} posts. Move posts to another category first.`)
       }
       return
     }
@@ -1508,8 +1512,8 @@ export default function AdminDashboard() {
                                   size="sm" 
                                   variant="ghost"
                                   onClick={() => handleCategoryDelete(category)}
-                                  disabled={isDeleting}
-                                  className={`${actualPostCount > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
+                                  disabled={isDeleting || actualPostCount > 0}
+                                  className={`${actualPostCount > 0 ? 'text-gray-400 cursor-not-allowed opacity-50' : 'text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
                                   title={actualPostCount > 0 ? `Cannot delete category with ${actualPostCount} posts` : "Delete category"}
                                 >
                                   {isDeleting ? (
@@ -1530,24 +1534,46 @@ export default function AdminDashboard() {
             </Card>
 
             {/* Category Form Dialog */}
-            <Dialog open={categoryFormOpen} onOpenChange={setCategoryFormOpen}>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingCategory ? 'Edit Category' : 'Create New Category'}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {editingCategory 
-                      ? 'Update the category details below.' 
-                      : 'Fill in the details to create a new forum category.'
-                    }
-                  </DialogDescription>
+            <Dialog open={categoryFormOpen}>
+              <DialogContent 
+                className="sm:max-w-[450px] p-0 [&>button]:hidden"
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape' && !categorySaving) {
+                    setCategoryFormOpen(false)
+                  }
+                }}
+              >
+                {/* Header with Close Button */}
+                <DialogHeader className="flex flex-row items-center justify-between p-6 pb-4 border-b border-gray-200 dark:border-gray-700 space-y-0">
+                  <div>
+                    <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {editingCategory ? 'Edit Category' : 'New Category'}
+                    </DialogTitle>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {editingCategory 
+                        ? 'Update category details' 
+                        : 'Create a new forum category'
+                      }
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setCategoryFormOpen(false)}
+                    disabled={categorySaving}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Close dialog"
+                  >
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </DialogHeader>
                 
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="category-name" className="text-right">
-                      Name *
+                {/* Form Content */}
+                <div className="p-6 space-y-4">
+                  {/* Category Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="category-name" className="text-sm font-medium">
+                      Name <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="category-name"
@@ -1557,120 +1583,98 @@ export default function AdminDashboard() {
                         setCategoryForm(prev => ({ 
                           ...prev, 
                           name,
-                          slug: prev.slug || generateSlug(name)
+                          // Always generate slug from name when creating new category
+                          // For editing, only update slug if category has no posts
+                          slug: !editingCategory ? generateSlug(name) : 
+                                ((editingCategory.actualPostCount ?? editingCategory.postCount ?? 0) > 0) ? prev.slug : 
+                                generateSlug(name)
                         }))
                       }}
-                      className="col-span-3"
+                      disabled={editingCategory ? ((editingCategory.actualPostCount ?? editingCategory.postCount ?? 0) > 0) : false}
+                      className={`${editingCategory ? ((editingCategory.actualPostCount ?? editingCategory.postCount ?? 0) > 0) : false ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800' : ''}`}
                       placeholder="Enter category name"
                     />
+                    {editingCategory && ((editingCategory.actualPostCount ?? editingCategory.postCount ?? 0) > 0) && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        ⚠️ Cannot change name for category with {editingCategory.actualPostCount ?? editingCategory.postCount ?? 0} posts
+                      </p>
+                    )}
                   </div>
                   
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="category-slug" className="text-right">
-                      Slug *
+                  {/* Category Slug */}
+                  <div className="space-y-2">
+                    <Label htmlFor="category-slug" className="text-sm font-medium">
+                      Slug <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="category-slug"
                       value={categoryForm.slug}
                       onChange={(e) => setCategoryForm(prev => ({ ...prev, slug: e.target.value }))}
-                      className="col-span-3"
+                      disabled={editingCategory ? ((editingCategory.actualPostCount ?? editingCategory.postCount ?? 0) > 0) : false}
+                      className={`${editingCategory ? ((editingCategory.actualPostCount ?? editingCategory.postCount ?? 0) > 0) : false ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800' : ''}`}
                       placeholder="category-slug"
                     />
+                    {editingCategory && ((editingCategory.actualPostCount ?? editingCategory.postCount ?? 0) > 0) && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        ⚠️ Cannot change slug for category with posts
+                      </p>
+                    )}
                   </div>
                   
-                  
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="category-color" className="text-right">
+                  {/* Category Color */}
+                  <div className="space-y-2">
+                    <Label htmlFor="category-color" className="text-sm font-medium">
                       Color
                     </Label>
-                    <div className="col-span-3 space-y-3">
-                      {/* Light Color Presets */}
-                      <div>
-                        <Label className="text-sm text-gray-600 dark:text-gray-400 mb-2 block">
-                          Choose from light colors:
-                        </Label>
-                        <div className="grid grid-cols-8 gap-2">
-                          {[
-                            '#E0F2FE', // Light Sky Blue
-                            '#F0F9FF', // Very Light Blue
-                            '#ECFDF5', // Light Green
-                            '#FEF3C7', // Light Yellow
-                            '#FCE7F3', // Light Pink
-                            '#F3E8FF', // Light Purple
-                            '#FFF7ED', // Light Orange
-                            '#F0FDF4', // Very Light Green
-                            '#EFF6FF', // Light Blue
-                            '#FDF2F8', // Light Rose
-                            '#F9FAFB', // Light Gray
-                            '#FEFCE8', // Light Lime
-                          ].map((color) => (
-                            <button
-                              key={color}
-                              type="button"
-                              className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
-                                categoryForm.color === color 
-                                  ? 'border-gray-800 dark:border-gray-200 ring-2 ring-offset-2 ring-gray-400' 
-                                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-500'
-                              }`}
-                              style={{ backgroundColor: color }}
-                              onClick={() => setCategoryForm(prev => ({ ...prev, color }))}
-                              title={`Select ${color}`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      
-                      {/* Custom Color Picker */}
-                      <div>
-                        <Label className="text-sm text-gray-600 dark:text-gray-400 mb-2 block">
-                          Or choose custom color:
-                        </Label>
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            id="category-color"
-                            type="color"
-                            value={categoryForm.color}
-                            onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
-                            className="w-16 h-10 rounded border"
-                          />
-                          <Input
-                            value={categoryForm.color}
-                            onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
-                            className="flex-1"
-                            placeholder="#E0F2FE"
-                          />
-                        </div>
-                      </div>
+                    <div className="flex items-center space-x-3">
+                      <Input
+                        id="category-color"
+                        type="color"
+                        value={categoryForm.color}
+                        onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
+                        className="w-12 h-10 rounded border p-1"
+                      />
+                      <Input
+                        value={categoryForm.color}
+                        onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
+                        className="flex-1"
+                        placeholder="#3B82F6"
+                      />
                     </div>
                   </div>
                   
                   {/* Preview */}
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right">Preview</Label>
-                    <div className="col-span-3 flex items-center space-x-3 p-3 border rounded-lg bg-gray-50 dark:bg-gray-800">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Preview</Label>
+                    <div className="flex items-center space-x-3 p-3 border rounded-lg bg-gray-50 dark:bg-gray-800">
                       <div 
-                        className="w-4 h-4 rounded-full border-2 border-white dark:border-gray-800" 
+                        className="w-3 h-3 rounded-full" 
                         style={{ backgroundColor: categoryForm.color }}
                       />
-                      <div>
-                        <div className="font-medium">{categoryForm.name || 'Category Name'}</div>
+                      <div className="font-medium text-sm">
+                        {categoryForm.name || 'Category Name'}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <DialogFooter>
+                {/* Dialog Footer */}
+                <div className="flex items-center justify-end gap-3 p-6 pt-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                   <Button 
                     variant="outline" 
-                    onClick={() => setCategoryFormOpen(false)}
+                    onClick={() => {
+                      // Close the dialog - user can safely cancel since form state is managed
+                      setCategoryFormOpen(false)
+                    }}
                     disabled={categorySaving}
+                    className="px-4 py-2"
                   >
                     Cancel
                   </Button>
                   <Button 
                     onClick={handleCategorySave}
                     disabled={categorySaving || !categoryForm.name.trim()}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2"
                   >
                     {categorySaving ? (
                       <>
@@ -1678,10 +1682,10 @@ export default function AdminDashboard() {
                         {editingCategory ? 'Updating...' : 'Creating...'}
                       </>
                     ) : (
-                      editingCategory ? 'Update Category' : 'Create Category'
+                      editingCategory ? 'Update' : 'Create'
                     )}
                   </Button>
-                </DialogFooter>
+                </div>
               </DialogContent>
             </Dialog>
           </TabsContent>
