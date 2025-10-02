@@ -93,8 +93,15 @@ export async function GET(
         id: true,
         content: true,
         createdAt: true,
-        categories: {
+        primaryCategory: {
           select: { name: true }
+        },
+        postCategories: {
+          include: {
+            category: {
+              select: { name: true }
+            }
+          }
         }
       },
       orderBy: { createdAt: "desc" },
@@ -167,7 +174,7 @@ export async function GET(
           type: "post",
           id: post.id,
           content: post.content.substring(0, 100) + (post.content.length > 100 ? "..." : ""),
-          category: post.categories.name
+          category: post.primaryCategory?.name || (post.postCategories.length > 0 ? post.postCategories[0].category.name : 'General')
         },
         createdAt: post.createdAt
       })

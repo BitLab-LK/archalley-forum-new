@@ -104,9 +104,18 @@ export async function POST(
         createdAt: true,
         updatedAt: true,
         categoryIds: true,
-        categories: {
+        primaryCategory: {
           select: {
             name: true
+          }
+        },
+        postCategories: {
+          include: {
+            category: {
+              select: {
+                name: true
+              }
+            }
           }
         },
         attachments: {
@@ -232,7 +241,7 @@ POST ${index + 1}
 ========
 ID: ${post.id}
 Title: ${post.title}
-Category: ${post.categories?.name || 'Uncategorized'}
+Category: ${post.primaryCategory?.name || (post.postCategories.length > 0 ? post.postCategories[0].category.name : 'Uncategorized')}
 Multiple Categories: ${post.categoryIds?.length ? 'Yes (' + post.categoryIds.length + ' categories)' : 'No'}
 Created: ${post.createdAt?.toLocaleString()}
 Updated: ${post.updatedAt?.toLocaleString()}

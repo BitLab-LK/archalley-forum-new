@@ -1109,12 +1109,19 @@ export const sendNotificationEmail = async (
           title: true, 
           content: true, 
           createdAt: true,
-          categories: {
+          primaryCategory: {
             select: { name: true }
+          },
+          postCategories: {
+            include: {
+              category: {
+                select: { name: true }
+              }
+            }
           }
         }
       });
-      category = post?.categories?.name;
+      category = post?.primaryCategory?.name || (post?.postCategories && post.postCategories.length > 0 ? post.postCategories[0].category.name : 'General');
     }
 
     // Prepare email data

@@ -17,9 +17,18 @@ export async function POST(
             name: true
           }
         },
-        categories: {
+        primaryCategory: {
           select: {
             name: true
+          }
+        },
+        postCategories: {
+          include: {
+            category: {
+              select: {
+                name: true
+              }
+            }
           }
         }
       }
@@ -43,7 +52,9 @@ export async function POST(
     const shareUrl = `${request.headers.get("origin")}/posts/${postId}`
 
     // Generate share text
-    const shareText = `${post.users.name} posted in ${post.categories.name}: ${post.content.substring(0, 100)}${post.content.length > 100 ? "..." : ""}`
+    const categoryName = post.primaryCategory?.name || 
+                        (post.postCategories.length > 0 ? post.postCategories[0].category.name : 'General')
+    const shareText = `${post.users.name} posted in ${categoryName}: ${post.content.substring(0, 100)}${post.content.length > 100 ? "..." : ""}`
 
     return NextResponse.json({
       shareUrl,

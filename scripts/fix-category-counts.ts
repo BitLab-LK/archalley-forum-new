@@ -28,7 +28,7 @@ async function fixCategoryCounts() {
       const actualPostCount = await prisma.post.count({
         where: {
           OR: [
-            { categoryId: category.id },
+            { primaryCategoryId: category.id },
             { categoryIds: { has: category.id } }
           ]
         }

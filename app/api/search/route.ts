@@ -89,11 +89,22 @@ export async function GET(request: NextRequest) {
                 headline: true
               }
             },
-            categories: {
+            primaryCategory: {
               select: {
                 id: true,
                 name: true,
                 color: true
+              }
+            },
+            postCategories: {
+              include: {
+                category: {
+                  select: {
+                    id: true,
+                    name: true,
+                    color: true
+                  }
+                }
               }
             },
             attachments: {
