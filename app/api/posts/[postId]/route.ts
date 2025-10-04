@@ -56,21 +56,24 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
       return NextResponse.json({ error: "Post not found" }, { status: 404 })
     }
 
-    // Check if user is admin or post author
+    // Check if user is admin, super admin, or post author
     const isAuthor = post.authorId === session.user.id
     const isAdmin = session.user.role === "ADMIN"
+    const isSuperAdmin = session.user.role === "SUPER_ADMIN"
     
     console.log("Authorization check:", { 
       isAuthor, 
       isAdmin, 
+      isSuperAdmin,
       sessionUserId: session.user.id,
       postAuthorId: post.authorId,
+      userRole: session.user.role,
       userIdType: typeof session.user.id,
       authorIdType: typeof post.authorId
     })
     
-    if (!isAuthor && !isAdmin) {
-      console.log("❌ Unauthorized: Not author and not admin")
+    if (!isAuthor && !isAdmin && !isSuperAdmin) {
+      console.log("❌ Unauthorized: Not author and not admin/super admin")
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 

@@ -26,11 +26,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Comment not found" }, { status: 404 })
     }
 
-    // Check if user is the author or admin
+    // Check if user is the author, admin, or super admin
     const isAuthor = comment.authorId === session.user.id
     const isAdmin = session.user.role === "ADMIN"
+    const isSuperAdmin = session.user.role === "SUPER_ADMIN"
 
-    if (!isAuthor && !isAdmin) {
+    if (!isAuthor && !isAdmin && !isSuperAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 

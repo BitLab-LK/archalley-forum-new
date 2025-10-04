@@ -679,9 +679,30 @@ export default function AdminDashboard() {
     try {
       const url = "/api/admin/categories"
       const method = editingCategory ? "PATCH" : "POST"
-      const body = editingCategory 
-        ? { categoryId: editingCategory.id, ...categoryForm }
-        : categoryForm
+      
+      let body
+      if (editingCategory) {
+        // When editing, check if category has posts
+        const hasPostsCount = (editingCategory.actualPostCount ?? editingCategory.postCount ?? 0)
+        const hasAnyPosts = hasPostsCount > 0
+        
+        if (hasAnyPosts) {
+          // If category has posts, only send color changes
+          body = { 
+            categoryId: editingCategory.id, 
+            color: categoryForm.color 
+          }
+        } else {
+          // If no posts, send all fields
+          body = { 
+            categoryId: editingCategory.id, 
+            ...categoryForm 
+          }
+        }
+      } else {
+        // When creating new category, send all fields
+        body = categoryForm
+      }
 
       const response = await fetch(url, {
         method,
