@@ -36,6 +36,8 @@ export async function GET(request: NextRequest) {
       whereClause.isPinned = true
     } else if (status === 'locked') {
       whereClause.isLocked = true
+    } else if (status === 'hidden') {
+      whereClause.isHidden = true
     }
 
     if (category) {
@@ -66,6 +68,7 @@ export async function GET(request: NextRequest) {
         updatedAt: true,
         isPinned: true,
         isLocked: true,
+        isHidden: true,
         isAnonymous: true,
         viewCount: true,
         authorId: true,
@@ -158,6 +161,7 @@ export async function GET(request: NextRequest) {
           isAnonymous: post.isAnonymous,
           isPinned: post.isPinned,
           isLocked: post.isLocked,
+          isHidden: post.isHidden,
           isFlagged: postFlags.length > 0
         },
         createdAt: post.createdAt.toISOString(),
@@ -219,6 +223,10 @@ export async function PATCH(request: NextRequest) {
       case 'lock':
         updateData.isLocked = value
         actionDescription = value ? 'locked' : 'unlocked'
+        break
+      case 'hide':
+        updateData.isHidden = value
+        actionDescription = value ? 'hidden' : 'unhidden'
         break
       case 'approve':
         // Mark all flags as resolved

@@ -1328,6 +1328,13 @@ export async function GET(request: NextRequest) {
     const where: any = {}
     if (categoryId) where.categoryId = categoryId
     if (authorId) where.authorId = authorId
+    
+    // Filter out hidden posts for non-admin users
+    const userRole = session?.user?.role
+    const isAdminUser = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'MODERATOR'
+    if (!isAdminUser) {
+      where.isHidden = false
+    }
 
     try {
       // Validate that page exists (early exit for invalid pages)

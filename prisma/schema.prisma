@@ -48,6 +48,7 @@ model Post {
   isAnonymous       Boolean        @default(false)
   isPinned          Boolean        @default(false)
   isLocked          Boolean        @default(false)
+  isHidden          Boolean        @default(false)
   aiTags            String[]
   originalLanguage  String         @default("English")
   translatedContent String?

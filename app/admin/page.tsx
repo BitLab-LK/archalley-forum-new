@@ -11,7 +11,8 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Users, MessageSquare, TrendingUp, Eye, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal, RefreshCw, Crown } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Users, MessageSquare, TrendingUp, Eye, EyeOff, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal, RefreshCw, Crown } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useSocket } from "@/lib/socket-context"
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
@@ -122,6 +123,7 @@ interface Post {
     isAnonymous: boolean
     isPinned: boolean
     isLocked: boolean
+    isHidden: boolean
     isFlagged: boolean
   }
   createdAt: string
@@ -154,6 +156,16 @@ export default function AdminDashboard() {
   const [isSaving, setIsSaving] = useState(false)
   const [loadingUsers, setLoadingUsers] = useState<Set<string>>(new Set())
   const [statsRefreshing, setStatsRefreshing] = useState(false)
+  
+  // Post moderation states
+  const [moderatingPosts, setModeratingPosts] = useState<Set<string>>(new Set())
+  const [deletingPosts, setDeletingPosts] = useState<Set<string>>(new Set())
+  const [editingPost, setEditingPost] = useState<any>(null)
+  const [editingPostData, setEditingPostData] = useState({ title: '', content: '', primaryCategoryId: '' })
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [viewingPost, setViewingPost] = useState<any>(null)
+  const [loadingFullPost, setLoadingFullPost] = useState(false)
+  
   const [categoryFormOpen, setCategoryFormOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [categoryForm, setCategoryForm] = useState({
@@ -784,6 +796,220 @@ export default function AdminDashboard() {
         newSet.delete(category.id)
         return newSet
       })
+    }
+  }
+
+  // ===== POST MODERATION FUNCTIONS =====
+  
+  const handlePostModeration = async (postId: string, action: string, value?: boolean) => {
+    if (moderatingPosts.has(postId)) {
+      return
+    }
+
+    setModeratingPosts(prev => new Set([...prev, postId]))
+
+    try {
+      const response = await fetch('/api/admin/posts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId, action, value })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to moderate post')
+      }
+
+      const result = await response.json()
+      
+      // Update local state
+      setPosts(prevPosts => prevPosts.map(post => {
+        if (post.id === postId) {
+          const updatedPost = { ...post }
+          
+          switch (action) {
+            case 'pin':
+              updatedPost.status.isPinned = value!
+              break
+            case 'lock':
+              updatedPost.status.isLocked = value!
+              break
+            case 'approve':
+              updatedPost.status.isFlagged = false
+              updatedPost.stats.flags = 0
+              updatedPost.flags = []
+              break
+          }
+          
+          return updatedPost
+        }
+        return post
+      }))
+
+      // Update filtered posts as well
+      setFilteredPosts(prevPosts => prevPosts.map(post => {
+        if (post.id === postId) {
+          const updatedPost = { ...post }
+          
+          switch (action) {
+            case 'pin':
+              updatedPost.status.isPinned = value!
+              break
+            case 'lock':
+              updatedPost.status.isLocked = value!
+              break
+            case 'approve':
+              updatedPost.status.isFlagged = false
+              updatedPost.stats.flags = 0
+              updatedPost.flags = []
+              break
+          }
+          
+          return updatedPost
+        }
+        return post
+      }))
+
+      toast.success(result.message || 'Post moderated successfully')
+    } catch (error) {
+      console.error('Error moderating post:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to moderate post')
+    } finally {
+      setModeratingPosts(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(postId)
+        return newSet
+      })
+    }
+  }
+
+  const handlePostDelete = async (post: any) => {
+    const confirmed = await confirm({
+      title: "Delete Post",
+      description: `Are you sure you want to delete "${post.title || 'this post'}"? This action cannot be undone.`,
+      confirmText: "Delete",
+      variant: "destructive"
+    })
+
+    if (!confirmed || deletingPosts.has(post.id)) {
+      return
+    }
+
+    setDeletingPosts(prev => new Set([...prev, post.id]))
+
+    try {
+      const response = await fetch(`/api/admin/posts?postId=${post.id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete post')
+      }
+
+      // Remove post from local state
+      setPosts(prevPosts => prevPosts.filter(p => p.id !== post.id))
+      setFilteredPosts(prevPosts => prevPosts.filter(p => p.id !== post.id))
+
+      toast.success('Post deleted successfully')
+    } catch (error) {
+      console.error('Error deleting post:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to delete post')
+    } finally {
+      setDeletingPosts(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(post.id)
+        return newSet
+      })
+    }
+  }
+
+  const refreshPosts = async (statusFilter?: string, searchTerm?: string) => {
+    setPostsLoading(true)
+    try {
+      const params = new URLSearchParams()
+      
+      if (statusFilter && statusFilter !== 'all') {
+        params.append('status', statusFilter)
+      }
+      
+      if (searchTerm && searchTerm.trim()) {
+        params.append('search', searchTerm.trim())
+      }
+      
+      const url = `/api/admin/posts${params.toString() ? `?${params.toString()}` : ''}`
+      const response = await fetch(url)
+      
+      if (response.ok) {
+        const data = await response.json()
+        setPosts(data.posts || [])
+        setFilteredPosts(data.posts || [])
+      } else {
+        throw new Error('Failed to fetch posts')
+      }
+    } catch (error) {
+      console.error('Error refreshing posts:', error)
+      toast.error('Failed to refresh posts')
+    } finally {
+      setPostsLoading(false)
+    }
+  }
+
+  const handlePostEdit = (post: any) => {
+    setEditingPost(post)
+    setEditingPostData({
+      title: post.title || '',
+      content: post.content || '',
+      primaryCategoryId: post.category?.id || ''
+    })
+  }
+
+  const handlePostUpdate = async () => {
+    if (!editingPost) return
+    
+    setSavingEdit(true)
+    try {
+      const response = await fetch(`/api/admin/posts/${editingPost.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'edit',
+          data: editingPostData
+        })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update post')
+      }
+      
+      toast.success('Post updated successfully')
+      setEditingPost(null)
+      setEditingPostData({ title: '', content: '', primaryCategoryId: '' })
+      await refreshPosts(postStatusFilter, postSearchTerm)
+    } catch (error) {
+      console.error('Error updating post:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to update post')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const handleViewFullPost = async (postId: string) => {
+    setLoadingFullPost(true)
+    try {
+      const response = await fetch(`/api/posts/${postId}`)
+      if (!response.ok) throw new Error('Failed to fetch full post')
+      
+      const data = await response.json()
+      setViewingPost(data.post)
+    } catch (error) {
+      console.error('Error fetching full post:', error)
+      toast.error('Failed to load full post')
+    } finally {
+      setLoadingFullPost(false)
     }
   }
 
@@ -1709,6 +1935,159 @@ export default function AdminDashboard() {
                 </div>
               </DialogContent>
             </Dialog>
+
+            {/* Post Edit Dialog */}
+            <Dialog open={!!editingPost} onOpenChange={(open) => !open && setEditingPost(null)}>
+              <DialogContent className="sm:max-w-[600px] p-0 [&>button]:hidden">
+                <DialogHeader className="flex flex-row items-center justify-between p-6 pb-4 border-b border-gray-200 dark:border-gray-700 space-y-0">
+                  <div>
+                    <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Edit Post
+                    </DialogTitle>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Modify post content and settings
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setEditingPost(null)}
+                    disabled={savingEdit}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Close dialog"
+                  >
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </DialogHeader>
+                
+                <div className="p-6 space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-title" className="text-sm font-medium">
+                      Title <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="edit-title"
+                      value={editingPostData.title}
+                      onChange={(e) => setEditingPostData(prev => ({ ...prev, title: e.target.value }))}
+                      disabled={savingEdit}
+                      placeholder="Enter post title"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-content" className="text-sm font-medium">
+                      Content <span className="text-red-500">*</span>
+                    </Label>
+                    <Textarea
+                      id="edit-content"
+                      value={editingPostData.content}
+                      onChange={(e) => setEditingPostData(prev => ({ ...prev, content: e.target.value }))}
+                      disabled={savingEdit}
+                      placeholder="Enter post content"
+                      rows={8}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-category" className="text-sm font-medium">
+                      Primary Category
+                    </Label>
+                    <select
+                      id="edit-category"
+                      value={editingPostData.primaryCategoryId}
+                      onChange={(e) => setEditingPostData(prev => ({ ...prev, primaryCategoryId: e.target.value }))}
+                      disabled={savingEdit}
+                      className="w-full px-3 py-2 border rounded-md"
+                    >
+                      <option value="">Select a category</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 p-6 pt-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setEditingPost(null)}
+                    disabled={savingEdit}
+                    className="px-4 py-2"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handlePostUpdate}
+                    disabled={savingEdit || !editingPostData.title.trim() || !editingPostData.content.trim()}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2"
+                  >
+                    {savingEdit ? (
+                      <>
+                        <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Full Post View Modal */}
+            <Dialog open={!!viewingPost} onOpenChange={(open) => !open && setViewingPost(null)}>
+              <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-bold">
+                    {viewingPost?.title || 'Post Details'}
+                  </DialogTitle>
+                </DialogHeader>
+                
+                {loadingFullPost ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-8 h-8 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    <span className="ml-2">Loading post...</span>
+                  </div>
+                ) : viewingPost ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <span>By {viewingPost.author?.name}</span>
+                      <span>•</span>
+                      <span>{new Date(viewingPost.createdAt).toLocaleDateString()}</span>
+                      <span>•</span>
+                      <span>{viewingPost.stats?.comments || 0} comments</span>
+                      <span>•</span>
+                      <span>{viewingPost.stats?.votes || 0} votes</span>
+                    </div>
+                    
+                    <div className="prose max-w-none">
+                      <div className="whitespace-pre-wrap break-words">
+                        {viewingPost.content}
+                      </div>
+                    </div>
+                    
+                    {viewingPost.flags && viewingPost.flags.length > 0 && (
+                      <div className="bg-red-50 border border-red-200 rounded p-4">
+                        <h6 className="font-medium text-red-800 mb-2">Reported Issues ({viewingPost.flags.length})</h6>
+                        <div className="space-y-2">
+                          {viewingPost.flags.map((flag: any) => (
+                            <div key={flag.id} className="text-sm text-red-700">
+                              <span className="font-medium">{flag.reason}</span> 
+                              <span className="text-gray-600"> by {flag.users?.name}</span>
+                              <span className="text-gray-500 text-xs ml-2">
+                                {new Date(flag.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* Posts Tab */}
@@ -1746,16 +2125,35 @@ export default function AdminDashboard() {
                         <option value="flagged">Flagged</option>
                         <option value="pinned">Pinned</option>
                         <option value="locked">Locked</option>
+                        <option value="hidden">Hidden</option>
                       </select>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => refreshPosts(postStatusFilter, postSearchTerm)}
+                        disabled={postsLoading}
+                      >
                         <Filter className="w-4 h-4 mr-2" />
-                        Filter
+                        {postsLoading ? 'Loading...' : 'Apply Filters'}
                       </Button>
                     </div>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium">Posts ({filteredPosts.length})</h4>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => refreshPosts(postStatusFilter, postSearchTerm)}
+                      disabled={postsLoading}
+                    >
+                      {postsLoading ? (
+                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                      )}
+                      Refresh
+                    </Button>
                   </div>
 
                   {postsLoading ? (
@@ -1763,63 +2161,180 @@ export default function AdminDashboard() {
                   ) : (
                     <div className="space-y-4">
                       {filteredPosts.map((post) => (
-                        <div key={post.id} className="border rounded-lg p-4 space-y-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1 space-y-2">
-                              <div className="flex items-center gap-2">
-                                <h5 className="font-medium text-lg">{post.title}</h5>
-                                {post.status.isPinned && (
-                                  <Badge variant="default" className="text-xs">
-                                    <Pin className="w-3 h-3 mr-1" />
-                                    Pinned
-                                  </Badge>
-                                )}
-                                {post.status.isLocked && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    <Lock className="w-3 h-3 mr-1" />
-                                    Locked
-                                  </Badge>
-                                )}
-                                {post.status.isFlagged && (
-                                  <Badge variant="destructive" className="text-xs">
-                                    <Flag className="w-3 h-3 mr-1" />
-                                    Flagged ({post.stats.flags})
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="text-sm text-gray-600 line-clamp-2">
-                                {post.content}
-                              </div>
-                              <div className="flex items-center gap-4 text-xs text-gray-500">
-                                <span>By {post.author.name}</span>
-                                {post.category && (
-                                  <span className="flex items-center gap-1">
-                                    <div 
-                                      className="w-2 h-2 rounded" 
-                                      style={{ backgroundColor: post.category.color }}
-                                    />
-                                    {post.category.name}
-                                  </span>
-                                )}
-                                <span>{post.stats.comments} comments</span>
-                                <span>{post.stats.votes} votes</span>
-                              </div>
+                        <div key={post.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                          <div className="flex">
+                            {/* Thumbnail placeholder - you can add actual image logic here */}
+                            <div className="w-32 h-24 bg-gray-100 dark:bg-gray-800 flex-shrink-0 flex items-center justify-center">
+                              {post.content.includes('![') || post.content.includes('<img') ? (
+                                <div className="text-xs text-gray-500 text-center">
+                                  📷<br/>Image
+                                </div>
+                              ) : (
+                                <div className="text-xs text-gray-400 text-center">
+                                  📝<br/>Text
+                                </div>
+                              )}
                             </div>
-                            <div className="flex items-center space-x-2">
-                              <Button size="sm" variant="outline">
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              <Button size="sm" variant="outline">
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button size="sm" variant="outline">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
+                            
+                            {/* Content */}
+                            <div className="flex-1 p-4">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 space-y-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h5 
+                                      className="font-medium text-lg cursor-pointer hover:text-blue-600 transition-colors"
+                                      onClick={() => handleViewFullPost(post.id)}
+                                      title="Click to view full post"
+                                    >
+                                      {post.title || 'Untitled Post'}
+                                    </h5>
+                                    {post.status.isPinned && (
+                                      <Badge variant="default" className="text-xs">
+                                        <Pin className="w-3 h-3 mr-1" />
+                                        Pinned
+                                      </Badge>
+                                    )}
+                                    {post.status.isLocked && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        <Lock className="w-3 h-3 mr-1" />
+                                        Locked
+                                      </Badge>
+                                    )}
+                                    {post.status.isHidden && (
+                                      <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
+                                        <EyeOff className="w-3 h-3 mr-1" />
+                                        Hidden
+                                      </Badge>
+                                    )}
+                                    {post.status.isFlagged && (
+                                      <Badge variant="destructive" className="text-xs">
+                                        <Flag className="w-3 h-3 mr-1" />
+                                        Flagged ({post.stats.flags})
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-gray-600 line-clamp-2">
+                                    {post.content.replace(/!\[.*?\]\(.*?\)/g, '[Image]').replace(/<[^>]*>/g, '').substring(0, 150)}...
+                                  </div>
+                                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                                    <span>By {post.author.name}</span>
+                                    {post.category && (
+                                      <span className="flex items-center gap-1">
+                                        <div 
+                                          className="w-2 h-2 rounded" 
+                                          style={{ backgroundColor: post.category.color }}
+                                        />
+                                        {post.category.name}
+                                      </span>
+                                    )}
+                                    <span>{post.stats.comments} comments</span>
+                                    <span>{post.stats.votes} votes</span>
+                                    <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2 ml-4">
+                                  {/* Pin/Unpin Button */}
+                                  <Button 
+                                    size="sm" 
+                                    variant={post.status.isPinned ? "default" : "outline"}
+                                    onClick={() => handlePostModeration(post.id, 'pin', !post.status.isPinned)}
+                                    disabled={moderatingPosts.has(post.id)}
+                                    title={post.status.isPinned ? "Unpin post" : "Pin post"}
+                                  >
+                                    {moderatingPosts.has(post.id) ? (
+                                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                    ) : (
+                                      <Pin className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                  
+                                  {/* Lock/Unlock Button */}
+                                  <Button 
+                                    size="sm" 
+                                    variant={post.status.isLocked ? "default" : "outline"}
+                                    onClick={() => handlePostModeration(post.id, 'lock', !post.status.isLocked)}
+                                    disabled={moderatingPosts.has(post.id)}
+                                    title={post.status.isLocked ? "Unlock post" : "Lock post"}
+                                  >
+                                    {moderatingPosts.has(post.id) ? (
+                                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                    ) : (
+                                      <Lock className="w-4 h-4" />
+                                    )}
+                                  </Button>
+
+                                  {/* Hide/Unhide Button */}
+                                  <Button 
+                                    size="sm" 
+                                    variant={post.status.isHidden ? "default" : "outline"}
+                                    onClick={() => handlePostModeration(post.id, 'hide', !post.status.isHidden)}
+                                    disabled={moderatingPosts.has(post.id)}
+                                    title={post.status.isHidden ? "Unhide post" : "Hide post"}
+                                    className={post.status.isHidden ? "bg-orange-500 hover:bg-orange-600 border-orange-500" : ""}
+                                  >
+                                    {moderatingPosts.has(post.id) ? (
+                                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                    ) : (
+                                      post.status.isHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />
+                                    )}
+                                  </Button>
+
+                                  {/* More Actions Dropdown */}
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button size="sm" variant="outline">
+                                        <MoreHorizontal className="w-4 h-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => window.open(`/posts/${post.id}`, '_blank')}>
+                                        <Eye className="w-4 h-4 mr-2" />
+                                        View Post
+                                      </DropdownMenuItem>
+                                      {(authenticatedUser?.role === 'ADMIN' || authenticatedUser?.role === 'SUPER_ADMIN') && (
+                                        <DropdownMenuItem 
+                                          onClick={() => handlePostEdit(post)}
+                                        >
+                                          <Edit className="w-4 h-4 mr-2" />
+                                          Edit Post
+                                        </DropdownMenuItem>
+                                      )}
+                                      {post.status.isFlagged && (
+                                        <DropdownMenuItem 
+                                          onClick={() => handlePostModeration(post.id, 'approve')}
+                                          disabled={moderatingPosts.has(post.id)}
+                                        >
+                                          <Flag className="w-4 h-4 mr-2" />
+                                          Approve (Resolve Flags)
+                                        </DropdownMenuItem>
+                                      )}
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem 
+                                        onClick={() => handlePostDelete(post)}
+                                        disabled={deletingPosts.has(post.id)}
+                                        className="text-red-600 focus:text-red-600"
+                                      >
+                                        {deletingPosts.has(post.id) ? (
+                                          <>
+                                            <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+                                            Deleting...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Trash2 className="w-4 h-4 mr-2" />
+                                            Delete Post
+                                          </>
+                                        )}
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </div>
                             </div>
                           </div>
                           
                           {post.flags.length > 0 && (
-                            <div className="bg-red-50 border border-red-200 rounded p-3">
+                            <div className="mx-4 mb-4 bg-red-50 border border-red-200 rounded p-3">
                               <h6 className="font-medium text-red-800 text-sm mb-2">Flags ({post.flags.length})</h6>
                               <div className="space-y-1">
                                 {post.flags.map((flag) => (
