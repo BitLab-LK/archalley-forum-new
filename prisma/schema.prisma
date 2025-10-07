@@ -46,9 +46,20 @@ model Post {
   title             String?
   content           String
   isAnonymous       Boolean        @default(false)
+  // Moderation Status Fields
   isPinned          Boolean        @default(false)
   isLocked          Boolean        @default(false)
   isHidden          Boolean        @default(false)
+  isFlagged         Boolean        @default(false)
+  isApproved        Boolean        @default(true) // Auto-approved by default
+  moderationStatus  ModerationStatus @default(APPROVED)
+  // Moderation Metadata
+  flagCount         Int            @default(0)
+  lastModeratedAt   DateTime?
+  moderatedBy       String?
+  moderationReason  String?
+  moderationNotes   String?        // Internal notes for moderators
+  // Content and Display
   aiTags            String[]
   originalLanguage  String         @default("English")
   translatedContent String?
@@ -58,15 +69,24 @@ model Post {
   categoryIds       String[]       @default([])
   aiSuggestions     Json?
   primaryCategoryId String?
+  // Relations
   Comment           Comment[]
   users             users          @relation(fields: [authorId], references: [id])
+  moderator         users?         @relation("PostModerator", fields: [moderatedBy], references: [id])
   primaryCategory   categories?    @relation("PrimaryCategory", fields: [primaryCategoryId], references: [id])
   postCategories    PostCategory[]
   attachments       attachments[]
+  flags             PostFlag[]     // Relation to flag reports
+  moderationActions ModerationAction[]
 
   @@index([authorId])
   @@index([categoryIds])
   @@index([primaryCategoryId])
+  @@index([moderationStatus])
+  @@index([isFlagged])
+  @@index([moderatedBy])
+  @@index([lastModeratedAt])
+  @@index([createdAt, moderationStatus]) // Compound index for queries
 }
 
 model Session {
@@ -124,16 +144,83 @@ model PostCategory {
   @@index([categoryId])
 }
 
-model flags {
-  id        String     @id
-  reason    String
-  status    FlagStatus @default(PENDING)
-  userId    String
-  postId    String?
-  commentId String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime
-  users     users      @relation(fields: [userId], references: [id], onDelete: Cascade)
+model PostFlag {
+  id          String     @id @default(cuid())
+  reason      FlagReason
+  customReason String?   // For "OTHER" flag reason
+  description String?   // Optional detailed description
+  status      FlagStatus @default(PENDING)
+  severity    FlagSeverity @default(MEDIUM)
+  
+  // Relationships
+  userId      String
+  postId      String
+  commentId   String?   // For future comment flagging
+  
+  // Moderation tracking
+  reviewedBy  String?   // Moderator who reviewed this flag
+  reviewedAt  DateTime?
+  reviewNotes String?   // Internal moderation notes
+  
+  // Audit fields
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  ipAddress   String?    // For security tracking
+  userAgent   String?    // For abuse detection
+  
+  // Relations
+  user        users      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post        Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reviewer    users?     @relation("FlagReviewer", fields: [reviewedBy], references: [id])
+  
+  // Constraints
+  @@unique([userId, postId, reason]) // Prevent duplicate flags from same user for same reason
+  @@index([postId])
+  @@index([userId])
+  @@index([status])
+  @@index([reviewedBy])
+  @@index([createdAt])
+  @@index([postId, status]) // Compound index for moderation queries
+}
+
+model ModerationAction {
+  id          String           @id @default(cuid())
+  action      ModerationActionType
+  reason      String?          // Reason for the moderation action
+  notes       String?          // Internal notes
+  metadata    Json?            // Additional action-specific data
+  
+  // Target content
+  postId      String?
+  commentId   String?
+  userId      String?          // Target user (for user-level actions)
+  
+  // Moderation details
+  moderatorId String
+  moderatedAt DateTime         @default(now())
+  expiresAt   DateTime?        // For temporary actions like suspensions
+  isActive    Boolean          @default(true)
+  
+  // Previous state (for rollback capability)
+  previousState Json?
+  
+  // Audit fields
+  ipAddress   String?
+  userAgent   String?
+  
+  // Relations
+  post        Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  moderator   users            @relation("ModerationActionModerator", fields: [moderatorId], references: [id])
+  targetUser  users?           @relation("ModerationActionTarget", fields: [userId], references: [id])
+  
+  // Indexes for performance
+  @@index([postId])
+  @@index([moderatorId])
+  @@index([userId])
+  @@index([action])
+  @@index([moderatedAt])
+  @@index([isActive])
+  @@index([postId, action]) // Compound index for post history
 }
 
 model notifications {
@@ -208,10 +295,18 @@ model users {
   linkedinUrl         String?
   twitterUrl          String?
   instagramUrl        String?
+  // User management and security
   role                UserRole         @default(MEMBER)
   isVerified          Boolean          @default(false)
   isSuspended         Boolean          @default(false)
   suspendedUntil      DateTime?
+  suspendedBy         String?          // Who suspended this user
+  suspensionReason    String?          // Reason for suspension
+  moderationNotes     String?          // Internal notes about this user
+  isBanned            Boolean          @default(false)
+  bannedAt            DateTime?
+  bannedBy            String?
+  banReason           String?
   createdAt           DateTime         @default(now())
   updatedAt           DateTime
   lastActiveAt        DateTime         @default(now())
@@ -245,18 +340,41 @@ model users {
   notifyOnSystem      Boolean          @default(true)
   twoFactorEnabled    Boolean          @default(false)
   twoFactorSecret     String?
+  // Existing relations
   Account             Account[]
   Comment             Comment[]
   education           Education[]
   Post                Post[]
   Session             Session[]
   workExperience      WorkExperience[]
-  flags               flags[]
+  flags               PostFlag[]       // Updated relation name
   notifications       notifications[]
   pages               pages[]
   settings            settings[]
   userBadges          userBadges[]
   votes               votes[]
+  
+  // New moderation relations
+  moderatedPosts      Post[]           @relation("PostModerator")
+  flagsReviewed       PostFlag[]       @relation("FlagReviewer")
+  moderationActions   ModerationAction[] @relation("ModerationActionModerator")
+  moderationTargets   ModerationAction[] @relation("ModerationActionTarget")
+  
+  // User management relations
+  suspendedByUser     users?           @relation("UserSuspension", fields: [suspendedBy], references: [id])
+  suspendedUsers      users[]          @relation("UserSuspension")
+  bannedByUser        users?           @relation("UserBan", fields: [bannedBy], references: [id])
+  bannedUsers         users[]          @relation("UserBan")
+  
+  // Performance and security indexes
+  @@index([email])
+  @@index([role])
+  @@index([isVerified])
+  @@index([isSuspended])
+  @@index([isBanned])
+  @@index([lastActiveAt])
+  @@index([createdAt])
+  @@index([role, isVerified]) // Compound index for user management
 }
 
 model WorkExperience {
@@ -348,6 +466,71 @@ enum FlagStatus {
   REVIEWED
   RESOLVED
   DISMISSED
+  ESCALATED     // For complex cases requiring higher authority
+}
+
+enum FlagReason {
+  SPAM
+  HARASSMENT
+  HATE_SPEECH
+  INAPPROPRIATE_CONTENT
+  MISINFORMATION
+  COPYRIGHT_VIOLATION
+  PERSONAL_INFORMATION
+  OFF_TOPIC
+  DUPLICATE_CONTENT
+  SCAM_FRAUD
+  VIOLENCE_THREATS
+  SEXUAL_CONTENT
+  ILLEGAL_CONTENT
+  OTHER
+}
+
+enum FlagSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ModerationStatus {
+  PENDING         // Awaiting moderation
+  APPROVED        // Content is approved
+  REJECTED        // Content is rejected
+  FLAGGED         // Content is flagged for review
+  HIDDEN          // Content is hidden from public view
+  REMOVED         // Content is permanently removed
+}
+
+enum ModerationActionType {
+  // Post actions
+  APPROVE_POST
+  REJECT_POST
+  HIDE_POST
+  UNHIDE_POST
+  PIN_POST
+  UNPIN_POST
+  LOCK_POST
+  UNLOCK_POST
+  DELETE_POST
+  RESTORE_POST
+  EDIT_POST
+  
+  // Flag actions
+  APPROVE_FLAG
+  DISMISS_FLAG
+  ESCALATE_FLAG
+  
+  // User actions
+  WARN_USER
+  SUSPEND_USER
+  UNSUSPEND_USER
+  BAN_USER
+  UNBAN_USER
+  
+  // System actions
+  AUTO_MODERATE
+  BULK_ACTION
 }
 
 enum NotificationType {
@@ -360,6 +543,7 @@ enum NotificationType {
   EMAIL_VERIFICATION
   NEW_POST_IN_CATEGORY
   NEW_FOLLOWER
+  MODERATION_ACTION    // New notification type for moderation
 }
 
 enum BadgeType {
