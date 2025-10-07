@@ -121,6 +121,7 @@ interface TopComment {
  */
 interface Post {
   id: string
+  title?: string                     // Post title (auto-generated from content if not provided)
   author: {
     id: string
     name: string
@@ -153,6 +154,7 @@ interface Post {
  */
 interface PostCardProps {
   post: Post
+  showTitle?: boolean                    // Whether to show post title (for admin contexts)
   onDelete?: () => void | Promise<void>
   onCommentCountChange?: (postId: string, newCount: number) => void
   onTopCommentVoteChange?: (postId: string, topComment: { 
@@ -198,6 +200,58 @@ const getTextSizeClass = (content: string): string => {
   return TEXT_SIZE_CONFIG.find(config => length <= config.max)?.class ?? "text-base"
 }
 
+/**
+ * Generate display title from post title or content
+ * Prioritizes database titles, with smart fallbacks
+ * 
+ * @param post - Post object with title and content
+ * @returns Display title string
+ */
+const getDisplayTitle = (post: Post): string => {
+  // First priority: Use database title if it exists and is meaningful
+  if (post.title && post.title.trim() && 
+      post.title.trim() !== 'Untitled Post' && 
+      post.title.trim() !== 'NULL' && 
+      post.title.trim().toLowerCase() !== 'null') {
+    return post.title.trim()
+  }
+  
+  // Second priority: Generate from content (for both text and image posts)
+  const content = post.content.trim()
+  if (content.length > 0) {
+    // Extract first sentence or meaningful phrase
+    const firstSentence = content.split(/[.!?]/)[0].trim()
+    
+    // If first sentence is good length, use it
+    if (firstSentence.length <= 80 && firstSentence.length > 0) {
+      return firstSentence
+    }
+    
+    // Truncate at word boundary if too long
+    if (firstSentence.length > 80) {
+      const words = firstSentence.split(' ')
+      let title = ''
+      for (const word of words) {
+        if ((title + ' ' + word).length > 77) break
+        title += (title ? ' ' : '') + word
+      }
+      return title + '...'
+    }
+    
+    // Fallback to first 77 characters
+    return content.substring(0, 77) + (content.length > 77 ? '...' : '')
+  }
+  
+  // Third priority: Descriptive fallback for image posts without content
+  if (post.images && post.images.length > 0) {
+    const imageCount = post.images.length
+    return `Image Post${imageCount > 1 ? ` (${imageCount} images)` : ''}`
+  }
+  
+  // Final fallback
+  return "Untitled Post"
+}
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -231,7 +285,7 @@ const getTextSizeClass = (content: string): string => {
  * @param props - PostCard component props
  * @returns Memoized PostCard component
  */
-const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, onTopCommentVoteChange }: PostCardProps) {
+const PostCard = memo(function PostCard({ post, showTitle = false, onDelete, onCommentCountChange, onTopCommentVoteChange }: PostCardProps) {
   
   // ========================================================================
   // HOOKS AND CONTEXT
@@ -917,6 +971,13 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
 
           {/* Post Content */}
           <div className="mb-4 p-4 rounded-lg" style={contentBackgroundStyle}>
+            {/* Post Title - Only show in admin contexts */}
+            {showTitle && (
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 leading-tight">
+                {getDisplayTitle(post)}
+              </h2>
+            )}
+            
             <p 
               className={cn(
                 "text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed mb-4",

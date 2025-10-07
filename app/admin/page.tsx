@@ -2418,83 +2418,75 @@ export default function AdminDashboard() {
         </Tabs>
       </main>
 
-      {/* Post Edit Dialog - Positioned at component level to appear over all tabs */}
+      {/* Post Edit Dialog - Minimalistic & Smooth */}
       {editingPost && (
         <div 
-          className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => setEditingPost(null)}
         >
           <div 
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+            className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-xl border border-gray-200 dark:border-gray-700 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Edit Post
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Modify post content and settings
-                </p>
-              </div>
+            {/* Minimal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+                Edit Post
+              </h2>
               <button
                 onClick={() => setEditingPost(null)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all duration-300 group"
                 disabled={savingEdit}
               >
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-500 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
             
-            {/* Content */}
-            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
-              <div className="space-y-2">
-                <label htmlFor="edit-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Title <span className="text-red-500">*</span>
+            {/* Clean Content */}
+            <div className="p-5 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">
+                  Title
                 </label>
                 <input
-                  id="edit-title"
                   type="text"
                   value={editingPostData.title}
                   onChange={(e) => setEditingPostData(prev => ({ ...prev, title: e.target.value }))}
                   disabled={savingEdit}
-                  placeholder="Enter post title"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter post title..."
+                  className="w-full px-0 py-2 text-lg font-medium border-0 border-b border-gray-200 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 transition-colors duration-200"
                 />
               </div>
               
-              <div className="space-y-2">
-                <label htmlFor="edit-content" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Content <span className="text-red-500">*</span>
+              <div>
+                <label className="block text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">
+                  Content
                 </label>
                 <textarea
-                  id="edit-content"
                   value={editingPostData.content}
                   onChange={(e) => setEditingPostData(prev => ({ ...prev, content: e.target.value }))}
                   disabled={savingEdit}
-                  placeholder="Enter post content"
-                  rows={8}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-gray-700 dark:text-white resize-vertical"
+                  placeholder="Write your content here..."
+                  rows={6}
+                  className="w-full px-0 py-2 border-0 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 resize-none focus:outline-none"
                 />
               </div>
               
-              <div className="space-y-2">
-                <label htmlFor="edit-category" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Primary Category
+              <div>
+                <label className="block text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">
+                  Category
                 </label>
                 <select
-                  id="edit-category"
                   value={editingPostData.primaryCategoryId}
                   onChange={(e) => setEditingPostData(prev => ({ ...prev, primaryCategoryId: e.target.value }))}
                   disabled={savingEdit}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-0 py-2 border-0 border-b border-gray-200 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white focus:outline-none focus:border-yellow-500 transition-colors duration-200"
                 >
-                  <option value="">Select a category</option>
+                  <option value="">Select category...</option>
                   {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
+                    <option key={category.id} value={category.id} className="bg-white dark:bg-gray-900">
                       {category.name}
                     </option>
                   ))}
@@ -2502,24 +2494,24 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            {/* Minimal Footer */}
+            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-800">
               <button 
                 onClick={() => setEditingPost(null)}
                 disabled={savingEdit}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-150 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button 
                 onClick={handlePostUpdate}
                 disabled={savingEdit || !editingPostData.title.trim() || !editingPostData.content.trim()}
-                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded-lg transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center shadow-sm"
               >
                 {savingEdit ? (
                   <>
-                    <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Saving...
+                    <div className="w-3 h-3 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Saving
                   </>
                 ) : (
                   'Save Changes'

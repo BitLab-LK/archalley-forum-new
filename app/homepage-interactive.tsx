@@ -819,6 +819,7 @@ export default function HomePageInteractive({
                     <PostCard
                       post={post}
                       onCommentCountChange={handleCommentCountChange}
+                      showTitle={false}
                     />
                   </div>
                 ))}
