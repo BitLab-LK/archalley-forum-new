@@ -31,7 +31,7 @@ export async function PATCH(
       )
     }
 
-    const flag = await prisma.flags.findUnique({
+    const flag = await prisma.postFlag.findUnique({
       where: { id: flagId }
     })
 
@@ -42,11 +42,13 @@ export async function PATCH(
       )
     }
 
-    const updatedFlag = await prisma.flags.update({
+    const updatedFlag = await prisma.postFlag.update({
       where: { id: flagId },
       data: {
         status: status,
-        updatedAt: new Date()
+        reviewedBy: session.user.id,
+        reviewedAt: new Date(),
+        reviewNotes: adminNote
       }
     })
 
@@ -92,7 +94,7 @@ export async function DELETE(
       )
     }
 
-    const flag = await prisma.flags.findUnique({
+    const flag = await prisma.postFlag.findUnique({
       where: { id: flagId }
     })
 
@@ -103,7 +105,7 @@ export async function DELETE(
       )
     }
 
-    await prisma.flags.delete({
+    await prisma.postFlag.delete({
       where: { id: flagId }
     })
 

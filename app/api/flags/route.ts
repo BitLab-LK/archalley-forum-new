@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has already flagged this post
-    const existingFlag = await prisma.flags.findFirst({
+    const existingFlag = await prisma.postFlag.findFirst({
       where: {
         userId: session.user.id,
         postId: postId
@@ -84,14 +84,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the flag
-    const flag = await prisma.flags.create({
+    const flag = await prisma.postFlag.create({
       data: {
-        id: `flag_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         userId: session.user.id,
         postId: postId,
-        reason: details ? `${reason}: ${details}` : reason,
-        status: 'PENDING',
-        updatedAt: new Date()
+        reason: reason as any,
+        customReason: details,
+        status: 'PENDING'
       }
     })
 
@@ -137,13 +136,12 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
 
-    const flags = await prisma.flags.findMany({
+    const flags = await prisma.postFlag.findMany({
       where: {
-        status: status as any,
-        postId: { not: null }
+        status: status as any
       },
       include: {
-        users: {
+        user: {
           select: {
             name: true,
             email: true,
@@ -158,10 +156,9 @@ export async function GET(request: NextRequest) {
       take: limit
     })
 
-    const totalFlags = await prisma.flags.count({
+    const totalFlags = await prisma.postFlag.count({
       where: {
-        status: status as any,
-        postId: { not: null }
+        status: status as any
       }
     })
 

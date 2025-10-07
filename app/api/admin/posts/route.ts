@@ -26,12 +26,11 @@ export async function GET(request: NextRequest) {
 
     if (status === 'flagged') {
       // Need to find posts that have flags - we'll do this with a subquery
-      const flaggedPostIds = await prisma.flags.findMany({
-        where: { postId: { not: null } },
+      const flaggedPostIds = await prisma.postFlag.findMany({
         select: { postId: true },
         distinct: ['postId']
       })
-      whereClause.id = { in: flaggedPostIds.map(f => f.postId).filter(Boolean) }
+      whereClause.id = { in: flaggedPostIds.map(f => f.postId) }
     } else if (status === 'pinned') {
       whereClause.isPinned = true
     } else if (status === 'locked') {
@@ -90,7 +89,8 @@ export async function GET(request: NextRequest) {
         },
         _count: {
           select: {
-            Comment: true
+            Comment: true,
+            flags: true
           }
         }
       },
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
 
     // Get flags for these posts separately
     const postIds = posts.map(p => p.id)
-    const flags = await prisma.flags.findMany({
+    const flags = await prisma.postFlag.findMany({
       where: {
         postId: { in: postIds }
       },
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
         status: true,
         createdAt: true,
         postId: true,
-        users: {
+        user: {
           select: {
             name: true,
             email: true
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
         stats: {
           comments: post._count?.Comment || 0,
           votes: voteCount,
-          flags: postFlags.length
+          flags: post._count?.flags || 0
         },
         flags: postFlags,
         status: {
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
           isPinned: post.isPinned,
           isLocked: post.isLocked,
           isHidden: post.isHidden,
-          isFlagged: postFlags.length > 0
+          isFlagged: (post._count?.flags || 0) > 0
         },
         createdAt: post.createdAt.toISOString(),
         updatedAt: post.updatedAt.toISOString()
@@ -230,7 +230,7 @@ export async function PATCH(request: NextRequest) {
         break
       case 'approve':
         // Mark all flags as resolved
-        await prisma.flags.updateMany({
+        await prisma.postFlag.updateMany({
           where: { postId, status: 'PENDING' },
           data: { status: 'RESOLVED' }
         })
@@ -315,7 +315,7 @@ export async function DELETE(request: NextRequest) {
 
     // Delete post and related data in transaction
     await prisma.$transaction(async (tx) => {
-      await tx.flags.deleteMany({ where: { postId } })
+      await tx.postFlag.deleteMany({ where: { postId } })
       await tx.comment.deleteMany({ where: { postId } })
       await tx.votes.deleteMany({ where: { postId } })
       await tx.attachments.deleteMany({ where: { postId } })
