@@ -2,6 +2,99 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { validateAdminAccess, logAdminAction } from '@/lib/admin-security'
 
+export async function GET(request: NextRequest, { params }: { params: Promise<{ postId: string }> }) {
+  try {
+    const validationResult = await validateAdminAccess(request)
+    if (!validationResult.isValid || !validationResult.session?.user?.id) {
+      return validationResult.response
+    }
+
+    const { postId } = await params
+
+    if (!postId) {
+      return NextResponse.json(
+        { error: 'Post ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Fetch the complete post data for editing
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        createdAt: true,
+        updatedAt: true,
+        isPinned: true,
+        isLocked: true,
+        isHidden: true,
+        isAnonymous: true,
+        viewCount: true,
+        authorId: true,
+        primaryCategoryId: true,
+        categoryIds: true,
+        users: {
+          select: {
+            name: true,
+            email: true,
+            image: true,
+            role: true
+          }
+        },
+        primaryCategory: {
+          select: {
+            id: true,
+            name: true,
+            color: true
+          }
+        },
+        _count: {
+          select: {
+            Comment: true,
+            flags: true
+          }
+        }
+      }
+    })
+
+    if (!post) {
+      return NextResponse.json(
+        { error: 'Post not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      post: {
+        ...post,
+        author: post.users,
+        category: post.primaryCategory,
+        stats: {
+          comments: post._count?.Comment || 0,
+          flags: post._count?.flags || 0
+        },
+        status: {
+          isAnonymous: post.isAnonymous,
+          isPinned: post.isPinned,
+          isLocked: post.isLocked,
+          isHidden: post.isHidden,
+          isFlagged: (post._count?.flags || 0) > 0
+        }
+      }
+    })
+
+  } catch (error) {
+    console.error('Error fetching post:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch post' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ postId: string }> }) {
   try {
     const validationResult = await validateAdminAccess(request)

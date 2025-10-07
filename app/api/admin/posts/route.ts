@@ -148,6 +148,7 @@ export async function GET(request: NextRequest) {
           role: post.users?.role || 'MEMBER'
         },
         category: post.primaryCategory ? {
+          id: post.primaryCategoryId,
           name: post.primaryCategory.name,
           color: post.primaryCategory.color
         } : null,

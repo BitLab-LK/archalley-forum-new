@@ -111,7 +111,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
         where: { postId: postId }
       })
       // Delete flags
-      await tx.flags.deleteMany({
+      await tx.postFlag.deleteMany({
         where: { postId: postId }
       })
       // Finally delete the post

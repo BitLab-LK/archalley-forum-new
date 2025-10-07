@@ -514,6 +514,13 @@ export default function AdminDashboard() {
     }
   }, [socket, isConnected, authenticatedUser, superAdminPrivileges.isAdmin])
 
+  // Debug editingPost state changes
+  useEffect(() => {
+    if (editingPost) {
+      console.log('� Post editing started:', editingPost.id)
+    }
+  }, [editingPost])
+
   // Don't render anything if user is not admin (after all hooks are declared)
   if (authLoading || !authenticatedUser || !superAdminPrivileges.isAdmin) {
     return (
@@ -955,13 +962,48 @@ export default function AdminDashboard() {
     }
   }
 
-  const handlePostEdit = (post: any) => {
-    setEditingPost(post)
-    setEditingPostData({
-      title: post.title || '',
-      content: post.content || '',
-      primaryCategoryId: post.category?.id || ''
-    })
+  const handlePostEdit = async (post: any) => {
+    try {
+      console.log('Attempting to edit post:', post.id)
+      
+      // Fetch full post content for editing using admin API
+      const response = await fetch(`/api/admin/posts/${post.id}`)
+      console.log('Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Response error:', errorText)
+        throw new Error(`Failed to fetch full post: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      console.log('Fetched post data:', data)
+      const fullPost = data.post
+      
+      // Fix null title issue - use content preview as title if title is null
+      const processedTitle = fullPost.title || fullPost.content?.substring(0, 50) + '...' || 'Untitled Post'
+      
+      console.log('About to set editingPost to:', fullPost)
+      console.log('Post title processing - original:', fullPost.title, 'processed:', processedTitle)
+      
+      const editData = {
+        title: processedTitle,
+        content: fullPost.content || '',
+        primaryCategoryId: fullPost.category?.id || ''
+      }
+      
+      console.log('About to set editingPostData to:', editData)
+      
+      // Set the editing state
+      setEditingPost(fullPost)
+      setEditingPostData(editData)
+      
+      // Auto-switch to Posts tab when editing a post
+      setActiveTab('posts')
+    } catch (error) {
+      console.error('Error fetching full post for editing:', error)
+      toast.error('Failed to load post for editing')
+    }
   }
 
   const handlePostUpdate = async () => {
@@ -1000,8 +1042,12 @@ export default function AdminDashboard() {
   const handleViewFullPost = async (postId: string) => {
     setLoadingFullPost(true)
     try {
-      const response = await fetch(`/api/posts/${postId}`)
-      if (!response.ok) throw new Error('Failed to fetch full post')
+      const response = await fetch(`/api/admin/posts/${postId}`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('View post error:', errorText)
+        throw new Error(`Failed to fetch full post: ${response.status}`)
+      }
       
       const data = await response.json()
       setViewingPost(data.post)
@@ -1030,6 +1076,9 @@ export default function AdminDashboard() {
       </div>
     )
   }
+
+  // Debug render-time values (can be removed in production)
+  console.log('🖼️ RENDER: editingPost exists:', !!editingPost)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -1936,13 +1985,22 @@ export default function AdminDashboard() {
               </DialogContent>
             </Dialog>
 
-            {/* Post Edit Dialog */}
-            <Dialog open={!!editingPost} onOpenChange={(open) => !open && setEditingPost(null)}>
-              <DialogContent className="sm:max-w-[600px] p-0 [&>button]:hidden">
+            {/* REMOVE THIS AFTER TESTING - Old problematic Dialog */}
+            {false && (
+            <Dialog open={!!editingPost} onOpenChange={(open) => {
+              console.log('🔔 Dialog onOpenChange called:', open, 'editingPost:', editingPost)
+              if (!open) setEditingPost(null)
+            }}>
+              <DialogContent className="sm:max-w-[600px] p-0 [&>button]:hidden" style={{ zIndex: 9999 }}>
+                {editingPost && (
+                  <div className="absolute top-0 left-0 bg-red-500 text-white text-xs p-1 z-50">
+                    🐛 Dialog IS OPEN - Post ID: {editingPost.id}
+                  </div>
+                )}
                 <DialogHeader className="flex flex-row items-center justify-between p-6 pb-4 border-b border-gray-200 dark:border-gray-700 space-y-0">
                   <div>
                     <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Edit Post
+                      Edit Post {editingPost?.id ? `(${editingPost.id})` : ''}
                     </DialogTitle>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       Modify post content and settings
@@ -2035,6 +2093,7 @@ export default function AdminDashboard() {
                 </div>
               </DialogContent>
             </Dialog>
+            )}
 
             {/* Full Post View Modal */}
             <Dialog open={!!viewingPost} onOpenChange={(open) => !open && setViewingPost(null)}>
@@ -2293,7 +2352,10 @@ export default function AdminDashboard() {
                                       </DropdownMenuItem>
                                       {(authenticatedUser?.role === 'ADMIN' || authenticatedUser?.role === 'SUPER_ADMIN') && (
                                         <DropdownMenuItem 
-                                          onClick={() => handlePostEdit(post)}
+                                          onClick={() => {
+                                            console.log('Edit button clicked for post:', post.id)
+                                            handlePostEdit(post)
+                                          }}
                                         >
                                           <Edit className="w-4 h-4 mr-2" />
                                           Edit Post
@@ -2355,6 +2417,118 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Post Edit Dialog - Positioned at component level to appear over all tabs */}
+      {editingPost && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setEditingPost(null)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Edit Post
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Modify post content and settings
+                </p>
+              </div>
+              <button
+                onClick={() => setEditingPost(null)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                disabled={savingEdit}
+              >
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+              <div className="space-y-2">
+                <label htmlFor="edit-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="edit-title"
+                  type="text"
+                  value={editingPostData.title}
+                  onChange={(e) => setEditingPostData(prev => ({ ...prev, title: e.target.value }))}
+                  disabled={savingEdit}
+                  placeholder="Enter post title"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="edit-content" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Content <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="edit-content"
+                  value={editingPostData.content}
+                  onChange={(e) => setEditingPostData(prev => ({ ...prev, content: e.target.value }))}
+                  disabled={savingEdit}
+                  placeholder="Enter post content"
+                  rows={8}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-gray-700 dark:text-white resize-vertical"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="edit-category" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Primary Category
+                </label>
+                <select
+                  id="edit-category"
+                  value={editingPostData.primaryCategoryId}
+                  onChange={(e) => setEditingPostData(prev => ({ ...prev, primaryCategoryId: e.target.value }))}
+                  disabled={savingEdit}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <button 
+                onClick={() => setEditingPost(null)}
+                disabled={savingEdit}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handlePostUpdate}
+                disabled={savingEdit || !editingPostData.title.trim() || !editingPostData.content.trim()}
+                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {savingEdit ? (
+                  <>
+                    <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
