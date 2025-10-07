@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Users, MessageSquare, TrendingUp, Eye, EyeOff, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal, RefreshCw, Crown } from "lucide-react"
+import { Users, MessageSquare, TrendingUp, Eye, EyeOff, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal, RefreshCw, Crown, Clock, BarChart } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useSocket } from "@/lib/socket-context"
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
@@ -2222,15 +2222,34 @@ export default function AdminDashboard() {
                       {filteredPosts.map((post) => (
                         <div key={post.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                           <div className="flex">
-                            {/* Thumbnail placeholder - you can add actual image logic here */}
-                            <div className="w-32 h-24 bg-gray-100 dark:bg-gray-800 flex-shrink-0 flex items-center justify-center">
-                              {post.content.includes('![') || post.content.includes('<img') ? (
-                                <div className="text-xs text-gray-500 text-center">
-                                  📷<br/>Image
-                                </div>
-                              ) : (
-                                <div className="text-xs text-gray-400 text-center">
-                                  📝<br/>Text
+                            {/* Post statistics for moderation */}
+                            <div className="w-20 h-24 bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0 flex flex-col items-center justify-center border-r border-gray-200/60 dark:border-gray-700/60 p-2">
+                              {/* Engagement Score */}
+                              <div className="flex items-center gap-1 mb-2">
+                                <BarChart className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                                  {(post.stats.comments || 0) + (post.stats.votes || 0)}
+                                </span>
+                              </div>
+                              
+                              {/* Time Indicator */}
+                              <div className="flex items-center gap-1 mb-2">
+                                <Clock className="w-3 h-3 text-gray-400" />
+                                <span className="text-xs text-gray-500 font-medium">
+                                  {(() => {
+                                    const days = Math.floor((Date.now() - new Date(post.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+                                    return days === 0 ? 'Today' : days === 1 ? '1d' : days < 7 ? `${days}d` : days < 30 ? `${Math.floor(days/7)}w` : `${Math.floor(days/30)}m`;
+                                  })()} 
+                                </span>
+                              </div>
+                              
+                              {/* Flag Indicator */}
+                              {post.flags.length > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <Flag className="w-3 h-3 text-red-500" />
+                                  <span className="text-xs font-semibold text-red-500">
+                                    {post.flags.length}
+                                  </span>
                                 </div>
                               )}
                             </div>
