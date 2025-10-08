@@ -360,14 +360,18 @@ export default function ImagePostModal({
                   ...data.comment,
                   author: data.comment.users?.name || "Anonymous",
                   authorImage: data.comment.users?.image || "/placeholder-user.jpg",
-                  authorRank: data.comment.users?.rank || "NEW_MEMBER"
+                  authorRank: "NEW_MEMBER" // Default rank since it's not in schema
                 }
               : comment
           )
           
           // Emit activity event for real-time feed updates
-          if (user?.id) {
-            activityEventManager.emitComment(user.id, post.id, data.comment.id)
+          try {
+            if (user?.id) {
+              activityEventManager.emitComment(user.id, post.id, data.comment.id)
+            }
+          } catch (activityError) {
+            // Silently handle activity event errors - don't fail the comment
           }
           
           return updatedComments
@@ -377,12 +381,20 @@ export default function ImagePostModal({
       } else {
         // Remove temp comment on error
         setComments(prev => prev.filter(comment => comment.id !== tempComment.id))
-        console.error("Failed to post comment")
+        toast({
+          title: "Failed to post comment",
+          description: "Please try again",
+          variant: "destructive"
+        })
       }
     } catch (error) {
       // Remove temp comment on error
       setComments(prev => prev.filter(comment => comment.id !== tempComment.id))
-      console.error("Error posting comment:", error)
+      toast({
+        title: "Error posting comment", 
+        description: "Please check your connection and try again",
+        variant: "destructive"
+      })
     }
   }
 
@@ -464,7 +476,7 @@ export default function ImagePostModal({
                           ...data.comment,
                           author: data.comment.users?.name || "Anonymous",
                           authorImage: data.comment.users?.image || "/placeholder-user.jpg",
-                          authorRank: data.comment.users?.rank || "NEW_MEMBER"
+                          authorRank: "NEW_MEMBER" // Default rank since it's not in schema
                         } as Comment
                       : reply
                   ) || []

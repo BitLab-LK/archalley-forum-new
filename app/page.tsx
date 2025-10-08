@@ -110,14 +110,6 @@ async function getInitialPosts(session: any = null): Promise<{ posts: Post[], pa
           postId: { not: null }
         },
         _count: true
-      }),
-      
-      // Get attachments (images)
-      prisma.attachments.findMany({
-        select: {
-          postId: true,
-          url: true
-        }
       })
     ])
 
@@ -125,7 +117,6 @@ async function getInitialPosts(session: any = null): Promise<{ posts: Post[], pa
     const posts = results[0].status === 'fulfilled' ? results[0].value : []
     const total = results[1].status === 'fulfilled' ? results[1].value : 0
     const voteCounts = results[2].status === 'fulfilled' ? results[2].value : []
-    const attachments = results[3].status === 'fulfilled' ? results[3].value : []
 
     // Log any failures
     results.forEach((result, index) => {
@@ -229,22 +220,11 @@ async function getInitialPosts(session: any = null): Promise<{ posts: Post[], pa
       }
     })
 
-    // Group attachments by postId
-    const attachmentMap = new Map<string, string[]>()
-    attachments.forEach(attachment => {
-      const existing = attachmentMap.get(attachment.postId) || []
-      let cleanUrl = attachment.url
-      if (cleanUrl.includes('blob.vercel-storage.com') && cleanUrl.includes('?download=1')) {
-        cleanUrl = cleanUrl.replace('?download=1', '')
-      }
-      existing.push(cleanUrl)
-      attachmentMap.set(attachment.postId, existing)
-    })
-
     const formattedPosts: Post[] = posts.map((post: any) => {
       const voteCount = voteCountMap.get(post.id) || { upvotes: 0, downvotes: 0 }
       const userVote = userVoteMap.get(post.id)?.toLowerCase() || null // Include user vote
-      const images = attachmentMap.get(post.id) || []
+      // Use images field directly from the post
+      const images = post.images || []
       const primaryBadge = getPrimaryBadge(post.users?.userBadges || [])
 
       // Get multiple categories for this post, avoiding duplicates

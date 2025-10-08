@@ -21,19 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Fetch the complete post data for editing
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      select: {
-        id: true,
-        content: true,
-        createdAt: true,
-        updatedAt: true,
-        isPinned: true,
-        isLocked: true,
-        isHidden: true,
-        isAnonymous: true,
-        viewCount: true,
-        authorId: true,
-        primaryCategoryId: true,
-        categoryIds: true,
+      include: {
         users: {
           select: {
             name: true,
@@ -71,6 +59,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         ...post,
         author: post.users,
         category: post.primaryCategory,
+        images: post.images || [], // Use images field directly
         stats: {
           comments: post._count?.Comment || 0,
           flags: post._count?.flags || 0

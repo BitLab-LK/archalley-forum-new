@@ -138,45 +138,63 @@ export async function GET(request: NextRequest) {
 
 // POST /api/comments
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-  
-  // Update user activity for active user tracking
-  updateUserActivityAsync(session.user.id)
-  const body = await request.json()
-  const { postId, content, parentId } = body
-  if (!postId || !content) {
-    return NextResponse.json({ error: "Missing postId or content" }, { status: 400 })
-  }
-
-  // Get post and parent comment data for notifications
-  const [post, parentComment] = await Promise.all([
-    prisma.post.findUnique({
-      where: { id: postId },
-      select: { id: true, title: true, content: true, authorId: true }
-    }),
-    parentId ? prisma.comment.findUnique({
-      where: { id: parentId },
-      select: { id: true, authorId: true }
-    }) : null
-  ]);
-
-  // Create comment or reply
-  const comment = await prisma.comment.create({
-    data: {
-      id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      content,
-      postId,
-      authorId: session.user.id,
-      parentId: parentId || null,
-      updatedAt: new Date()
-    },
-    include: {
-      users: { select: { name: true, image: true } }
+  try {
+    console.log('📝 Comment API: Starting comment creation request');
+    
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      console.log('❌ Comment API: No session found');
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-  })
+    
+    console.log('✅ Comment API: User authenticated:', session.user.id);
+    
+    // Update user activity for active user tracking
+    updateUserActivityAsync(session.user.id)
+    
+    const body = await request.json()
+    console.log('📨 Comment API: Request body:', { postId: body.postId, contentLength: body.content?.length, parentId: body.parentId });
+    
+    const { postId, content, parentId } = body
+    if (!postId || !content) {
+      console.log('❌ Comment API: Missing required fields');
+      return NextResponse.json({ error: "Missing postId or content" }, { status: 400 })
+    }
+
+    console.log('🔍 Comment API: Looking up post and parent comment');
+    
+    // Get post and parent comment data for notifications
+    const [post, parentComment] = await Promise.all([
+      prisma.post.findUnique({
+        where: { id: postId },
+        select: { id: true, content: true, authorId: true }
+      }),
+      parentId ? prisma.comment.findUnique({
+        where: { id: parentId },
+        select: { id: true, authorId: true }
+      }) : null
+    ]);
+
+    console.log('📄 Comment API: Post found:', !!post, 'Parent comment found:', !!parentComment);
+
+    console.log('💾 Comment API: Creating comment in database');
+    
+    // Create comment or reply
+    const comment = await prisma.comment.create({
+      data: {
+        id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        content,
+        postId,
+        authorId: session.user.id,
+        parentId: parentId || null,
+        updatedAt: new Date()
+      },
+      include: {
+        users: { select: { name: true, image: true } }
+      }
+    })
+    
+    console.log('✅ Comment API: Comment created successfully:', comment.id);
 
   // Check and award badges after successful comment creation
   try {
@@ -198,11 +216,9 @@ export async function POST(request: NextRequest) {
 
     // 1. Notify post author about new comment (if not commenting on own post)
     if (post && post.authorId !== session.user.id && currentUser) {
-      // Create a meaningful post title/description
+      // Create a meaningful post description
       let postDescription = '';
-      if (post.title && post.title.trim()) {
-        postDescription = post.title;
-      } else if (post.content) {
+      if (post.content) {
         // Use first 50 characters of content as description
         const cleanContent = post.content.replace(/<[^>]*>/g, '').trim(); // Remove HTML tags
         postDescription = cleanContent.length > 50 ? cleanContent.substring(0, 50) + '...' : cleanContent;
@@ -241,11 +257,9 @@ export async function POST(request: NextRequest) {
 
     // 2. Notify parent comment author about reply (if replying and not replying to own comment)
     if (parentComment && parentComment.authorId !== session.user.id && currentUser) {
-      // Create a meaningful post title/description
+      // Create a meaningful post description
       let postDescription = '';
-      if (post?.title && post.title.trim()) {
-        postDescription = post.title;
-      } else if (post?.content) {
+      if (post?.content) {
         // Use first 50 characters of content as description
         const cleanContent = post.content.replace(/<[^>]*>/g, '').trim(); // Remove HTML tags
         postDescription = cleanContent.length > 50 ? cleanContent.substring(0, 50) + '...' : cleanContent;
@@ -297,7 +311,7 @@ export async function POST(request: NextRequest) {
               {
                 postId,
                 authorId: session.user.id,
-                postTitle: post?.title || 'Untitled Post',
+                postTitle: post?.content?.substring(0, 50) + '...' || 'Post',
                 commentContent: content
               }
             )
@@ -321,5 +335,14 @@ export async function POST(request: NextRequest) {
   // Trigger real-time stats update
   await onCommentCreated()
   
+  console.log('🎉 Comment API: Comment creation completed successfully');
   return NextResponse.json({ comment })
+  
+  } catch (error) {
+    console.error('❌ Comment API: Error creating comment:', error);
+    return NextResponse.json({
+      error: "Failed to create comment",
+      message: error instanceof Error ? error.message : "Unknown error occurred"
+    }, { status: 500 });
+  }
 }

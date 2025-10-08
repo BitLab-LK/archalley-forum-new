@@ -675,8 +675,7 @@ export async function POST(request: Request) {
       await incrementCategoryPostCounts(tx, finalCategoryIds, 1)
       console.log("📊 Updated post counts for enhanced categories:", finalCategoryIds)
 
-      // CRITICAL FIX: Create attachments BEFORE fetching the complete post
-      // Handle image uploads if any - keep this fast
+      // Handle image URLs - extract from form data and add directly to post
       const imageEntries = Array.from(formData.entries())
         .filter(([key]) => key.startsWith("image") && key.endsWith("_url"))
         .map(([_, value]) => value as string)
@@ -684,50 +683,18 @@ export async function POST(request: Request) {
       console.log("📋 Form data entries:", Array.from(formData.entries()).map(([k, v]) => `${k}: ${typeof v === 'string' ? v.substring(0, 50) + '...' : v}`))
       console.log("🖼️ Found", imageEntries.length, "image entries:", imageEntries)
 
-      // Create attachments if any images were uploaded
-      let createdAttachments: any[] = []
+      // Update the post with image URLs directly in the images field
       if (imageEntries.length > 0) {
-        try {
-          console.log("📸 Creating attachments for", imageEntries.length, "images")
-          // Process image uploads quickly without extensive validation
-          const uploadPromises = imageEntries.map(async (imageUrl, index) => {
-            const nameKey = `image_${index}_name`
-            const filename = formData.get(nameKey) as string || imageUrl.split('/').pop() || 'unknown'
-            
-            const isBlobUrl = imageUrl.includes('blob.vercel-storage.com')
-            let fileSize = 0
-            let mimeType = 'image/jpeg'
-            
-            if (isBlobUrl) {
-              mimeType = getMimeType(filename)
-              fileSize = 0 // We'll skip file size calculation for speed
-            } else {
-              // Quick file type detection without full stats
-              mimeType = getMimeType(filename)
-            }
-
-            console.log("📎 Creating attachment:", { url: imageUrl, filename, mimeType })
-            return tx.attachments.create({
-              data: {
-                id: crypto.randomUUID(),
-                url: imageUrl,
-                filename: filename,
-                size: fileSize,
-                mimeType: mimeType,
-                postId: newPost.id,
-              },
-            })
-          })
-
-          createdAttachments = await Promise.all(uploadPromises)
-          console.log("✅ Created", createdAttachments.length, "attachments successfully")
-        } catch (error) {
-          console.error("❌ Error creating attachments:", error)
-          // Don't fail the post creation if attachments fail
-        }
+        await tx.post.update({
+          where: { id: newPost.id },
+          data: {
+            images: imageEntries
+          }
+        })
+        console.log("✅ Updated post with", imageEntries.length, "image URLs")
       }
 
-      // NOW fetch the complete post with relationships INCLUDING the just-created attachments
+      // NOW fetch the complete post with relationships
       const completePost = await tx.post.findUnique({
         where: { id: newPost.id },
         include: {
@@ -749,14 +716,13 @@ export async function POST(request: Request) {
               category: true
             }
           },
-          attachments: true, // Include attachments for immediate response
           _count: {
             select: { Comment: true }
           }
         },
       })
 
-      console.log("🔍 Complete post fetched with attachments:", completePost?.attachments?.length || 0)
+      console.log("🔍 Complete post fetched with images:", completePost?.images?.length || 0)
 
       // Get all assigned categories for immediate response
       const assignedCategories = await tx.categories.findMany({
@@ -766,8 +732,8 @@ export async function POST(request: Request) {
 
       return {
         ...completePost,
-        // Use attachments from the database query for immediate response
-        attachments: completePost?.attachments || [],
+        // Use images from the post directly
+        images: completePost?.images || [],
         // Add all assigned categories for immediate response
         allCategories: assignedCategories,
         categoryIds: finalCategoryIds, // Include the categoryIds array
@@ -813,8 +779,8 @@ export async function POST(request: Request) {
       downvotes: 0,
       userVote: null,
       comments: 0,
-      // Transform images
-      images: result.attachments?.map((att: any) => att.url) || []
+      // Use images from the post directly
+      images: result.images || []
     }
 
     console.log("✅ Post created and transformed:", transformedResult.id, "Author:", transformedResult.author?.name)
@@ -1011,7 +977,7 @@ export async function POST(request: Request) {
       revalidatePath("/api/posts")
       
       // Check if this post has images
-      const hasImages = transformedResult.attachments && Array.isArray(transformedResult.attachments) && transformedResult.attachments.length > 0
+      const hasImages = transformedResult.images && Array.isArray(transformedResult.images) && transformedResult.images.length > 0
       
       // Add a special header to indicate a new post was created
       // This can be used by clients to know when to refresh
@@ -1118,29 +1084,6 @@ export async function POST(request: Request) {
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
-/**
- * Determines MIME type from filename extension
- * Provides security by restricting to known image types
- * 
- * @param filename - Original filename with extension
- * @returns MIME type string for Content-Type header
- */
-function getMimeType(filename: string): string {
-  const ext = filename.split('.').pop()?.toLowerCase()
-  
-  // Whitelist of allowed image MIME types for security
-  const mimeTypes: Record<string, string> = {
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'png': 'image/png',
-    'gif': 'image/gif',
-    'webp': 'image/webp'
-  }
-  
-  // Return specific MIME type or safe default
-  return mimeTypes[ext || ''] || 'application/octet-stream'
-}
 
 // ============================================================================
 // GET ENDPOINT - POSTS RETRIEVAL WITH ADVANCED FEATURES
@@ -1413,7 +1356,7 @@ export async function GET(request: NextRequest) {
       // ======================================================================
       
       // Get total count and related data in parallel for better performance
-      const [total, multipleCategories, voteCounts, attachments] = await Promise.all([
+      const [total, multipleCategories, voteCounts] = await Promise.all([
         // Total count for pagination
         prisma.post.count({ where }),
         
@@ -1438,21 +1381,6 @@ export async function GET(request: NextRequest) {
             }
           },
           _count: true
-        }),
-        
-        // Attachments for all posts (batch fetch)
-        prisma.attachments.findMany({
-          where: {
-            postId: {
-              in: posts.map((post: any) => post.id)
-            }
-          },
-          select: {
-            postId: true,
-            url: true,
-            filename: true,
-            mimeType: true,
-          },
         })
       ])
       
@@ -1561,19 +1489,6 @@ export async function GET(request: NextRequest) {
         }
       })
 
-      // Group attachments by postId and clean blob URLs
-      const attachmentMap = new Map<string, string[]>()
-      attachments.forEach(attachment => {
-        const existing = attachmentMap.get(attachment.postId) || []
-        // Clean blob URLs by removing download parameter
-        let cleanUrl = attachment.url
-        if (cleanUrl.includes('blob.vercel-storage.com') && cleanUrl.includes('?download=1')) {
-          cleanUrl = cleanUrl.replace('?download=1', '')
-        }
-        existing.push(cleanUrl)
-        attachmentMap.set(attachment.postId, existing)
-      })
-
       // Transform vote counts into a more usable format
       const voteCountMap = new Map<string, { upvotes: number; downvotes: number }>()
       
@@ -1620,7 +1535,8 @@ export async function GET(request: NextRequest) {
       let transformedPosts = posts.map((post: any) => {
         const voteCount = voteCountMap.get(post.id) || { upvotes: 0, downvotes: 0 }
         const userVote = userVoteMap.get(post.id)?.toLowerCase() || null // Include user vote
-        const images = attachmentMap.get(post.id) || []
+        // Use images directly from the post
+        const images = post.images || []
         const primaryBadge = getPrimaryBadge(post.users.userBadges)
         const topComment = topCommentMap.get(post.id) || null
         

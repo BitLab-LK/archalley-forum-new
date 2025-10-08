@@ -93,6 +93,7 @@ interface Category {
 interface Post {
   id: string
   content: string
+  images?: string[]
   author: {
     name: string
     email: string
@@ -2195,6 +2196,15 @@ export default function AdminDashboard() {
                                     >
                                       {post.content?.substring(0, 60) + '...' || 'Post Content'}
                                     </h5>
+                                    {/* Image indicator */}
+                                    {post.images && post.images.length > 0 && (
+                                      <Badge variant="outline" className="text-xs border-blue-500 text-blue-600">
+                                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        {post.images.length} Image{post.images.length > 1 ? 's' : ''}
+                                      </Badge>
+                                    )}
                                     {post.status.isPinned && (
                                       <Badge variant="default" className="text-xs">
                                         <Pin className="w-3 h-3 mr-1" />
@@ -2374,43 +2384,44 @@ export default function AdminDashboard() {
 
       {/* Enhanced Full Post View Modal */}
       <Dialog open={!!viewingPost} onOpenChange={(open) => !open && setViewingPost(null)}>
-        <DialogContent className="sm:max-w-[900px] max-h-[85vh] overflow-hidden p-0 [&>button]:hidden">
+        <DialogContent className="sm:max-w-[75vw] lg:max-w-[650px] max-h-[80vh] overflow-hidden p-0 [&>button]:hidden">
           {/* Header with Close Button */}
-          <DialogHeader className="flex flex-row items-center justify-between p-6 pb-4 border-b border-gray-200 dark:border-gray-700 space-y-0">
-            <div>
-              <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                Full Post View
-              </DialogTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Complete post with all content and images
-              </p>
+          <DialogHeader className="flex flex-row items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 space-y-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
+                {viewingPost?.author?.name?.[0]?.toUpperCase() || 'U'}
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {viewingPost?.author?.name || 'Unknown User'}
+                </DialogTitle>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {viewingPost?.createdAt && new Date(viewingPost.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {/* External Link Button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(`/posts/${viewingPost?.id}`, '_blank')}
-                className="gap-2"
-                title="Open in new tab"
+            {/* Rotating Close Button */}
+            <button
+              onClick={() => setViewingPost(null)}
+              disabled={loadingFullPost}
+              className="group p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Close dialog"
+            >
+              <svg 
+                className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-all duration-300 group-hover:rotate-90" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                Open Full
-              </Button>
-              {/* Close Button */}
-              <button
-                onClick={() => setViewingPost(null)}
-                disabled={loadingFullPost}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Close dialog"
-              >
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </DialogHeader>
           
           {/* Scrollable Content */}
@@ -2418,109 +2429,66 @@ export default function AdminDashboard() {
             {loadingFullPost ? (
               <div className="flex items-center justify-center py-12">
                 <div className="w-8 h-8 animate-spin rounded-full border-2 border-yellow-500 border-t-transparent" />
-                <span className="ml-3 text-gray-600 dark:text-gray-400">Loading full post...</span>
+                <span className="ml-3 text-gray-600 dark:text-gray-400">Loading post...</span>
               </div>
             ) : viewingPost ? (
               <div className="space-y-6">
-                {/* Post Meta Information */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-                  <div className="flex flex-wrap items-center gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-white font-semibold text-xs">
-                        {viewingPost.author?.name?.[0]?.toUpperCase() || 'U'}
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {viewingPost.author?.name || 'Unknown User'}
-                        </span>
-                        <div className="text-xs text-gray-500">
-                          {viewingPost.author?.role && (
-                            <span className="capitalize">{viewingPost.author.role.toLowerCase()}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                {/* Post Meta */}
+                <div className="flex items-center gap-4 flex-wrap">
+                  {viewingPost.category && (
+                    <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                      <div 
+                        className="w-2 h-2 rounded-full" 
+                        style={{ backgroundColor: viewingPost.category.color }}
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{viewingPost.category.name}</span>
+                    </span>
+                  )}
+                  
+                  <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                      {viewingPost.stats?.comments || 0}
+                    </span>
                     
-                    <div className="flex items-center gap-4 text-gray-600 dark:text-gray-400">
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {new Date(viewingPost.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                      
-                      {viewingPost.category && (
-                        <span className="flex items-center gap-2 px-2 py-1 rounded-full bg-white dark:bg-gray-700 border">
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: viewingPost.category.color }}
-                          />
-                          <span className="text-xs font-medium">{viewingPost.category.name}</span>
-                        </span>
-                      )}
-                      
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                        {viewingPost.stats?.comments || 0} comments
-                      </span>
-                      
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                        {viewingPost.stats?.votes || 0} votes
-                      </span>
-                    </div>
+                    <span className="flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                      {viewingPost.stats?.votes || 0}
+                    </span>
                   </div>
                 </div>
                 
-                {/* Post Content with Image Support */}
-                <div className="prose prose-lg max-w-none dark:prose-invert">
-                  <div 
-                    className="whitespace-pre-wrap break-words leading-relaxed"
-                    dangerouslySetInnerHTML={{
-                      __html: viewingPost.content
-                        // Convert markdown images to HTML img tags
-                        ?.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-w-full h-auto rounded-lg shadow-sm my-4 mx-auto block" style="max-height: 500px; object-fit: contain;" />')
-                        // Convert URLs to clickable links
-                        ?.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$1</a>')
-                        // Convert line breaks to HTML breaks for better formatting
-                        ?.replace(/\n/g, '<br />') || ''
-                    }}
-                  />
-                </div>
-                
-                {/* Post Images (if any separate image URLs) */}
-                {viewingPost.images && viewingPost.images.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-900 dark:text-white">Attached Images</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Post Content with Integrated Images */}
+                <div className="space-y-6">
+                  {/* Main Content */}
+                  <div className="text-gray-900 dark:text-gray-100 leading-relaxed whitespace-pre-wrap text-lg">
+                    {viewingPost.content}
+                  </div>
+                  
+                  {/* Images integrated naturally */}
+                  {viewingPost.images && viewingPost.images.length > 0 && (
+                    <div className="flex flex-col items-center justify-center space-y-4 pb-8 pt-2">
                       {viewingPost.images.map((image: any, index: number) => (
-                        <div key={index} className="relative group">
+                        <div key={index} className="flex justify-center items-center w-full">
                           <img 
                             src={image.url || image} 
-                            alt={`Post image ${index + 1}`}
-                            className="w-full h-auto max-h-80 object-cover rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                            alt={`Image ${index + 1}`}
+                            className="max-w-[70%] max-h-[40vh] w-auto h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer border border-gray-200 dark:border-gray-700 object-contain"
                             onClick={() => window.open(image.url || image, '_blank')}
+                            onError={(e) => {
+                              e.currentTarget.src = '/placeholder.svg'
+                              e.currentTarget.alt = 'Image failed to load'
+                            }}
                           />
-                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
-                            <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                          </div>
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
                 
                 {/* Moderation Flags */}
                 {viewingPost.flags && viewingPost.flags.length > 0 && (

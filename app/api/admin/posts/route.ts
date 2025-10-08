@@ -58,19 +58,7 @@ export async function GET(request: NextRequest) {
       orderBy: {
         [sortBy]: sortOrder
       },
-      select: {
-        id: true,
-        content: true,
-        createdAt: true,
-        updatedAt: true,
-        isPinned: true,
-        isLocked: true,
-        isHidden: true,
-        isAnonymous: true,
-        viewCount: true,
-        authorId: true,
-        primaryCategoryId: true,
-        categoryIds: true,
+      include: {
         users: {
           select: {
             name: true,
@@ -138,6 +126,7 @@ export async function GET(request: NextRequest) {
       return {
         id: post.id,
         content: post.content?.substring(0, 200) + (post.content?.length > 200 ? "..." : ""),
+        images: post.images || [], // Use images field directly
         author: {
           name: post.users?.name || 'Unknown',
           email: post.users?.email || '',
@@ -316,7 +305,6 @@ export async function DELETE(request: NextRequest) {
       await tx.postFlag.deleteMany({ where: { postId } })
       await tx.comment.deleteMany({ where: { postId } })
       await tx.votes.deleteMany({ where: { postId } })
-      await tx.attachments.deleteMany({ where: { postId } })
       await tx.post.delete({ where: { id: postId } })
       
       // Update category post counts (decrement by 1)

@@ -59,6 +59,7 @@ model Post {
   moderationReason  String?
   moderationNotes   String?        // Internal notes for moderators
   // Content and Display
+  images            String[]       @default([]) // Store Vercel Blob URLs directly
   aiTags            String[]
   originalLanguage  String         @default("English")
   translatedContent String?
@@ -74,7 +75,6 @@ model Post {
   moderator         users?         @relation("PostModerator", fields: [moderatedBy], references: [id])
   primaryCategory   categories?    @relation("PrimaryCategory", fields: [primaryCategoryId], references: [id])
   postCategories    PostCategory[]
-  attachments       attachments[]
   flags             PostFlag[]     // Relation to flag reports
   moderationActions ModerationAction[]
 
@@ -103,19 +103,6 @@ model VerificationToken {
   id         String   @id @default(cuid())
 
   @@unique([identifier, token])
-}
-
-model attachments {
-  id        String   @id @default(cuid())
-  filename  String
-  url       String
-  size      Int
-  mimeType  String
-  postId    String
-  createdAt DateTime @default(now())
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@index([postId])
 }
 
 model categories {
