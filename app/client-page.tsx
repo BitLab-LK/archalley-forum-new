@@ -526,7 +526,6 @@ export default function HomePageClient({ initialPosts, initialPagination }: Home
                       <PostCard 
                         post={post} 
                         onCommentCountChange={handleCommentCountChange}
-                        showTitle={false}
                       />
                     </div>
                   ))}

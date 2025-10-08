@@ -23,7 +23,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       where: { id: postId },
       select: {
         id: true,
-        title: true,
         content: true,
         createdAt: true,
         updatedAt: true,
@@ -127,7 +126,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       where: { id: postId },
       select: { 
         id: true, 
-        title: true, 
         content: true,
         primaryCategoryId: true,
         authorId: true 
@@ -142,11 +140,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     if (action === 'edit') {
-      const { title, content, primaryCategoryId } = data
+      const { content, primaryCategoryId } = data
 
-      if (!title?.trim() || !content?.trim()) {
+      if (!content?.trim()) {
         return NextResponse.json(
-          { error: 'Title and content are required' },
+          { error: 'Content is required' },
           { status: 400 }
         )
       }
@@ -169,7 +167,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       const updatedPost = await prisma.post.update({
         where: { id: postId },
         data: {
-          title: title.trim(),
           content: content.trim(),
           primaryCategoryId: primaryCategoryId || null,
           updatedAt: new Date()
@@ -178,8 +175,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
       await logAdminAction(session.user.id, 'POST_EDITED', {
         postId,
-        originalTitle: existingPost.title,
-        newTitle: title.trim(),
         originalContent: existingPost.content?.substring(0, 100),
         newContent: content.trim().substring(0, 100),
         originalCategoryId: existingPost.primaryCategoryId,

@@ -92,7 +92,6 @@ interface Category {
 
 interface Post {
   id: string
-  title: string
   content: string
   author: {
     name: string
@@ -161,7 +160,7 @@ export default function AdminDashboard() {
   const [moderatingPosts, setModeratingPosts] = useState<Set<string>>(new Set())
   const [deletingPosts, setDeletingPosts] = useState<Set<string>>(new Set())
   const [editingPost, setEditingPost] = useState<any>(null)
-  const [editingPostData, setEditingPostData] = useState({ title: '', content: '', primaryCategoryId: '' })
+  const [editingPostData, setEditingPostData] = useState({ content: '', primaryCategoryId: '' })
   const [savingEdit, setSavingEdit] = useState(false)
   const [viewingPost, setViewingPost] = useState<any>(null)
   const [loadingFullPost, setLoadingFullPost] = useState(false)
@@ -390,7 +389,6 @@ export default function AdminDashboard() {
     // Apply search filter
     if (postSearchTerm.trim()) {
       filtered = filtered.filter(post => 
-        post.title?.toLowerCase().includes(postSearchTerm.toLowerCase()) ||
         post.content?.toLowerCase().includes(postSearchTerm.toLowerCase()) ||
         post.author.name.toLowerCase().includes(postSearchTerm.toLowerCase())
       )
@@ -891,9 +889,10 @@ export default function AdminDashboard() {
   }
 
   const handlePostDelete = async (post: any) => {
+    const postPreview = post.content?.substring(0, 50) + '...' || 'this post'
     const confirmed = await confirm({
       title: "Delete Post",
-      description: `Are you sure you want to delete "${post.title || 'this post'}"? This action cannot be undone.`,
+      description: `Are you sure you want to delete "${postPreview}"? This action cannot be undone.`,
       confirmText: "Delete",
       variant: "destructive"
     })
@@ -980,14 +979,9 @@ export default function AdminDashboard() {
       console.log('Fetched post data:', data)
       const fullPost = data.post
       
-      // Fix null title issue - use content preview as title if title is null
-      const processedTitle = fullPost.title || fullPost.content?.substring(0, 50) + '...' || 'Untitled Post'
-      
       console.log('About to set editingPost to:', fullPost)
-      console.log('Post title processing - original:', fullPost.title, 'processed:', processedTitle)
       
       const editData = {
-        title: processedTitle,
         content: fullPost.content || '',
         primaryCategoryId: fullPost.category?.id || ''
       }
@@ -1029,7 +1023,7 @@ export default function AdminDashboard() {
       
       toast.success('Post updated successfully')
       setEditingPost(null)
-      setEditingPostData({ title: '', content: '', primaryCategoryId: '' })
+      setEditingPostData({ content: '', primaryCategoryId: '' })
       await refreshPosts(postStatusFilter, postSearchTerm)
     } catch (error) {
       console.error('Error updating post:', error)
@@ -2020,19 +2014,6 @@ export default function AdminDashboard() {
                 
                 <div className="p-6 space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-title" className="text-sm font-medium">
-                      Title <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="edit-title"
-                      value={editingPostData.title}
-                      onChange={(e) => setEditingPostData(prev => ({ ...prev, title: e.target.value }))}
-                      disabled={savingEdit}
-                      placeholder="Enter post title"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
                     <Label htmlFor="edit-content" className="text-sm font-medium">
                       Content <span className="text-red-500">*</span>
                     </Label>
@@ -2078,7 +2059,7 @@ export default function AdminDashboard() {
                   </Button>
                   <Button 
                     onClick={handlePostUpdate}
-                    disabled={savingEdit || !editingPostData.title.trim() || !editingPostData.content.trim()}
+                    disabled={savingEdit || !editingPostData.content.trim()}
                     className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2"
                   >
                     {savingEdit ? (
@@ -2100,7 +2081,7 @@ export default function AdminDashboard() {
               <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="text-xl font-bold">
-                    {viewingPost?.title || 'Post Details'}
+                    Post Details
                   </DialogTitle>
                 </DialogHeader>
                 
@@ -2264,7 +2245,7 @@ export default function AdminDashboard() {
                                       onClick={() => handleViewFullPost(post.id)}
                                       title="Click to view full post"
                                     >
-                                      {post.title || 'Untitled Post'}
+                                      {post.content?.substring(0, 60) + '...' || 'Post Content'}
                                     </h5>
                                     {post.status.isPinned && (
                                       <Badge variant="default" className="text-xs">
@@ -2467,20 +2448,6 @@ export default function AdminDashboard() {
             <div className="p-5 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  value={editingPostData.title}
-                  onChange={(e) => setEditingPostData(prev => ({ ...prev, title: e.target.value }))}
-                  disabled={savingEdit}
-                  placeholder="Enter post title..."
-                  className="w-full px-0 py-2 text-lg font-medium border-0 border-b border-gray-200 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 transition-colors duration-200"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">
                   Content
                 </label>
                 <textarea
@@ -2489,7 +2456,7 @@ export default function AdminDashboard() {
                   disabled={savingEdit}
                   placeholder="Write your content here..."
                   rows={6}
-                  className="w-full px-0 py-2 border-0 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 resize-none focus:outline-none"
+                  className="w-full px-0 py-1 border-0 border-b-2 border-gray-200 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 resize-none focus:outline-none focus:border-yellow-500 transition-colors duration-200"
                 />
               </div>
               
@@ -2497,19 +2464,73 @@ export default function AdminDashboard() {
                 <label className="block text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">
                   Category
                 </label>
-                <select
-                  value={editingPostData.primaryCategoryId}
-                  onChange={(e) => setEditingPostData(prev => ({ ...prev, primaryCategoryId: e.target.value }))}
-                  disabled={savingEdit}
-                  className="w-full px-0 py-2 border-0 border-b border-gray-200 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white focus:outline-none focus:border-yellow-500 transition-colors duration-200"
-                >
-                  <option value="">Select category...</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id} className="bg-white dark:bg-gray-900">
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const dropdown = document.getElementById('category-dropdown');
+                      if (dropdown) {
+                        dropdown.classList.toggle('hidden');
+                        
+                        // Add click outside handler
+                        const handleClickOutside = (event: Event) => {
+                          const target = event.target as Element;
+                          if (!dropdown.contains(target) && !target.closest('[data-category-button]')) {
+                            dropdown.classList.add('hidden');
+                            document.removeEventListener('click', handleClickOutside);
+                          }
+                        };
+                        
+                        if (!dropdown.classList.contains('hidden')) {
+                          setTimeout(() => {
+                            document.addEventListener('click', handleClickOutside);
+                          }, 0);
+                        }
+                      }
+                    }}
+                    disabled={savingEdit}
+                    data-category-button
+                    className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:border-yellow-500 hover:border-yellow-400 transition-colors duration-200 cursor-pointer pr-8 text-left"
+                  >
+                    {editingPostData.primaryCategoryId 
+                      ? categories.find(cat => cat.id === editingPostData.primaryCategoryId)?.name || "Select category..."
+                      : "Select category..."
+                    }
+                  </button>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                  
+                  {/* Custom Dropdown List with Complete Yellow Border */}
+                  <div 
+                    id="category-dropdown"
+                    className="hidden absolute z-50 w-full mt-1 bg-white dark:bg-gray-900 border-2 border-yellow-500 rounded-md shadow-lg max-h-48 overflow-auto"
+                  >
+                    <div
+                      onClick={() => {
+                        setEditingPostData(prev => ({ ...prev, primaryCategoryId: '' }));
+                        document.getElementById('category-dropdown')?.classList.add('hidden');
+                      }}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white border-b border-yellow-200 dark:border-yellow-700"
+                    >
+                      Select category...
+                    </div>
+                    {categories.map((category) => (
+                      <div
+                        key={category.id}
+                        onClick={() => {
+                          setEditingPostData(prev => ({ ...prev, primaryCategoryId: category.id }));
+                          document.getElementById('category-dropdown')?.classList.add('hidden');
+                        }}
+                        className="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white border-b border-yellow-200 dark:border-yellow-700 last:border-b-0"
+                      >
+                        {category.name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -2524,7 +2545,7 @@ export default function AdminDashboard() {
               </button>
               <button 
                 onClick={handlePostUpdate}
-                disabled={savingEdit || !editingPostData.title.trim() || !editingPostData.content.trim()}
+                disabled={savingEdit || !editingPostData.content.trim()}
                 className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded-lg transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center shadow-sm"
               >
                 {savingEdit ? (

@@ -38,12 +38,6 @@ export async function GET(request: NextRequest) {
           where: {
             OR: [
               {
-                title: {
-                  contains: searchTerm,
-                  mode: 'insensitive'
-                }
-              },
-              {
                 content: {
                   contains: searchTerm,
                   mode: 'insensitive'
@@ -77,7 +71,6 @@ export async function GET(request: NextRequest) {
           },
           select: {
             id: true,
-            title: true,
             content: true,
             createdAt: true,
             updatedAt: true,
@@ -130,12 +123,6 @@ export async function GET(request: NextRequest) {
         prisma.post.count({
           where: {
             OR: [
-              {
-                title: {
-                  contains: searchTerm,
-                  mode: 'insensitive'
-                }
-              },
               {
                 content: {
                   contains: searchTerm,

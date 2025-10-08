@@ -49,7 +49,6 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       whereClause.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
         { content: { contains: search, mode: 'insensitive' } }
       ]
     }
@@ -61,7 +60,6 @@ export async function GET(request: NextRequest) {
       },
       select: {
         id: true,
-        title: true,
         content: true,
         createdAt: true,
         updatedAt: true,
@@ -139,7 +137,6 @@ export async function GET(request: NextRequest) {
 
       return {
         id: post.id,
-        title: post.title,
         content: post.content?.substring(0, 200) + (post.content?.length > 200 ? "..." : ""),
         author: {
           name: post.users?.name || 'Unknown',
@@ -293,7 +290,7 @@ export async function DELETE(request: NextRequest) {
     const post = await prisma.post.findUnique({
       where: { id: postId },
       select: { 
-        title: true, 
+        content: true,
         authorId: true,
         primaryCategoryId: true,
         categoryIds: true
@@ -331,7 +328,7 @@ export async function DELETE(request: NextRequest) {
 
     await logAdminAction(session.user.id, 'POST_DELETED', {
       postId,
-      postTitle: post.title,
+      postContent: post.content?.substring(0, 50) + '...',
       originalAuthorId: post.authorId
     })
 

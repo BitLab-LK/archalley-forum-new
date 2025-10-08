@@ -1013,7 +1013,6 @@ export default function UserProfilePage() {
                     key={post.id} 
                     post={post}
                     onCommentCountChange={handleCommentCountChange}
-                    showTitle={false}
                   />
                 ))}
               </div>
