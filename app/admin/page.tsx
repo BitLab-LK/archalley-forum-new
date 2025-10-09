@@ -1045,6 +1045,12 @@ export default function AdminDashboard() {
       }
       
       const data = await response.json()
+      console.log('📄 Admin: Full post data received:', {
+        id: data.post?.id,
+        authorName: data.post?.author?.name,
+        authorImage: data.post?.author?.image,
+        hasAuthor: !!data.post?.author
+      })
       setViewingPost(data.post)
     } catch (error) {
       console.error('Error fetching full post:', error)
@@ -2388,8 +2394,31 @@ export default function AdminDashboard() {
           {/* Header with Close Button */}
           <DialogHeader className="flex flex-row items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 space-y-0">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
-                {viewingPost?.author?.name?.[0]?.toUpperCase() || 'U'}
+              {/* User Profile Picture with Fallback */}
+              <div className="relative w-10 h-10 flex-shrink-0">
+                {viewingPost?.author?.image ? (
+                  <img 
+                    src={viewingPost.author.image} 
+                    alt={viewingPost.author.name || 'User'} 
+                    className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-sm"
+                    onError={(e) => {
+                      // Hide the image and show fallback on error
+                      const target = e.currentTarget;
+                      target.style.display = 'none';
+                      const fallback = target.nextElementSibling as HTMLElement;
+                      if (fallback) {
+                        fallback.style.display = 'flex';
+                      }
+                    }}
+                  />
+                ) : null}
+                {/* Fallback Avatar */}
+                <div 
+                  className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md border-2 border-gray-200 dark:border-gray-600"
+                  style={{ display: viewingPost?.author?.image ? 'none' : 'flex' }}
+                >
+                  {viewingPost?.author?.name?.[0]?.toUpperCase() || 'U'}
+                </div>
               </div>
               <div>
                 <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
