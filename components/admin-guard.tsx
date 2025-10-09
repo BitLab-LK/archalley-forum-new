@@ -64,8 +64,8 @@ export function AdminGuard({ children, fallback }: AdminGuardProps) {
     )
   }
 
-  // Show access denied if not admin
-  if (user?.role !== "ADMIN") {
+  // Show access denied if not admin, super admin, or moderator
+  if (!['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(user?.role || '')) {
     return (
       fallback || (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">

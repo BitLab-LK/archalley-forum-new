@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Users, MessageSquare, TrendingUp, Eye, EyeOff, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal, RefreshCw, Crown, Clock, BarChart } from "lucide-react"
+import { Users, MessageSquare, TrendingUp, Eye, EyeOff, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal, RefreshCw, Clock, BarChart } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useSocket } from "@/lib/socket-context"
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
@@ -230,91 +230,118 @@ export default function AdminDashboard() {
           }
         }
 
-        // Fetch other data in parallel
-        const [usersResponse, settingsResponse, pagesResponse, categoriesResponse, postsResponse] = await Promise.all([
-          fetch("/api/admin/users"),
-          fetch("/api/admin/settings"),
-          fetch("/api/admin/pages"),
-          fetch("/api/admin/categories"),
-          fetch("/api/admin/posts"),
-          fetchStats() // Run stats fetch in parallel
-        ])
-
-        // Handle each response individually to prevent one failure from blocking others
+        // Fetch other data in parallel - only fetch what the user has permission to access
+        const fetchPromises = []
         
-        // Handle users
-        if (usersResponse.ok) {
-          try {
-            const usersData = await usersResponse.json()
-            const usersList = usersData.users || []
-            setUsers(usersList)
-            setFilteredUsers(usersList)
-          } catch (error) {
-            console.error("Error processing users data:", error)
+        // Always fetch stats (already handled above)
+        fetchStats()
+        
+        // Conditionally fetch data based on permissions
+        if (permissions.canViewUsers) {
+          fetchPromises.push(fetch("/api/admin/users").then(r => ({ type: 'users', response: r })))
+        }
+        
+        if (permissions.canViewSettings) {
+          fetchPromises.push(fetch("/api/admin/settings").then(r => ({ type: 'settings', response: r })))
+        }
+        
+        if (permissions.canViewPages) {
+          fetchPromises.push(fetch("/api/admin/pages").then(r => ({ type: 'pages', response: r })))
+        }
+        
+        if (permissions.canViewCategories) {
+          fetchPromises.push(fetch("/api/admin/categories").then(r => ({ type: 'categories', response: r })))
+        }
+        
+        if (permissions.canViewPosts) {
+          fetchPromises.push(fetch("/api/admin/posts").then(r => ({ type: 'posts', response: r })))
+        }
+        
+        const results = await Promise.all(fetchPromises)
+        
+        // Process results
+        for (const result of results) {
+          const { type, response } = result
+          
+          if (type === 'users' && response.ok) {
+            try {
+              const usersData = await response.json()
+              const usersList = usersData.users || []
+              setUsers(usersList)
+              setFilteredUsers(usersList)
+            } catch (error) {
+              console.error("Error processing users data:", error)
+              toast.error("Failed to load users")
+            }
+          } else if (type === 'users') {
+            console.error("Users API failed:", response.status)
             toast.error("Failed to load users")
           }
-        } else {
-          console.error("Users API failed:", usersResponse.status)
-          toast.error("Failed to load users")
-        }
-
-        // Handle settings
-        if (settingsResponse.ok) {
-          try {
-            const settingsData = await settingsResponse.json()
-            setSettings(settingsData || {})
-          } catch (error) {
-            console.error("Error processing settings data:", error)
-            toast.error("Failed to load settings")
+          
+          if (type === 'settings' && response.ok) {
+            try {
+              const settingsData = await response.json()
+              setSettings(settingsData || {})
+            } catch (error) {
+              console.error("Error processing settings data:", error)
+              toast.error("Failed to load settings")
+            }
+          } else if (type === 'settings') {
+            console.error("Settings API failed:", response.status)
           }
-        } else {
-          console.error("Settings API failed:", settingsResponse.status)
-        }
-
-        // Handle pages
-        if (pagesResponse.ok) {
-          try {
-            const pagesData = await pagesResponse.json()
-            setPages(pagesData.pages || [])
-          } catch (error) {
-            console.error("Error processing pages data:", error)
-            toast.error("Failed to load pages")
+          
+          if (type === 'pages' && response.ok) {
+            try {
+              const pagesData = await response.json()
+              setPages(pagesData.pages || [])
+            } catch (error) {
+              console.error("Error processing pages data:", error)
+              toast.error("Failed to load pages")
+            }
+          } else if (type === 'pages') {
+            console.error("Pages API failed:", response.status)
           }
-        } else {
-          console.error("Pages API failed:", pagesResponse.status)
-        }
-
-        // Handle categories - ALWAYS process this regardless of other failures
-        if (categoriesResponse.ok) {
-          try {
-            const categoriesData = await categoriesResponse.json()
-            setCategories(categoriesData.categories || [])
-            console.log("✅ Categories loaded:", categoriesData.categories?.length || 0)
-          } catch (error) {
-            console.error("Error processing categories data:", error)
+          
+          if (type === 'categories' && response.ok) {
+            try {
+              const categoriesData = await response.json()
+              setCategories(categoriesData.categories || [])
+              console.log("✅ Categories loaded:", categoriesData.categories?.length || 0)
+            } catch (error) {
+              console.error("Error processing categories data:", error)
+              toast.error("Failed to load categories")
+            }
+            setCategoriesLoading(false)
+          } else if (type === 'categories') {
+            console.error("Categories API failed:", response.status)
             toast.error("Failed to load categories")
+            setCategoriesLoading(false)
           }
-        } else {
-          console.error("Categories API failed:", categoriesResponse.status)
-          toast.error("Failed to load categories")
-        }
-        setCategoriesLoading(false)
-
-        // Handle posts
-        if (postsResponse.ok) {
-          try {
-            const postsData = await postsResponse.json()
-            const postsList = postsData.posts || []
-            setPosts(postsList)
-            setFilteredPosts(postsList)
-          } catch (error) {
-            console.error("Error processing posts data:", error)
-            toast.error("Failed to load posts")
+          
+          if (type === 'posts' && response.ok) {
+            try {
+              const postsData = await response.json()
+              const postsList = postsData.posts || []
+              setPosts(postsList)
+              setFilteredPosts(postsList)
+            } catch (error) {
+              console.error("Error processing posts data:", error)
+              toast.error("Failed to load posts")
+            }
+            setPostsLoading(false)
+          } else if (type === 'posts') {
+            console.error("Posts API failed:", response.status)
+            setPostsLoading(false)
           }
-        } else {
-          console.error("Posts API failed:", postsResponse.status)
         }
-        setPostsLoading(false)
+        
+        // Set loading states for categories and posts based on permissions
+        if (!permissions.canViewCategories) {
+          setCategoriesLoading(false)
+        }
+        if (!permissions.canViewPosts) {
+          setPostsLoading(false)
+        }
       } catch (error) {
         console.error("Error fetching dashboard data:", error)
         toast.error("Failed to load some dashboard components")
@@ -323,11 +350,11 @@ export default function AdminDashboard() {
       }
     }
 
-    // Only fetch data if user is admin or super admin
-    if (authenticatedUser && superAdminPrivileges.isAdmin) {
+    // Only fetch data if user is admin, super admin, or moderator
+    if (authenticatedUser && ['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(authenticatedUser.role || '')) {
       fetchDashboardData()
     }
-  }, [authenticatedUser, router, superAdminPrivileges.isAdmin])
+  }, [authenticatedUser, router])
 
   // Function to refresh users list from server
   const refreshUsersList = useCallback(async () => {
@@ -359,7 +386,7 @@ export default function AdminDashboard() {
 
   // Periodic refresh for Recent Users to keep active indicators updated
   useEffect(() => {
-    if (!authenticatedUser || !superAdminPrivileges.isAdmin) return
+    if (!authenticatedUser || !['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(authenticatedUser.role || '')) return
 
     // Refresh every 30 seconds to keep active indicators up-to-date
     const interval = setInterval(refreshUsersList, 30000)
@@ -455,7 +482,7 @@ export default function AdminDashboard() {
 
   // Socket.IO real-time stats updates
   useEffect(() => {
-    if (!socket || !isConnected || !authenticatedUser || !superAdminPrivileges.isAdmin) {
+    if (!socket || !isConnected || !authenticatedUser || !['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(authenticatedUser.role || '')) {
       return
     }
 
@@ -526,7 +553,7 @@ export default function AdminDashboard() {
       socket.off('error', handleSocketError)
       socket.emit('leave-admin-stats')
     }
-  }, [socket, isConnected, authenticatedUser, superAdminPrivileges.isAdmin])
+  }, [socket, isConnected, authenticatedUser])
 
   // Debug editingPost state changes
   useEffect(() => {
@@ -535,8 +562,8 @@ export default function AdminDashboard() {
     }
   }, [editingPost])
 
-  // Don't render anything if user is not admin (after all hooks are declared)
-  if (authLoading || !authenticatedUser || !superAdminPrivileges.isAdmin) {
+  // Don't render anything if user is not admin, super admin, or moderator (after all hooks are declared)
+  if (authLoading || !authenticatedUser || !['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(authenticatedUser.role || '')) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -1104,110 +1131,73 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Role-Based Header */}
-      <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-yellow-50 dark:from-blue-900/20 dark:via-purple-900/20 dark:to-yellow-900/20 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{roleInfo.icon}</span>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {roleInfo.name} Dashboard
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {roleInfo.description}
-                </p>
-              </div>
+      {/* Minimalistic Header */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                {roleInfo.name} Dashboard
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {roleInfo.description}
+              </p>
             </div>
-            <div className="ml-auto flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <span className="font-medium">Access Level:</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  userRole === 'SUPER_ADMIN' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                  userRole === 'ADMIN' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                  userRole === 'MODERATOR' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                  'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
-                }`}>
-                  {userRole.replace('_', ' ')}
-                </span>
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Welcome, <span className="font-medium">{authenticatedUser?.name}</span>
-              </div>
+            <div className="flex items-center gap-4">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                userRole === 'SUPER_ADMIN' ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                userRole === 'ADMIN' ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                userRole === 'MODERATOR' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                'bg-gray-50 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+              }`}>
+                {userRole.replace('_', ' ')}
+              </span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {authenticatedUser?.name}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
-        <div className="mb-4 sm:mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                {superAdminPrivileges.isSuperAdmin ? "Super Admin Dashboard" : "Admin Dashboard"}
-              </h1>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                {superAdminPrivileges.isSuperAdmin 
-                  ? "Full system control and user management" 
-                  : "Manage your forum settings and content"
-                }
-              </p>
-            </div>
-            <div className="text-right">
-              <Badge 
-                variant="default"
-                className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md ${superAdminPrivileges.isSuperAdmin ? "bg-red-500 text-white hover:bg-red-600" : "bg-yellow-500 text-white hover:bg-yellow-600"}`}
-              >
-                {superAdminPrivileges.isSuperAdmin && <Crown className="h-3 w-3" />}
-                {superAdminPrivileges.isSuperAdmin ? "SUPER ADMIN" : "ADMIN"}
-              </Badge>
-              {!superAdminPrivileges.canManageUsers && (
-                <p className="text-xs text-amber-600 mt-1">Limited privileges: Cannot manage users</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-          <TabsList className={`grid w-full gap-1 ${availableTabs.length <= 4 ? `grid-cols-${availableTabs.length}` : `grid-cols-4 sm:grid-cols-${Math.min(availableTabs.length, 8)}`}`}>
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
             {availableTabs.includes('statistics') && (
-              <TabsTrigger value="statistics" className="text-xs sm:text-sm">Stats</TabsTrigger>
+              <TabsTrigger value="statistics" className="text-sm font-medium">Statistics</TabsTrigger>
             )}
             {availableTabs.includes('users') && (
-              <TabsTrigger value="users" className="text-xs sm:text-sm">Users</TabsTrigger>
+              <TabsTrigger value="users" className="text-sm font-medium">Users</TabsTrigger>
             )}
             {availableTabs.includes('categories') && (
-              <TabsTrigger value="categories" className="text-xs sm:text-sm">Categories</TabsTrigger>
+              <TabsTrigger value="categories" className="text-sm font-medium">Categories</TabsTrigger>
             )}
             {availableTabs.includes('posts') && (
-              <TabsTrigger value="posts" className="text-xs sm:text-sm">Posts</TabsTrigger>
+              <TabsTrigger value="posts" className="text-sm font-medium">Posts</TabsTrigger>
             )}
             {availableTabs.includes('settings') && (
-              <TabsTrigger value="settings" className="text-xs sm:text-sm">Settings</TabsTrigger>
+              <TabsTrigger value="settings" className="text-sm font-medium">Settings</TabsTrigger>
             )}
             {availableTabs.includes('permissions') && (
-              <TabsTrigger value="permissions" className="text-xs sm:text-sm">Permissions</TabsTrigger>
+              <TabsTrigger value="permissions" className="text-sm font-medium">Permissions</TabsTrigger>
             )}
             {availableTabs.includes('appearance') && (
-              <TabsTrigger value="appearance" className="text-xs sm:text-sm">Appearance</TabsTrigger>
+              <TabsTrigger value="appearance" className="text-sm font-medium">Appearance</TabsTrigger>
             )}
             {availableTabs.includes('pages') && (
-              <TabsTrigger value="pages" className="text-xs sm:text-sm">Pages</TabsTrigger>
+              <TabsTrigger value="pages" className="text-sm font-medium">Pages</TabsTrigger>
             )}
           </TabsList>
 
           {/* Statistics Tab */}
           {permissions.canViewStatistics && (
-            <TabsContent value="statistics" className="space-y-4 sm:space-y-6">
-            {/* Stats Header with Refresh Button */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <TabsContent value="statistics" className="space-y-6">
+            {/* Stats Header */}
+            <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-lg font-semibold">Dashboard Statistics</h2>
-                <p className="text-sm text-muted-foreground">
-                  Real-time forum metrics and user activity monitoring
-                </p>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Statistics</h2>
                 {stats.timestamp && (
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Last updated: {new Date(stats.timestamp).toLocaleString()}
                   </p>
                 )}
@@ -1217,177 +1207,118 @@ export default function AdminDashboard() {
                 disabled={statsRefreshing || statsLoading}
                 variant="outline"
                 size="sm"
-                className="gap-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white hover:border-yellow-600 transition-colors"
+                className="text-gray-600 border-gray-300 hover:bg-gray-50"
               >
-                <RefreshCw className={`h-4 w-4 ${statsRefreshing ? 'animate-spin' : ''}`} />
-                {statsRefreshing ? 'Refreshing...' : 'Refresh Stats'}
+                <RefreshCw className={`h-4 w-4 mr-2 ${statsRefreshing ? 'animate-spin' : ''}`} />
+                {statsRefreshing ? 'Refreshing...' : 'Refresh'}
               </Button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Total Users</CardTitle>
-                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
-                </CardHeader>
-                <CardContent className="p-3 sm:p-6">
-                  {statsLoading ? (
-                    <div className="space-y-2">
-                      <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
-                    </div>
-                  ) : statsError ? (
-                    <div className="space-y-1">
-                      <div className="text-lg sm:text-2xl font-bold text-red-500">--</div>
-                      <p className="text-xs text-red-500">Error loading</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="text-lg sm:text-2xl font-bold">{stats.totalUsers.toLocaleString()}</div>
-                      <p className="text-xs text-muted-foreground">Active forum members</p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+                    {statsLoading ? (
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mt-2"></div>
+                    ) : statsError ? (
+                      <div className="text-2xl font-bold text-red-500 mt-2">--</div>
+                    ) : (
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{stats.totalUsers.toLocaleString()}</div>
+                    )}
+                  </div>
+                  <Users className="h-6 w-6 text-yellow-400" />
+                </div>
+              </div>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Total Posts</CardTitle>
-                  <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
-                </CardHeader>
-                <CardContent className="p-3 sm:p-6">
-                  {statsLoading ? (
-                    <div className="space-y-2">
-                      <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
-                    </div>
-                  ) : statsError ? (
-                    <div className="space-y-1">
-                      <div className="text-lg sm:text-2xl font-bold text-red-500">--</div>
-                      <p className="text-xs text-red-500">Error loading</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="text-lg sm:text-2xl font-bold">{stats.totalPosts.toLocaleString()}</div>
-                      <p className="text-xs text-muted-foreground">Forum discussions</p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Posts</p>
+                    {statsLoading ? (
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mt-2"></div>
+                    ) : statsError ? (
+                      <div className="text-2xl font-bold text-red-500 mt-2">--</div>
+                    ) : (
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{stats.totalPosts.toLocaleString()}</div>
+                    )}
+                  </div>
+                  <MessageSquare className="h-6 w-6 text-yellow-400" />
+                </div>
+              </div>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Total Comments</CardTitle>
-                  <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
-                </CardHeader>
-                <CardContent className="p-3 sm:p-6">
-                  {statsLoading ? (
-                    <div className="space-y-2">
-                      <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
-                    </div>
-                  ) : statsError ? (
-                    <div className="space-y-1">
-                      <div className="text-lg sm:text-2xl font-bold text-red-500">--</div>
-                      <p className="text-xs text-red-500">Error loading</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="text-lg sm:text-2xl font-bold">{stats.totalComments.toLocaleString()}</div>
-                      <p className="text-xs text-muted-foreground">User interactions</p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Comments</p>
+                    {statsLoading ? (
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mt-2"></div>
+                    ) : statsError ? (
+                      <div className="text-2xl font-bold text-red-500 mt-2">--</div>
+                    ) : (
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{stats.totalComments.toLocaleString()}</div>
+                    )}
+                  </div>
+                  <MessageSquare className="h-6 w-6 text-yellow-400" />
+                </div>
+              </div>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Active Users</CardTitle>
-                  <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
-                </CardHeader>
-                <CardContent className="p-3 sm:p-6">
-                  {statsLoading ? (
-                    <div className="space-y-2">
-                      <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
-                    </div>
-                  ) : statsError ? (
-                    <div className="space-y-1">
-                      <div className="text-lg sm:text-2xl font-bold text-red-500">--</div>
-                      <p className="text-xs text-red-500">Error loading</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="text-lg sm:text-2xl font-bold">{stats.activeUsers.toLocaleString()}</div>
-                      <p className="text-xs text-muted-foreground">Active in last 24 hours</p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Users</p>
+                    {statsLoading ? (
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mt-2"></div>
+                    ) : statsError ? (
+                      <div className="text-2xl font-bold text-red-500 mt-2">--</div>
+                    ) : (
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{stats.activeUsers.toLocaleString()}</div>
+                    )}
+                  </div>
+                  <TrendingUp className="h-6 w-6 text-yellow-400" />
+                </div>
+              </div>
             </div>
 
-            <Card>
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle>Recent Users</CardTitle>
-                <CardDescription>Latest forum registrations</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6">
-                <div className="space-y-3">
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Users</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Latest forum registrations</p>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
                   {users.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between py-3 px-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <div className="flex items-center space-x-4">
-                        <div className="relative flex-shrink-0">
+                    <div key={user.id} className="flex items-center justify-between py-2">
+                      <div className="flex items-center space-x-3">
+                        <div className="relative">
                           <Avatar className="w-10 h-10">
                             <AvatarImage src={user.image || "/placeholder.svg?height=40&width=40"} />
-                            <AvatarFallback>{user.name[0]}</AvatarFallback>
+                            <AvatarFallback className="bg-gray-100 text-gray-600">{user.name[0]}</AvatarFallback>
                           </Avatar>
                           {user.isActive && (
                             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
                           )}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium text-gray-900 dark:text-white truncate" title={user.name}>
-                              {user.name}
-                            </p>
-                            {user.isActive && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 flex-shrink-0">
-                                Active
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate" title={user.email}>
-                            {user.email}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                            {user.postCount} posts, {user.commentCount} comments
-                          </p>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">{user.name}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4 flex-shrink-0">
-                        <Badge
-                          variant={
-                            user.role === "SUPER_ADMIN" ? "default" : 
-                            user.role === "ADMIN" ? "default" : 
-                            user.role === "MODERATOR" ? "secondary" : "outline"
-                          }
-                          className={
-                            user.role === "SUPER_ADMIN" ? "bg-red-500 text-white hover:bg-red-600" :
-                            user.role === "ADMIN" ? "bg-yellow-500 text-white hover:bg-yellow-600" : ""
-                          }
-                        >
+                      <div className="text-right">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          user.role === "SUPER_ADMIN" ? "bg-red-50 text-red-700" :
+                          user.role === "ADMIN" ? "bg-purple-50 text-purple-700" : 
+                          user.role === "MODERATOR" ? "bg-blue-50 text-blue-700" : "bg-gray-50 text-gray-700"
+                        }`}>
                           {user.role === "SUPER_ADMIN" ? "SUPER ADMIN" : user.role}
-                        </Badge>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 text-right">
-                          <div className="mb-0.5">Joined: {user.joinDate}</div>
-                          <div>Last seen: {user.lastLogin}</div>
-                        </div>
+                        </span>
+                        <p className="text-xs text-gray-500 mt-1">{user.joinDate}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </TabsContent>
           )}
 

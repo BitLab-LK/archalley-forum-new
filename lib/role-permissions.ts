@@ -57,7 +57,7 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         // Dashboard Tab Access - Limited access
         canViewStatistics: true,
         canViewUsers: true,
-        canViewCategories: false,
+        canViewCategories: true,
         canViewPosts: true,
         canViewSettings: false,
         canViewPermissions: false,
@@ -78,9 +78,9 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canHidePosts: true,
         canApproveFlags: true,
         
-        // Category Management - No access
-        canCreateCategories: false,
-        canEditCategories: false,
+        // Category Management - Limited access for moderation
+        canCreateCategories: true,
+        canEditCategories: true,
         canDeleteCategories: false,
         
         // Settings & Configuration - No access
@@ -97,15 +97,15 @@ export function getRolePermissions(role: UserRole): RolePermissions {
 
     case 'ADMIN':
       return {
-        // Dashboard Tab Access - Full access except permissions
+        // Dashboard Tab Access - Full access except permissions, settings, appearance, and pages
         canViewStatistics: true,
         canViewUsers: true,
         canViewCategories: true,
         canViewPosts: true,
-        canViewSettings: true,
+        canViewSettings: false,
         canViewPermissions: false, // Reserved for SUPER_ADMIN
-        canViewAppearance: true,
-        canViewPages: true,
+        canViewAppearance: false,
+        canViewPages: false,
         
         // User Management - Full except role changes
         canEditUsers: true,
@@ -126,11 +126,11 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canEditCategories: true,
         canDeleteCategories: true,
         
-        // Settings & Configuration - Full except permissions
-        canChangeSettings: true,
+        // Settings & Configuration - No access to these features
+        canChangeSettings: false,
         canManagePermissions: false, // Reserved for SUPER_ADMIN
-        canCustomizeAppearance: true,
-        canManagePages: true,
+        canCustomizeAppearance: false,
+        canManagePages: false,
         
         // Advanced Actions - Limited
         canViewSystemStats: true,
@@ -140,15 +140,15 @@ export function getRolePermissions(role: UserRole): RolePermissions {
 
     case 'SUPER_ADMIN':
       return {
-        // Dashboard Tab Access - Full access to everything
+        // Dashboard Tab Access - Full access except settings, appearance, and pages
         canViewStatistics: true,
         canViewUsers: true,
         canViewCategories: true,
         canViewPosts: true,
-        canViewSettings: true,
-        canViewPermissions: true,
-        canViewAppearance: true,
-        canViewPages: true,
+        canViewSettings: false,
+        canViewPermissions: false,
+        canViewAppearance: false,
+        canViewPages: false,
         
         // User Management - Full control
         canEditUsers: true,
@@ -169,11 +169,11 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canEditCategories: true,
         canDeleteCategories: true,
         
-        // Settings & Configuration - Full access
-        canChangeSettings: true,
-        canManagePermissions: true,
-        canCustomizeAppearance: true,
-        canManagePages: true,
+        // Settings & Configuration - No access to these removed features
+        canChangeSettings: false,
+        canManagePermissions: false,
+        canCustomizeAppearance: false,
+        canManagePages: false,
         
         // Advanced Actions - Full access
         canViewSystemStats: true,
@@ -274,28 +274,28 @@ export function getRoleInfo(role: UserRole) {
         name: 'Moderator',
         description: 'Can moderate posts and users, handle flags',
         color: 'blue',
-        icon: '🛡️'
+        icon: ''
       }
     case 'ADMIN':
       return {
         name: 'Administrator',
         description: 'Full access except user roles and permissions',
         color: 'purple',
-        icon: '👑'
+        icon: ''
       }
     case 'SUPER_ADMIN':
       return {
         name: 'Super Administrator',
         description: 'Complete system control and access',
         color: 'red',
-        icon: '⚡'
+        icon: ''
       }
     default:
       return {
         name: 'Member',
         description: 'Regular forum member',
         color: 'gray',
-        icon: '👤'
+        icon: ''
       }
   }
 }
