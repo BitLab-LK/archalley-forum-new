@@ -19,6 +19,7 @@ import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { checkSuperAdminPrivileges } from "@/lib/super-admin-utils"
+import { getRolePermissions, getAvailableTabs, getDefaultTab, getRoleInfo, type UserRole } from "@/lib/role-permissions"
 
 interface DashboardStats {
   totalUsers: number
@@ -180,16 +181,30 @@ export default function AdminDashboard() {
   const { confirm } = useConfirmDialog()
   const router = useRouter()
   
+  // Role-based permissions
+  const userRole = (authenticatedUser?.role || 'MEMBER') as UserRole
+  const permissions = getRolePermissions(userRole)
+  const roleInfo = getRoleInfo(userRole)
+  const availableTabs = getAvailableTabs(userRole)
+  const defaultTab = getDefaultTab(userRole)
+  
   // Super admin privileges check
   const superAdminPrivileges = checkSuperAdminPrivileges(authenticatedUser)
 
-  // Early security check - redirect immediately if not admin or super admin
+  // Early security check - redirect immediately if not admin, super admin, or moderator
   useEffect(() => {
-    if (!authLoading && (!authenticatedUser || !superAdminPrivileges.isAdmin)) {
+    if (!authLoading && (!authenticatedUser || !['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(authenticatedUser.role || ''))) {
       router.replace("/")
       return
     }
-  }, [authenticatedUser, authLoading, router, superAdminPrivileges.isAdmin])
+  }, [authenticatedUser, authLoading, router])
+
+  // Set default tab based on role permissions
+  useEffect(() => {
+    if (authenticatedUser && availableTabs.length > 0 && activeTab === "statistics" && !availableTabs.includes("statistics")) {
+      setActiveTab(defaultTab)
+    }
+  }, [authenticatedUser, availableTabs, defaultTab, activeTab])
 
   // Fetch dashboard data effect - must be declared before any early returns
   useEffect(() => {
@@ -1089,6 +1104,41 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Role-Based Header */}
+      <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-yellow-50 dark:from-blue-900/20 dark:via-purple-900/20 dark:to-yellow-900/20 border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">{roleInfo.icon}</span>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                  {roleInfo.name} Dashboard
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {roleInfo.description}
+                </p>
+              </div>
+            </div>
+            <div className="ml-auto flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <span className="font-medium">Access Level:</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  userRole === 'SUPER_ADMIN' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                  userRole === 'ADMIN' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                  userRole === 'MODERATOR' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                  'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                }`}>
+                  {userRole.replace('_', ' ')}
+                </span>
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Welcome, <span className="font-medium">{authenticatedUser?.name}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <div className="mb-4 sm:mb-8">
           <div className="flex items-center justify-between">
@@ -1119,19 +1169,36 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 gap-1">
-            <TabsTrigger value="statistics" className="text-xs sm:text-sm">Stats</TabsTrigger>
-            <TabsTrigger value="users" className="text-xs sm:text-sm">Users</TabsTrigger>
-            <TabsTrigger value="categories" className="text-xs sm:text-sm">Categories</TabsTrigger>
-            <TabsTrigger value="posts" className="text-xs sm:text-sm">Posts</TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs sm:text-sm">Settings</TabsTrigger>
-            <TabsTrigger value="permissions" className="text-xs sm:text-sm">Permissions</TabsTrigger>
-            <TabsTrigger value="appearance" className="text-xs sm:text-sm">Appearance</TabsTrigger>
-            <TabsTrigger value="pages" className="text-xs sm:text-sm">Pages</TabsTrigger>
+          <TabsList className={`grid w-full gap-1 ${availableTabs.length <= 4 ? `grid-cols-${availableTabs.length}` : `grid-cols-4 sm:grid-cols-${Math.min(availableTabs.length, 8)}`}`}>
+            {availableTabs.includes('statistics') && (
+              <TabsTrigger value="statistics" className="text-xs sm:text-sm">Stats</TabsTrigger>
+            )}
+            {availableTabs.includes('users') && (
+              <TabsTrigger value="users" className="text-xs sm:text-sm">Users</TabsTrigger>
+            )}
+            {availableTabs.includes('categories') && (
+              <TabsTrigger value="categories" className="text-xs sm:text-sm">Categories</TabsTrigger>
+            )}
+            {availableTabs.includes('posts') && (
+              <TabsTrigger value="posts" className="text-xs sm:text-sm">Posts</TabsTrigger>
+            )}
+            {availableTabs.includes('settings') && (
+              <TabsTrigger value="settings" className="text-xs sm:text-sm">Settings</TabsTrigger>
+            )}
+            {availableTabs.includes('permissions') && (
+              <TabsTrigger value="permissions" className="text-xs sm:text-sm">Permissions</TabsTrigger>
+            )}
+            {availableTabs.includes('appearance') && (
+              <TabsTrigger value="appearance" className="text-xs sm:text-sm">Appearance</TabsTrigger>
+            )}
+            {availableTabs.includes('pages') && (
+              <TabsTrigger value="pages" className="text-xs sm:text-sm">Pages</TabsTrigger>
+            )}
           </TabsList>
 
           {/* Statistics Tab */}
-          <TabsContent value="statistics" className="space-y-4 sm:space-y-6">
+          {permissions.canViewStatistics && (
+            <TabsContent value="statistics" className="space-y-4 sm:space-y-6">
             {/* Stats Header with Refresh Button */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
@@ -1322,9 +1389,11 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
           {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
+          {permissions.canViewSettings && (
+            <TabsContent value="settings" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -1486,15 +1555,19 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex justify-end">
-              <Button onClick={handleSettingsSave} disabled={isSaving} className="bg-yellow-500 hover:bg-yellow-600 text-white disabled:bg-yellow-300">
-                {isSaving ? "Saving..." : "Save Settings"}
-                <Save className="ml-2 h-4 w-4" />
-              </Button>
+              {permissions.canChangeSettings && (
+                <Button onClick={handleSettingsSave} disabled={isSaving} className="bg-yellow-500 hover:bg-yellow-600 text-white disabled:bg-yellow-300">
+                  {isSaving ? "Saving..." : "Save Settings"}
+                  <Save className="ml-2 h-4 w-4" />
+                </Button>
+              )}
             </div>
           </TabsContent>
+          )}
 
           {/* Users Tab */}
-          <TabsContent value="users" className="space-y-6">
+          {permissions.canViewUsers && (
+            <TabsContent value="users" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>User Management</CardTitle>
@@ -1572,8 +1645,9 @@ export default function AdminDashboard() {
                                   <select
                                     value={user.role}
                                     onChange={(e) => handleUserRoleUpdate(user.id, e.target.value)}
-                                    disabled={isLoading || user.id === authenticatedUser?.id || !superAdminPrivileges.canModifyRoles}
+                                    disabled={isLoading || user.id === authenticatedUser?.id || !permissions.canChangeUserRoles}
                                     className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                                    title={!permissions.canChangeUserRoles ? "Insufficient permissions to change roles" : ""}
                                   >
                                     <option value="MEMBER">Member</option>
                                     <option value="MODERATOR">Moderator</option>
@@ -1600,9 +1674,9 @@ export default function AdminDashboard() {
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleUserDelete(user.id)}
-                                  disabled={isLoading || user.id === authenticatedUser?.id || !superAdminPrivileges.canDeleteUsers}
+                                  disabled={isLoading || user.id === authenticatedUser?.id || !permissions.canDeleteUsers}
                                   className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed p-2 rounded-md transition-colors"
-                                  title={!superAdminPrivileges.canDeleteUsers ? "Super admin privileges required" : "Delete user"}
+                                  title={!permissions.canDeleteUsers ? "Insufficient permissions to delete users" : "Delete user"}
                                 >
                                   {isLoading ? (
                                     <div className="w-4 h-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent"></div>
@@ -1649,8 +1723,9 @@ export default function AdminDashboard() {
                                   <select
                                     value={user.role}
                                     onChange={(e) => handleUserRoleUpdate(user.id, e.target.value)}
-                                    disabled={isLoading || user.id === authenticatedUser?.id || !superAdminPrivileges.canModifyRoles}
+                                    disabled={isLoading || user.id === authenticatedUser?.id || !permissions.canChangeUserRoles}
                                     className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 w-full"
+                                    title={!permissions.canChangeUserRoles ? "Insufficient permissions to change roles" : ""}
                                   >
                                     <option value="MEMBER">Member</option>
                                     <option value="MODERATOR">Moderator</option>
@@ -1671,9 +1746,9 @@ export default function AdminDashboard() {
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => handleUserDelete(user.id)}
-                                    disabled={isLoading || user.id === authenticatedUser?.id || !superAdminPrivileges.canDeleteUsers}
+                                    disabled={isLoading || user.id === authenticatedUser?.id || !permissions.canDeleteUsers}
                                     className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed p-2 rounded-md transition-colors"
-                                    title={!superAdminPrivileges.canDeleteUsers ? "Super admin privileges required" : "Delete user"}
+                                    title={!permissions.canDeleteUsers ? "Insufficient permissions to delete users" : "Delete user"}
                                   >
                                     {isLoading ? (
                                       <div className="w-4 h-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent"></div>
@@ -1693,9 +1768,11 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
           {/* Pages Tab */}
-          <TabsContent value="pages" className="space-y-6">
+          {permissions.canViewPages && (
+            <TabsContent value="pages" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Page Management</CardTitle>
@@ -1705,7 +1782,9 @@ export default function AdminDashboard() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium">Existing Pages</h4>
-                    <Button onClick={() => router.push("/admin/pages/new")} className="bg-yellow-500 hover:bg-yellow-600 text-white">Create New Page</Button>
+                    {permissions.canManagePages && (
+                      <Button onClick={() => router.push("/admin/pages/new")} className="bg-yellow-500 hover:bg-yellow-600 text-white">Create New Page</Button>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -1743,9 +1822,11 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
           {/* Categories Tab */}
-          <TabsContent value="categories" className="space-y-6">
+          {permissions.canViewCategories && (
+            <TabsContent value="categories" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -1758,12 +1839,14 @@ export default function AdminDashboard() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium">Categories ({categories.length})</h4>
-                    <Button 
-                      onClick={handleCategoryCreate}
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white"
-                    >
-                      Create New Category
-                    </Button>
+                    {permissions.canCreateCategories && (
+                      <Button 
+                        onClick={handleCategoryCreate}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                      >
+                        Create New Category
+                      </Button>
+                    )}
                   </div>
 
                   {categoriesLoading ? (
@@ -1801,30 +1884,34 @@ export default function AdminDashboard() {
                                 Created: {new Date(category.createdAt).toLocaleDateString()}
                               </div>
                               <div className="flex space-x-2">
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost"
-                                  onClick={() => handleCategoryEdit(category)}
-                                  disabled={isDeleting}
-                                  className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                  title="Edit category"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost"
-                                  onClick={() => handleCategoryDelete(category)}
-                                  disabled={isDeleting || actualPostCount > 0}
-                                  className={`${actualPostCount > 0 ? 'text-gray-400 cursor-not-allowed opacity-50' : 'text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
-                                  title={actualPostCount > 0 ? `Cannot delete category with ${actualPostCount} posts` : "Delete category"}
-                                >
-                                  {isDeleting ? (
-                                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent"></div>
-                                  ) : (
-                                    <Trash2 className="w-4 h-4" />
-                                  )}
-                                </Button>
+                                {permissions.canEditCategories && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={() => handleCategoryEdit(category)}
+                                    disabled={isDeleting}
+                                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                    title="Edit category"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                )}
+                                {permissions.canDeleteCategories && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={() => handleCategoryDelete(category)}
+                                    disabled={isDeleting || actualPostCount > 0}
+                                    className={`${actualPostCount > 0 ? 'text-gray-400 cursor-not-allowed opacity-50' : 'text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
+                                    title={actualPostCount > 0 ? `Cannot delete category with ${actualPostCount} posts` : "Delete category"}
+                                  >
+                                    {isDeleting ? (
+                                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent"></div>
+                                    ) : (
+                                      <Trash2 className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -2090,9 +2177,11 @@ export default function AdminDashboard() {
             )}
 
           </TabsContent>
+          )}
 
           {/* Posts Tab */}
-          <TabsContent value="posts" className="space-y-6">
+          {permissions.canViewPosts && (
+            <TabsContent value="posts" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -2263,50 +2352,56 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="flex items-center space-x-2 ml-4">
                                   {/* Pin/Unpin Button */}
-                                  <Button 
-                                    size="sm" 
-                                    variant={post.status.isPinned ? "default" : "outline"}
-                                    onClick={() => handlePostModeration(post.id, 'pin', !post.status.isPinned)}
-                                    disabled={moderatingPosts.has(post.id)}
-                                    title={post.status.isPinned ? "Unpin post" : "Pin post"}
-                                  >
-                                    {moderatingPosts.has(post.id) ? (
-                                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                    ) : (
-                                      <Pin className="w-4 h-4" />
-                                    )}
-                                  </Button>
+                                  {permissions.canPinPosts && (
+                                    <Button 
+                                      size="sm" 
+                                      variant={post.status.isPinned ? "default" : "outline"}
+                                      onClick={() => handlePostModeration(post.id, 'pin', !post.status.isPinned)}
+                                      disabled={moderatingPosts.has(post.id)}
+                                      title={post.status.isPinned ? "Unpin post" : "Pin post"}
+                                    >
+                                      {moderatingPosts.has(post.id) ? (
+                                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                      ) : (
+                                        <Pin className="w-4 h-4" />
+                                      )}
+                                    </Button>
+                                  )}
                                   
                                   {/* Lock/Unlock Button */}
-                                  <Button 
-                                    size="sm" 
-                                    variant={post.status.isLocked ? "default" : "outline"}
-                                    onClick={() => handlePostModeration(post.id, 'lock', !post.status.isLocked)}
-                                    disabled={moderatingPosts.has(post.id)}
-                                    title={post.status.isLocked ? "Unlock post" : "Lock post"}
-                                  >
-                                    {moderatingPosts.has(post.id) ? (
-                                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                    ) : (
-                                      <Lock className="w-4 h-4" />
-                                    )}
-                                  </Button>
+                                  {permissions.canLockPosts && (
+                                    <Button 
+                                      size="sm" 
+                                      variant={post.status.isLocked ? "default" : "outline"}
+                                      onClick={() => handlePostModeration(post.id, 'lock', !post.status.isLocked)}
+                                      disabled={moderatingPosts.has(post.id)}
+                                      title={post.status.isLocked ? "Unlock post" : "Lock post"}
+                                    >
+                                      {moderatingPosts.has(post.id) ? (
+                                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                      ) : (
+                                        <Lock className="w-4 h-4" />
+                                      )}
+                                    </Button>
+                                  )}
 
                                   {/* Hide/Unhide Button */}
-                                  <Button 
-                                    size="sm" 
-                                    variant={post.status.isHidden ? "default" : "outline"}
-                                    onClick={() => handlePostModeration(post.id, 'hide', !post.status.isHidden)}
-                                    disabled={moderatingPosts.has(post.id)}
-                                    title={post.status.isHidden ? "Unhide post" : "Hide post"}
-                                    className={post.status.isHidden ? "bg-orange-500 hover:bg-orange-600 border-orange-500" : ""}
-                                  >
-                                    {moderatingPosts.has(post.id) ? (
-                                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                    ) : (
-                                      post.status.isHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />
-                                    )}
-                                  </Button>
+                                  {permissions.canHidePosts && (
+                                    <Button 
+                                      size="sm" 
+                                      variant={post.status.isHidden ? "default" : "outline"}
+                                      onClick={() => handlePostModeration(post.id, 'hide', !post.status.isHidden)}
+                                      disabled={moderatingPosts.has(post.id)}
+                                      title={post.status.isHidden ? "Unhide post" : "Hide post"}
+                                      className={post.status.isHidden ? "bg-orange-500 hover:bg-orange-600 border-orange-500" : ""}
+                                    >
+                                      {moderatingPosts.has(post.id) ? (
+                                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                      ) : (
+                                        post.status.isHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />
+                                      )}
+                                    </Button>
+                                  )}
 
                                   {/* More Actions Dropdown */}
                                   <DropdownMenu>
@@ -2331,7 +2426,7 @@ export default function AdminDashboard() {
                                           Edit Post
                                         </DropdownMenuItem>
                                       )}
-                                      {post.status.isFlagged && (
+                                      {post.status.isFlagged && permissions.canApproveFlags && (
                                         <DropdownMenuItem 
                                           onClick={() => handlePostModeration(post.id, 'approve')}
                                           disabled={moderatingPosts.has(post.id)}
@@ -2341,10 +2436,11 @@ export default function AdminDashboard() {
                                         </DropdownMenuItem>
                                       )}
                                       <DropdownMenuSeparator />
-                                      <DropdownMenuItem 
-                                        onClick={() => handlePostDelete(post)}
-                                        disabled={deletingPosts.has(post.id)}
-                                        className="text-red-600 focus:text-red-600"
+                                      {permissions.canDeletePosts && (
+                                        <DropdownMenuItem 
+                                          onClick={() => handlePostDelete(post)}
+                                          disabled={deletingPosts.has(post.id)}
+                                          className="text-red-600 focus:text-red-600"
                                       >
                                         {deletingPosts.has(post.id) ? (
                                           <>
@@ -2358,6 +2454,7 @@ export default function AdminDashboard() {
                                           </>
                                         )}
                                       </DropdownMenuItem>
+                                      )}
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 </div>
@@ -2385,6 +2482,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
         </Tabs>
       </main>
 

@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
       })
       
       const userRole = token?.role as string;
-      if (!token || (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN')) {
+      if (!token || (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && userRole !== 'MODERATOR')) {
         console.log('🚫 Admin access denied:', { 
           hasToken: !!token, 
           role: token?.role 

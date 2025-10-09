@@ -17,8 +17,8 @@ export function AdminGuard({ children, fallback }: AdminGuardProps) {
   const router = useRouter()
 
   useEffect(() => {
-    // Redirect if not loading and either not authenticated or not admin
-    if (!isLoading && (!isAuthenticated || user?.role !== "ADMIN")) {
+    // Redirect if not loading and either not authenticated or not admin/moderator
+    if (!isLoading && (!isAuthenticated || !['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(user?.role || ''))) {
       console.warn("🚫 Unauthorized admin access attempt:", {
         isAuthenticated,
         userRole: user?.role,
