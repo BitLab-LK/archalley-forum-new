@@ -68,6 +68,10 @@ async function getInitialPosts(session: any = null): Promise<{ posts: Post[], pa
       prisma.post.findMany({
         take: limit,
         skip: skip,
+        where: {
+          // Filter out hidden posts for non-admin users on homepage
+          isHidden: false
+        },
         orderBy: [
           { isPinned: 'desc' },
           { createdAt: 'desc' }
@@ -100,8 +104,12 @@ async function getInitialPosts(session: any = null): Promise<{ posts: Post[], pa
         }
       }),
       
-      // Get total count
-      prisma.post.count(),
+      // Get total count (excluding hidden posts)
+      prisma.post.count({
+        where: {
+          isHidden: false
+        }
+      }),
       
       // Get vote counts for posts
       prisma.votes.groupBy({

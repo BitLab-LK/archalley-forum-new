@@ -840,6 +840,9 @@ export default function AdminDashboard() {
             case 'lock':
               updatedPost.status.isLocked = value!
               break
+            case 'hide':
+              updatedPost.status.isHidden = value!
+              break
             case 'approve':
               updatedPost.status.isFlagged = false
               updatedPost.stats.flags = 0
@@ -863,6 +866,9 @@ export default function AdminDashboard() {
               break
             case 'lock':
               updatedPost.status.isLocked = value!
+              break
+            case 'hide':
+              updatedPost.status.isHidden = value!
               break
             case 'approve':
               updatedPost.status.isFlagged = false
