@@ -27,25 +27,37 @@ export async function POST(request: NextRequest) {
 
     if (postId) {
       // Clean up specific post
-      attachments = await prisma.attachments.findMany({
-        where: { postId },
-        select: { url: true, filename: true, postId: true }
+      const post = await prisma.post.findUnique({
+        where: { id: postId },
+        select: { id: true, images: true }
       })
+      
+      if (post) {
+        attachments = post.images.map(url => ({
+          url,
+          filename: url.split('/').pop() || 'unknown',
+          postId: post.id
+        }))
+      }
     } else {
-      // Find orphaned attachments (attachments without corresponding posts)
-      const allAttachments = await prisma.attachments.findMany({
-        select: { url: true, filename: true, postId: true }
+      // Find all posts with images
+      const postsWithImages = await prisma.post.findMany({
+        select: { id: true, images: true },
+        where: {
+          images: {
+            isEmpty: false
+          }
+        }
       })
 
-      const postIds = [...new Set(allAttachments.map(a => a.postId))]
-      const existingPosts = await prisma.post.findMany({
-        where: { id: { in: postIds } },
-        select: { id: true }
-      })
-      const existingPostIds = new Set(existingPosts.map(p => p.id))
-
-      // Filter for orphaned attachments
-      attachments = allAttachments.filter(a => !existingPostIds.has(a.postId))
+      // Convert post images to attachment format
+      attachments = postsWithImages.flatMap(post => 
+        post.images.map(url => ({
+          url,
+          filename: url.split('/').pop() || 'unknown',
+          postId: post.id
+        }))
+      )
     }
 
     console.log(`Found ${attachments.length} blob files to process`)
@@ -66,11 +78,11 @@ export async function POST(request: NextRequest) {
     const urls = attachments.map(a => a.url)
     const results = await deleteBlobFiles(urls)
 
-    // Clean up database records for orphaned attachments
-    if (!postId) {
-      const orphanedPostIds = [...new Set(attachments.map(a => a.postId))]
-      await prisma.attachments.deleteMany({
-        where: { postId: { in: orphanedPostIds } }
+    // Clean up database records for specific post
+    if (postId) {
+      await prisma.post.update({
+        where: { id: postId },
+        data: { images: [] }
       })
     }
 
@@ -110,41 +122,39 @@ export async function GET(_request: NextRequest) {
     }
 
     // Get storage statistics
-    const totalAttachments = await prisma.attachments.count()
     const totalPosts = await prisma.post.count()
+    const postsWithImages = await prisma.post.count({
+      where: {
+        images: {
+          isEmpty: false
+        }
+      }
+    })
     
-    // Find orphaned attachments
-    const allAttachments = await prisma.attachments.findMany({
-      select: { postId: true }
+    // Get all posts with images for statistics
+    const allPostsWithImages = await prisma.post.findMany({
+      select: { id: true, images: true },
+      where: {
+        images: {
+          isEmpty: false
+        }
+      }
     })
-    const postIds = [...new Set(allAttachments.map(a => a.postId))]
-    const existingPosts = await prisma.post.findMany({
-      where: { id: { in: postIds } },
-      select: { id: true }
-    })
-    const existingPostIds = new Set(existingPosts.map(p => p.id))
-    const orphanedCount = allAttachments.filter(a => !existingPostIds.has(a.postId)).length
-
-    // Get size statistics
-    const sizeStats = await prisma.attachments.aggregate({
-      _sum: { size: true },
-      _avg: { size: true },
-      _max: { size: true }
-    })
+    
+    const totalAttachments = allPostsWithImages.reduce((sum, post) => sum + post.images.length, 0)
 
     return NextResponse.json({
-      totalAttachments,
       totalPosts,
-      orphanedAttachments: orphanedCount,
+      postsWithImages,
+      totalAttachments,
       storage: {
-        totalBytes: sizeStats._sum.size || 0,
-        totalMB: Math.round((sizeStats._sum.size || 0) / (1024 * 1024)),
-        averageFileSize: Math.round((sizeStats._avg.size || 0) / 1024) + "KB",
-        largestFile: Math.round((sizeStats._max.size || 0) / 1024) + "KB"
+        totalFiles: totalAttachments,
+        estimatedSizeMB: Math.round(totalAttachments * 1.5), // Rough estimate
+        averageFilesPerPost: Math.round(totalAttachments / Math.max(postsWithImages, 1) * 100) / 100
       },
       recommendations: {
-        cleanupNeeded: orphanedCount > 0,
-        potentialSavings: orphanedCount > 0 ? `~${Math.round(orphanedCount * 1.5)}MB` : "None"
+        cleanupAvailable: true,
+        potentialSavings: `Use POST endpoint to clean up specific posts`
       }
     })
 

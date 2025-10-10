@@ -116,21 +116,27 @@ export async function cleanupPostBlobs(postId: string): Promise<void> {
   try {
     const { prisma } = await import('@/lib/prisma')
     
-    // Get all attachments for this post
-    const attachments = await prisma.attachments.findMany({
-      where: { postId },
-      select: { url: true, filename: true }
+    // Get the post with its images
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { id: true, images: true }
     })
 
-    if (attachments.length === 0) {
-      console.log("No attachments found for post:", postId)
+    if (!post || post.images.length === 0) {
+      console.log("No images found for post:", postId)
       return
     }
 
-    console.log(`Cleaning up ${attachments.length} blob files for post:`, postId)
+    console.log(`Cleaning up ${post.images.length} blob files for post:`, postId)
 
     // Delete all blob files
-    const deletionResults = await deleteBlobFiles(attachments.map(a => a.url))
+    const deletionResults = await deleteBlobFiles(post.images)
+    
+    // Clear images from the post in the database
+    await prisma.post.update({
+      where: { id: postId },
+      data: { images: [] }
+    })
     
     // Log results
     const successful = deletionResults.filter(r => r.status === 'fulfilled').length
