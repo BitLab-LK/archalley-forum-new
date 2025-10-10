@@ -124,7 +124,6 @@ async function main() {
     prisma.post.create({
       data: {
         id: "post3",
-        title: "Career Transition: From Student to Professional",
         content: "Recently graduated and starting my career in architecture. Any advice for new graduates entering the field? What should I focus on in my first year?",
         authorId: users[2].id,
         primaryCategoryId: categories[2].id,
@@ -135,7 +134,6 @@ async function main() {
     prisma.post.create({
       data: {
         id: "post4",
-        title: "Latest Construction Technologies",
         content: "Has anyone worked with 3D printing in construction? I'm curious about its practical applications and limitations in Sri Lankan context.",
         authorId: adminUser.id,
         primaryCategoryId: categories[3].id,
