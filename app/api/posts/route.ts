@@ -1552,7 +1552,6 @@ export async function GET(request: NextRequest) {
         
         return {
           id: post.id,
-          title: post.title, // Include title from database
           author: {
             id: post.users.id,
             name: post.isAnonymous ? "Anonymous" : post.users.name,

@@ -233,7 +233,6 @@ interface EmailTemplate {
 interface EmailData {
   userEmail: string;
   userName: string;
-  postTitle?: string;
   postContent?: string;
   commentContent?: string;
   authorName?: string;
@@ -247,7 +246,7 @@ interface EmailData {
 
 // Email templates
 export const getEmailTemplate = (type: NotificationType, data: EmailData): EmailTemplate => {
-  const { userName, postTitle, authorName, authorAvatar, postUrl, siteUrl, commentContent, postPreview, category, timeAgo } = data;
+  const { userName, authorName, authorAvatar, postUrl, siteUrl, commentContent, postPreview, category, timeAgo } = data;
 
   const templates: Record<NotificationType, EmailTemplate> = {
     POST_LIKE: {
@@ -290,7 +289,7 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
                     <td style="padding: 32px;">
                       
                       <!-- Post Preview Card -->
-                      ${(postTitle && postTitle.length > 3 && postTitle !== 'Post' && postTitle !== 'Untitled Post') || (postPreview && postPreview.length > 10) ? `
+                      ${postPreview && postPreview.length > 10 ? `
                       <div style="
                         margin: 24px 0; 
                         border: 2px solid #e9ecef; 
@@ -309,17 +308,6 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
                             flex-shrink: 0;
                           "></div>
                           <div style="flex: 1;">
-                            ${postTitle && postTitle.length > 3 && postTitle !== 'Post' && postTitle !== 'Untitled Post' ? `
-                            <h3 style="
-                              margin: 0 0 8px 0; 
-                              font-size: 16px; 
-                              font-weight: 600; 
-                              color: #1f2937;
-                              line-height: 1.4;
-                            ">
-                              ${postTitle.length > 60 ? postTitle.substring(0, 60) + '…' : postTitle}
-                            </h3>
-                            ` : ''}
                             ${postPreview && postPreview.length > 10 ? `
                             <p style="
                               margin: 0; 
@@ -405,7 +393,7 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
         </body>
         </html>
       `,
-      text: `${authorName} liked your post${postTitle && postTitle.length > 3 && postTitle !== 'Post' && postTitle !== 'Untitled Post' ? `: "${postTitle}"` : ''}${postPreview && postPreview.length > 10 ? `\n\n"${postPreview}${postPreview.length > 100 ? '...' : ''}"` : ''}. View your post: ${postUrl}`
+      text: `${authorName} liked your post${postPreview && postPreview.length > 10 ? `\n\n"${postPreview}${postPreview.length > 100 ? '...' : ''}"` : ''}. View your post: ${postUrl}`
     },
 
     POST_COMMENT: {
@@ -467,7 +455,7 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
                       ` : ''}
                       
                       <!-- Post Preview Card -->
-                      ${(postTitle && postTitle.length > 3 && postTitle !== 'Post' && postTitle !== 'Untitled Post') || (postPreview && postPreview.length > 10) ? `
+                      ${postPreview && postPreview.length > 10 ? `
                       <div style="
                         margin: 24px 0; 
                         border: 2px solid #e9ecef; 
@@ -486,17 +474,6 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
                             flex-shrink: 0;
                           "></div>
                           <div style="flex: 1;">
-                            ${postTitle && postTitle.length > 3 && postTitle !== 'Post' && postTitle !== 'Untitled Post' ? `
-                            <h4 style="
-                              margin: 0 0 8px 0; 
-                              font-size: 16px; 
-                              font-weight: 600; 
-                              color: #1f2937;
-                              line-height: 1.4;
-                            ">
-                              ${postTitle.length > 60 ? postTitle.substring(0, 60) + '…' : postTitle}
-                            </h4>
-                            ` : ''}
                             ${postPreview && postPreview.length > 10 ? `
                             <p style="
                               margin: 0; 
@@ -568,7 +545,7 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
         </body>
         </html>
       `,
-      text: `Hi ${userName}, ${authorName} commented on your post "${postTitle}": "${commentContent}". Reply: ${postUrl}`
+      text: `Hi ${userName}, ${authorName} commented on your post: "${commentContent}". Reply: ${postUrl}`
     },
 
     COMMENT_REPLY: {
@@ -630,7 +607,7 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
                       ` : ''}
                       
                       <!-- Post Preview Card -->
-                      ${(postTitle && postTitle.length > 3 && postTitle !== 'Post' && postTitle !== 'Untitled Post') || (postPreview && postPreview.length > 10) ? `
+                      ${postPreview && postPreview.length > 10 ? `
                       <div style="
                         margin: 24px 0; 
                         border: 2px solid #e9ecef; 
@@ -649,17 +626,6 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
                             flex-shrink: 0;
                           "></div>
                           <div style="flex: 1;">
-                            ${postTitle && postTitle.length > 3 && postTitle !== 'Post' && postTitle !== 'Untitled Post' ? `
-                            <h4 style="
-                              margin: 0 0 8px 0; 
-                              font-size: 16px; 
-                              font-weight: 600; 
-                              color: #1f2937;
-                              line-height: 1.4;
-                            ">
-                              ${postTitle.length > 60 ? postTitle.substring(0, 60) + '…' : postTitle}
-                            </h4>
-                            ` : ''}
                             ${postPreview && postPreview.length > 10 ? `
                             <p style="
                               margin: 0; 
@@ -731,7 +697,7 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
         </body>
         </html>
       `,
-      text: `Hi ${userName}, ${authorName} replied to your comment on "${postTitle}": "${commentContent}". View: ${postUrl}`
+      text: `Hi ${userName}, ${authorName} replied to your comment: "${commentContent}". View: ${postUrl}`
     },
 
     MENTION: {
@@ -793,13 +759,8 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
                       ` : ''}
                       
                       <!-- Post Context -->
-                      ${(postTitle && postTitle.length > 3 && postTitle !== 'Post' && postTitle !== 'Untitled Post') || (postPreview && postPreview.length > 10) ? `
+                      ${postPreview && postPreview.length > 10 ? `
                       <div style="text-align: center; margin-bottom: 24px; padding: 16px; background: #f8f9fa; border-radius: 8px;">
-                        ${postTitle && postTitle.length > 3 && postTitle !== 'Post' && postTitle !== 'Untitled Post' ? `
-                        <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #333;">
-                          ${postTitle}
-                        </h4>
-                        ` : ''}
                         ${postPreview && postPreview.length > 10 ? `
                         <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.5;">
                           ${postPreview}${postPreview.length > 100 ? '...' : ''}
@@ -860,7 +821,7 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
         </body>
         </html>
       `,
-      text: `Hi ${userName}, ${authorName} mentioned you in "${postTitle}": "${commentContent}". View: ${postUrl}`
+      text: `Hi ${userName}, ${authorName} mentioned you: "${commentContent}". View: ${postUrl}`
     },
 
     BEST_ANSWER: {
@@ -869,7 +830,7 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Congratulations! 🏆</h2>
           <p>Hi ${userName},</p>
-          <p>Your comment on "<strong>${postTitle}</strong>" was marked as the best answer!</p>
+          <p>Your comment was marked as the best answer!</p>
           <div style="margin: 20px 0;">
             <a href="${postUrl}" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Your Answer</a>
           </div>
@@ -880,7 +841,7 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
           </p>
         </div>
       `,
-      text: `Hi ${userName}, your comment on "${postTitle}" was marked as the best answer! View: ${postUrl}`
+      text: `Hi ${userName}, your comment was marked as the best answer! View: ${postUrl}`
     },
 
     SYSTEM: {
@@ -919,12 +880,12 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
     },
 
     NEW_POST_IN_CATEGORY: {
-      subject: `New post in category you follow: "${postTitle}"`,
+      subject: `New post in category you follow`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">New post in your followed category! 📝</h2>
           <p>Hi ${userName},</p>
-          <p><strong>${authorName}</strong> posted "${postTitle}" in a category you follow.</p>
+          <p><strong>${authorName}</strong> posted in a category you follow.</p>
           <div style="margin: 20px 0;">
             <a href="${postUrl}" style="background: #0066cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Read Post</a>
           </div>
@@ -935,7 +896,7 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
           </p>
         </div>
       `,
-      text: `Hi ${userName}, ${authorName} posted "${postTitle}" in a category you follow. Read: ${postUrl}`
+      text: `Hi ${userName}, ${authorName} posted in a category you follow. Read: ${postUrl}`
     },
 
     NEW_FOLLOWER: {
@@ -956,6 +917,28 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
         </div>
       `,
       text: `Hi ${userName}, ${authorName} started following you. View profile: ${postUrl}`
+    },
+
+    MODERATION_ACTION: {
+      subject: `Moderation action taken on your content`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Moderation Notice 🛡️</h2>
+          <p>Hi ${userName},</p>
+          <p>A moderator has taken action on your content: ${commentContent}</p>
+          ${postUrl ? `
+          <div style="margin: 20px 0;">
+            <a href="${postUrl}" style="background: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Details</a>
+          </div>
+          ` : ''}
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          <p style="color: #666; font-size: 12px;">
+            You received this email because moderation action was taken on your content. 
+            <a href="${siteUrl}/community-guidelines">Review Community Guidelines</a>
+          </p>
+        </div>
+      `,
+      text: `Hi ${userName}, a moderator has taken action on your content: ${commentContent}. ${postUrl ? `View details: ${postUrl}` : ''}`
     }
   };
 
@@ -1003,6 +986,7 @@ export const shouldSendEmail = async (userId: string, type: NotificationType): P
     BEST_ANSWER: true, // Always send for best answer
     EMAIL_VERIFICATION: true, // Always send for verification
     NEW_FOLLOWER: true, // Always send for new followers
+    MODERATION_ACTION: true, // Always send for moderation actions
   };
 
   return preferenceMap[type] ?? false;
@@ -1106,7 +1090,6 @@ export const sendNotificationEmail = async (
         where: { id: data.postId },
         select: { 
           id: true, 
-          title: true, 
           content: true, 
           createdAt: true,
           primaryCategory: {
@@ -1132,11 +1115,6 @@ export const sendNotificationEmail = async (
     const postPreview = post?.content ? 
       post.content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().substring(0, 200) : '';
     
-    // Use post title or create one from content - avoid "Untitled Post"
-    const finalPostTitle = data.postTitle || post?.title || (postPreview && postPreview.length > 10 ? 
-      (postPreview.length > 50 ? postPreview.substring(0, 50) + '...' : postPreview) : 
-      null);
-    
     // Calculate time ago for activity
     const timeAgo = post?.createdAt ? 
       getTimeAgo(post.createdAt) : undefined;
@@ -1144,7 +1122,6 @@ export const sendNotificationEmail = async (
     const emailData: EmailData = {
       userEmail: user.email,
       userName: user.name || 'User',
-      postTitle: finalPostTitle || undefined,
       postContent: post?.content,
       commentContent: data.commentContent,
       authorName: author?.name || 'Someone',

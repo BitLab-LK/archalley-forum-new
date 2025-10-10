@@ -44,7 +44,7 @@ export async function POST(
         Comment: {
           include: {
             Post: {
-              select: { title: true, id: true }
+              select: { id: true, content: true }
             }
           }
         },
@@ -92,7 +92,6 @@ export async function POST(
       },
       posts: userData.Post.map(post => ({
         id: post.id,
-        title: post.title,
         content: post.content,
         createdAt: post.createdAt,
         updatedAt: post.updatedAt,
@@ -104,7 +103,7 @@ export async function POST(
         id: comment.id,
         content: comment.content,
         createdAt: comment.createdAt,
-        postTitle: comment.Post.title,
+        postContent: comment.Post.content?.substring(0, 50) + '...',
         postId: comment.Post.id
       })),
       votes: userData.votes.map(vote => ({

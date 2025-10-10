@@ -122,7 +122,7 @@ async function generateDigestData(userId: string, frequency: EmailDigestFreq): P
         authorId: userId,
         createdAt: { gte: startDate, lte: endDate }
       },
-      select: { title: true },
+      select: { content: true },
       take: 3,
       orderBy: { createdAt: 'desc' }
     });
@@ -130,7 +130,7 @@ async function generateDigestData(userId: string, frequency: EmailDigestFreq): P
     activityDetails.push({
       type: 'Posts Created',
       count: newPosts,
-      examples: recentPosts.map(p => p.title || 'Untitled').slice(0, 3)
+      examples: recentPosts.map(p => p.content?.substring(0, 30) + '...' || 'No content').slice(0, 3)
     });
   }
 

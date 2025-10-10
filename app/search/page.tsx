@@ -13,7 +13,6 @@ import { Search, MessageSquare, ThumbsUp, User, MapPin, Building, CheckCircle, L
 
 interface SearchPost {
   id: string
-  title: string
   content: string
   excerpt: string
   createdAt: string
@@ -410,7 +409,7 @@ function SearchContent() {
                                   
                                   <Link href={`/posts/${post.id}`} className="group">
                                     <h3 className="text-lg font-semibold group-hover:text-primary transition-colors mb-2">
-                                      {highlightText(post.title, searchQuery)}
+                                      {highlightText(post.content?.substring(0, 80) + '...' || 'No content', searchQuery)}
                                     </h3>
                                   </Link>
                                   
@@ -593,7 +592,7 @@ function SearchContent() {
                               
                               <Link href={`/posts/${post.id}`} className="group">
                                 <h3 className="text-lg font-semibold group-hover:text-primary transition-colors mb-2">
-                                  {highlightText(post.title, searchQuery)}
+                                  {highlightText(post.content?.substring(0, 80) + '...' || 'No content', searchQuery)}
                                 </h3>
                               </Link>
                               

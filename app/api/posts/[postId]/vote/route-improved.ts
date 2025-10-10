@@ -201,7 +201,6 @@ export async function POST(
             where: { id: postId },
             select: { 
               authorId: true, 
-              title: true,
               content: true
             }
           }),
@@ -213,11 +212,9 @@ export async function POST(
 
         // Only send notification if someone else liked the post
         if (post && post.authorId !== userId && reactingUser) {
-          // Create a meaningful post title/description
+          // Create a meaningful post description from content
           let postDescription = '';
-          if (post.title && post.title.trim()) {
-            postDescription = post.title;
-          } else if (post.content) {
+          if (post.content) {
             // Use first 50 characters of content as description
             const cleanContent = post.content.replace(/<[^>]*>/g, '').trim(); // Remove HTML tags
             postDescription = cleanContent.length > 50 ? cleanContent.substring(0, 50) + '...' : cleanContent;
