@@ -167,6 +167,10 @@ export default function AdminDashboard() {
   const [viewingPost, setViewingPost] = useState<any>(null)
   const [loadingFullPost, setLoadingFullPost] = useState(false)
   
+  // In-dialog image slider states
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [imageZoom, setImageZoom] = useState(100)
+  
   const [categoryFormOpen, setCategoryFormOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [categoryForm, setCategoryForm] = useState({
@@ -1193,6 +1197,66 @@ export default function AdminDashboard() {
       setLoadingFullPost(false)
     }
   }
+
+  // In-dialog image navigation functions
+  const goToPreviousImage = useCallback(() => {
+    if (viewingPost?.images && viewingPost.images.length > 1) {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === 0 ? viewingPost.images.length - 1 : prevIndex - 1
+      )
+    }
+  }, [viewingPost?.images])
+
+  const goToNextImage = useCallback(() => {
+    if (viewingPost?.images && viewingPost.images.length > 1) {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === viewingPost.images.length - 1 ? 0 : prevIndex + 1
+      )
+    }
+  }, [viewingPost?.images])
+
+  const goToImage = useCallback((index: number) => {
+    setCurrentImageIndex(index)
+  }, [])
+
+  const zoomIn = useCallback(() => {
+    setImageZoom(prev => Math.min(prev + 25, 200))
+  }, [])
+
+  const zoomOut = useCallback(() => {
+    setImageZoom(prev => Math.max(prev - 25, 25))
+  }, [])
+
+  const resetZoom = useCallback(() => {
+    setImageZoom(100)
+  }, [])
+
+  // Reset image index when viewing a new post
+  useEffect(() => {
+    if (viewingPost) {
+      setCurrentImageIndex(0)
+      setImageZoom(100)
+    }
+  }, [viewingPost])
+
+  // Keyboard navigation for image slider
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!viewingPost || !viewingPost.images || viewingPost.images.length <= 1) return
+      
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        goToPreviousImage()
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        goToNextImage()
+      }
+    }
+
+    // Always add the listener, but the handler itself checks for viewingPost
+    document.addEventListener('keydown', handleKeyPress)
+    return () => document.removeEventListener('keydown', handleKeyPress)
+  }, [viewingPost, goToPreviousImage, goToNextImage])
 
   if (isLoading) {
     return (
@@ -2316,7 +2380,10 @@ export default function AdminDashboard() {
                                     </h5>
                                     {/* Image indicator */}
                                     {post.images && post.images.length > 0 && (
-                                      <Badge variant="outline" className="text-xs border-blue-500 text-blue-600">
+                                      <Badge 
+                                        variant="outline" 
+                                        className="text-xs border-blue-500 text-blue-600"
+                                      >
                                         <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
@@ -2505,7 +2572,7 @@ export default function AdminDashboard() {
 
       {/* Enhanced Full Post View Modal */}
       <Dialog open={!!viewingPost} onOpenChange={(open) => !open && setViewingPost(null)}>
-        <DialogContent className="sm:max-w-[75vw] lg:max-w-[650px] max-h-[80vh] overflow-hidden p-0 [&>button]:hidden">
+        <DialogContent className="sm:max-w-[85vw] lg:max-w-[800px] max-h-[90vh] overflow-hidden p-0 [&>button]:hidden">
           {/* Header with Close Button */}
           <DialogHeader className="flex flex-row items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 space-y-0">
             <div className="flex items-center gap-3">
@@ -2569,14 +2636,14 @@ export default function AdminDashboard() {
           </DialogHeader>
           
           {/* Scrollable Content */}
-          <div className="overflow-y-auto flex-1 p-6">
+          <div className="overflow-y-auto flex-1 p-4 pb-8">
             {loadingFullPost ? (
               <div className="flex items-center justify-center py-12">
                 <div className="w-8 h-8 animate-spin rounded-full border-2 border-yellow-500 border-t-transparent" />
                 <span className="ml-3 text-gray-600 dark:text-gray-400">Loading post...</span>
               </div>
             ) : viewingPost ? (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* Post Meta */}
                 <div className="flex items-center gap-4 flex-wrap">
                   {viewingPost.category && (
@@ -2607,29 +2674,131 @@ export default function AdminDashboard() {
                 </div>
                 
                 {/* Post Content with Integrated Images */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {/* Main Content */}
-                  <div className="text-gray-900 dark:text-gray-100 leading-relaxed whitespace-pre-wrap text-lg">
+                  <div className="text-gray-900 dark:text-gray-100 leading-relaxed whitespace-pre-wrap">
                     {viewingPost.content}
                   </div>
                   
-                  {/* Images integrated naturally */}
+                  {/* Images with integrated slide viewer */}
                   {viewingPost.images && viewingPost.images.length > 0 && (
-                    <div className="flex flex-col items-center justify-center space-y-4 pb-8 pt-2">
-                      {viewingPost.images.map((image: any, index: number) => (
-                        <div key={index} className="flex justify-center items-center w-full">
+                    <div className="space-y-3 pt-2">
+                      {/* Image Slider Container */}
+                      <div className="relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden">
+                        {/* Main Image Display */}
+                        <div className="relative flex items-center justify-center p-4" style={{ minHeight: '300px' }}>
                           <img 
-                            src={image.url || image} 
-                            alt={`Image ${index + 1}`}
-                            className="max-w-[70%] max-h-[40vh] w-auto h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer border border-gray-200 dark:border-gray-700 object-contain"
-                            onClick={() => window.open(image.url || image, '_blank')}
+                            src={viewingPost.images[currentImageIndex]?.url || viewingPost.images[currentImageIndex]} 
+                            alt={`Image ${currentImageIndex + 1} of ${viewingPost.images.length}`}
+                            className="w-full h-auto object-contain rounded-lg transition-transform duration-300 shadow-md border border-gray-200 dark:border-gray-700"
+                            style={{ 
+                              transform: `scale(${imageZoom / 100})`,
+                              maxHeight: '50vh'
+                            }}
                             onError={(e) => {
                               e.currentTarget.src = '/placeholder.svg'
                               e.currentTarget.alt = 'Image failed to load'
                             }}
                           />
+
+                          {/* Navigation Arrows - Only show if multiple images */}
+                          {viewingPost.images.length > 1 && (
+                            <>
+                              {/* Previous Button */}
+                              <button
+                                onClick={goToPreviousImage}
+                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 p-2 rounded-full transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-md backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50"
+                                aria-label="Previous image"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                              </button>
+
+                              {/* Next Button */}
+                              <button
+                                onClick={goToNextImage}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 p-2 rounded-full transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-md backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50"
+                                aria-label="Next image"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </button>
+                            </>
+                          )}
+
+                          {/* Image Counter - Only show if multiple images */}
+                          {viewingPost.images.length > 1 && (
+                            <div className="absolute top-2 right-2 bg-black/60 text-white px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">
+                              {currentImageIndex + 1} / {viewingPost.images.length}
+                            </div>
+                          )}
+
+                          {/* Zoom Controls */}
+                          <div className="absolute top-2 left-2 flex gap-1">
+                            <button
+                              onClick={zoomOut}
+                              disabled={imageZoom <= 25}
+                              className="bg-white/90 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-gray-600 dark:text-gray-300 p-1.5 rounded-full transition-all duration-200 shadow-md backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50"
+                              aria-label="Zoom out"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={resetZoom}
+                              className="bg-white/90 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 px-2 py-1.5 rounded-full text-xs font-medium transition-all duration-200 shadow-md backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50"
+                              aria-label="Reset zoom"
+                            >
+                              {imageZoom}%
+                            </button>
+                            <button
+                              onClick={zoomIn}
+                              disabled={imageZoom >= 200}
+                              className="bg-white/90 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-gray-600 dark:text-gray-300 p-1.5 rounded-full transition-all duration-200 shadow-md backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50"
+                              aria-label="Zoom in"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
-                      ))}
+
+                        {/* Thumbnail Strip - Only show if multiple images */}
+                        {viewingPost.images.length > 1 && (
+                          <div className="bg-gray-100 dark:bg-gray-800 p-3 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-track-gray-200 scrollbar-thumb-gray-400 dark:scrollbar-track-gray-700 dark:scrollbar-thumb-gray-500">
+                              {viewingPost.images.map((image: any, index: number) => (
+                                <button
+                                  key={index}
+                                  onClick={() => goToImage(index)}
+                                  className={`flex-shrink-0 relative overflow-hidden rounded-md border-2 transition-all duration-200 ${
+                                    index === currentImageIndex 
+                                      ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800' 
+                                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                                  }`}
+                                >
+                                  <img 
+                                    src={image.url || image} 
+                                    alt={`Thumbnail ${index + 1}`}
+                                    className="w-14 h-14 object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.src = '/placeholder.svg'
+                                      e.currentTarget.alt = 'Thumbnail failed to load'
+                                    }}
+                                  />
+                                  {index === currentImageIndex && (
+                                    <div className="absolute inset-0 bg-blue-500/20"></div>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
