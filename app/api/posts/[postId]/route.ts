@@ -106,10 +106,6 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
       await tx.comment.deleteMany({
         where: { postId: postId }
       })
-      // Delete attachments (database records)
-      await tx.attachments.deleteMany({
-        where: { postId: postId }
-      })
       // Delete flags
       await tx.postFlag.deleteMany({
         where: { postId: postId }

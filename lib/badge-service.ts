@@ -113,12 +113,12 @@ export class BadgeService {
         }
       }),
       
-      // Image posts count (posts with image attachments)
+      // Image posts count (posts with images)
       prisma.post.count({
         where: {
           authorId: userId,
-          attachments: {
-            some: {}
+          images: {
+            isEmpty: false
           }
         }
       })

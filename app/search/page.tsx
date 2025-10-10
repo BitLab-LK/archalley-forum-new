@@ -35,12 +35,7 @@ interface SearchPost {
     color: string | null
     slug: string
   }>
-  attachments: {
-    id: string
-    filename: string
-    url: string
-    mimeType: string
-  }[]
+  images: string[]
   commentsCount: number
   votesCount: number
 }
@@ -211,36 +206,34 @@ function SearchContent() {
     )
   }
 
-  const renderPostImages = (attachments: { id: string; filename: string; url: string; mimeType: string }[]) => {
-    const imageAttachments = attachments.filter(att => att.mimeType.startsWith('image/'))
-    
-    if (imageAttachments.length === 0) return null
+  const renderPostImages = (images: string[]) => {
+    if (!images || images.length === 0) return null
 
     return (
       <div className="mt-3 mb-3 flex justify-center">
-        {imageAttachments.length === 1 ? (
+        {images.length === 1 ? (
           <div className="rounded-lg overflow-hidden max-w-md w-full">
             <img
-              src={imageAttachments[0].url}
-              alt={imageAttachments[0].filename}
+              src={images[0]}
+              alt="Post image"
               className="w-full h-auto object-cover"
             />
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2 max-w-md w-full">
-            {imageAttachments.slice(0, 4).map((image) => (
-              <div key={image.id} className="rounded-lg overflow-hidden">
+            {images.slice(0, 4).map((imageUrl, index) => (
+              <div key={index} className="rounded-lg overflow-hidden">
                 <img
-                  src={image.url}
-                  alt={image.filename}
+                  src={imageUrl}
+                  alt={`Post image ${index + 1}`}
                   className="w-full h-32 object-cover"
                 />
               </div>
             ))}
-            {imageAttachments.length > 4 && (
+            {images.length > 4 && (
               <div className="flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg h-32">
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  +{imageAttachments.length - 4} more
+                  +{images.length - 4} more
                 </span>
               </div>
             )}
@@ -422,7 +415,7 @@ function SearchContent() {
                                   </Link>
                                   
                                   {/* Render post images */}
-                                  {renderPostImages(post.attachments)}
+                                  {renderPostImages(post.images)}
                                   
                                   {post.excerpt && (
                                     <p className="text-muted-foreground mb-3">
@@ -605,7 +598,7 @@ function SearchContent() {
                               </Link>
                               
                               {/* Render post images */}
-                              {renderPostImages(post.attachments)}
+                              {renderPostImages(post.images)}
                               
                               {post.excerpt && (
                                 <p className="text-muted-foreground mb-3">

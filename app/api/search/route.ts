@@ -100,14 +100,6 @@ export async function GET(request: NextRequest) {
                 }
               }
             },
-            attachments: {
-              select: {
-                id: true,
-                filename: true,
-                url: true,
-                mimeType: true
-              }
-            },
             _count: {
               select: {
                 Comment: true

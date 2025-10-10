@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import JSZip from 'jszip';
-import fs from 'fs';
 import path from 'path';
 
 export async function POST(
@@ -94,13 +93,13 @@ export async function POST(
       );
     }
 
-    // Get user's posts with attachments
+    // Get user's posts with images
     const userPosts = await prisma.post.findMany({
       where: { authorId: userId },
       select: {
         id: true,
-        title: true,
         content: true,
+        images: true,
         createdAt: true,
         updatedAt: true,
         categoryIds: true,
@@ -116,14 +115,6 @@ export async function POST(
                 name: true
               }
             }
-          }
-        },
-        attachments: {
-          select: {
-            filename: true,
-            url: true,
-            mimeType: true,
-            size: true
           }
         },
         Comment: {
@@ -146,8 +137,8 @@ export async function POST(
         createdAt: true,
         Post: {
           select: {
-            title: true,
-            id: true
+            id: true,
+            content: true
           }
         }
       },
@@ -240,14 +231,14 @@ ${userPosts.map((post, index) => `
 POST ${index + 1}
 ========
 ID: ${post.id}
-Title: ${post.title}
+Content Preview: ${post.content?.substring(0, 100) || 'No content'}...
 Category: ${post.primaryCategory?.name || (post.postCategories.length > 0 ? post.postCategories[0].category.name : 'Uncategorized')}
 Multiple Categories: ${post.categoryIds?.length ? 'Yes (' + post.categoryIds.length + ' categories)' : 'No'}
 Created: ${post.createdAt?.toLocaleString()}
 Updated: ${post.updatedAt?.toLocaleString()}
 Comments: ${post.Comment?.length || 0}
-Attachments: ${post.attachments?.length || 0}
-${post.attachments.length > 0 ? `Files: ${post.attachments.map(att => `${att.filename} (${att.mimeType})`).join(', ')}` : 'No files'}
+Images: ${post.images?.length || 0}
+${post.images && post.images.length > 0 ? `Image URLs: ${post.images.join(', ')}` : 'No images'}
 
 Content:
 ${post.content || 'No content'}
@@ -268,7 +259,7 @@ ${userComments.map((comment, index) => `
 COMMENT ${index + 1}
 ============
 ID: ${comment.id}
-On Post: ${comment.Post?.title || 'Unknown'}
+On Post: ${comment.Post?.content?.substring(0, 50) || 'Unknown'}...
 Post ID: ${comment.Post?.id || 'Unknown'}
 Created: ${comment.createdAt?.toLocaleString()}
 
@@ -281,27 +272,25 @@ ${comment.content || 'No content'}
 
     zip.file("comments_data.txt", commentsData);
 
-    // 4. Add uploaded files to ZIP
-    const filesFolder = zip.folder("attachments");
-    const publicUploadsPath = path.join(process.cwd(), 'public', 'uploads');
+    // 4. Add uploaded images to ZIP
+    const filesFolder = zip.folder("images");
     
     let fileCount = 0;
     
     for (const post of userPosts) {
-      for (const attachment of post.attachments) {
-        try {
-          // Extract filename from URL (handle both full URLs and relative paths)
-          const filename = path.basename(attachment.url);
-          const filePath = path.join(publicUploadsPath, filename);
-          
-          // Check if file exists
-          if (fs.existsSync(filePath)) {
-            const fileBuffer = fs.readFileSync(filePath);
-            filesFolder?.file(attachment.filename, fileBuffer);
+      if (post.images && post.images.length > 0) {
+        for (const imageUrl of post.images) {
+          try {
+            // Extract filename from URL
+            const filename = path.basename(imageUrl);
+            
+            // For Vercel blob URLs, we'd need to fetch them
+            // For now, just record the URL in a text file
+            filesFolder?.file(`${filename}.txt`, `Image URL: ${imageUrl}`);
             fileCount++;
+          } catch (error) {
+            console.error(`Error processing image ${imageUrl}:`, error);
           }
-        } catch (error) {
-          console.error(`Error adding attachment ${attachment.filename}:`, error);
         }
       }
     }
@@ -319,7 +308,7 @@ CONTENTS OF THIS ARCHIVE
 ✓ profile_data.txt - Complete profile information
 ✓ posts_data.txt - All posts (${userPosts.length} posts)
 ✓ comments_data.txt - All comments (${userComments.length} comments)
-✓ attachments/ folder - Uploaded files (${fileCount} files)
+✓ images/ folder - Image URLs (${fileCount} image references)
 
 NOTES
 =====
