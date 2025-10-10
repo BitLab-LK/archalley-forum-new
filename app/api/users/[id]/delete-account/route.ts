@@ -159,22 +159,17 @@ export async function POST(
         where: { updatedById: id }
       });
 
-      // 8. Delete flags
-      await tx.flags.deleteMany({
-        where: { userId: id }
-      });
-
-      // 9. Delete sessions
+      // 8. Delete sessions
       await tx.session.deleteMany({
         where: { userId: id }
       });
 
-      // 10. Delete accounts (OAuth connections)
+      // 9. Delete accounts (OAuth connections)
       await tx.account.deleteMany({
         where: { userId: id }
       });
 
-      // 11. Finally delete the user
+      // 10. Finally delete the user
       await tx.users.delete({
         where: { id: id }
       });
