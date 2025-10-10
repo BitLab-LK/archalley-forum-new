@@ -30,6 +30,16 @@ export interface RolePermissions {
   canHidePosts: boolean
   canApproveFlags: boolean
   
+  // Reporting System
+  canReportPosts: boolean           // Can report posts for review
+  canViewReports: boolean           // Can view the moderation queue
+  canReviewReports: boolean         // Can review and act on reports
+  canEscalateReports: boolean       // Can escalate reports to higher authority
+  canDismissReports: boolean        // Can dismiss reports as invalid
+  canViewModerationQueue: boolean   // Can access moderation dashboard
+  canViewModerationHistory: boolean // Can view history of moderation actions
+  canPerformModerationActions: boolean // Can perform moderation actions
+  
   // Category Management
   canCreateCategories: boolean
   canEditCategories: boolean
@@ -70,13 +80,23 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canDeleteUsers: false,
         canViewUserDetails: true,
         
-        // Post Management - Full moderation powers
-        canEditPosts: true,
-        canDeletePosts: true,
+        // Post Management - Moderators can only change visibility, not edit/delete
+        canEditPosts: false,          // Only ADMIN and SUPER_ADMIN can edit posts
+        canDeletePosts: false,        // Only ADMIN and SUPER_ADMIN can delete posts
         canPinPosts: true,
         canLockPosts: true,
-        canHidePosts: true,
+        canHidePosts: true,           // Moderators can hide/unhide posts
         canApproveFlags: true,
+        
+        // Reporting System - Full moderation capabilities
+        canReportPosts: true,                   // Can report posts like any user
+        canViewReports: true,                   // Can access the moderation queue
+        canReviewReports: true,                 // Can review and act on reports
+        canEscalateReports: true,               // Can escalate complex cases
+        canDismissReports: true,                // Can dismiss invalid reports
+        canViewModerationQueue: true,           // Can access moderation dashboard
+        canViewModerationHistory: true,         // Can view moderation history
+        canPerformModerationActions: true,      // Can perform moderation actions
         
         // Category Management - Limited access for moderation
         canCreateCategories: true,
@@ -121,6 +141,16 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canHidePosts: true,
         canApproveFlags: true,
         
+        // Reporting System - Full access including escalation handling
+        canReportPosts: true,                   // Can report posts like any user
+        canViewReports: true,                   // Can access the moderation queue
+        canReviewReports: true,                 // Can review and act on reports
+        canEscalateReports: true,               // Can escalate to super admin
+        canDismissReports: true,                // Can dismiss reports
+        canViewModerationQueue: true,           // Full moderation queue access
+        canViewModerationHistory: true,         // Can view all moderation history
+        canPerformModerationActions: true,      // Can perform all moderation actions
+        
         // Category Management - Full access
         canCreateCategories: true,
         canEditCategories: true,
@@ -164,6 +194,16 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canHidePosts: true,
         canApproveFlags: true,
         
+        // Reporting System - Ultimate authority
+        canReportPosts: true,                   // Can report posts like any user
+        canViewReports: true,                   // Can access all reports
+        canReviewReports: true,                 // Can review and act on any report
+        canEscalateReports: false,              // No need to escalate - highest authority
+        canDismissReports: true,                // Can dismiss any report
+        canViewModerationQueue: true,           // Full access to moderation systems
+        canViewModerationHistory: true,         // Can view complete moderation history
+        canPerformModerationActions: true,      // Can perform any moderation action
+        
         // Category Management - Full access
         canCreateCategories: true,
         canEditCategories: true,
@@ -201,6 +241,17 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canLockPosts: false,
         canHidePosts: false,
         canApproveFlags: false,
+        
+        // Reporting System - Members can only report
+        canReportPosts: true,                   // Members can report inappropriate content
+        canViewReports: false,                  // Cannot access moderation queue
+        canReviewReports: false,                // Cannot review reports
+        canEscalateReports: false,              // Cannot escalate reports
+        canDismissReports: false,               // Cannot dismiss reports
+        canViewModerationQueue: false,          // No access to moderation queue
+        canViewModerationHistory: false,        // Cannot view moderation history
+        canPerformModerationActions: false,     // Cannot perform moderation actions
+        
         canCreateCategories: false,
         canEditCategories: false,
         canDeleteCategories: false,

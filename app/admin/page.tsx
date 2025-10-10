@@ -115,7 +115,7 @@ interface Post {
     reason: string
     status: string
     createdAt: string
-    users: {
+    user: {
       name: string
       email: string
     }
@@ -540,6 +540,88 @@ export default function AdminDashboard() {
 
     socket.on('stats-update', handleStatsUpdate)
 
+    // Handle flag resolution updates
+    const handleFlagsResolved = (data: any) => {
+      console.log('📋 Flags resolved update received:', data)
+      
+      // Update posts list to remove flags
+      setPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === data.postId 
+            ? {
+                ...post,
+                flags: [], // Clear all flags
+                stats: {
+                  ...post.stats,
+                  flags: 0 // Reset flag count
+                },
+                status: {
+                  ...post.status,
+                  isFlagged: false // Update flagged status
+                }
+              }
+            : post
+        )
+      )
+      
+      // Show success notification
+      toast.success(`Post flags resolved by ${data.resolvedBy.name}`, {
+        duration: 4000,
+        position: 'bottom-right'
+      })
+      
+      // Refresh stats to reflect changes
+      refreshStats()
+    }
+
+    // Handle general post moderation updates
+    const handlePostModerationUpdate = (data: any) => {
+      console.log('📝 Post moderation update received:', data)
+      
+      // Refresh posts if we're viewing the posts tab
+      if (activeTab === 'posts') {
+        refreshPosts(postStatusFilter, postSearchTerm)
+      }
+      
+      // Show notification for other users (not the one who made the change)
+      if (data.updatedBy.id !== authenticatedUser?.id) {
+        toast.info(`Post ${data.action} by ${data.updatedBy.name}`, {
+          duration: 3000,
+          position: 'bottom-right'
+        })
+      }
+    }
+
+    // Handle new flag creation
+    const handleNewFlagCreated = (data: any) => {
+      console.log('🚩 New flag created:', data)
+      
+      // Refresh posts if we're viewing the posts tab
+      if (activeTab === 'posts') {
+        refreshPosts(postStatusFilter, postSearchTerm)
+      }
+      
+      // Update stats
+      refreshStats()
+      
+      // Show notification
+      toast.info(data.message, {
+        duration: 4000,
+        position: 'bottom-right'
+      })
+    }
+
+    // Handle moderation stats updates
+    const handleModerationStatsUpdate = (data: any) => {
+      console.log('📊 Moderation stats update received:', data)
+      refreshStats()
+    }
+
+    socket.on('flagsResolved', handleFlagsResolved)
+    socket.on('postModerationUpdate', handlePostModerationUpdate)
+    socket.on('newFlagCreated', handleNewFlagCreated)
+    socket.on('moderationStatsUpdate', handleModerationStatsUpdate)
+
     // Handle socket errors
     const handleSocketError = (error: any) => {
       console.warn('Socket.IO error in admin stats:', error)
@@ -550,10 +632,14 @@ export default function AdminDashboard() {
     // Cleanup
     return () => {
       socket.off('stats-update', handleStatsUpdate)
+      socket.off('flagsResolved', handleFlagsResolved)
+      socket.off('postModerationUpdate', handlePostModerationUpdate)
+      socket.off('newFlagCreated', handleNewFlagCreated)
+      socket.off('moderationStatsUpdate', handleModerationStatsUpdate)
       socket.off('error', handleSocketError)
       socket.emit('leave-admin-stats')
     }
-  }, [socket, isConnected, authenticatedUser])
+  }, [socket, isConnected, authenticatedUser, activeTab, postStatusFilter, postSearchTerm, refreshStats])
 
   // Debug editingPost state changes
   useEffect(() => {
@@ -2399,7 +2485,7 @@ export default function AdminDashboard() {
                               <div className="space-y-1">
                                 {post.flags.map((flag) => (
                                   <div key={flag.id} className="text-xs text-red-700">
-                                    <span className="font-medium">{flag.reason}</span> by {flag.users.name}
+                                    <span className="font-medium">{flag.reason}</span> by {flag.user?.name || 'Unknown User'}
                                   </div>
                                 ))}
                               </div>

@@ -59,12 +59,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
+import { hasPermission } from "@/lib/role-permissions"
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
 import { useToast } from "@/hooks/use-toast"
 import PostImage from "@/components/post-image"
 import PostModal from "./post-modal"
 import { PostBadges } from "./post-badges"
 import ShareDropdown from "./share-dropdown"
+import { ReportPostModal } from "./report-post-modal"
 
 // ============================================================================
 // TYPE DEFINITIONS AND INTERFACES
@@ -270,6 +272,10 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   }, [post.categories, post.allCategories, post.images])
   const isAdmin = useMemo(() => user?.role === "ADMIN" || user?.role === "SUPER_ADMIN", [user?.role])
   const canDelete = useMemo(() => isAuthor || isAdmin, [isAuthor, isAdmin])
+  const canReport = useMemo(() => 
+    user && !isAuthor && hasPermission(user.role as any, 'canReportPosts'), 
+    [user, isAuthor]
+  )
   
   // ========================================================================
   // STATE MANAGEMENT
@@ -302,6 +308,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   const [modalOpen, setModalOpen] = useState(false)
   const [modalImageIndex, setModalImageIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
 
   // Ref for tracking previous values to enable parent component notifications
   // Prevents unnecessary parent updates when values haven't actually changed
@@ -905,10 +912,12 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                         {isDeleting ? "Deleting..." : (isAdmin && !isAuthor ? "Delete Post (Admin)" : "Delete Post")}
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem>
-                      <Flag className="w-4 h-4 mr-2" />
-                      Report Post
-                    </DropdownMenuItem>
+                    {canReport && (
+                      <DropdownMenuItem onClick={() => setIsReportModalOpen(true)}>
+                        <Flag className="w-4 h-4 mr-2" />
+                        Report Post
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -1083,6 +1092,15 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
         onCommentAdded={handleCommentAdded}
         onCommentCountUpdate={handleCommentCountUpdate}
         onTopCommentVoteChange={handleTopCommentVoteChange}
+      />
+
+      {/* Report Post Modal */}
+      <ReportPostModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        postId={post.id}
+        postContent={post.content}
+        postAuthor={post.isAnonymous ? 'Anonymous' : (post.author.name || 'Unknown User')}
       />
     </>
   )

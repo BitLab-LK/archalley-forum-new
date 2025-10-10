@@ -58,7 +58,20 @@ export async function GET(request: NextRequest) {
       orderBy: {
         [sortBy]: sortOrder
       },
-      include: {
+      select: {
+        id: true,
+        content: true,
+        images: true,
+        isAnonymous: true,
+        isPinned: true,
+        isLocked: true,
+        isHidden: true,
+        isFlagged: true,
+        flagCount: true,
+        createdAt: true,
+        updatedAt: true,
+        authorId: true,
+        primaryCategoryId: true,
         users: {
           select: {
             name: true,
@@ -141,7 +154,7 @@ export async function GET(request: NextRequest) {
         stats: {
           comments: post._count?.Comment || 0,
           votes: voteCount,
-          flags: post._count?.flags || 0
+          flags: post.flagCount || 0 // Use flagCount field directly
         },
         flags: postFlags,
         status: {
@@ -149,7 +162,7 @@ export async function GET(request: NextRequest) {
           isPinned: post.isPinned,
           isLocked: post.isLocked,
           isHidden: post.isHidden,
-          isFlagged: (post._count?.flags || 0) > 0
+          isFlagged: post.isFlagged // Use isFlagged field directly
         },
         createdAt: post.createdAt.toISOString(),
         updatedAt: post.updatedAt.toISOString()
@@ -216,12 +229,65 @@ export async function PATCH(request: NextRequest) {
         actionDescription = value ? 'hidden' : 'unhidden'
         break
       case 'approve':
-        // Mark all flags as resolved
-        await prisma.postFlag.updateMany({
-          where: { postId, status: 'PENDING' },
-          data: { status: 'RESOLVED' }
+        // Mark all pending and reviewed flags as resolved
+        const resolvedFlags = await prisma.postFlag.updateMany({
+          where: { 
+            postId, 
+            status: { in: ['PENDING', 'REVIEWED'] }
+          },
+          data: { 
+            status: 'RESOLVED',
+            reviewedBy: session.user.id,
+            reviewedAt: new Date(),
+            reviewNotes: 'Flags approved and resolved by admin'
+          }
         })
+        
+        // Update the post to remove flagged status since all flags are resolved
+        await prisma.post.update({
+          where: { id: postId },
+          data: {
+            isFlagged: false,
+            flagCount: 0,
+            moderationStatus: 'APPROVED'
+          }
+        })
+        
         actionDescription = 'approved (flags resolved)'
+        
+        // Broadcast real-time update to all admin dashboards
+        try {
+          const io = (global as any).io
+          if (io) {
+            // Broadcast to all users with admin privileges
+            io.emit('flagsResolved', {
+              postId,
+              resolvedBy: {
+                id: session.user.id,
+                name: session.user.name,
+                role: session.user.role
+              },
+              resolvedAt: new Date().toISOString(),
+              flagsCount: resolvedFlags.count,
+              message: `Post flags resolved by ${session.user.name}`
+            })
+            
+            // Also broadcast general post update
+            io.emit('postModerationUpdate', {
+              postId,
+              action: 'approve',
+              updatedBy: {
+                id: session.user.id,
+                name: session.user.name,
+                role: session.user.role
+              },
+              updatedAt: new Date().toISOString()
+            })
+          }
+        } catch (broadcastError) {
+          console.warn('Failed to broadcast flag resolution update:', broadcastError)
+          // Continue execution - don't fail the operation due to broadcast issues
+        }
         break
       default:
         return NextResponse.json(

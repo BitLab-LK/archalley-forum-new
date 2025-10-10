@@ -1,22 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { validateAdminAccess, logAdminAction } from '@/lib/admin-security'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { ReportingService } from '@/lib/reporting-service'
+import { hasPermission } from '@/lib/role-permissions'
+import { z } from 'zod'
 
+const reviewReportSchema = z.object({
+  status: z.enum(['REVIEWED', 'RESOLVED', 'DISMISSED', 'ESCALATED']),
+  reviewNotes: z.string().optional(),
+  moderationAction: z.enum([
+    'HIDE_POST',
+    'UNHIDE_POST',
+    'PIN_POST',
+    'UNPIN_POST',
+    'LOCK_POST',
+    'UNLOCK_POST',
+    'DELETE_POST'
+  ]).optional(),
+  moderationReason: z.string().optional()
+})
+
+/**
+ * PATCH /api/flags/[flagId] - Review a report
+ */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ flagId: string }> }
 ) {
   try {
-    const validationResult = await validateAdminAccess(request)
-    if (!validationResult.isValid || !validationResult.session?.user?.id) {
-      return validationResult.response
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
     }
-    const { session } = validationResult
+
+    // Check if user can review reports
+    if (!hasPermission(session.user.role as any, 'canReviewReports')) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions to review reports' },
+        { status: 403 }
+      )
+    }
 
     const { flagId } = await params
-    const body = await request.json()
-    const { status, adminNote } = body
-
+    
     if (!flagId) {
       return NextResponse.json(
         { error: 'Flag ID is required' },
@@ -24,69 +54,96 @@ export async function PATCH(
       )
     }
 
-    if (!status || !['REVIEWED', 'RESOLVED', 'DISMISSED'].includes(status)) {
+    const body = await request.json()
+    const validationResult = reviewReportSchema.safeParse(body)
+    
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Valid status is required (REVIEWED, RESOLVED, DISMISSED)' },
+        { 
+          error: 'Invalid input',
+          details: validationResult.error.errors
+        },
         { status: 400 }
       )
     }
 
-    const flag = await prisma.postFlag.findUnique({
-      where: { id: flagId }
-    })
+    const { status, reviewNotes, moderationAction, moderationReason } = validationResult.data
 
-    if (!flag) {
+    // Check escalation permissions
+    if (status === 'ESCALATED' && !hasPermission(session.user.role as any, 'canEscalateReports')) {
       return NextResponse.json(
-        { error: 'Flag not found' },
-        { status: 404 }
+        { error: 'Insufficient permissions to escalate reports' },
+        { status: 403 }
       )
     }
 
-    const updatedFlag = await prisma.postFlag.update({
-      where: { id: flagId },
-      data: {
-        status: status,
-        reviewedBy: session.user.id,
-        reviewedAt: new Date(),
-        reviewNotes: adminNote
-      }
-    })
+    // Check moderation action permissions
+    if (moderationAction && !hasPermission(session.user.role as any, 'canPerformModerationActions')) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions to perform moderation actions' },
+        { status: 403 }
+      )
+    }
 
-    await logAdminAction(session.user.id, 'FLAG_UPDATED', {
-      flagId,
-      newStatus: status,
-      adminNote,
-      postId: flag.postId
-    })
+    const result = await ReportingService.reviewReport(
+      session.user.id,
+      {
+        flagId,
+        status: status as any,
+        reviewNotes,
+        moderationAction: moderationAction as any,
+        moderationReason
+      }
+    )
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 400 }
+      )
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Flag ${status.toLowerCase()} successfully`,
-      flag: updatedFlag
+      message: `Report ${status.toLowerCase()} successfully`
     })
 
   } catch (error) {
-    console.error('Error updating flag:', error)
+    console.error('Error reviewing report:', error)
     return NextResponse.json(
-      { error: 'Failed to update flag' },
+      { error: 'Failed to review report' },
       { status: 500 }
     )
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
+/**
+ * GET /api/flags/[flagId] - Get specific report details
+ */
+export async function GET(
+  _request: NextRequest,
   { params }: { params: Promise<{ flagId: string }> }
 ) {
   try {
-    const validationResult = await validateAdminAccess(request)
-    if (!validationResult.isValid || !validationResult.session?.user?.id) {
-      return validationResult.response
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
     }
-    const { session } = validationResult
+
+    // Check if user can view reports
+    if (!hasPermission(session.user.role as any, 'canViewReports')) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions to view reports' },
+        { status: 403 }
+      )
+    }
 
     const { flagId } = await params
-
+    
     if (!flagId) {
       return NextResponse.json(
         { error: 'Flag ID is required' },
@@ -94,35 +151,32 @@ export async function DELETE(
       )
     }
 
-    const flag = await prisma.postFlag.findUnique({
-      where: { id: flagId }
-    })
+    const reports = await ReportingService.getReports('PENDING', 1, 1000)
+    const report = reports.reports.find(r => r.id === flagId)
 
-    if (!flag) {
+    if (!report) {
+      // Try other statuses
+      const allStatuses = ['REVIEWED', 'RESOLVED', 'DISMISSED', 'ESCALATED']
+      for (const status of allStatuses) {
+        const otherReports = await ReportingService.getReports(status as any, 1, 1000)
+        const foundReport = otherReports.reports.find(r => r.id === flagId)
+        if (foundReport) {
+          return NextResponse.json({ report: foundReport })
+        }
+      }
+      
       return NextResponse.json(
-        { error: 'Flag not found' },
+        { error: 'Report not found' },
         { status: 404 }
       )
     }
 
-    await prisma.postFlag.delete({
-      where: { id: flagId }
-    })
-
-    await logAdminAction(session.user.id, 'FLAG_DELETED', {
-      flagId,
-      postId: flag.postId
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: 'Flag deleted successfully'
-    })
+    return NextResponse.json({ report })
 
   } catch (error) {
-    console.error('Error deleting flag:', error)
+    console.error('Error fetching report:', error)
     return NextResponse.json(
-      { error: 'Failed to delete flag' },
+      { error: 'Failed to fetch report' },
       { status: 500 }
     )
   }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { ReportingService } from '@/lib/reporting-service'
+import { hasPermission } from '@/lib/role-permissions'
 import { z } from 'zod'
 
 // Validation schema for flag creation
@@ -9,18 +10,30 @@ const createFlagSchema = z.object({
   postId: z.string().min(1, 'Post ID is required'),
   reason: z.enum([
     'SPAM',
-    'INAPPROPRIATE_CONTENT',
     'HARASSMENT',
+    'HATE_SPEECH',
+    'INAPPROPRIATE_CONTENT',
     'MISINFORMATION',
     'COPYRIGHT_VIOLATION',
+    'PERSONAL_INFORMATION',
     'OFF_TOPIC',
+    'DUPLICATE_CONTENT',
+    'SCAM_FRAUD',
+    'VIOLENCE_THREATS',
+    'SEXUAL_CONTENT',
+    'ILLEGAL_CONTENT',
     'OTHER'
   ], {
     errorMap: () => ({ message: 'Invalid reason' })
   }),
-  details: z.string().optional()
+  customReason: z.string().optional(),
+  description: z.string().optional(),
+  severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional()
 })
 
+/**
+ * POST /api/flags - Create a new report
+ */
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -29,6 +42,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      )
+    }
+
+    // Check if user can report posts
+    if (!hasPermission(session.user.role as any, 'canReportPosts')) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions to report posts' },
+        { status: 403 }
       )
     }
 
@@ -45,70 +66,51 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { postId, reason, details } = validationResult.data
+    const { postId, reason, customReason, description, severity } = validationResult.data
 
-    // Check if post exists
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
-      select: { id: true, authorId: true }
-    })
+    // Get client IP and user agent for security tracking
+    const forwarded = request.headers.get('x-forwarded-for')
+    const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip')
+    const userAgent = request.headers.get('user-agent')
 
-    if (!post) {
-      return NextResponse.json(
-        { error: 'Post not found' },
-        { status: 404 }
-      )
-    }
-
-    // Prevent users from flagging their own posts
-    if (post.authorId === session.user.id) {
-      return NextResponse.json(
-        { error: 'You cannot flag your own post' },
-        { status: 400 }
-      )
-    }
-
-    // Check if user has already flagged this post
-    const existingFlag = await prisma.postFlag.findFirst({
-      where: {
-        userId: session.user.id,
-        postId: postId
-      }
-    })
-
-    if (existingFlag) {
-      return NextResponse.json(
-        { error: 'You have already flagged this post' },
-        { status: 400 }
-      )
-    }
-
-    // Create the flag
-    const flag = await prisma.postFlag.create({
-      data: {
-        userId: session.user.id,
-        postId: postId,
+    const result = await ReportingService.createReport(
+      session.user.id,
+      {
+        postId,
         reason: reason as any,
-        customReason: details,
-        status: 'PENDING'
-      }
-    })
+        customReason,
+        description,
+        severity: severity as any
+      },
+      ip || undefined,
+      userAgent || undefined
+    )
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 400 }
+      )
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Post flagged successfully',
-      flagId: flag.id
+      message: 'Post reported successfully',
+      flagId: result.flagId
     })
 
   } catch (error) {
-    console.error('Error creating flag:', error)
+    console.error('Error creating report:', error)
     return NextResponse.json(
-      { error: 'Failed to flag post' },
+      { error: 'Failed to report post' },
       { status: 500 }
     )
   }
 }
 
+/**
+ * GET /api/flags - Get reports for moderation queue
+ */
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -120,13 +122,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Check if user is admin/moderator
-    const userRole = session.user.role
-    const isAuthorized = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'MODERATOR'
-    
-    if (!isAuthorized) {
+    // Check if user can view reports
+    if (!hasPermission(session.user.role as any, 'canViewReports')) {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'Insufficient permissions to view reports' },
         { status: 403 }
       )
     }
@@ -134,49 +133,31 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || 'PENDING'
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100) // Max 100 per page
+    const severity = searchParams.get('severity') as any
 
-    const flags = await prisma.postFlag.findMany({
-      where: {
-        status: status as any
-      },
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true,
-            image: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      skip: (page - 1) * limit,
-      take: limit
-    })
+    // Validate status
+    const validStatuses = ['PENDING', 'REVIEWED', 'RESOLVED', 'DISMISSED', 'ESCALATED']
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: 'Invalid status parameter' },
+        { status: 400 }
+      )
+    }
 
-    const totalFlags = await prisma.postFlag.count({
-      where: {
-        status: status as any
-      }
-    })
+    const result = await ReportingService.getReports(
+      status as any,
+      page,
+      limit,
+      severity
+    )
 
-    return NextResponse.json({
-      flags,
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(totalFlags / limit),
-        totalFlags,
-        hasNext: page < Math.ceil(totalFlags / limit),
-        hasPrev: page > 1
-      }
-    })
+    return NextResponse.json(result)
 
   } catch (error) {
-    console.error('Error fetching flags:', error)
+    console.error('Error fetching reports:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch flags' },
+      { error: 'Failed to fetch reports' },
       { status: 500 }
     )
   }
