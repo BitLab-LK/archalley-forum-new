@@ -52,6 +52,7 @@ export function PostBadges({
       maxDisplay={maxDisplay}
       size={size as 'xs' | 'sm' | 'md' | 'lg'}
       showTooltip={true}
+      showNames={false}
       className={className}
     />
   )

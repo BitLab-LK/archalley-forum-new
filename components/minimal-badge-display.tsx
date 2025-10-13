@@ -1,8 +1,22 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { 
+  Star, 
+  Award, 
+  Crown, 
+  Diamond,
+  Zap,
+  MessageSquare,
+  Shield,
+  Trophy,
+  CheckCircle,
+  Sparkles,
+  Target,
+  GraduationCap
+} from 'lucide-react'
 
 interface BadgeData {
   id: string
@@ -11,6 +25,7 @@ interface BadgeData {
   level: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | string
   type: string
   color?: string
+  icon?: string
 }
 
 interface UserBadge {
@@ -24,6 +39,7 @@ interface MinimalBadgeDisplayProps {
   maxDisplay?: number
   size?: 'xs' | 'sm' | 'md' | 'lg'
   showTooltip?: boolean
+  showNames?: boolean
   className?: string
 }
 
@@ -33,6 +49,7 @@ const MinimalBadgeDisplay = ({
   maxDisplay = 3,
   size = 'sm',
   showTooltip = true,
+  showNames = false,
   className = '' 
 }: MinimalBadgeDisplayProps) => {
   
@@ -43,26 +60,22 @@ const MinimalBadgeDisplay = ({
     xs: { 
       size: 'w-4 h-4', 
       text: 'text-[8px]', 
-      spacing: 'gap-1',
-      fontSize: '8px'
+      spacing: 'gap-1'
     },
     sm: { 
       size: 'w-5 h-5', 
       text: 'text-[9px]', 
-      spacing: 'gap-1',
-      fontSize: '9px'
+      spacing: 'gap-1'
     },
     md: { 
       size: 'w-6 h-6', 
       text: 'text-[10px]', 
-      spacing: 'gap-1.5',
-      fontSize: '10px'
+      spacing: 'gap-1.5'
     },
     lg: { 
       size: 'w-7 h-7', 
       text: 'text-xs', 
-      spacing: 'gap-2',
-      fontSize: '11px'
+      spacing: 'gap-2'
     }
   }
 
@@ -77,39 +90,138 @@ const MinimalBadgeDisplay = ({
     return colors[level as keyof typeof colors] || colors.SILVER
   }
 
-  // Simple, minimal badge icons - just dots with level styling
-  const getMinimalIcon = (level: string) => {
-    // Use simple geometric shapes based on level
-    switch (level) {
-      case 'BRONZE': return '●'
-      case 'SILVER': return '◆' 
-      case 'GOLD': return '★'
-      case 'PLATINUM': return '♦'
-      default: return '●'
+  // Professional minimalistic icon mapping
+  const getBadgeIcon = (badgeId: string, badgeType: string, level: string) => {
+    // Primary mapping by badge ID for specific badges
+    const iconMap: Record<string, React.ComponentType<any>> = {
+      // Activity Badges
+      'first-post': Star,
+      'active-contributor': Zap,
+      'prolific-writer': Award,
+      'content-creator': Diamond,
+      
+      // Engagement Badges
+      'conversationalist': MessageSquare,
+      'discussion-leader': Target,
+      'community-voice': MessageSquare,
+      
+      // Appreciation Badges
+      'helpful': Star,
+      'well-liked': Trophy,
+      'community-favorite': Crown,
+      'expert': Sparkles,
+      
+      // Achievement Badges
+      'problem-solver': CheckCircle,
+      'mentor': GraduationCap,
+      'guru': Sparkles,
+      
+      // Tenure Badges
+      'newcomer': Target,
+      'regular': Shield,
+      'veteran': Award,
+      'legend': Crown,
+      
+      // Quality Badges
+      'trending': Trophy,
+      'viral': Diamond,
+      'verified-expert': CheckCircle,
     }
+
+    // Fallback by badge type
+    const typeIcons: Record<string, React.ComponentType<any>> = {
+      'ACTIVITY': Zap,
+      'ENGAGEMENT': MessageSquare,
+      'APPRECIATION': Trophy,
+      'TENURE': Shield,
+      'ACHIEVEMENT': Award,
+      'QUALITY': CheckCircle,
+    }
+
+    // Level fallback icons
+    const levelIcons: Record<string, React.ComponentType<any>> = {
+      'BRONZE': Star,
+      'SILVER': Shield,
+      'GOLD': Trophy,
+      'PLATINUM': Crown,
+    }
+
+    // Return icon in priority order: specific badge ID > badge type > level > default
+    return iconMap[badgeId] || typeIcons[badgeType] || levelIcons[level] || Star
   }
 
   const displayBadges = badges.slice(0, maxDisplay)
   const remainingCount = badges.length - displayBadges.length
-  const { size: sizeClass, text, spacing, fontSize } = sizeConfig[size]
+  const { size: sizeClass, text, spacing } = sizeConfig[size]
 
-  const BadgeElement = ({ badge }: { badge: UserBadge }) => (
-    <div
-      className={cn(
-        'inline-flex items-center justify-center rounded-full border transition-all duration-200',
-        'hover:scale-110 hover:shadow-sm',
-        sizeClass,
-        getLevelColor(badge.badges.level),
-        'cursor-help font-medium'
-      )}
-      style={{ 
-        fontSize,
-        lineHeight: '1'
-      }}
-    >
-      {getMinimalIcon(badge.badges.level)}
-    </div>
-  )
+  const BadgeElement = ({ badge }: { badge: UserBadge }) => {
+    const IconComponent = getBadgeIcon(badge.badges.id, badge.badges.type, badge.badges.level)
+    const iconSize = size === 'xs' ? 10 : size === 'sm' ? 12 : size === 'md' ? 14 : 16
+    const [isHovered, setIsHovered] = useState(false)
+    
+    // Get level display name
+    const getLevelDisplayName = (level: string) => {
+      const levelNames = {
+        'BRONZE': 'Bronze',
+        'SILVER': 'Silver', 
+        'GOLD': 'Gold',
+        'PLATINUM': 'Platinum'
+      }
+      return levelNames[level as keyof typeof levelNames] || level
+    }
+    
+    if (showNames) {
+      // Show as pill-shaped badge with icon and level name
+      return (
+        <div
+          className={cn(
+            'inline-flex items-center gap-1.5 px-2 py-1 rounded-full border transition-all duration-200',
+            'hover:scale-105 hover:shadow-sm',
+            getLevelColor(badge.badges.level),
+            'cursor-help font-medium',
+            text
+          )}
+        >
+          <IconComponent 
+            size={iconSize} 
+            className="flex-shrink-0"
+            strokeWidth={2}
+          />
+          <span className="whitespace-nowrap">{getLevelDisplayName(badge.badges.level)}</span>
+        </div>
+      )
+    }
+    
+    // Show as circular icon only, expand to show level name on hover
+    return (
+      <div
+        className={cn(
+          'inline-flex items-center overflow-hidden rounded-full border transition-all duration-300 ease-out',
+          'hover:shadow-sm cursor-help',
+          getLevelColor(badge.badges.level),
+          isHovered ? 'gap-1.5 px-2 py-1' : 'justify-center',
+          isHovered ? '' : sizeClass
+        )}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <IconComponent 
+          size={iconSize} 
+          className="flex-shrink-0"
+          strokeWidth={2}
+        />
+        <span 
+          className={cn(
+            'whitespace-nowrap font-medium transition-all duration-300 ease-out',
+            text,
+            isHovered ? 'opacity-100 max-w-20' : 'opacity-0 max-w-0'
+          )}
+        >
+          {getLevelDisplayName(badge.badges.level)}
+        </span>
+      </div>
+    )
+  }
 
   if (!showTooltip) {
     return (
@@ -120,8 +232,9 @@ const MinimalBadgeDisplay = ({
         {remainingCount > 0 && (
           <div
             className={cn(
-              'inline-flex items-center justify-center rounded-full border bg-gray-50 border-gray-200 text-gray-500',
-              sizeClass,
+              'inline-flex items-center justify-center border bg-gray-50 border-gray-200 text-gray-500',
+              showNames ? 'px-2 py-1 rounded-full' : 'rounded-full',
+              showNames ? '' : sizeClass,
               text,
               'font-medium'
             )}
@@ -163,8 +276,9 @@ const MinimalBadgeDisplay = ({
             <TooltipTrigger asChild>
               <div
                 className={cn(
-                  'inline-flex items-center justify-center rounded-full border bg-gray-50 border-gray-200 text-gray-500',
-                  sizeClass,
+                  'inline-flex items-center justify-center border bg-gray-50 border-gray-200 text-gray-500',
+                  showNames ? 'px-2 py-1 rounded-full' : 'rounded-full',
+                  showNames ? '' : sizeClass,
                   text,
                   'font-medium cursor-help hover:scale-110 hover:shadow-sm transition-all duration-200'
                 )}

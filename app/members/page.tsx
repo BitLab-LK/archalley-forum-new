@@ -451,6 +451,7 @@ export default function MembersPage() {
                                 maxDisplay={3}
                                 size="sm"
                                 showTooltip={true}
+                                showNames={false}
                               />
                             </div>
                           )}
