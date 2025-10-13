@@ -9,7 +9,7 @@ const BADGE_DEFINITIONS = [
     id: 'first-post',
     name: 'First Steps',
     description: 'Posted your first contribution to the community',
-    icon: '⭐', // Modern star for first achievement
+    icon: 'star', // Clean star for first achievement
     color: '#10B981',
     type: BadgeType.ACTIVITY,
     level: BadgeLevel.BRONZE,
@@ -19,7 +19,7 @@ const BADGE_DEFINITIONS = [
     id: 'active-contributor',
     name: 'Active Contributor',
     description: 'Posted 10 contributions to the community',
-    icon: '⚡', // Lightning bolt for energy/activity
+    icon: 'zap', // Lightning bolt for energy/activity
     color: '#3B82F6',
     type: BadgeType.ACTIVITY,
     level: BadgeLevel.SILVER,
@@ -29,7 +29,7 @@ const BADGE_DEFINITIONS = [
     id: 'prolific-writer',
     name: 'Prolific Writer',
     description: 'Posted 50 contributions to the community',
-    icon: '🔥', // Fire icon for hot content
+    icon: 'award', // Award icon for achievement
     color: '#F59E0B',
     type: BadgeType.ACTIVITY,
     level: BadgeLevel.GOLD,
@@ -39,7 +39,7 @@ const BADGE_DEFINITIONS = [
     id: 'content-creator',
     name: 'Content Creator',
     description: 'Posted 100 contributions to the community',
-    icon: '💎', // Diamond for premium achievement
+    icon: 'diamond', // Diamond for premium achievement
     color: '#8B5CF6',
     type: BadgeType.ACTIVITY,
     level: BadgeLevel.PLATINUM,
@@ -51,7 +51,7 @@ const BADGE_DEFINITIONS = [
     id: 'conversationalist',
     name: 'Conversationalist',
     description: 'Made 25 thoughtful comments',
-    icon: '💬', // Modern chat bubble
+    icon: 'message-square', // Modern chat bubble
     color: '#06B6D4',
     type: BadgeType.ENGAGEMENT,
     level: BadgeLevel.BRONZE,
@@ -61,7 +61,7 @@ const BADGE_DEFINITIONS = [
     id: 'discussion-leader',
     name: 'Discussion Leader',
     description: 'Made 100 thoughtful comments',
-    icon: '🎯', // Target for precision/leadership
+    icon: 'target', // Target for precision/leadership
     color: '#3B82F6',
     type: BadgeType.ENGAGEMENT,
     level: BadgeLevel.SILVER,
@@ -71,7 +71,7 @@ const BADGE_DEFINITIONS = [
     id: 'community-voice',
     name: 'Community Voice',
     description: 'Made 500 thoughtful comments',
-    icon: '📢', // Broadcasting/signal icon
+    icon: 'message-square', // Communication icon
     color: '#F59E0B',
     type: BadgeType.ENGAGEMENT,
     level: BadgeLevel.GOLD,
@@ -83,7 +83,7 @@ const BADGE_DEFINITIONS = [
     id: 'helpful',
     name: 'Helpful',
     description: 'Received 10 upvotes on your contributions',
-    icon: '⭐', // Clean star for recognition
+    icon: 'star', // Clean star for recognition
     color: '#10B981',
     type: BadgeType.APPRECIATION,
     level: BadgeLevel.BRONZE,
@@ -93,7 +93,7 @@ const BADGE_DEFINITIONS = [
     id: 'well-liked',
     name: 'Well Liked',
     description: 'Received 50 upvotes on your contributions',
-    icon: '🏆', // Trophy for achievement
+    icon: 'trophy', // Trophy for achievement
     color: '#EF4444',
     type: BadgeType.APPRECIATION,
     level: BadgeLevel.SILVER,
@@ -103,7 +103,7 @@ const BADGE_DEFINITIONS = [
     id: 'community-favorite',
     name: 'Community Favorite',
     description: 'Received 200 upvotes on your contributions',
-    icon: '👑', // Crown for high status
+    icon: 'crown', // Crown for high status
     color: '#F59E0B',
     type: BadgeType.APPRECIATION,
     level: BadgeLevel.GOLD,
@@ -113,7 +113,7 @@ const BADGE_DEFINITIONS = [
     id: 'expert',
     name: 'Expert',
     description: 'Received 500 upvotes on your contributions',
-    icon: '💫', // Sparkle/magic for expertise
+    icon: 'sparkles', // Sparkle/magic for expertise
     color: '#8B5CF6',
     type: BadgeType.APPRECIATION,
     level: BadgeLevel.PLATINUM,
@@ -125,7 +125,7 @@ const BADGE_DEFINITIONS = [
     id: 'newcomer',
     name: 'Newcomer',
     description: 'Welcome to the community!',
-    icon: '🎯', // Target for new beginning
+    icon: 'target', // Target for new beginning
     color: '#6B7280',
     type: BadgeType.TENURE,
     level: BadgeLevel.BRONZE,
@@ -135,7 +135,7 @@ const BADGE_DEFINITIONS = [
     id: 'regular',
     name: 'Regular',
     description: 'Active member for 30 days',
-    icon: '🔰', // Shield for established member
+    icon: 'shield', // Shield for established member
     color: '#3B82F6',
     type: BadgeType.TENURE,
     level: BadgeLevel.SILVER,
@@ -145,7 +145,7 @@ const BADGE_DEFINITIONS = [
     id: 'veteran',
     name: 'Veteran',
     description: 'Active member for 365 days',
-    icon: '⚔️', // Crossed swords for veteran
+    icon: 'award', // Award for veteran status
     color: '#F59E0B',
     type: BadgeType.TENURE,
     level: BadgeLevel.GOLD,
@@ -155,7 +155,7 @@ const BADGE_DEFINITIONS = [
     id: 'legend',
     name: 'Legend',
     description: 'Active member for 1000 days',
-    icon: '🏛️', // Classical building for legend status
+    icon: 'crown', // Crown for legend status
     color: '#8B5CF6',
     type: BadgeType.TENURE,
     level: BadgeLevel.PLATINUM,
@@ -167,7 +167,7 @@ const BADGE_DEFINITIONS = [
     id: 'problem-solver',
     name: 'Problem Solver',
     description: 'Provided 5 helpful answers',
-    icon: '🧩', // Puzzle piece for problem solving
+    icon: 'check-circle', // Check for problem solving
     color: '#10B981',
     type: BadgeType.ACHIEVEMENT,
     level: BadgeLevel.BRONZE,
@@ -177,7 +177,7 @@ const BADGE_DEFINITIONS = [
     id: 'mentor',
     name: 'Mentor',
     description: 'Provided 25 helpful answers',
-    icon: '🎓', // Graduation cap for teaching
+    icon: 'graduation-cap', // Graduation cap for teaching
     color: '#3B82F6',
     type: BadgeType.ACHIEVEMENT,
     level: BadgeLevel.SILVER,
@@ -187,7 +187,7 @@ const BADGE_DEFINITIONS = [
     id: 'guru',
     name: 'Guru',
     description: 'Provided 100 helpful answers',
-    icon: '🧠', // Brain for wisdom/knowledge
+    icon: 'sparkles', // Sparkles for wisdom/knowledge
     color: '#8B5CF6',
     type: BadgeType.ACHIEVEMENT,
     level: BadgeLevel.GOLD,
@@ -199,7 +199,7 @@ const BADGE_DEFINITIONS = [
     id: 'trending',
     name: 'Trending',
     description: 'Created a post with significant engagement',
-    icon: '📈', // Chart trending up
+    icon: 'trophy', // Trophy for trending content
     color: '#EF4444',
     type: BadgeType.QUALITY,
     level: BadgeLevel.SILVER,
@@ -209,7 +209,7 @@ const BADGE_DEFINITIONS = [
     id: 'viral',
     name: 'Viral',
     description: 'Created highly engaging content',
-    icon: '🚀', // Rocket for viral success
+    icon: 'diamond', // Diamond for viral success
     color: '#F59E0B',
     type: BadgeType.QUALITY,
     level: BadgeLevel.GOLD,
@@ -219,7 +219,7 @@ const BADGE_DEFINITIONS = [
     id: 'verified-expert',
     name: 'Verified Expert',
     description: 'Recognized expert in the community',
-    icon: '✅', // Check mark for verification
+    icon: 'check-circle-2', // Check mark for verification
     color: '#10B981',
     type: BadgeType.ACHIEVEMENT,
     level: BadgeLevel.PLATINUM,

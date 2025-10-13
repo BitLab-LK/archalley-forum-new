@@ -423,14 +423,18 @@ export default function MembersPage() {
                                 )}
                               </div>
                             ) : (
-                              <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
-                                {member.profession || 'Professional'}
-                              </p>
+                              member.profession && (
+                                <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
+                                  {member.profession}
+                                </p>
+                              )
                             )}
                           </div>
-                          <p className="text-gray-500 text-xs sm:text-sm mb-2 sm:mb-3">
-                            {member.company || 'Independent'}
-                          </p>
+                          {member.company && (
+                            <p className="text-gray-500 text-xs sm:text-sm mb-2 sm:mb-3">
+                              {member.company}
+                            </p>
+                          )}
 
                           {member.location && (
                             <div className="flex items-center text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">
