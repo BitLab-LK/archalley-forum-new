@@ -682,8 +682,9 @@ export default function HomePageInteractive({
   if ((isLoading && posts.length === 0) || !hasHydrated) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 mobile-no-overflow">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
-          <div className="homepage-layout">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
+          <div className="max-w-[80rem] mx-auto">
+            <div className="homepage-layout">
             {/* Main content - ensure consistent width */}
             <div className="homepage-content">
               {/* Skeleton for PostCreator - match actual PostCreator dimensions */}
@@ -772,6 +773,7 @@ export default function HomePageInteractive({
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </div>
       </div>
@@ -784,8 +786,9 @@ export default function HomePageInteractive({
   
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 mobile-no-overflow">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
-        <div className="homepage-layout">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
+        <div className="max-w-[80rem] mx-auto">
+          <div className="homepage-layout">
           {/* Main content area - maintains consistent width during loading */}
           <div className="homepage-content layout-stable">
             {/* Post creation component with optimistic updates and real-time callback */}
@@ -879,6 +882,7 @@ export default function HomePageInteractive({
           {/* Sidebar - maintains consistent width during loading states */}
           <div className="homepage-sidebar layout-stable">
             <LazySidebar />
+          </div>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+/* stylelint-disable at-rule-no-unknown */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -258,16 +259,23 @@
 }
 
 .homepage-content {
-  /* Mobile: Full width, Desktop: Main content area with consistent width */
+  /* Mobile: Full width layout within its column */
   flex: 1;
   min-width: 0; /* Allow flexbox shrinking */
   width: 100%;
-  max-width: none; /* No restriction on mobile */
+  padding-left: 0; /* Remove padding since container handles it */
+  padding-right: 0;
 }
 
 @media (min-width: 1024px) {
   .homepage-content {
-    max-width: 64rem; /* 4xl */
+    /* Match the header max-width for consistent alignment */
+    max-width: 80rem; /* ~1280px - same as header */
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 0; /* Remove extra padding since container already has padding */
+    padding-right: 0;
   }
 }
 
