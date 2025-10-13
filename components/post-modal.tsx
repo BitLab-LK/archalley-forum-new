@@ -16,8 +16,6 @@ interface PostModalProps {
       name: string
       avatar: string
       isVerified: boolean
-      rank: string
-      rankIcon: string
       badges?: any[]
     }
     content: string

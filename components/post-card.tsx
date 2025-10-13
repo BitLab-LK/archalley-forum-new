@@ -128,8 +128,6 @@ interface Post {
     name: string
     avatar: string
     isVerified: boolean
-    rank: string
-    rankIcon: string
     badges?: UserBadge[]
   }
   content: string

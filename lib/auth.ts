@@ -130,7 +130,7 @@ export const authOptions: NextAuthOptions = {
           if (!existingUser) {
             // Redirect to registration with OAuth data for account linking
             console.log(`New user detected for ${account.provider}, redirecting to complete profile`)
-            const redirectUrl = `/auth/register?provider=${account.provider}&email=${encodeURIComponent(user.email!)}&name=${encodeURIComponent(user.name || '')}&image=${encodeURIComponent(user.image || '')}&providerAccountId=${encodeURIComponent(account.providerAccountId)}&accessToken=${encodeURIComponent(account.access_token || '')}&tokenType=${encodeURIComponent(account.token_type || '')}&scope=${encodeURIComponent(account.scope || '')}&message=${encodeURIComponent('Complete your profile to join our community!')}`
+            const redirectUrl = `/auth/register?provider=${account.provider}&email=${encodeURIComponent(user.email!)}&name=${encodeURIComponent(user.name || '')}&image=${encodeURIComponent(user.image || '')}&providerAccountId=${encodeURIComponent(account.providerAccountId)}&message=${encodeURIComponent('Complete your profile to join our community!')}`
             return redirectUrl
           } else {
             // Check if this social account is already linked
@@ -152,13 +152,6 @@ export const authOptions: NextAuthOptions = {
                   type: account.type,
                   provider: account.provider,
                   providerAccountId: account.providerAccountId,
-                  refresh_token: account.refresh_token,
-                  access_token: account.access_token,
-                  expires_at: account.expires_at,
-                  token_type: account.token_type,
-                  scope: account.scope,
-                  id_token: account.id_token,
-                  session_state: account.session_state,
                 }
               })
             }

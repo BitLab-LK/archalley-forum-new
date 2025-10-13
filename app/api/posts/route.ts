@@ -97,8 +97,6 @@ interface TransformedPost {
     name: string
     avatar: string
     isVerified: boolean
-    rank: string
-    rankIcon: string
     badges: any[]
   }
   content: string
@@ -756,16 +754,12 @@ export async function POST(request: Request) {
         name: result.isAnonymous ? "Anonymous" : result.users.name,
         avatar: result.users.image || "/placeholder-user.jpg",
         isVerified: isUserVerified(result.users.userBadges),
-        rank: result.users.userBadges?.[0]?.badges?.name || "Member",
-        rankIcon: result.users.userBadges?.[0]?.badges?.icon || "🧑",
         badges: result.users.userBadges?.slice(0, 3) || [],
       } : {
         id: 'unknown',
         name: result.isAnonymous ? "Anonymous" : "User",
         avatar: "/placeholder-user.jpg",
         isVerified: false,
-        rank: "Member",
-        rankIcon: "🧑",
         badges: [],
       },
       // Add category field from the primary category
@@ -1537,7 +1531,6 @@ export async function GET(request: NextRequest) {
         const userVote = userVoteMap.get(post.id)?.toLowerCase() || null // Include user vote
         // Use images directly from the post
         const images = post.images || []
-        const primaryBadge = getPrimaryBadge(post.users.userBadges)
         const topComment = topCommentMap.get(post.id) || null
         
         // Get multiple categories for this post, avoiding duplicates
@@ -1557,8 +1550,6 @@ export async function GET(request: NextRequest) {
             name: post.isAnonymous ? "Anonymous" : post.users.name,
             avatar: post.users.image || "/placeholder.svg",
             isVerified: isUserVerified(post.users.userBadges),
-            rank: primaryBadge?.badges.name || "Member",
-            rankIcon: primaryBadge?.badges.icon || "👋",
             badges: post.users.userBadges?.slice(0, 3) || [], // Include top 3 badges
           },
           content: post.content,
@@ -1739,19 +1730,6 @@ function isUserVerified(userBadges: any[]): boolean {
   )
 }
 
-// Helper function to get the primary badge (highest level or most recent)
-function getPrimaryBadge(userBadges: any[]) {
-  if (!userBadges || userBadges.length === 0) return null
-  
-  // Priority: PLATINUM > GOLD > SILVER > BRONZE
-  const levelPriority = { PLATINUM: 4, GOLD: 3, SILVER: 2, BRONZE: 1 }
-  
-  return userBadges.reduce((best, current) => {
-    const currentLevel = levelPriority[current.badges.level as keyof typeof levelPriority] || 0
-    const bestLevel = best ? levelPriority[best.badges.level as keyof typeof levelPriority] || 0 : 0
-    
-    return currentLevel > bestLevel ? current : best
-  }, null)
-}
+
 
 

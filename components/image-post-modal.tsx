@@ -35,7 +35,6 @@ interface Comment {
   author: string
   authorId: string
   authorImage: string
-  authorRank?: string
   authorBadges?: any[]
   authorIsVerified?: boolean
   content: string
@@ -60,8 +59,6 @@ interface ImagePostModalProps {
       name: string
       avatar: string
       isVerified: boolean
-      rank: string
-      rankIcon: string
       badges?: any[]
     }
     content: string
@@ -327,7 +324,6 @@ export default function ImagePostModal({
       author: user?.name || "Anonymous",
       authorId: user?.id || "",
       authorImage: user?.image || "/placeholder-user.jpg",
-      authorRank: user?.rank || "NEW_MEMBER",
       content: commentInput.trim(),
       createdAt: new Date().toISOString(),
       upvotes: 0,
@@ -359,8 +355,7 @@ export default function ImagePostModal({
               ? {
                   ...data.comment,
                   author: data.comment.users?.name || "Anonymous",
-                  authorImage: data.comment.users?.image || "/placeholder-user.jpg",
-                  authorRank: "NEW_MEMBER" // Default rank since it's not in schema
+                  authorImage: data.comment.users?.image || "/placeholder-user.jpg"
                 }
               : comment
           )
@@ -433,7 +428,6 @@ export default function ImagePostModal({
       author: user?.name || "Anonymous",
       authorId: user?.id || "",
       authorImage: user?.image || "/placeholder-user.jpg",
-      authorRank: user?.rank || "NEW_MEMBER",
       content: replyInput.trim(),
       createdAt: new Date().toISOString(),
       parentId: replyTo,
@@ -475,8 +469,7 @@ export default function ImagePostModal({
                       ? {
                           ...data.comment,
                           author: data.comment.users?.name || "Anonymous",
-                          authorImage: data.comment.users?.image || "/placeholder-user.jpg",
-                          authorRank: "NEW_MEMBER" // Default rank since it's not in schema
+                          authorImage: data.comment.users?.image || "/placeholder-user.jpg"
                         } as Comment
                       : reply
                   ) || []

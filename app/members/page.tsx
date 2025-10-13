@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, MapPin, Calendar, CheckCircle, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import MinimalBadgeDisplay from "@/components/minimal-badge-display"
 
 interface Member {
   id: string
@@ -20,7 +21,16 @@ interface Member {
   professions: string[] | null
   company: string | null
   location: string | null
-  rank: string
+  badges: Array<{
+    id: string
+    name: string
+    description: string
+    icon: string
+    color: string
+    level: string
+    type: string
+  }>
+  badgeCount: number
   posts: number
   upvotes: number
   joinDate: string
@@ -429,9 +439,21 @@ export default function MembersPage() {
                             </div>
                           )}
 
-                          <Badge variant="secondary" className="mb-2 sm:mb-3 text-xs">
-                            {member.rank}
-                          </Badge>
+                          {/* Achievement Badges */}
+                          {member.badges && member.badges.length > 0 && (
+                            <div className="mb-2">
+                              <MinimalBadgeDisplay
+                                badges={member.badges.map(badge => ({
+                                  id: badge.id,
+                                  badges: badge,
+                                  earnedAt: new Date()
+                                }))}
+                                maxDisplay={3}
+                                size="sm"
+                                showTooltip={true}
+                              />
+                            </div>
+                          )}
 
                           <div className="flex justify-between text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-4">
                             <span>{member.posts} posts</span>

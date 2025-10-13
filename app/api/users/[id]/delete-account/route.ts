@@ -159,12 +159,7 @@ export async function POST(
         where: { updatedById: id }
       });
 
-      // 8. Delete sessions
-      await tx.session.deleteMany({
-        where: { userId: id }
-      });
-
-      // 9. Delete accounts (OAuth connections)
+      // 8. Delete accounts (OAuth connections)
       await tx.account.deleteMany({
         where: { userId: id }
       });

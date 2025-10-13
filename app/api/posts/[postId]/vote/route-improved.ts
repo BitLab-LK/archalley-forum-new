@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { createActivityNotification } from "@/lib/notification-service"
 import { sendNotificationEmail } from "@/lib/email-service"
 import { updateUserActivityAsync } from "@/lib/activity-service"
+import { badgeService } from "@/lib/badge-service"
 import { z } from "zod"
 
 // Enhanced validation schema
@@ -250,6 +251,25 @@ export async function POST(
         console.error("Error sending like notification:", error);
         // Don't fail the vote operation if notification fails
       }
+    }
+
+    // Check badges for post author if they received an upvote (async)
+    if (type === "UP" && result.operation !== "removed") {
+      setImmediate(async () => {
+        try {
+          const post = await prisma.post.findUnique({
+            where: { id: postId },
+            select: { authorId: true }
+          })
+          
+          if (post && post.authorId !== userId) { // Don't check badges for self-votes
+            console.log("🏆 Checking badges for post author after receiving upvote")
+            await badgeService.checkAndAwardBadges(post.authorId)
+          }
+        } catch (error) {
+          console.error("❌ Error checking badges after upvote:", error)
+        }
+      })
     }
 
     return NextResponse.json({

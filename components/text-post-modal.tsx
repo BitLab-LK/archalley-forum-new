@@ -32,8 +32,6 @@ interface TextPostModalProps {
       name: string
       avatar: string
       isVerified: boolean
-      rank: string
-      rankIcon: string
       badges?: any[]
     }
     content: string
@@ -62,7 +60,6 @@ interface Comment {
   author: string
   authorId: string
   authorImage: string
-  authorRank?: string
   authorBadges?: any[]
   authorIsVerified?: boolean
   content: string
@@ -323,7 +320,6 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
       author: user?.name || "Anonymous",
       authorId: user?.id || "",
       authorImage: user?.image || "/placeholder-user.jpg",
-      authorRank: user?.rank || "NEW_MEMBER",
       upvotes: 0,
       downvotes: 0,
       userVote: undefined,
@@ -642,7 +638,6 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
       author: user?.name || "Anonymous",
       authorId: user?.id || "",
       authorImage: user?.image || "/placeholder-user.jpg", 
-      authorRank: user?.rank || "NEW_MEMBER",
       content: replyInput.trim(),
       createdAt: new Date().toISOString(),
       parentId: replyTo,
@@ -680,7 +675,6 @@ export default function TextPostModal({ open, onClose, onCommentAdded, onComment
           author: data.comment.users.name,
           authorId: data.comment.authorId,
           authorImage: data.comment.users.image,
-          authorRank: data.comment.users.rank,
           content: data.comment.content,
           createdAt: data.comment.createdAt,
           parentId: data.comment.parentId,

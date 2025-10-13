@@ -128,10 +128,10 @@ export async function GET() {
       }
     }
 
+    // Badge system handles user status - no separate ranking needed
+
     // Transform the data to match the members page format
     const formattedUsers = publicUsers.map(user => {
-      const primaryBadge = user.userBadges?.[0]?.badges // Get the most recent badge
-      
       // Determine avatar based on privacy settings
       const avatarUrl = shouldShowProfilePhoto(user.profilePhotoPrivacy) 
         ? user.image 
@@ -144,9 +144,8 @@ export async function GET() {
         professions: user.professions,
         company: user.company,
         location: user.location,
-        rank: primaryBadge?.name || 'Member',
         badgeCount: user.userBadges?.length || 0,
-        badges: user.userBadges || [],
+        badges: user.userBadges?.map(ub => ub.badges) || [], // Extract badge info
         posts: user._count.Post,
         upvotes: upvoteMap.get(user.id) || 0, // Real upvote count from database (or 0 in production)
         joinDate: new Date(user.createdAt).toLocaleDateString('en-US', { 

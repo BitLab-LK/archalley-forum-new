@@ -158,9 +158,6 @@ const registerSchema = z.object({
   isSocialRegistration: z.boolean().nullable().optional(),
   provider: z.string().nullable().optional(),
   providerAccountId: z.string().nullable().optional(),
-  accessToken: z.string().nullable().optional(),
-  tokenType: z.string().nullable().optional(),
-  scope: z.string().nullable().optional(),
   websiteUrl: z.string().nullable().optional().refine((url) => {
     if (!url || url.trim() === '') return true
     try {
@@ -239,9 +236,6 @@ export async function POST(request: NextRequest) {
       isSocialRegistration,
       provider,
       providerAccountId,
-      accessToken,
-      tokenType,
-      scope,
       websiteUrl,
       socialMediaLinks,
       emailPrivacy,
@@ -381,9 +375,6 @@ export async function POST(request: NextRequest) {
             type: "oauth",
             provider: provider,
             providerAccountId: providerAccountId,
-            access_token: accessToken,
-            token_type: tokenType,
-            scope: scope,
           }
         })
       }

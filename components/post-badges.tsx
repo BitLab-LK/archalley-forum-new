@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { ProfessionalBadgeSystem } from './professional-badge-system'
+import MinimalBadgeDisplay from './minimal-badge-display'
 
 export interface BadgeData {
   id: string
@@ -37,23 +37,7 @@ export function PostBadges({
   
   if (!badges || badges.length === 0) return null
 
-  // Map size to ProfessionalBadgeSystem's expected sizes
-  const mapSize = (inputSize: string): 'sm' | 'md' | 'lg' => {
-    switch (inputSize) {
-      case 'sm':
-      case 'xs':
-        return 'sm'
-      case 'md':
-        return 'md'
-      case 'lg':
-      case 'xl':
-        return 'lg'
-      default:
-        return 'sm'
-    }
-  }
-
-  // Convert BadgeData[] to UserBadge[] format expected by ProfessionalBadgeSystem
+  // Convert BadgeData[] to UserBadge[] format expected by MinimalBadgeDisplay
   const userBadges: UserBadge[] = badges.map((badge, index) => ({
     id: badge.id || `badge-${index}`,
     badges: badge,
@@ -63,12 +47,10 @@ export function PostBadges({
   console.log('PostBadges converted userBadges:', userBadges);
 
   return (
-    <ProfessionalBadgeSystem
+    <MinimalBadgeDisplay
       badges={userBadges}
       maxDisplay={maxDisplay}
-      size={mapSize(size)}
-      variant="shield"
-      animated={true}
+      size={size as 'xs' | 'sm' | 'md' | 'lg'}
       showTooltip={true}
       className={className}
     />

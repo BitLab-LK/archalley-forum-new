@@ -13,13 +13,6 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
   user              users   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
@@ -86,23 +79,6 @@ model Post {
   @@index([moderatedBy])
   @@index([lastModeratedAt])
   @@index([createdAt, moderationStatus]) // Compound index for queries
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         users    @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-  id         String   @id @default(cuid())
-
-  @@unique([identifier, token])
 }
 
 model categories {
@@ -331,7 +307,6 @@ model users {
   Comment             Comment[]
   education           Education[]
   Post                Post[]
-  Session             Session[]
   workExperience      WorkExperience[]
   flags               PostFlag[]       // Updated relation name
   notifications       notifications[]

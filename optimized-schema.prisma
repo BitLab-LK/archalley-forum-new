@@ -1,0 +1,143 @@
+// Cleaned up Prisma schema sections
+
+// USERS TABLE - CLEANED VERSION
+model users {
+  id                  String           @id
+  name                String?
+  email               String           @unique
+  emailVerified       DateTime?
+  image               String?
+  password            String?
+  
+  // Professional Info (simplified)
+  company             String?
+  profession          String?
+  professions         String[]         @default([])
+  bio                 String?
+  headline            String?
+  industry            String?
+  
+  // Location
+  location            String?
+  city                String?
+  country             String?
+  
+  // Contact (consolidated)
+  phoneNumber         String?          // Removed: phone
+  portfolioUrl        String?          // Removed: website
+  
+  // Social Media (essential only)
+  linkedinUrl         String?
+  twitterUrl          String?
+  instagramUrl        String?
+  githubUrl           String?
+  facebookUrl         String?
+  youtubeUrl          String?
+  // Removed: behanceUrl, dribbbleUrl, tiktokUrl, otherSocialUrl
+  
+  // Skills & Experience
+  skills              String[]         @default([])
+  
+  // Privacy Settings
+  profileVisibility   Boolean          @default(true)
+  emailPrivacy        PrivacyLevel     @default(MEMBERS_ONLY)
+  phonePrivacy        PrivacyLevel     @default(ONLY_ME)
+  profilePhotoPrivacy PrivacyLevel     @default(EVERYONE)
+  
+  // User Management
+  role                UserRole         @default(MEMBER)
+  isVerified          Boolean          @default(false)
+  isSuspended         Boolean          @default(false)
+  suspendedUntil      DateTime?
+  suspendedBy         String?
+  suspensionReason    String?
+  moderationNotes     String?          // Keep for admin use
+  isBanned            Boolean          @default(false)
+  bannedAt            DateTime?
+  bannedBy            String?
+  banReason           String?
+  
+  // Notifications
+  emailDigest         EmailDigestFreq  @default(DISABLED)
+  emailNotifications  Boolean          @default(true)
+  notifyOnComment     Boolean          @default(true)
+  notifyOnLike        Boolean          @default(true)
+  notifyOnMention     Boolean          @default(true)
+  notifyOnNewPost     Boolean          @default(false)
+  notifyOnReply       Boolean          @default(true)
+  notifyOnSystem      Boolean          @default(true)
+  
+  // Security
+  twoFactorEnabled    Boolean          @default(false)
+  twoFactorSecret     String?
+  
+  // Timestamps
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime
+  lastActiveAt        DateTime         @default(now())
+  
+  // Relations (unchanged)
+  // ... all existing relations
+}
+
+// POSTS TABLE - CLEANED VERSION  
+model Post {
+  id                String         @id @default(cuid())
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  content           String
+  isAnonymous       Boolean        @default(false)
+  
+  // Moderation Status
+  isPinned          Boolean        @default(false)
+  isLocked          Boolean        @default(false)
+  isHidden          Boolean        @default(false)
+  isFlagged         Boolean        @default(false)
+  isApproved        Boolean        @default(true)
+  moderationStatus  ModerationStatus @default(APPROVED)
+  flagCount         Int            @default(0)
+  lastModeratedAt   DateTime?
+  moderatedBy       String?
+  moderationReason  String?
+  moderationNotes   String?
+  
+  // Content
+  images            String[]       @default([])
+  // Removed: viewCount, shareCount (not implemented)
+  
+  // AI Features (could be consolidated into JSON)
+  aiTags            String[]       @default([])
+  originalLanguage  String         @default("English")
+  translatedContent String?
+  aiSuggestions     Json?
+  
+  // Categories (simplified - use relations only)
+  primaryCategoryId String?
+  // Removed: categoryIds (use PostCategory relation instead)
+  
+  // Author
+  authorId          String
+  
+  // Relations
+  Comment           Comment[]
+  users             users          @relation(fields: [authorId], references: [id])
+  moderator         users?         @relation("PostModerator", fields: [moderatedBy], references: [id])
+  primaryCategory   categories?    @relation("PrimaryCategory", fields: [primaryCategoryId], references: [id])
+  postCategories    PostCategory[] // Use this instead of categoryIds array
+  flags             PostFlag[]
+  moderationActions ModerationAction[]
+
+  // Indexes (updated)
+  @@index([authorId])
+  @@index([primaryCategoryId])
+  @@index([moderationStatus])
+  @@index([isFlagged])
+  @@index([moderatedBy])
+  @@index([lastModeratedAt])
+  @@index([createdAt, moderationStatus])
+}
+
+// POTENTIAL AI METADATA CONSOLIDATION
+// Instead of separate aiTags, translatedContent, originalLanguage
+// Consider using:
+// aiMetadata Json? // Contains: {tags: [], translatedContent: "", originalLanguage: "", etc}
