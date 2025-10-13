@@ -281,7 +281,7 @@ export default function UserProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fade-in">
-      <main className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+      <main className="max-w-[80rem] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Back Button */}
         <div className="mb-4 sm:mb-6 animate-fade-in-up animate-delay-100">
           <Link href="/members">

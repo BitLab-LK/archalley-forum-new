@@ -1223,7 +1223,7 @@ function EditProfileContent() {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fade-in">
-        <main className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <main className="max-w-[80rem] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           {/* Header */}
           <div className="mb-4 sm:mb-8 animate-fade-in-up animate-delay-100">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
