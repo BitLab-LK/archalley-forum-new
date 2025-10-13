@@ -76,7 +76,7 @@ export async function POST(
         email: userData.email,
         bio: userData.bio,
         location: userData.location,
-        website: userData.website,
+        portfolioUrl: userData.portfolioUrl,
         company: userData.company,
         profession: userData.profession,
         linkedinUrl: userData.linkedinUrl,

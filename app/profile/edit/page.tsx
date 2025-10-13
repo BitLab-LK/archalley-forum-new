@@ -914,7 +914,7 @@ function EditProfileContent() {
       addInfoCard('Profession', data.profile.profession);
       addInfoCard('Industry', data.profile.industry);
       addInfoCard('Location', data.profile.location);
-      addInfoCard('Phone', data.profile.phone);
+      addInfoCard('Phone', data.profile.phoneNumber);
       addInfoCard('Website', data.profile.website);
       addInfoCard('Portfolio', data.profile.portfolioUrl);
       addInfoCard('Member Since', data.profile.memberSince);

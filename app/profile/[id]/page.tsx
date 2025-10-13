@@ -642,7 +642,7 @@ export default function UserProfilePage() {
                     </div>
                   )}
                   
-                  {(user.phoneNumber || user.phone) && shouldShowField(user.phonePrivacy || "MEMBERS_ONLY", privacyContext) && (
+                  {user.phoneNumber && shouldShowField(user.phonePrivacy || "MEMBERS_ONLY", privacyContext) && (
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
                         <Phone className="w-4 h-4 text-slate-600" />
@@ -656,7 +656,7 @@ export default function UserProfilePage() {
                             </span>
                           )}
                         </label>
-                        <p className="text-gray-900 dark:text-white font-medium">{user.phoneNumber || user.phone}</p>
+                        <p className="text-gray-900 dark:text-white font-medium">{user.phoneNumber}</p>
                       </div>
                     </div>
                   )}
@@ -665,7 +665,7 @@ export default function UserProfilePage() {
             </Card>
 
             {/* Links & Portfolio */}
-            {(user.portfolioUrl || user.website) && (
+            {user.portfolioUrl && (
               <Card className="hover:border-l-4 hover:border-l-slate-500 transition-all duration-200">
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -680,12 +680,12 @@ export default function UserProfilePage() {
                       <div>
                         <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Website/Portfolio</label>
                         <a 
-                          href={user.portfolioUrl || user.website} 
+                          href={user.portfolioUrl} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center gap-1"
                         >
-                          {user.portfolioUrl || user.website}
+                          {user.portfolioUrl}
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>

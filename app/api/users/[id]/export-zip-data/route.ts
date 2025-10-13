@@ -37,7 +37,7 @@ export async function POST(
         email: true,
         bio: true,
         location: true,
-        website: true,
+        portfolioUrl: true,
         company: true,
         profession: true,
         linkedinUrl: true,
@@ -54,7 +54,6 @@ export async function POST(
         lastName: true,
         phoneNumber: true,
         headline: true,
-        portfolioUrl: true,
         facebookUrl: true,
         emailNotifications: true,
         notifyOnComment: true,
@@ -171,7 +170,7 @@ Profession: ${userData.profession || 'N/A'}
 Industry: ${userData.industry || 'N/A'}
 Location: ${location}
 Phone: ${userData.phoneNumber || 'N/A'}
-Website: ${userData.website || 'N/A'}
+Website: ${userData.portfolioUrl || 'N/A'}
 Portfolio: ${userData.portfolioUrl || 'N/A'}
 Skills: ${userData.skills ? userData.skills.join(', ') : 'N/A'}
 Member Since: ${userData.createdAt?.toLocaleDateString() || 'N/A'}

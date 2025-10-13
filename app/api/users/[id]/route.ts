@@ -44,13 +44,6 @@ const updateUserSchema = z.object({
   company: z.string().optional(),
   profession: z.string().optional(),
   location: z.string().optional(),
-  website: z.string().optional(),
-  phone: z.string().optional().refine((phone) => {
-    if (!phone || phone.trim() === '') return true
-    // Basic phone number validation (international format)
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
-    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))
-  }, "Invalid phone number format"),
   profileVisibility: z.boolean().optional(),
   twitterUrl: z.string().optional(),
 })
@@ -176,8 +169,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       profession: user.profession,
       company: user.company,
       location: user.location,
-      website: user.website,
-      phone: shouldShowField(user.phonePrivacy) ? user.phone : undefined,
       twitterUrl: user.twitterUrl,
       
       // System fields
@@ -241,18 +232,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const updateData = updateUserSchema.parse(body)
 
     // Check if phone number already exists (if provided and different from current)
-    if ((updateData.phoneNumber && updateData.phoneNumber.trim() !== '') || 
-        (updateData.phone && updateData.phone.trim() !== '')) {
-      const phoneToCheck = updateData.phoneNumber || updateData.phone
-      
+    if (updateData.phoneNumber && updateData.phoneNumber.trim() !== '') {
       const existingUserByPhone = await prisma.users.findFirst({
         where: { 
           AND: [
             {
-              OR: [
-                { phone: phoneToCheck },
-                { phoneNumber: phoneToCheck }
-              ]
+              phoneNumber: updateData.phoneNumber
             },
             {
               id: {
@@ -291,19 +276,23 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         bio: true,
         portfolioUrl: true,
         
-        // Social Media
+        // Social Media URLs
         linkedinUrl: true,
         facebookUrl: true,
         instagramUrl: true,
-        
+        twitterUrl: true,
+        githubUrl: true,
+        youtubeUrl: true,
+        tiktokUrl: true,
+        behanceUrl: true,
+        dribbbleUrl: true,
+        otherSocialUrl: true,
+
         // Legacy fields
         company: true,
         profession: true,
         location: true,
-        website: true,
-        phone: true,
         profileVisibility: true,
-        twitterUrl: true,
         
         // System fields
         role: true,
@@ -328,7 +317,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       
       // Check if it's a phone number format error
       const phoneError = fieldErrors.find(err => 
-        (err.field === 'phoneNumber' || err.field === 'phone') && 
+        err.field === 'phoneNumber' && 
         err.message === 'Invalid phone number format'
       )
       

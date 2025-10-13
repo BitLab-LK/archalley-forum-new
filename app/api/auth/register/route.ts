@@ -200,10 +200,7 @@ export async function POST(request: NextRequest) {
     if (phoneNumber && phoneNumber.trim() !== '') {
       const existingUserByPhone = await prisma.users.findFirst({
         where: { 
-          OR: [
-            { phone: phoneNumber },
-            { phoneNumber: phoneNumber }
-          ]
+          phoneNumber: phoneNumber
         }
       })
 
@@ -237,6 +234,7 @@ export async function POST(request: NextRequest) {
       provider,
       providerAccountId,
       websiteUrl,
+      portfolioLinks,
       socialMediaLinks,
       emailPrivacy,
       phonePrivacy,
@@ -320,7 +318,6 @@ export async function POST(request: NextRequest) {
           firstName: validatedFirstName,
           lastName: validatedLastName,
           email: validatedEmail as string,
-          phone: validatedPhoneNumber || null,
           phoneNumber: validatedPhoneNumber || null,
           password: hashedPassword,
           
@@ -340,20 +337,19 @@ export async function POST(request: NextRequest) {
           // Profile image
           image: profileImageUrl || null,
           
-          // URLs
+          // URLs and Portfolio
           portfolioUrl: portfolioUrl || websiteUrl || null,
-          website: websiteUrl || portfolioUrl || null,
+          portfolioLinks: portfolioLinks || [],
           linkedinUrl: processedLinkedinUrl || null,
           facebookUrl: processedFacebookUrl || null,
           instagramUrl: processedInstagramUrl || null,
           twitterUrl: processedTwitterUrl || null,
-          // TODO: Add these fields after database migration
-          // githubUrl: processedGithubUrl || null,
-          // youtubeUrl: processedYoutubeUrl || null,
-          // tiktokUrl: processedTiktokUrl || null,
-          // behanceUrl: processedBehanceUrl || null,
-          // dribbbleUrl: processedDribbbleUrl || null,
-          // otherSocialUrl: processedOtherSocialUrl || null,
+          githubUrl: processedGithubUrl || null,
+          youtubeUrl: processedYoutubeUrl || null,
+          tiktokUrl: processedTiktokUrl || null,
+          behanceUrl: processedBehanceUrl || null,
+          dribbbleUrl: processedDribbbleUrl || null,
+          otherSocialUrl: processedOtherSocialUrl || null,
           
           // Privacy settings
           emailPrivacy: emailPrivacy || "EVERYONE",

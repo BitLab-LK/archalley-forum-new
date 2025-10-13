@@ -251,8 +251,6 @@ model users {
   profession          String?
   bio                 String?
   location            String?
-  website             String?
-  phone               String?
   profileVisibility   Boolean          @default(true)
   linkedinUrl         String?
   twitterUrl          String?
@@ -281,6 +279,7 @@ model users {
   lastName            String?
   phoneNumber         String?
   portfolioUrl        String?
+  portfolioLinks      String[]         @default([])
   skills              String[]         @default([])
   behanceUrl          String?
   dribbbleUrl         String?
