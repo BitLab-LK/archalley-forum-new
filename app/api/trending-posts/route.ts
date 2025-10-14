@@ -47,9 +47,10 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const limit = Math.min(parseInt(searchParams.get('limit') || '5'), 20)
+    const forceRefresh = searchParams.get('refresh') === 'true'
 
-    // Check cache first
-    const cached = trendingCache.get()
+    // Check cache first (unless forced refresh)
+    const cached = !forceRefresh ? trendingCache.get() : null
     if (cached) {
       console.log('✅ Trending Cache: Cache hit')
       return NextResponse.json({
@@ -61,53 +62,59 @@ export async function GET(request: NextRequest) {
 
     console.log('🔄 Trending Cache: Cache miss, fetching from database...')
 
-    // Fetch trending posts using optimized query
+    // Fetch trending posts using optimized query with subquery for proper ordering
     const trendingPosts = await prisma.$queryRaw`
-      SELECT 
-        p.id,
-        p.content,
-        p."createdAt",
-        p."isAnonymous",
-        u.name as "authorName",
-        u.image as "authorImage",
-        pc.name as "categoryName",
-        pc.color as "categoryColor",
-        COALESCE(vote_counts.upvotes, 0) as upvotes,
-        COALESCE(vote_counts.downvotes, 0) as downvotes,
-        COALESCE(comment_counts.comment_count, 0) as comments
-      FROM "Post" p
-      JOIN users u ON p."authorId" = u.id
-      LEFT JOIN categories pc ON p."primaryCategoryId" = pc.id
-      LEFT JOIN (
+      WITH scored_posts AS (
         SELECT 
-          "postId",
-          COUNT(CASE WHEN type = 'UP' THEN 1 END)::int as upvotes,
-          COUNT(CASE WHEN type = 'DOWN' THEN 1 END)::int as downvotes
-        FROM votes 
-        WHERE "postId" IS NOT NULL 
-        GROUP BY "postId"
-      ) vote_counts ON p.id = vote_counts."postId"
-      LEFT JOIN (
-        SELECT 
-          "postId",
-          COUNT(*)::int as comment_count
-        FROM "Comment"
-        GROUP BY "postId"
-      ) comment_counts ON p.id = comment_counts."postId"
-      WHERE 
-        p."isHidden" = false 
-        AND p."moderationStatus" = 'APPROVED'
-        AND p."createdAt" >= NOW() - INTERVAL '7 days' -- Only posts from last 7 days
+          p.id,
+          p.content,
+          p."createdAt",
+          p."isAnonymous",
+          p."isPinned",
+          u.name as "authorName",
+          u.image as "authorImage",
+          pc.name as "categoryName",
+          pc.color as "categoryColor",
+          COALESCE(vote_counts.upvotes, 0) as upvotes,
+          COALESCE(vote_counts.downvotes, 0) as downvotes,
+          COALESCE(comment_counts.comment_count, 0) as comments,
+          ((COALESCE(vote_counts.upvotes, 0) * 3) - COALESCE(vote_counts.downvotes, 0) + (COALESCE(comment_counts.comment_count, 0) * 2)) as engagement_score
+        FROM "Post" p
+        JOIN users u ON p."authorId" = u.id
+        LEFT JOIN categories pc ON p."primaryCategoryId" = pc.id
+        LEFT JOIN (
+          SELECT 
+            "postId",
+            COUNT(CASE WHEN type = 'UP' THEN 1 END)::int as upvotes,
+            COUNT(CASE WHEN type = 'DOWN' THEN 1 END)::int as downvotes
+          FROM votes 
+          WHERE "postId" IS NOT NULL 
+          GROUP BY "postId"
+        ) vote_counts ON p.id = vote_counts."postId"
+        LEFT JOIN (
+          SELECT 
+            "postId",
+            COUNT(*)::int as comment_count
+          FROM "Comment"
+          GROUP BY "postId"
+        ) comment_counts ON p.id = comment_counts."postId"
+        WHERE 
+          p."isHidden" = false 
+          AND p."moderationStatus" = 'APPROVED'
+      )
+      SELECT *
+      FROM scored_posts
       ORDER BY 
-        p."isPinned" DESC,
-        (COALESCE(vote_counts.upvotes, 0) + COALESCE(comment_counts.comment_count, 0)) DESC,
-        p."createdAt" DESC
+        "isPinned" DESC,
+        engagement_score DESC,
+        "createdAt" DESC
       LIMIT 20
     ` as Array<{
       id: string;
       content: string;
       createdAt: Date;
       isAnonymous: boolean;
+      isPinned: boolean;
       authorName: string | null;
       authorImage: string | null;
       categoryName: string | null;
@@ -115,6 +122,7 @@ export async function GET(request: NextRequest) {
       upvotes: number;
       downvotes: number;
       comments: number;
+      engagement_score: number;
     }>
 
     // Transform to lightweight format for sidebar
@@ -133,7 +141,9 @@ export async function GET(request: NextRequest) {
       },
       stats: {
         upvotes: post.upvotes,
-        comments: post.comments
+        downvotes: post.downvotes,
+        comments: post.comments,
+        engagementScore: post.engagement_score
       },
       timeAgo: getTimeAgo(post.createdAt)
     }))
@@ -142,6 +152,11 @@ export async function GET(request: NextRequest) {
     trendingCache.set(transformedPosts)
 
     console.log(`✅ Trending Posts: Fetched ${transformedPosts.length} posts`)
+    // Debug: Log engagement scores to verify ordering
+    console.log('📊 Trending Posts Engagement Scores:')
+    transformedPosts.slice(0, 5).forEach((post, index) => {
+      console.log(`${index + 1}. "${post.title.substring(0, 50)}..." - Score: ${post.stats.engagementScore} (${post.stats.upvotes}↑, ${post.stats.comments}💬, ${post.stats.downvotes || 0}↓)`)
+    })
 
     const response = NextResponse.json({
       posts: transformedPosts.slice(0, limit),

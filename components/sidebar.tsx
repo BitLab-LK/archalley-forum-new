@@ -29,7 +29,9 @@ interface TrendingPost {
   }
   stats: {
     upvotes: number
+    downvotes?: number
     comments: number
+    engagementScore?: number
   }
   timeAgo: string
 }
