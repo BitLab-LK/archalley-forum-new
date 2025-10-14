@@ -140,6 +140,7 @@ interface TransformedPost {
 class PostsCache {
   private cache = new Map<string, CacheEntry>()
   private readonly ttl = 60 * 1000 // 60 seconds TTL for balance between performance and freshness
+  private readonly trendingTtl = 5 * 60 * 1000 // 5 minutes TTL for trending posts (they change less frequently)
   private readonly maxSize = 100 // Maximum cache entries to prevent memory bloat
 
   /**
@@ -199,9 +200,13 @@ class PostsCache {
       }
       
       // Check if cache entry has expired (TTL validation)
+      // Use longer TTL for trending posts (sorted by upvotes)
+      const isTrendingQuery = key.includes(':upvotes:')
+      const ttlToUse = isTrendingQuery ? this.trendingTtl : this.ttl
+      
       const age = Date.now() - entry.timestamp
-      if (age > this.ttl) {
-        console.log("⏰ Posts Cache: Entry expired, age:", Math.round(age / 1000) + "s")
+      if (age > ttlToUse) {
+        console.log(`⏰ Posts Cache: Entry expired, age: ${Math.round(age / 1000)}s, TTL: ${Math.round(ttlToUse / 1000)}s`)
         this.cache.delete(key)
         return null
       }
@@ -1300,49 +1305,105 @@ export async function GET(request: NextRequest) {
       // MAIN POSTS QUERY WITH OPTIMIZED RELATIONSHIPS
       // ======================================================================
       
-      // Get posts with all related data in a single optimized query
-      const posts: any[] = await prisma.post.findMany({
-        where,
-        include: {
-          // User information with badge data (limited for performance)
-          users: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
-              userBadges: {
-                take: 3, // Only get top 3 badges for performance
-                include: {
-                  badges: true
-                },
-                orderBy: {
-                  earnedAt: 'desc'
+      let posts: any[] = []
+      
+      // For upvotes sorting, use raw SQL for optimal performance
+      if (sortBy === "upvotes") {
+        const rawQuery = `
+          SELECT 
+            p.*,
+            COALESCE(vote_counts.upvotes, 0) as upvotes_count,
+            COALESCE(vote_counts.downvotes, 0) as downvotes_count
+          FROM "Post" p
+          LEFT JOIN (
+            SELECT 
+              "postId",
+              COUNT(CASE WHEN type = 'UP' THEN 1 END) as upvotes,
+              COUNT(CASE WHEN type = 'DOWN' THEN 1 END) as downvotes
+            FROM votes 
+            WHERE "postId" IS NOT NULL 
+            GROUP BY "postId"
+          ) vote_counts ON p.id = vote_counts."postId"
+          WHERE 
+            p."isHidden" = false 
+            AND p."moderationStatus" = 'APPROVED'
+            ${where.authorId ? `AND p."authorId" = '${where.authorId}'` : ''}
+            ${where.primaryCategoryId ? `AND p."primaryCategoryId" = '${where.primaryCategoryId}'` : ''}
+          ORDER BY 
+            p."isPinned" DESC,
+            vote_counts.upvotes ${sortOrder} NULLS LAST,
+            p."createdAt" DESC
+          LIMIT ${limit} OFFSET ${skip}
+        `
+        
+        const rawPosts = await prisma.$queryRawUnsafe(rawQuery)
+        
+        // Now fetch the full post data with relations for these specific posts
+        const postIds = (rawPosts as any[]).map(p => p.id)
+        
+        if (postIds.length > 0) {
+          posts = await prisma.post.findMany({
+            where: {
+              id: { in: postIds }
+            },
+            include: {
+              users: {
+                select: {
+                  id: true,
+                  name: true,
+                  image: true,
+                  userBadges: {
+                    take: 3,
+                    include: { badges: true },
+                    orderBy: { earnedAt: 'desc' }
+                  }
+                }
+              },
+              primaryCategory: true,
+              postCategories: {
+                include: { category: true }
+              },
+              _count: {
+                select: { Comment: true }
+              }
+            }
+          })
+          
+          // Maintain the order from the raw query
+          const postMap = new Map(posts.map(p => [p.id, p]))
+          posts = postIds.map(id => postMap.get(id)).filter(Boolean)
+        }
+        
+      } else {
+        // For other sorting options, use the original method
+        posts = await prisma.post.findMany({
+          where,
+          include: {
+            users: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+                userBadges: {
+                  take: 3,
+                  include: { badges: true },
+                  orderBy: { earnedAt: 'desc' }
                 }
               }
             },
-          },
-          // Primary category relationship
-          primaryCategory: true,
-          postCategories: {
-            include: {
-              category: true
+            primaryCategory: true,
+            postCategories: {
+              include: { category: true }
+            },
+            _count: {
+              select: { Comment: true }
             }
           },
-          // Comment count for engagement metrics
-          _count: {
-            select: {
-              Comment: true,
-            },
-          },
-        },
-        // Conditional ordering based on sort field
-        ...(sortBy !== "upvotes" && { 
-          orderBy: { [sortBy as keyof typeof posts]: sortOrder as 'asc' | 'desc' } 
-        }),
-        // Conditional pagination (handle upvotes sorting separately)
-        skip: sortBy !== "upvotes" ? skip : 0,
-        take: sortBy !== "upvotes" ? limit : undefined,
-      })
+          orderBy: { [sortBy as keyof typeof posts]: sortOrder as 'asc' | 'desc' },
+          skip,
+          take: limit
+        })
+      }
 
       
       // ======================================================================
@@ -1366,108 +1427,81 @@ export async function GET(request: NextRequest) {
             : []
         })(),
         
-        // Vote counts for all posts (single efficient query)
-        prisma.votes.groupBy({
-          by: ['postId', 'type'],
-          where: {
-            postId: {
-              in: posts.map((post: any) => post.id)
-            }
-          },
-          _count: true
-        })
+        // Vote counts - optimized query for better performance
+        (async () => {
+          if (posts.length === 0) return []
+          
+          const postIds = posts.map((p: any) => p.id)
+          // Use parameterized query for better performance and security
+          return await prisma.$queryRaw`
+            SELECT 
+              "postId",
+              COUNT(CASE WHEN type = 'UP' THEN 1 END)::int as upvotes,
+              COUNT(CASE WHEN type = 'DOWN' THEN 1 END)::int as downvotes
+            FROM votes 
+            WHERE "postId" = ANY(${postIds})
+            GROUP BY "postId"
+          ` as Array<{postId: string; upvotes: number; downvotes: number}>
+        })()
       ])
       
       // Create a map for quick category lookup
       const categoryMap = new Map(multipleCategories.map(cat => [cat.id, cat]))
 
-      // Get top comment for each post (most upvoted)
-      const topComments = await Promise.all(
-        posts.map(async (post: any) => {
-          const comments = await prisma.comment.findMany({
-            where: { postId: post.id },
-            include: {
-              users: {
-                select: {
-                  id: true,
-                  name: true,
-                  image: true,
-                  userBadges: {
-                    take: 1,
-                    include: { badges: true },
-                    orderBy: { earnedAt: 'desc' }
-                  }
-                }
-              }
-            }
-          })
+      // Get top comment for each post using optimized batch query
+      const topComments = posts.length > 0 ? await (async () => {
+        const postIds = posts.map((p: any) => p.id)
+        
+        // Get top comment for each post using a single efficient query
+        const topCommentData = await prisma.$queryRaw`
+          SELECT DISTINCT ON (c."postId") 
+            c."postId",
+            c.id as "commentId",
+            c.content,
+            c."authorId",
+            u.name,
+            u.image,
+            COALESCE(vote_counts.upvotes, 0) as upvotes,
+            COALESCE(vote_counts.downvotes, 0) as downvotes,
+            COALESCE(vote_counts.total_activity, 0) as total_activity
+          FROM "Comment" c
+          JOIN users u ON c."authorId" = u.id
+          LEFT JOIN (
+            SELECT 
+              v."commentId",
+              COUNT(CASE WHEN v.type = 'UP' THEN 1 END)::int as upvotes,
+              COUNT(CASE WHEN v.type = 'DOWN' THEN 1 END)::int as downvotes,
+              COUNT(*)::int as total_activity
+            FROM votes v 
+            WHERE v."commentId" IS NOT NULL
+            GROUP BY v."commentId"
+          ) vote_counts ON c.id = vote_counts."commentId"
+          WHERE c."postId" = ANY(${postIds})
+          ORDER BY c."postId", total_activity DESC NULLS LAST, c."createdAt" ASC
+        ` as Array<{
+          postId: string;
+          commentId: string;
+          content: string;
+          authorId: string;
+          name: string;
+          image: string | null;
+          upvotes: number;
+          downvotes: number;
+          total_activity: number;
+        }>
 
-          if (comments.length === 0) return null
-
-          // Get vote counts for all comments of this post
-          const commentVotes = await prisma.votes.groupBy({
-            by: ['commentId', 'type'],
-            where: {
-              commentId: {
-                in: comments.map(c => c.id)
-              }
-            },
-            _count: true
-          })
-
-          // Calculate total vote activity for each comment (upvotes + downvotes)
-          const commentVoteActivity = new Map<string, number>()
-          comments.forEach(comment => {
-            commentVoteActivity.set(comment.id, 0)
-          })
-
-          commentVotes.forEach(vote => {
-            if (vote.commentId) {
-              const current = commentVoteActivity.get(vote.commentId) || 0
-              commentVoteActivity.set(vote.commentId, current + vote._count)
-            }
-          })
-
-          // Find comment with highest total vote activity
-          let topComment = comments[0]
-          let highestActivity = commentVoteActivity.get(topComment.id) || 0
-
-          comments.forEach(comment => {
-            const activity = commentVoteActivity.get(comment.id) || 0
-            if (activity > highestActivity) {
-              highestActivity = activity
-              topComment = comment
-            }
-          })
-
-          // Return the comment if it has any votes or is the only comment
-          if (highestActivity > 0 || comments.length === 1) {
-            // Calculate upvotes and downvotes for the top comment
-            const topCommentUpvotes = commentVotes.find(vote => 
-              vote.commentId === topComment.id && vote.type === 'UP'
-            )?._count || 0
-            
-            const topCommentDownvotes = commentVotes.find(vote => 
-              vote.commentId === topComment.id && vote.type === 'DOWN'
-            )?._count || 0
-
-            return {
-              postId: post.id,
-              author: {
-                name: topComment.users.name || "Anonymous",
-                image: topComment.users.image
-              },
-              content: topComment.content,
-              upvotes: topCommentUpvotes,
-              downvotes: topCommentDownvotes,
-              isBestAnswer: false, // Comments don't have best answer feature yet
-              activity: highestActivity
-            }
-          }
-
-          return null
-        })
-      )
+        return topCommentData.map(comment => ({
+          postId: comment.postId,
+          author: {
+            name: comment.name || "Anonymous",
+            image: comment.image
+          },
+          content: comment.content,
+          upvotes: comment.upvotes,
+          downvotes: comment.downvotes,
+          isBestAnswer: false
+        }))
+      })() : []
 
       // Create a map of top comments by post ID
       const topCommentMap = new Map<string, any>()
@@ -1486,19 +1520,18 @@ export async function GET(request: NextRequest) {
       // Transform vote counts into a more usable format
       const voteCountMap = new Map<string, { upvotes: number; downvotes: number }>()
       
+      // Initialize all posts with zero votes
       posts.forEach((post: any) => {
         voteCountMap.set(post.id, { upvotes: 0, downvotes: 0 })
       })
 
+      // Process the optimized vote counts
       voteCounts.forEach(vote => {
         if (vote.postId) {
-          const existing = voteCountMap.get(vote.postId) || { upvotes: 0, downvotes: 0 }
-          if (vote.type === 'UP') {
-            existing.upvotes = vote._count
-          } else if (vote.type === 'DOWN') {
-            existing.downvotes = vote._count
-          }
-          voteCountMap.set(vote.postId, existing)
+          voteCountMap.set(vote.postId, { 
+            upvotes: vote.upvotes || 0, 
+            downvotes: vote.downvotes || 0 
+          })
         }
       })
 
@@ -1572,17 +1605,7 @@ export async function GET(request: NextRequest) {
         }
       })
 
-      // If sorting by upvotes, sort in JS and apply skip/limit
-      if (sortBy === "upvotes") {
-        transformedPosts = transformedPosts.sort((a: any, b: any) => {
-          if (sortOrder === "asc") {
-            return a.upvotes - b.upvotes
-          } else {
-            return b.upvotes - a.upvotes
-          }
-        })
-        .slice(skip, skip + limit)
-      }
+      // No need to sort by upvotes in JS anymore - it's handled at database level
 
       const responseData = {
         posts: transformedPosts,

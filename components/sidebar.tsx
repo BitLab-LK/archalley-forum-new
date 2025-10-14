@@ -18,12 +18,20 @@ interface Category {
 
 interface TrendingPost {
   id: string
-  content: string
+  title: string
   author: {
     name: string
     avatar: string
   }
-  upvotes: number
+  category: {
+    name: string
+    color: string
+  }
+  stats: {
+    upvotes: number
+    comments: number
+  }
+  timeAgo: string
 }
 
 interface TopContributor {
@@ -132,12 +140,12 @@ function Sidebar() {
         }
       }
 
-      // 2. Load trending posts after a short delay
+      // 2. Load trending posts (optimized endpoint)
       const fetchTrending = async () => {
         setIsTrendingLoading(true)
         
         try {
-          const response = await fetchWithRetry('/api/posts?limit=5&sortBy=upvotes&sortOrder=desc')
+          const response = await fetchWithRetry('/api/trending-posts?limit=5')
           
           if (response.ok) {
             const trendingData = await response.json()
@@ -170,18 +178,14 @@ function Sidebar() {
         }
       }
 
-      // Execute with staggered timing for better perceived performance
+      // Execute with optimized parallel loading for faster performance
       await fetchCategories()
       
-      // Load trending posts after 300ms delay
-      setTimeout(() => {
-        fetchTrending()
-      }, 300)
-      
-      // Load contributors after 600ms delay
-      setTimeout(() => {
+      // Load trending posts and contributors in parallel without delays
+      Promise.all([
+        fetchTrending(),
         fetchContributors()
-      }, 600)
+      ])
     }
 
     loadSidebarData()
@@ -302,18 +306,26 @@ function Sidebar() {
             trendingPosts.map((post, index) => (
               <div 
                 key={post.id} 
-                className="group p-4 rounded-xl bg-white/60 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800/60 transition-all duration-200 cursor-pointer hover:shadow-sm border border-gray-100 dark:border-gray-800 hover:border-orange-200 dark:hover:border-orange-800 animate-slide-in-up hover-lift smooth-transition"
+                className="group p-3 rounded-lg bg-white/60 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800/60 transition-all duration-200 cursor-pointer hover:shadow-sm border border-gray-100 dark:border-gray-800 hover:border-orange-200 dark:hover:border-orange-800 animate-slide-in-up hover-lift smooth-transition"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <h4 className="text-sm font-medium line-clamp-2 text-gray-800 dark:text-gray-200 group-hover:text-orange-700 dark:group-hover:text-orange-300 transition-colors">{post.content}</h4>
-                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                {/* Post Title */}
+                <h4 className="text-sm font-medium line-clamp-3 text-gray-900 dark:text-gray-100 group-hover:text-orange-700 dark:group-hover:text-orange-300 transition-colors mb-3 leading-relaxed">
+                  {post.title}
+                </h4>
+                
+                {/* Author and Stats */}
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                   <span className="flex items-center space-x-1">
                     <span>by</span>
                     <span className="font-medium text-gray-600 dark:text-gray-300">{post.author.name}</span>
                   </span>
-                  <div className="flex items-center space-x-1 text-orange-600 dark:text-orange-400">
-                    <TrendingUp className="w-3 h-3" />
-                    <span className="font-medium">{post.upvotes}</span>
+                  <div className="flex items-center space-x-2">
+                    {/* Upvotes */}
+                    <div className="flex items-center space-x-1 text-orange-600 dark:text-orange-400">
+                      <TrendingUp className="w-3 h-3" />
+                      <span className="font-medium">{post.stats.upvotes}</span>
+                    </div>
                   </div>
                 </div>
               </div>

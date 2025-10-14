@@ -79,6 +79,10 @@ model Post {
   @@index([moderatedBy])
   @@index([lastModeratedAt])
   @@index([createdAt, moderationStatus]) // Compound index for queries
+  @@index([isHidden, moderationStatus]) // For filtering visible posts
+  @@index([isPinned, createdAt]) // For ordering by pinned status and date
+  @@index([createdAt]) // For date-based sorting
+  @@index([viewCount]) // For popular posts
 }
 
 model categories {
@@ -412,6 +416,11 @@ model votes {
 
   @@unique([userId, commentId])
   @@unique([userId, postId])
+  @@index([postId, type]) // For efficient vote aggregation by post
+  @@index([commentId, type]) // For efficient vote aggregation by comment
+  @@index([postId]) // For quick post vote lookups
+  @@index([commentId]) // For quick comment vote lookups
+  @@index([type]) // For filtering by vote type
 }
 
 enum EmailStatus {
