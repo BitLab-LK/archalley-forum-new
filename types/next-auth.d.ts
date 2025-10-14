@@ -22,5 +22,6 @@ declare module "next-auth/jwt" {
   interface JWT {
     role: UserRole
     isVerified: boolean
+    roleChangedAt?: string | null
   }
 }

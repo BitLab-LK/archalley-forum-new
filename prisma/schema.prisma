@@ -261,6 +261,7 @@ model users {
   instagramUrl        String?
   // User management and security
   role                UserRole         @default(MEMBER)
+  roleChangedAt       DateTime?        // When role was last changed (for session invalidation)
   isVerified          Boolean          @default(false)
   isSuspended         Boolean          @default(false)
   suspendedUntil      DateTime?

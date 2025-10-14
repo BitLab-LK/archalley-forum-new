@@ -97,6 +97,14 @@ export const authOptions: NextAuthOptions = {
       if (user || trigger === "update") {
         const dbUser = await prisma.users.findUnique({
           where: { email: token.email! },
+          select: {
+            id: true,
+            role: true,
+            isVerified: true,
+            name: true,
+            image: true,
+            roleChangedAt: true
+          }
         })
 
         if (dbUser) {
@@ -105,6 +113,7 @@ export const authOptions: NextAuthOptions = {
           token.id = dbUser.id
           token.name = dbUser.name
           token.image = dbUser.image
+          token.roleChangedAt = dbUser.roleChangedAt?.toISOString() || null
         }
       }
       return token

@@ -8,6 +8,7 @@ import Footer from "@/components/footer"
 import { BadgeNotificationHandler } from "@/components/badge-notifications"
 import { Toaster } from "@/components/ui/toaster"
 import { ConfirmDialogProvider } from "@/hooks/use-confirm-dialog"
+import { SessionMonitor } from "@/hooks/use-session-monitor"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -44,13 +45,15 @@ export default function RootLayout({
       <body className={inter.className} suppressHydrationWarning>
         <Providers>
           <ConfirmDialogProvider>
-            <div className="min-h-screen flex flex-col">
-              <Header />
-              <main className="flex-1 pb-20 md:pb-0">{children}</main>
-              <Footer />
-              <BadgeNotificationHandler />
-              <Toaster />
-            </div>
+            <SessionMonitor>
+              <div className="min-h-screen flex flex-col">
+                <Header />
+                <main className="flex-1 pb-20 md:pb-0">{children}</main>
+                <Footer />
+                <BadgeNotificationHandler />
+                <Toaster />
+              </div>
+            </SessionMonitor>
           </ConfirmDialogProvider>
         </Providers>
       </body>

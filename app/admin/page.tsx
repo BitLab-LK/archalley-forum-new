@@ -718,7 +718,7 @@ export default function AdminDashboard() {
       await refreshUsersList()
 
       console.log(`🔄 User list refreshed after role update for user ${userId}`)
-      toast.success(`User role updated to ${newRole} successfully`)
+      toast.success(`User role updated to ${newRole} successfully. User will be automatically logged out from all devices.`)
     } catch (error) {
       console.error("❌ Error updating user role:", error)
       toast.error(error instanceof Error ? error.message : "Failed to update user role")

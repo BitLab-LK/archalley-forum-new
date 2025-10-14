@@ -4,6 +4,7 @@ import { validateAdminAccess, logAdminAction } from "@/lib/admin-security"
 import { onUserDeleted, onUserRoleUpdated } from "@/lib/stats-service"
 import { updateUserActivityAsync } from "@/lib/activity-service"
 import { validateSuperAdminOperation, logSuperAdminOperation } from "@/lib/super-admin-utils"
+import { invalidateUserSessions } from "@/lib/session-invalidation"
 import type { NextRequest } from "next/server"
 
 export async function GET(request: NextRequest) {
@@ -122,10 +123,13 @@ export async function PATCH(request: NextRequest) {
       return new NextResponse("Only super admins can modify super admin accounts", { status: 403 })
     }
 
-    // Update user role
+    // Update user role and set roleChangedAt for session invalidation
     const updatedUser = await prisma.users.update({
       where: { id: userId },
-      data: { role },
+      data: { 
+        role,
+        roleChangedAt: new Date() // This will invalidate all existing sessions
+      },
       select: {
         id: true,
         name: true,
@@ -136,10 +140,21 @@ export async function PATCH(request: NextRequest) {
       }
     })
     
+    // Invalidate all user sessions (force re-authentication on all devices)
+    try {
+      await invalidateUserSessions(userId)
+      console.log(`🔐 All sessions invalidated for user ${updatedUser.email} due to role change to ${role}`)
+    } catch (sessionError) {
+      console.error(`⚠️ Failed to invalidate sessions for user ${userId}:`, sessionError)
+      // Continue execution - the role update was successful even if session invalidation failed
+    }
+    
     // Log admin action
     logAdminAction("UPDATE_USER_ROLE", user!.id, {
       targetUserId: userId,
       newRole: role,
+      oldRole: targetUser?.role,
+      sessionsInvalidated: true,
       ip: request.headers.get("x-forwarded-for") || "unknown"
     })
 
