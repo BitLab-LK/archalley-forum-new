@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import ServerBlogCarousel from "@/components/server-blog-carousel"
 import { 
   Building2, 
   Users, 
@@ -226,6 +227,9 @@ export default function MainPage() {
           </div>
         </div>
       </section>
+
+      {/* Blog Carousel Section */}
+      <ServerBlogCarousel />
     </div>
   )
 }

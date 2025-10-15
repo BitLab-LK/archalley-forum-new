@@ -29,13 +29,25 @@ const nextConfig = {
   
   // Image optimization
   images: {
-    domains: [
-      'localhost',
-      'vnvpjdgzlsratzhmyiry.supabase.co',
-      'okxp5q9cgyoio1vt.public.blob.vercel-storage.com',
-      'vdatlalr25kbvq64.public.blob.vercel-storage.com',
-    ],
     remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'archalley.com',
+        port: '',
+        pathname: '/wp-content/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'vnvpjdgzlsratzhmyiry.supabase.co',
+        port: '',
+        pathname: '/**',
+      },
       {
         protocol: 'https',
         hostname: '**.blob.vercel-storage.com',
@@ -59,6 +71,12 @@ const nextConfig = {
         hostname: 'vdatlalr25kbvq64.public.blob.vercel-storage.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'archalley.com',
+        port: '',
+        pathname: '/wp-content/uploads/**',
       }
     ],
     formats: ['image/webp', 'image/avif'],
