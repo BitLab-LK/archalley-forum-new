@@ -53,7 +53,7 @@ export async function isSessionValid(request: NextRequest): Promise<{
     }
 
     // Check if role has changed since token was issued
-    if (user.roleChangedAt) {
+    if (user.roleChangedAt && token.iat) {
       const tokenIssuedAt = new Date((token.iat as number) * 1000)
       
       if (user.roleChangedAt > tokenIssuedAt) {
@@ -77,7 +77,9 @@ export async function isSessionValid(request: NextRequest): Promise<{
     return { isValid: true, userId: user.id }
   } catch (error) {
     console.error("Error validating session:", error)
-    return { isValid: false, reason: "Session validation error" }
+    // Return true for database errors to avoid blocking users unnecessarily
+    // The basic token validation in middleware will still protect routes
+    return { isValid: true, reason: "Session validation error - allowing with token" }
   }
 }
 

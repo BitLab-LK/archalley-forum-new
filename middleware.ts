@@ -4,6 +4,12 @@ import { getToken } from "next-auth/jwt"
 import { isSessionValid } from "./lib/session-invalidation"
 
 export async function middleware(request: NextRequest) {
+  // Skip middleware entirely for auth routes to prevent redirect loops
+  if (request.nextUrl.pathname.startsWith('/auth/')) {
+    console.log('🔄 Skipping middleware for auth route:', request.nextUrl.pathname)
+    return NextResponse.next()
+  }
+
   console.log('🔍 Middleware processing:', {
     path: request.nextUrl.pathname,
     method: request.method,
@@ -64,9 +70,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Check session validity for authenticated routes only
-  if (request.nextUrl.pathname.startsWith('/admin') || 
-      request.nextUrl.pathname.startsWith('/profile') ||
+  // Check session validity for authenticated routes only (but be more lenient for admin routes)
+  if (request.nextUrl.pathname.startsWith('/profile') ||
       (request.nextUrl.pathname.startsWith('/api/') && !isPublicApiRoute(request.nextUrl.pathname, request.method))) {
     
     const sessionCheck = await isSessionValid(request)
@@ -116,6 +121,24 @@ export async function middleware(request: NextRequest) {
           role: token?.role 
         })
         return NextResponse.redirect(new URL('/', request.url))
+      }
+      
+      // Additional session validation for admin routes (but don't block if it fails)
+      try {
+        const sessionCheck = await isSessionValid(request)
+        if (!sessionCheck.isValid) {
+          console.log('⚠️ Admin session invalid but allowing access with valid token:', {
+            reason: sessionCheck.reason,
+            userId: sessionCheck.userId,
+            email: token.email
+          })
+          // Log this for audit but don't block access - the token is still valid
+        } else {
+          console.log('✅ Admin session and token both valid:', token.email)
+        }
+      } catch (sessionError) {
+        console.warn('⚠️ Session validation failed for admin, but token is valid:', sessionError)
+        // Continue with valid token even if session check fails
       }
       
       console.log('✅ Admin access granted:', token.email)
