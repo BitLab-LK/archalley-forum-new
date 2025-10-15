@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Search, Moon, Sun, LogOut, User, Shield, Home, Users, Crown } from "lucide-react"
+import { Search, Moon, Sun, LogOut, User, Shield, Home, Crown, MessageSquare, ChevronDown, FolderOpen, Newspaper } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/lib/auth-context"
 import NotificationDropdown from "@/components/notification-dropdown"
@@ -74,7 +74,10 @@ export default function Header() {
   // Helper function to check if a path is active
   const isActivePath = (path: string) => {
     if (path === "/") {
-      return pathname === "/"
+      return pathname === "/" && !pathname.startsWith("/forum")
+    }
+    if (path === "/forum") {
+      return pathname === "/forum" || pathname.startsWith("/forum")
     }
     return pathname.startsWith(path)
   }
@@ -82,64 +85,188 @@ export default function Header() {
   return (
     <>
       {/* Desktop Header */}
-      <header className="hidden md:block sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="hidden md:block sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ease-in-out">
         {/* Align inner header content to match page content max width */}
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="max-w-[80rem] mx-auto h-16 flex items-center justify-between">
           {/* Logo and Navigation */}
-          <div className="flex items-center space-x-6">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">A</span>
+          <div className="flex items-center space-x-12">
+            <Link href="/" className="flex items-center space-x-3 group">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center transition-all duration-300 ease-in-out group-hover:scale-105 group-hover:shadow-lg">
+                <span className="text-white font-bold text-lg transition-transform duration-300 ease-in-out group-hover:scale-110">A</span>
               </div>
-              <span className="font-bold text-xl">Archalley Forum</span>
+              <span className="font-bold text-xl transition-colors duration-300 ease-in-out group-hover:text-primary">Archalley</span>
             </Link>
 
-            <nav className="flex items-center space-x-6">
+            <nav className="flex items-center space-x-8">
               <Link 
                 href="/" 
-                className={`text-sm font-medium transition-colors ${
+                className={`text-sm font-medium transition-all duration-300 ease-in-out py-2 relative overflow-hidden group ${
                   isActivePath("/") 
-                    ? "text-primary border-b-2 border-primary pb-1" 
+                    ? "text-primary" 
                     : "text-muted-foreground hover:text-primary"
                 }`}
               >
-                Home
+                <span className="relative z-10">HOME</span>
+                {isActivePath("/") && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary animate-pulse"></div>
+                )}
+                <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all duration-300 ease-in-out group-hover:w-full"></div>
               </Link>
-              {/* Categories - Temporarily Removed */}
-              {/* <Link 
-                href="/categories" 
-                className={`text-sm font-medium transition-colors ${
-                  isActivePath("/categories") 
-                    ? "text-primary border-b-2 border-primary pb-1" 
+
+              {/* Projects Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="text-sm font-medium text-muted-foreground hover:text-primary p-0 h-auto py-2 transition-all duration-300 ease-in-out group relative overflow-hidden">
+                    <span className="relative z-10 flex items-center">
+                      PROJECTS
+                      <ChevronDown className="ml-2 h-3 w-3 transition-transform duration-300 ease-in-out group-hover:rotate-180" />
+                    </span>
+                    <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all duration-300 ease-in-out group-hover:w-full"></div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <DropdownMenuItem asChild>
+                    <Link href="/projects/commercial">Commercial & Offices</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/projects/hospitality">Hospitality Architecture</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/projects/industrial">Industrial & Infrastructure</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/projects/interior">Interior Design</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/projects/landscape">Landscape & Urbanism</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/projects/public">Public Architecture</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/projects/refurbishment">Refurbishment</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/projects/religious">Religious Architecture</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/projects/residential">Residential Architecture</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Academic Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="text-sm font-medium text-muted-foreground hover:text-primary p-0 h-auto py-2 transition-all duration-300 ease-in-out group relative overflow-hidden">
+                    <span className="relative z-10 flex items-center">
+                      ACADEMIC
+                      <ChevronDown className="ml-2 h-3 w-3 transition-transform duration-300 ease-in-out group-hover:rotate-180" />
+                    </span>
+                    <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all duration-300 ease-in-out group-hover:w-full"></div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link href="/academic/research">Research</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/academic/student-projects">Student Projects</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/academic/submit">Submit</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <Link 
+                href="/news" 
+                className={`text-sm font-medium transition-all duration-300 ease-in-out py-2 relative overflow-hidden group ${
+                  isActivePath("/news") 
+                    ? "text-primary" 
                     : "text-muted-foreground hover:text-primary"
                 }`}
               >
-                Categories
-              </Link> */}
+                <span className="relative z-10">NEWS</span>
+                {isActivePath("/news") && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary animate-pulse"></div>
+                )}
+                <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all duration-300 ease-in-out group-hover:w-full"></div>
+              </Link>
+
+              <Link 
+                href="/articles" 
+                className={`text-sm font-medium transition-all duration-300 ease-in-out py-2 relative overflow-hidden group ${
+                  isActivePath("/articles") 
+                    ? "text-primary" 
+                    : "text-muted-foreground hover:text-primary"
+                }`}
+              >
+                <span className="relative z-10">ARTICLES</span>
+                {isActivePath("/articles") && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary animate-pulse"></div>
+                )}
+                <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all duration-300 ease-in-out group-hover:w-full"></div>
+              </Link>
+
+              <Link 
+                href="/events" 
+                className={`text-sm font-medium transition-all duration-300 ease-in-out py-2 relative overflow-hidden group ${
+                  isActivePath("/events") 
+                    ? "text-primary" 
+                    : "text-muted-foreground hover:text-primary"
+                }`}
+              >
+                <span className="relative z-10">EVENTS</span>
+                {isActivePath("/events") && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary animate-pulse"></div>
+                )}
+                <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all duration-300 ease-in-out group-hover:w-full"></div>
+              </Link>
+              
+              <Link 
+                href="/forum" 
+                className={`text-sm font-medium transition-all duration-300 ease-in-out py-2 relative overflow-hidden group ${
+                  isActivePath("/forum") 
+                    ? "text-primary" 
+                    : "text-muted-foreground hover:text-primary"
+                }`}
+              >
+                <span className="relative z-10">FORUM</span>
+                {isActivePath("/forum") && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary animate-pulse"></div>
+                )}
+                <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all duration-300 ease-in-out group-hover:w-full"></div>
+              </Link>
+              
               <Link 
                 href="/members" 
-                className={`text-sm font-medium transition-colors ${
+                className={`text-sm font-medium transition-all duration-300 ease-in-out py-2 relative overflow-hidden group ${
                   isActivePath("/members") 
-                    ? "text-primary border-b-2 border-primary pb-1" 
+                    ? "text-primary" 
                     : "text-muted-foreground hover:text-primary"
                 }`}
               >
-                Members
+                <span className="relative z-10">MEMBERS</span>
+                {isActivePath("/members") && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary animate-pulse"></div>
+                )}
+                <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all duration-300 ease-in-out group-hover:w-full"></div>
               </Link>
             </nav>
           </div>
 
           {/* Search */}
-          <div className="flex-1 max-w-md mx-4">
-            <form onSubmit={handleSearch} className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <div className="flex-1 max-w-sm mx-8">
+            <form onSubmit={handleSearch} className="relative group">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 transition-all duration-300 ease-in-out group-focus-within:text-primary group-focus-within:scale-110" />
               <Input
                 type="search"
-                placeholder="Search posts, members..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 border-0 bg-muted/50 focus:bg-background transition-all duration-300 ease-in-out focus:shadow-md focus:scale-105 hover:bg-muted/70"
               />
             </form>
           </div>
@@ -248,7 +375,7 @@ export default function Header() {
             <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-base">A</span>
             </div>
-            <span className="font-bold text-lg sm:text-xl">Archalley Forum</span>
+            <span className="font-bold text-lg sm:text-xl">Archalley</span>
           </Link>
 
           {/* Right Side - Auth buttons or user menu */}
@@ -327,7 +454,7 @@ export default function Header() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
               type="search"
-              placeholder="Search posts, members..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-11 h-11 text-base rounded-xl border-2 focus:border-primary transition-colors"
@@ -337,45 +464,58 @@ export default function Header() {
       </header>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t safe-area-inset-bottom">
-        <div className="grid grid-cols-3 h-18">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t safe-area-inset-bottom transition-all duration-300 ease-in-out">
+        <div className="grid grid-cols-5 h-18">
           {/* Home */}
           <Link 
             href="/" 
-            className={`flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-colors py-2 px-1 min-h-[44px] ${
+            className={`flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-all duration-300 ease-in-out py-2 px-1 min-h-[44px] transform hover:scale-105 ${
               isActivePath("/") 
                 ? "text-primary bg-primary/10" 
                 : "text-muted-foreground hover:text-primary"
             }`}
           >
-            <Home className={`h-6 w-6 ${isActivePath("/") ? "fill-current" : ""}`} />
-            <span className="text-[11px]">Home</span>
+            <Home className={`h-4 w-4 transition-all duration-300 ease-in-out ${isActivePath("/") ? "fill-current scale-110" : "hover:scale-110"}`} />
+            <span className="text-[9px] transition-all duration-300 ease-in-out">Home</span>
           </Link>
 
-          {/* Categories - Temporarily Removed */}
-          {/* <Link 
-            href="/categories" 
-            className={`flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-colors py-2 px-1 min-h-[44px] ${
-              isActivePath("/categories") 
-                ? "text-primary bg-primary/10" 
-                : "text-muted-foreground hover:text-primary"
-            }`}
-          >
-            <FolderOpen className={`h-6 w-6 ${isActivePath("/categories") ? "fill-current" : ""}`} />
-            <span className="text-[11px]">Categories</span>
-          </Link> */}
-
-          {/* Members */}
+          {/* Projects */}
           <Link 
-            href="/members" 
-            className={`flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-colors py-2 px-1 min-h-[44px] ${
-              isActivePath("/members") 
+            href="/projects" 
+            className={`flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-all duration-300 ease-in-out py-2 px-1 min-h-[44px] transform hover:scale-105 ${
+              isActivePath("/projects") 
                 ? "text-primary bg-primary/10" 
                 : "text-muted-foreground hover:text-primary"
             }`}
           >
-            <Users className={`h-6 w-6 ${isActivePath("/members") ? "fill-current" : ""}`} />
-            <span className="text-[11px]">Members</span>
+            <FolderOpen className={`h-4 w-4 transition-all duration-300 ease-in-out ${isActivePath("/projects") ? "fill-current scale-110" : "hover:scale-110"}`} />
+            <span className="text-[9px] transition-all duration-300 ease-in-out">Projects</span>
+          </Link>
+
+          {/* Forum */}
+          <Link 
+            href="/forum" 
+            className={`flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-all duration-300 ease-in-out py-2 px-1 min-h-[44px] transform hover:scale-105 ${
+              isActivePath("/forum") 
+                ? "text-primary bg-primary/10" 
+                : "text-muted-foreground hover:text-primary"
+            }`}
+          >
+            <MessageSquare className={`h-4 w-4 transition-all duration-300 ease-in-out ${isActivePath("/forum") ? "fill-current scale-110" : "hover:scale-110"}`} />
+            <span className="text-[9px] transition-all duration-300 ease-in-out">Forum</span>
+          </Link>
+
+          {/* News */}
+          <Link 
+            href="/news" 
+            className={`flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-all duration-300 ease-in-out py-2 px-1 min-h-[44px] transform hover:scale-105 ${
+              isActivePath("/news") 
+                ? "text-primary bg-primary/10" 
+                : "text-muted-foreground hover:text-primary"
+            }`}
+          >
+            <Newspaper className={`h-4 w-4 transition-all duration-300 ease-in-out ${isActivePath("/news") ? "fill-current scale-110" : "hover:scale-110"}`} />
+            <span className="text-[9px] transition-all duration-300 ease-in-out">News</span>
           </Link>
 
           {/* Profile/Login */}
@@ -389,12 +529,12 @@ export default function Header() {
               }`}
             >
               <div className="relative">
-                <User className={`h-6 w-6 ${isActivePath("/profile") ? "fill-current" : ""}`} />
+                <User className={`h-4 w-4 ${isActivePath("/profile") ? "fill-current" : ""}`} />
                 {user?.isVerified && (
-                  <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border border-background"></div>
+                  <div className="absolute -top-1 -right-1 h-2 w-2 bg-green-500 rounded-full border border-background"></div>
                 )}
               </div>
-              <span className="text-[11px]">Profile</span>
+              <span className="text-[9px]">Profile</span>
             </Link>
           ) : (
             <Link 
@@ -405,8 +545,8 @@ export default function Header() {
                   : "text-muted-foreground hover:text-primary"
               }`}
             >
-              <User className={`h-6 w-6 ${isActivePath("/auth") ? "fill-current" : ""}`} />
-              <span className="text-[11px]">Login</span>
+              <User className={`h-4 w-4 ${isActivePath("/auth") ? "fill-current" : ""}`} />
+              <span className="text-[9px]">Login</span>
             </Link>
           )}
         </div>

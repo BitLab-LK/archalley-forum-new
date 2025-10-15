@@ -13,10 +13,10 @@ import { SessionMonitor } from "@/hooks/use-session-monitor"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Archalley Forum - Architecture & Design Community",
+  title: "Archalley - Architecture & Design Excellence",
   description:
-    "A dedicated space for architects, designers, and enthusiasts to connect, share ideas, and discuss all things architecture, design and construction.",
-  keywords: "architecture, design, construction, forum, community, architects, designers",
+    "Discover innovative architecture and design. Join our community of architects, designers, and enthusiasts to connect, share ideas, and explore cutting-edge projects.",
+  keywords: "architecture, design, construction, forum, community, architects, designers, projects, innovation",
   generator: 'v0.dev'
 }
 
