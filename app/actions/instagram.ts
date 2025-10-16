@@ -35,14 +35,17 @@ export async function fetchInstagramPosts(limit: number = 12): Promise<Instagram
     )
 
     if (!response.ok) {
-      console.log(`Instagram API error: ${response.status}, falling back to mock data`)
+      // Silently fall back to mock data without console noise
       return generateMockInstagramPosts(limit)
     }
 
     const data = await response.json()
     return data.data || []
   } catch (error) {
-    console.error('Error fetching Instagram posts:', error)
+    // Only log actual errors, not expected API limitations
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Instagram API unavailable, using mock data')
+    }
     
     // Return mock data for development/fallback
     return generateMockInstagramPosts(limit)

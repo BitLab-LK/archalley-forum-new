@@ -6,6 +6,7 @@ import { useEffect, useState, memo } from "react"
 import { useSidebar } from "@/lib/sidebar-context"
 import { cn } from "@/lib/utils"
 import { generateCategoryStyles } from "@/lib/color-utils"
+import { ExelAd } from "@/components/ad-banner"
 
 interface Category {
   id: string
@@ -422,6 +423,11 @@ function Sidebar() {
           )}
         </CardContent>
       </Card>
+
+      {/* Advertisement in Sidebar - Fixed Exel Ad */}
+      <div className="animate-fade-in-up animate-delay-300">
+        <ExelAd />
+      </div>
     </div>
   )
 }

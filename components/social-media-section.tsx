@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Youtube, Facebook, ExternalLink, Play } from "lucide-react"
 import { SOCIAL_MEDIA, FACEBOOK_APP_ID } from "@/lib/constants"
+import { HorizontalAd } from "@/components/ad-banner"
+
 
 declare global {
   interface Window {
@@ -79,7 +81,7 @@ export default function SocialMediaSection() {
     script.crossOrigin = 'anonymous'
     script.src = 'https://connect.facebook.net/en_US/sdk.js'
     script.onload = () => {
-      console.log('Facebook SDK script loaded')
+      // Facebook SDK loaded successfully (removed console log for cleaner output)
     }
     script.onerror = () => {
       console.error('Failed to load Facebook SDK')
@@ -273,6 +275,11 @@ export default function SocialMediaSection() {
               </a>
             </Button>
           </div>
+        </div>
+
+        {/* Advertisement after social media */}
+        <div className="mt-8">
+          <HorizontalAd className="mx-auto animate-fade-in" />
         </div>
       </div>
       

@@ -1,121 +1,141 @@
-// Advertisement banner configuration
+// Advertisement banner configuration - CORRECTED IMPLEMENTATION
 export interface AdBanner {
-  id: string
-  imageUrl: string
-  redirectUrl: string
-  title: string
-  description?: string
-  size: '680x180' | '350x350' | '970x180'
-  isActive: boolean
-  clickCount?: number
+  id: string           // Unique identifier
+  size: string         // Banner dimensions
+  imageUrl: string     // Direct URL to banner image
+  redirectUrl: string  // Advertiser's landing page
+  active: boolean      // Enable/disable banner
+  title?: string       // Optional title for admin panel
+  description?: string // Optional description for admin panel
+  clickCount?: number  // Optional click tracking
 }
 
-export const AD_BANNERS: Record<string, AdBanner[]> = {
-  "680x180": [
-    {
-      id: "horizontal-1",
-      imageUrl: "/ads/banner-680x180-1.jpg",
-      redirectUrl: "https://archalley.com/services",
-      title: "Architecture Services",
-      description: "Professional architectural design and consultation",
-      size: "680x180",
-      isActive: true,
-      clickCount: 0
-    },
-    {
-      id: "horizontal-2",
-      imageUrl: "/ads/banner-680x180-2.jpg",
-      redirectUrl: "https://archalley.com/portfolio",
-      title: "View Our Portfolio",
-      description: "Explore our latest architectural projects",
-      size: "680x180",
-      isActive: true,
-      clickCount: 0
-    },
-    {
-      id: "horizontal-3",
-      imageUrl: "/ads/banner-680x180-3.jpg",
-      redirectUrl: "https://archalley.com/contact",
-      title: "Get In Touch",
-      description: "Contact us for your next project",
-      size: "680x180",
-      isActive: true,
-      clickCount: 0
-    }
-  ],
-  "350x350": [
-    {
-      id: "square-1",
-      imageUrl: "/ads/banner-350x350-1.jpg",
-      redirectUrl: "https://archalley.com/software",
-      title: "Design Software",
-      description: "Latest architectural design tools",
-      size: "350x350",
-      isActive: true,
-      clickCount: 0
-    },
-    {
-      id: "square-2",
-      imageUrl: "/ads/banner-350x350-2.jpg",
-      redirectUrl: "https://archalley.com/courses",
-      title: "Online Courses",
-      description: "Learn architecture from experts",
-      size: "350x350",
-      isActive: true,
-      clickCount: 0
-    },
-    {
-      id: "square-3",
-      imageUrl: "/ads/banner-350x350-3.jpg",
-      redirectUrl: "https://archalley.com/materials",
-      title: "Building Materials",
-      description: "Premium construction materials",
-      size: "350x350",
-      isActive: true,
-      clickCount: 0
-    }
-  ],
-  "970x180": [
-    {
-      id: "leaderboard-1",
-      imageUrl: "/ads/banner-970x180-1.jpg",
-      redirectUrl: "https://archalley.com/conference",
-      title: "Architecture Conference 2025",
-      description: "Join the largest architecture conference",
-      size: "970x180",
-      isActive: true,
-      clickCount: 0
-    },
-    {
-      id: "leaderboard-2",
-      imageUrl: "/ads/banner-970x180-2.jpg",
-      redirectUrl: "https://archalley.com/magazine",
-      title: "Architecture Magazine",
-      description: "Subscribe to our monthly magazine",
-      size: "970x180",
-      isActive: true,
-      clickCount: 0
-    },
-    {
-      id: "leaderboard-3",
-      imageUrl: "/ads/banner-970x180-3.jpg",
-      redirectUrl: "https://archalley.com/jobs",
-      title: "Architecture Jobs",
-      description: "Find your dream architecture job",
-      size: "970x180",
-      isActive: true,
-      clickCount: 0
-    }
-  ]
-}
+// ACTUAL Configuration Structure - Flat array with size property
+export const initialAdConfigs: AdBanner[] = [
+  // Position 2: Square Sidebar (350x350) - Fixed ad (always shows)
+  {
+    id: "exel-square",
+    size: "400x400",  // Square format for sidebar
+    imageUrl: "https://archalley.com/wp-content/uploads/2025/02/Exel-Banner-345-x-345-main-banner.webp",
+    redirectUrl: "https://exel.com",
+    active: true,
+    title: "Exel Design Software",
+    description: "Professional architectural design tools"
+  },
+  
+  // Position 1: Medium Rectangle (680x180) - Between Projects & Articles
+  // 5 possible ads (1 randomly selected)
+  {
+    id: "abrand-680",
+    size: "100%x250", // Full width format (was 680x180)
+    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/A-Brand-Banner-680x180-1.webp",
+    redirectUrl: "https://abrand.com",
+    active: true,
+    title: "A-Brand Architecture",
+    description: "Premium architectural solutions"
+  },
+  {
+    id: "access-680",
+    size: "100%x250", // Full width format (was 680x180)
+    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/Access-Banner-680x180-1.webp",
+    redirectUrl: "https://access.com",
+    active: true,
+    title: "Access Solutions",
+    description: "Advanced access control systems"
+  },
+  {
+    id: "noorbhoy-680",
+    size: "100%x250", // Full width format (was 680x180)
+    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/Noorbhoy-Banner-680x180-1.webp",
+    redirectUrl: "https://noorbhoy.com",
+    active: true,
+    title: "Noorbhoy Construction",
+    description: "Quality construction services"
+  },
+  {
+    id: "bw-680",
+    size: "100%x250", // Full width format (was 680x180)
+    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/BW-banner-680x180-1.webp",
+    redirectUrl: "https://bw.com",
+    active: true,
+    title: "BW Engineering",
+    description: "Engineering excellence"
+  },
+  {
+    id: "crystal-680",
+    size: "100%x250", // Full width format (was 680x180)
+    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/Crystal-banner-680x180-1.webp",
+    redirectUrl: "https://crystal.com",
+    active: true,
+    title: "Crystal Design",
+    description: "Crystal clear architectural solutions"
+  },
+  
+  // Position 3 & 4: Large Leaderboard (970x180) - Middle & Bottom Section
+  // 5 possible ads (1 randomly selected for each position)
+  {
+    id: "abrand-970",
+    size: "100%x250", // Full width format (was 970x180)
+    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/A-Brand-Banner-970x180-1.webp",
+    redirectUrl: "https://abrand.com",
+    active: true,
+    title: "A-Brand Architecture",
+    description: "Premium architectural solutions"
+  },
+  {
+    id: "access-970",
+    size: "100%x250", // Full width format (was 970x180)
+    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/Access-Banner-970x180-1.webp",
+    redirectUrl: "https://access.com",
+    active: true,
+    title: "Access Solutions",
+    description: "Advanced access control systems"
+  },
+  {
+    id: "noorbhoy-970",
+    size: "100%x250", // Full width format (was 970x180)
+    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/Noorbhoy-Banner-970x180-1.webp",
+    redirectUrl: "https://noorbhoy.com",
+    active: true,
+    title: "Noorbhoy Construction",
+    description: "Quality construction services"
+  },
+  {
+    id: "bw-970",
+    size: "100%x250", // Full width format (was 970x180)
+    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/BW-banner-970x180-1.webp",
+    redirectUrl: "https://bw.com",
+    active: true,
+    title: "BW Engineering",
+    description: "Engineering excellence"
+  },
+  {
+    id: "crystal-970",
+    size: "100%x250", // Full width format (was 970x180)
+    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/Crystal-banner-970x180-1.webp",
+    redirectUrl: "https://crystal.com",
+    active: true,
+    title: "Crystal Design",
+    description: "Crystal clear architectural solutions"
+  }
+]
 
 /**
  * Get a random ad banner for a specific size
  * @param size - Banner size
  * @returns Random ad banner or null if none available
  */
-export function getRandomAdBanner(size: '680x180' | '350x350' | '970x180'): AdBanner | null {
-  const banners = AD_BANNERS[size]?.filter(banner => banner.isActive) || []
+export function getRandomAdBanner(size: '680x180' | '350x350' | '970x180' | '800x200' | '400x400' | '1200x240' | '1200x300' | '100%x250'): AdBanner | null {
+  const banners = initialAdConfigs.filter(banner => 
+    (size === '680x180' && banner.size === '100%x250') ||
+    (size === '350x350' && banner.size === '400x400') ||
+    (size === '970x180' && banner.size === '100%x250') ||
+    (size === '800x200' && banner.size === '100%x250') ||
+    (size === '1200x240' && banner.size === '100%x250') ||
+    (size === '1200x300' && banner.size === '100%x250') ||
+    (size === '100%x250' && banner.size === '100%x250') ||
+    banner.size === size && banner.active
+  )
   
   if (banners.length === 0) {
     return null
@@ -130,8 +150,17 @@ export function getRandomAdBanner(size: '680x180' | '350x350' | '970x180'): AdBa
  * @param size - Banner size
  * @returns Array of active banners
  */
-export function getAdBanners(size: '680x180' | '350x350' | '970x180'): AdBanner[] {
-  return AD_BANNERS[size]?.filter(banner => banner.isActive) || []
+export function getAdBanners(size: '680x180' | '350x350' | '970x180' | '800x200' | '400x400' | '1200x240' | '1200x300' | '100%x250'): AdBanner[] {
+  return initialAdConfigs.filter(banner => 
+    (size === '680x180' && banner.size === '100%x250') ||
+    (size === '350x350' && banner.size === '400x400') ||
+    (size === '970x180' && banner.size === '100%x250') ||
+    (size === '800x200' && banner.size === '100%x250') ||
+    (size === '1200x240' && banner.size === '100%x250') ||
+    (size === '1200x300' && banner.size === '100%x250') ||
+    (size === '100%x250' && banner.size === '100%x250') ||
+    banner.size === size && banner.active
+  )
 }
 
 /**
@@ -143,10 +172,39 @@ export function trackAdClick(bannerId: string): void {
   console.log(`Ad clicked: ${bannerId}`)
   
   // Update local click count for demonstration
-  Object.values(AD_BANNERS).forEach(sizeGroup => {
-    const banner = sizeGroup.find(b => b.id === bannerId)
-    if (banner) {
-      banner.clickCount = (banner.clickCount || 0) + 1
-    }
-  })
+  const banner = initialAdConfigs.find(b => b.id === bannerId)
+  if (banner) {
+    banner.clickCount = (banner.clickCount || 0) + 1
+  }
+}
+
+/**
+ * Get all available ad sizes
+ * @returns Array of available sizes
+ */
+export function getAvailableSizes(): string[] {
+  const sizes = Array.from(new Set(initialAdConfigs.map(banner => banner.size)))
+  return sizes
+}
+
+/**
+ * Get all active banners
+ * @returns Array of all active banners
+ */
+export function getAllActiveBanners(): AdBanner[] {
+  return initialAdConfigs.filter(banner => banner.active)
+}
+
+/**
+ * Update banner status
+ * @param bannerId - Banner ID
+ * @param active - New active status
+ */
+export function updateBannerStatus(bannerId: string, active: boolean): boolean {
+  const banner = initialAdConfigs.find(b => b.id === bannerId)
+  if (banner) {
+    banner.active = active
+    return true
+  }
+  return false
 }

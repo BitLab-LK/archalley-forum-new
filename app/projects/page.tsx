@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Box, Home, Factory, Palette, TreePine, Landmark, Wrench, Church, HouseIcon } from "lucide-react"
+import { HorizontalAd } from "@/components/ad-banner"
 
 const projectCategories = [
   {
@@ -108,6 +109,11 @@ export default function ProjectsPage() {
           </Card>
         </div>
 
+        {/* Advertisement between stats and categories */}
+        <div className="my-12">
+          <HorizontalAd className="mx-auto animate-fade-in" />
+        </div>
+
         {/* Project Categories */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projectCategories.map((category) => {
@@ -162,6 +168,11 @@ export default function ProjectsPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Advertisement after content */}
+        <div className="mt-12">
+          <HorizontalAd className="mx-auto animate-fade-in" />
         </div>
       </div>
     </div>

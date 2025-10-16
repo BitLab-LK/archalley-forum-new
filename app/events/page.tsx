@@ -2,7 +2,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, MapPin, Users, Clock, ExternalLink } from "lucide-react"
+import { Calendar, MapPin, Clock, Users, ExternalLink } from "lucide-react"
+import { HorizontalAd } from "@/components/ad-banner"
 
 const events = [
   {
@@ -185,6 +186,11 @@ export default function EventsPage() {
           </div>
         </div>
 
+        {/* Advertisement between featured and upcoming events */}
+        <div className="my-12">
+          <HorizontalAd className="mx-auto animate-fade-in" />
+        </div>
+
         {/* Upcoming Events */}
         <div className="mb-12">
           <h2 className="text-2xl font-bold mb-6">Upcoming Events</h2>
@@ -295,6 +301,11 @@ export default function EventsPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Advertisement after content */}
+        <div className="mt-12">
+          <HorizontalAd className="mx-auto animate-fade-in" />
         </div>
       </div>
     </div>

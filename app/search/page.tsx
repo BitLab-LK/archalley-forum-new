@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Search, MessageSquare, ThumbsUp, User, MapPin, Building, CheckCircle, Loader2 } from 'lucide-react'
+import { HorizontalAd } from '@/components/ad-banner'
 
 interface SearchPost {
   id: string
@@ -727,6 +728,13 @@ function SearchContent() {
               </div>
             )}
           </Tabs>
+        )}
+
+        {/* Advertisement after search results */}
+        {searchResults && (
+          <div className="mt-12 mb-8">
+            <HorizontalAd className="mx-auto animate-fade-in" />
+          </div>
         )}
 
         {!searchQuery && (

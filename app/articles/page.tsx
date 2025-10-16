@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FileText, Clock, User, BookOpen } from "lucide-react"
+import { HorizontalAd } from "@/components/ad-banner"
 
 const articles = [
   {
@@ -157,6 +158,11 @@ export default function ArticlesPage() {
           </div>
         </div>
 
+        {/* Advertisement between featured and recent articles */}
+        <div className="my-12">
+          <HorizontalAd className="mx-auto animate-fade-in" />
+        </div>
+
         {/* Recent Articles */}
         <div>
           <h2 className="text-2xl font-bold mb-6">Recent Articles</h2>
@@ -221,6 +227,11 @@ export default function ArticlesPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Advertisement after content */}
+        <div className="mt-12">
+          <HorizontalAd className="mx-auto animate-fade-in" />
         </div>
       </div>
     </div>

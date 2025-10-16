@@ -9,7 +9,7 @@ import ServerHorizontalTrendingSection from "@/components/server-horizontal-tren
 import SocialMediaSection from "@/components/social-media-section"
 import ServerInstagramSlider from "@/components/server-instagram-slider"
 import { AnimatedContentWrapper, AnimatedFeaturesSection } from "@/components/animated-wrappers"
-import { HorizontalAd } from "@/components/ad-banner"
+import { LeaderboardAd, HorizontalAd } from "@/components/ad-banner"
 import { 
   MessageCircle, 
   Navigation
@@ -64,9 +64,23 @@ export default function MainPage() {
             <ServerBlogCarousel />
           </AnimatedContentWrapper>
 
+          {/* First Ad Placement - After Blog Carousel */}
+          <AnimatedContentWrapper direction="fade" delay={150}>
+            <div className="w-full py-6">
+              <LeaderboardAd className="w-full" />
+            </div>
+          </AnimatedContentWrapper>
+
           {/* Projects Section - Full width */}
           <AnimatedContentWrapper direction="up" delay={200}>
             <ServerProjectsSection />
+          </AnimatedContentWrapper>
+
+          {/* Second Ad Placement - Between Projects and Articles */}
+          <AnimatedContentWrapper direction="fade" delay={250}>
+            <div className="w-full py-6">
+              <HorizontalAd className="w-full" />
+            </div>
           </AnimatedContentWrapper>
 
           {/* Articles Section - Full width */}
@@ -74,15 +88,22 @@ export default function MainPage() {
             <ServerArticlesSection />
           </AnimatedContentWrapper>
 
+          {/* Third Ad Placement - Between Articles and News */}
+          <AnimatedContentWrapper direction="fade" delay={350}>
+            <div className="w-full py-6">
+              <LeaderboardAd className="w-full" />
+            </div>
+          </AnimatedContentWrapper>
+
           {/* News Section - Full width */}
           <AnimatedContentWrapper direction="up" delay={400}>
             <ServerNewsSection />
           </AnimatedContentWrapper>
 
-          {/* Sidebar Ad - Centered below content */}
+          {/* Final Ad Placement - After News */}
           <AnimatedContentWrapper direction="fade" delay={500}>
-            <div className="flex justify-center pt-4">
-              <HorizontalAd />
+            <div className="w-full pt-6">
+              <LeaderboardAd className="w-full" />
             </div>
           </AnimatedContentWrapper>
         </div>
