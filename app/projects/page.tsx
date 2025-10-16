@@ -2,13 +2,13 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Building2, Home, Factory, Palette, TreePine, Landmark, Wrench, Church, HouseIcon } from "lucide-react"
+import { Box, Home, Factory, Palette, TreePine, Landmark, Wrench, Church, HouseIcon } from "lucide-react"
 
 const projectCategories = [
   {
     title: "Commercial & Offices",
     description: "Modern commercial spaces and office complexes designed for productivity and innovation.",
-    icon: Building2,
+    icon: Box,
     href: "/projects/commercial",
     count: 45
   },

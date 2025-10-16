@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Search, Moon, Sun, LogOut, User, Shield, Home, Crown, MessageSquare, ChevronDown, FolderOpen, Newspaper } from "lucide-react"
+import { Search, Moon, Sun, LogOut, User, Shield, Home, Crown, MessageCircle, ChevronDown, FolderOpen, Newspaper } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/lib/auth-context"
 import NotificationDropdown from "@/components/notification-dropdown"
@@ -501,7 +501,7 @@ export default function Header() {
                 : "text-muted-foreground hover:text-primary"
             }`}
           >
-            <MessageSquare className={`h-4 w-4 transition-all duration-300 ease-in-out ${isActivePath("/forum") ? "fill-current scale-110" : "hover:scale-110"}`} />
+            <MessageCircle className={`h-4 w-4 transition-all duration-300 ease-in-out ${isActivePath("/forum") ? "fill-current scale-110" : "hover:scale-110"}`} />
             <span className="text-[9px] transition-all duration-300 ease-in-out">Forum</span>
           </Link>
 

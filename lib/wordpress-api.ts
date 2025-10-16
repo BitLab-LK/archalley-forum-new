@@ -149,3 +149,60 @@ export function getPostExcerpt(post: WordPressPost, maxLength: number = 150): st
     ? excerpt.substring(0, maxLength) + '...'
     : excerpt
 }
+
+// Category interface
+export interface WordPressCategory {
+  id: number
+  name: string
+  slug: string
+  description: string
+  count: number
+}
+
+/**
+ * Get all categories from WordPress
+ */
+export async function getAllCategories(): Promise<WordPressCategory[]> {
+  try {
+    const response = await fetch(
+      `${WORDPRESS_API_URL}/categories?per_page=100&hide_empty=true`,
+      {
+        next: { revalidate: 3600 }, // Cache for 1 hour
+      }
+    )
+    
+    if (!response.ok) {
+      throw new Error(`WordPress API error: ${response.status}`)
+    }
+    
+    const categories: WordPressCategory[] = await response.json()
+    return categories
+  } catch (error) {
+    console.error('Error fetching WordPress categories:', error)
+    return []
+  }
+}
+
+/**
+ * Get posts by category
+ */
+export async function getPostsByCategory(categoryId: number, page: number = 1, perPage: number = 8): Promise<WordPressPost[]> {
+  try {
+    const response = await fetch(
+      `${WORDPRESS_API_URL}/posts?_embed=wp:featuredmedia,wp:term&categories=${categoryId}&page=${page}&per_page=${perPage}&status=publish&orderby=date&order=desc`,
+      {
+        next: { revalidate: 300 }, // Cache for 5 minutes
+      }
+    )
+    
+    if (!response.ok) {
+      throw new Error(`WordPress API error: ${response.status}`)
+    }
+    
+    const posts: WordPressPost[] = await response.json()
+    return posts
+  } catch (error) {
+    console.error('Error fetching WordPress posts by category:', error)
+    return []
+  }
+}
