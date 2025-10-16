@@ -9,7 +9,8 @@ import ServerHorizontalTrendingSection from "@/components/server-horizontal-tren
 import SocialMediaSection from "@/components/social-media-section"
 import ServerInstagramSlider from "@/components/server-instagram-slider"
 import { AnimatedContentWrapper, AnimatedFeaturesSection } from "@/components/animated-wrappers"
-import { LeaderboardAd, HorizontalAd } from "@/components/ad-banner"
+import AdBannerComponent from "@/components/ad-banner"
+import { AdSessionManager } from "@/components/ad-session-manager"
 import { 
   MessageCircle, 
   Navigation
@@ -18,6 +19,9 @@ import {
 export default function MainPage() {
   return (
     <div className="min-h-screen">
+      {/* Ad Session Management */}
+      <AdSessionManager />
+      
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-primary/10 via-background to-secondary/10 py-32 md:py-40 lg:py-48">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -67,7 +71,13 @@ export default function MainPage() {
           {/* First Ad Placement - After Blog Carousel */}
           <AnimatedContentWrapper direction="fade" delay={150}>
             <div className="w-full py-6">
-              <LeaderboardAd className="w-full" />
+              <AdBannerComponent 
+                size="90%x180" 
+                className="w-full" 
+                positionId="main-position-1"
+                autoRotate={true}
+                rotationInterval={50}
+              />
             </div>
           </AnimatedContentWrapper>
 
@@ -79,7 +89,13 @@ export default function MainPage() {
           {/* Second Ad Placement - Between Projects and Articles */}
           <AnimatedContentWrapper direction="fade" delay={250}>
             <div className="w-full py-6">
-              <HorizontalAd className="w-full" />
+              <AdBannerComponent 
+                size="90%x180" 
+                className="w-full" 
+                positionId="main-position-2"
+                autoRotate={true}
+                rotationInterval={45}
+              />
             </div>
           </AnimatedContentWrapper>
 
@@ -91,7 +107,13 @@ export default function MainPage() {
           {/* Third Ad Placement - Between Articles and News */}
           <AnimatedContentWrapper direction="fade" delay={350}>
             <div className="w-full py-6">
-              <LeaderboardAd className="w-full" />
+              <AdBannerComponent 
+                size="90%x180" 
+                className="w-full" 
+                positionId="main-position-3"
+                autoRotate={true}
+                rotationInterval={40}
+              />
             </div>
           </AnimatedContentWrapper>
 
@@ -103,7 +125,13 @@ export default function MainPage() {
           {/* Final Ad Placement - After News */}
           <AnimatedContentWrapper direction="fade" delay={500}>
             <div className="w-full pt-6">
-              <LeaderboardAd className="w-full" />
+              <AdBannerComponent 
+                size="90%x180" 
+                className="w-full" 
+                positionId="main-position-4"
+                autoRotate={true}
+                rotationInterval={35}
+              />
             </div>
           </AnimatedContentWrapper>
         </div>
