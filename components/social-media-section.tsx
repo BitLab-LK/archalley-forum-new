@@ -25,13 +25,34 @@ export default function SocialMediaSection() {
     
     // Set video as loaded for YouTube embed
     setVideoLoaded(true)
+    
+    // Add a fallback timer for Facebook loading
+    const fbTimer = setTimeout(() => {
+      if (!fbLoaded) {
+        console.log('Facebook SDK loading timeout, attempting reload...')
+        loadFacebookSDK()
+      }
+    }, 5000)
+
+    return () => clearTimeout(fbTimer)
   }, [])
 
   const loadFacebookSDK = () => {
     // Check if SDK is already loaded
     if (window.FB) {
       setFbLoaded(true)
+      if (fbRef.current) {
+        setTimeout(() => {
+          window.FB.XFBML.parse(fbRef.current)
+        }, 100)
+      }
       return
+    }
+
+    // Remove existing script if any
+    const existingScript = document.querySelector('script[src*="connect.facebook.net"]')
+    if (existingScript) {
+      existingScript.remove()
     }
 
     // Initialize Facebook SDK
@@ -42,6 +63,13 @@ export default function SocialMediaSection() {
         version: 'v18.0'
       })
       setFbLoaded(true)
+      
+      // Parse existing elements
+      if (fbRef.current) {
+        setTimeout(() => {
+          window.FB.XFBML.parse(fbRef.current)
+        }, 100)
+      }
     }
 
     // Load SDK script
@@ -50,46 +78,54 @@ export default function SocialMediaSection() {
     script.defer = true
     script.crossOrigin = 'anonymous'
     script.src = 'https://connect.facebook.net/en_US/sdk.js'
+    script.onload = () => {
+      console.log('Facebook SDK script loaded')
+    }
+    script.onerror = () => {
+      console.error('Failed to load Facebook SDK')
+      setFbLoaded(false)
+    }
     document.head.appendChild(script)
   }
 
   const reloadFacebookPlugin = () => {
-    if (window.FB && fbRef.current) {
-      window.FB.XFBML.parse(fbRef.current)
-    }
+    setFbLoaded(false)
+    setTimeout(() => {
+      loadFacebookSDK()
+    }, 100)
   }
 
   return (
-    <section className="py-8 bg-gradient-to-br from-blue-50 to-indigo-50">
+    <section className="py-6 bg-gradient-to-br from-blue-50 to-indigo-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl md:text-3xl font-bold mb-3">
             Connect With Us
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Stay updated with our latest videos, projects, and community discussions on social media.
           </p>
         </div>
 
         {/* Social Media Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 social-media-grid">
           {/* YouTube Section */}
-          <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-            <CardHeader className="pb-4">
+          <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col">
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center text-lg">
-                  <Youtube className="h-6 w-6 text-red-500 mr-2" />
+                  <Youtube className="h-5 w-5 text-red-500 mr-2" />
                   Latest Video
                 </CardTitle>
-                <Badge variant="secondary" className="bg-red-100 text-red-700">
+                <Badge variant="secondary" className="bg-red-100 text-red-700 text-xs">
                   YouTube
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 flex-1 flex flex-col">
               {/* YouTube Embed */}
-              <div className="relative aspect-video bg-gray-100">
+              <div className="relative aspect-video bg-gray-100 flex-1">
                 {videoLoaded ? (
                   <iframe
                     src={SOCIAL_MEDIA.youtube.embedUrl}
@@ -111,12 +147,12 @@ export default function SocialMediaSection() {
               </div>
               
               {/* YouTube Channel Link */}
-              <div className="p-4 bg-gradient-to-r from-red-50 to-pink-50">
+              <div className="p-3 bg-gradient-to-r from-red-50 to-pink-50 mt-auto">
                 <Button 
                   asChild 
                   variant="outline" 
                   size="sm"
-                  className="w-full border-red-200 text-red-700 hover:bg-red-50"
+                  className="w-full border-red-200 text-red-700 hover:bg-red-50 text-xs"
                 >
                   <a 
                     href={SOCIAL_MEDIA.youtube.channelUrl} 
@@ -124,7 +160,7 @@ export default function SocialMediaSection() {
                     rel="noopener noreferrer"
                   >
                     Visit Our YouTube Channel
-                    <ExternalLink className="ml-2 h-4 w-4" />
+                    <ExternalLink className="ml-2 h-3 w-3" />
                   </a>
                 </Button>
               </div>
@@ -132,47 +168,48 @@ export default function SocialMediaSection() {
           </Card>
 
           {/* Facebook Section */}
-          <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-            <CardHeader className="pb-4">
+          <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col">
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center text-lg">
-                  <Facebook className="h-6 w-6 text-blue-600 mr-2" />
+                  <Facebook className="h-5 w-5 text-blue-600 mr-2" />
                   Facebook Updates
                 </CardTitle>
-                <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-xs">
                   Facebook
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 flex-1 flex flex-col">
               {/* Facebook Page Plugin */}
-              <div ref={fbRef} className="min-h-[400px]">
+              <div ref={fbRef} className="min-h-[350px] flex-1 p-3" style={{ minHeight: '350px' }}>
                 {fbLoaded ? (
                   <div
-                    className="fb-page"
+                    className="fb-page w-full h-full"
                     data-href={SOCIAL_MEDIA.facebook}
                     data-tabs="timeline"
-                    data-width="400"
-                    data-height="400"
-                    data-small-header="false"
+                    data-width="100%"
+                    data-height="350"
+                    data-small-header="true"
                     data-adapt-container-width="true"
                     data-hide-cover="false"
                     data-show-facepile="true"
+                    style={{ width: '100%', height: '100%' }}
                   >
                     <blockquote cite={SOCIAL_MEDIA.facebook} className="fb-xfbml-parse-ignore">
                       <a href={SOCIAL_MEDIA.facebook}>Archalley</a>
                     </blockquote>
                   </div>
                 ) : (
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-8 text-center min-h-[400px] flex items-center justify-center">
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 text-center h-full flex items-center justify-center">
                     <div>
-                      <Facebook className="h-12 w-12 text-blue-500 mx-auto mb-4 animate-pulse" />
-                      <p className="text-gray-600 mb-4">Loading Facebook feed...</p>
+                      <Facebook className="h-10 w-10 text-blue-500 mx-auto mb-3 animate-pulse" />
+                      <p className="text-gray-600 mb-3 text-sm">Loading Facebook feed...</p>
                       <Button 
                         onClick={reloadFacebookPlugin}
                         variant="outline" 
                         size="sm"
-                        className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                        className="border-blue-200 text-blue-700 hover:bg-blue-50 text-xs"
                       >
                         Retry Loading
                       </Button>
@@ -182,12 +219,12 @@ export default function SocialMediaSection() {
               </div>
 
               {/* Facebook Page Link */}
-              <div className="mt-4 pt-4 border-t">
+              <div className="mt-auto p-3 pt-0 border-t">
                 <Button 
                   asChild 
                   variant="outline" 
                   size="sm"
-                  className="w-full border-blue-200 text-blue-700 hover:bg-blue-50"
+                  className="w-full border-blue-200 text-blue-700 hover:bg-blue-50 text-xs"
                 >
                   <a 
                     href={SOCIAL_MEDIA.facebook} 
@@ -195,7 +232,7 @@ export default function SocialMediaSection() {
                     rel="noopener noreferrer"
                   >
                     Visit Our Facebook Page
-                    <ExternalLink className="ml-2 h-4 w-4" />
+                    <ExternalLink className="ml-2 h-3 w-3" />
                   </a>
                 </Button>
               </div>
@@ -204,9 +241,9 @@ export default function SocialMediaSection() {
         </div>
 
         {/* Social Media Links */}
-        <div className="mt-8 text-center">
-          <h3 className="text-lg font-semibold mb-4">Follow Us On</h3>
-          <div className="flex justify-center space-x-4 flex-wrap gap-2">
+        <div className="mt-6 text-center">
+          <h3 className="text-md font-semibold mb-3">Follow Us On</h3>
+          <div className="flex justify-center space-x-3 flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
               <a href={SOCIAL_MEDIA.youtube.channelUrl} target="_blank" rel="noopener noreferrer">
                 <Youtube className="h-4 w-4 mr-2" />
@@ -238,6 +275,30 @@ export default function SocialMediaSection() {
           </div>
         </div>
       </div>
+      
+      {/* Custom CSS for Facebook widget full width */}
+      <style jsx global>{`
+        .fb-page, 
+        .fb-page span, 
+        .fb-page span iframe[style] {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+        
+        .fb-page iframe {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+        
+        /* Ensure both cards have equal height */
+        @media (min-width: 1024px) {
+          .social-media-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: stretch;
+          }
+        }
+      `}</style>
     </section>
   )
 }

@@ -9,7 +9,7 @@ import ServerHorizontalTrendingSection from "@/components/server-horizontal-tren
 import SocialMediaSection from "@/components/social-media-section"
 import ServerInstagramSlider from "@/components/server-instagram-slider"
 import { AnimatedContentWrapper, AnimatedFeaturesSection } from "@/components/animated-wrappers"
-import { SquareAd } from "@/components/ad-banner"
+import { HorizontalAd } from "@/components/ad-banner"
 import { 
   MessageCircle, 
   Navigation
@@ -58,7 +58,7 @@ export default function MainPage() {
 
       {/* Main Content Layout - Full width sections with animations */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-12">
+        <div className="space-y-6">
           {/* Featured Blog Carousel - Full width */}
           <AnimatedContentWrapper direction="up" delay={100}>
             <ServerBlogCarousel />
@@ -82,7 +82,7 @@ export default function MainPage() {
           {/* Sidebar Ad - Centered below content */}
           <AnimatedContentWrapper direction="fade" delay={500}>
             <div className="flex justify-center pt-4">
-              <SquareAd />
+              <HorizontalAd />
             </div>
           </AnimatedContentWrapper>
         </div>

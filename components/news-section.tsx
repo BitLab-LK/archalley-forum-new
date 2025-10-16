@@ -130,7 +130,6 @@ export default function NewsSection({ initialNews = [], initialCategories = [] }
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-4">
-            <Newspaper className="h-8 w-8 text-primary mr-3" />
             <h2 className="text-3xl md:text-4xl font-bold">
               Latest News
             </h2>
