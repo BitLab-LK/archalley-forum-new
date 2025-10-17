@@ -15,6 +15,7 @@ export interface RolePermissions {
   canViewPermissions: boolean
   canViewAppearance: boolean
   canViewPages: boolean
+  canViewAds: boolean
   
   // User Management
   canEditUsers: boolean
@@ -50,6 +51,14 @@ export interface RolePermissions {
   canManagePermissions: boolean
   canCustomizeAppearance: boolean
   canManagePages: boolean
+  
+  // Advertisement Management
+  canViewAdsPanel: boolean
+  canCreateAds: boolean
+  canEditAds: boolean
+  canDeleteAds: boolean
+  canToggleAds: boolean
+  canViewAdStats: boolean
   
   // Advanced Actions
   canViewSystemStats: boolean
@@ -109,6 +118,15 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canCustomizeAppearance: false,
         canManagePages: false,
         
+        // Advertisement Management - View only
+        canViewAds: false,
+        canViewAdsPanel: false,
+        canCreateAds: false,
+        canEditAds: false,
+        canDeleteAds: false,
+        canToggleAds: false,
+        canViewAdStats: false,
+        
         // Advanced Actions - No access
         canViewSystemStats: false,
         canAccessDeveloperTools: false,
@@ -161,6 +179,15 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canManagePermissions: false, // Reserved for SUPER_ADMIN
         canCustomizeAppearance: false,
         canManagePages: false,
+        
+        // Advertisement Management - Full access
+        canViewAds: true,
+        canViewAdsPanel: true,
+        canCreateAds: true,
+        canEditAds: true,
+        canDeleteAds: true,
+        canToggleAds: true,
+        canViewAdStats: true,
         
         // Advanced Actions - Limited
         canViewSystemStats: true,
@@ -215,6 +242,15 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canCustomizeAppearance: false,
         canManagePages: false,
         
+        // Advertisement Management - Full access
+        canViewAds: true,
+        canViewAdsPanel: true,
+        canCreateAds: true,
+        canEditAds: true,
+        canDeleteAds: true,
+        canToggleAds: true,
+        canViewAdStats: true,
+        
         // Advanced Actions - Full access
         canViewSystemStats: true,
         canAccessDeveloperTools: true,
@@ -259,6 +295,16 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canManagePermissions: false,
         canCustomizeAppearance: false,
         canManagePages: false,
+        
+        // Advertisement Management - No access
+        canViewAds: false,
+        canViewAdsPanel: false,
+        canCreateAds: false,
+        canEditAds: false,
+        canDeleteAds: false,
+        canToggleAds: false,
+        canViewAdStats: false,
+        
         canViewSystemStats: false,
         canAccessDeveloperTools: false,
         canPromoteToAdmin: false,
@@ -285,6 +331,7 @@ export function getAvailableTabs(userRole: UserRole): string[] {
   if (permissions.canViewUsers) tabs.push('users')
   if (permissions.canViewCategories) tabs.push('categories')
   if (permissions.canViewPosts) tabs.push('posts')
+  if (permissions.canViewAds) tabs.push('ads')
   if (permissions.canViewSettings) tabs.push('settings')
   if (permissions.canViewPermissions) tabs.push('permissions')
   if (permissions.canViewAppearance) tabs.push('appearance')

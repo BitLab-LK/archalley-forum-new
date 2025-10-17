@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { checkSuperAdminPrivileges } from "@/lib/super-admin-utils"
 import { getRolePermissions, getAvailableTabs, getDefaultTab, getRoleInfo, type UserRole } from "@/lib/role-permissions"
+import AdsManagementSection from "@/components/ads-management-section"
 
 interface DashboardStats {
   totalUsers: number
@@ -1325,6 +1326,9 @@ export default function AdminDashboard() {
             {availableTabs.includes('posts') && (
               <TabsTrigger value="posts" className="text-sm font-medium">Posts</TabsTrigger>
             )}
+            {availableTabs.includes('ads') && (
+              <TabsTrigger value="ads" className="text-sm font-medium">Advertisements</TabsTrigger>
+            )}
             {availableTabs.includes('settings') && (
               <TabsTrigger value="settings" className="text-sm font-medium">Settings</TabsTrigger>
             )}
@@ -2566,6 +2570,13 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
+
+          {/* Advertisements Tab */}
+          {permissions.canViewAds && (
+            <TabsContent value="ads" className="space-y-6">
+              <AdsManagementSection userPermissions={permissions} />
+            </TabsContent>
           )}
         </Tabs>
       </main>
