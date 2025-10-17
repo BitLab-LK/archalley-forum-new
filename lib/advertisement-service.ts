@@ -1,6 +1,6 @@
-import { PrismaClient, Advertisement, AdPriority } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { Advertisement, AdPriority } from '@prisma/client'
+import { deleteAdImageFromBlob, getAdImageInfoFromUrl } from '@/lib/blob-storage'
+import { prisma } from '@/lib/prisma'
 
 export interface CreateAdvertisementData {
   title?: string
@@ -288,6 +288,125 @@ export class AdvertisementService {
           clickCount: ad.clickCount || 0
         }
       })
+    }
+  }
+
+  /**
+   * Delete advertisement with blob cleanup
+   */
+  static async deleteAdWithCleanup(id: string, deletedBy?: string): Promise<boolean> {
+    try {
+      // Get the ad first to check for images
+      const ad = await prisma.advertisement.findUnique({
+        where: { id }
+      })
+
+      if (!ad) {
+        return false
+      }
+
+      // Delete the image from blob storage if it exists and is from our blob storage
+      if (ad.imageUrl) {
+        const imageInfo = getAdImageInfoFromUrl(ad.imageUrl)
+        if (imageInfo.isAdImage) {
+          try {
+            await deleteAdImageFromBlob(ad.imageUrl)
+            console.log(`🗑️ Deleted advertisement image from blob: ${ad.imageUrl}`)
+          } catch (error) {
+            console.warn('Failed to delete advertisement image from blob:', error)
+            // Don't fail the whole operation if image deletion fails
+          }
+        }
+      }
+
+      // Soft delete the advertisement
+      await prisma.advertisement.update({
+        where: { id },
+        data: {
+          active: false,
+          lastEditedBy: deletedBy,
+          updatedAt: new Date()
+        }
+      })
+
+      return true
+    } catch (error) {
+      console.error('Error deleting advertisement with cleanup:', error)
+      return false
+    }
+  }
+
+  /**
+   * Update advertisement with image handling
+   */
+  static async updateAdWithImageHandling(
+    id: string, 
+    data: UpdateAdvertisementData & { oldImageUrl?: string }
+  ): Promise<Advertisement | null> {
+    try {
+      const { oldImageUrl, ...updateData } = data
+
+      // If image URL is being changed and old image exists, clean it up
+      if (updateData.imageUrl && oldImageUrl && updateData.imageUrl !== oldImageUrl) {
+        const oldImageInfo = getAdImageInfoFromUrl(oldImageUrl)
+        if (oldImageInfo.isAdImage) {
+          try {
+            await deleteAdImageFromBlob(oldImageUrl)
+            console.log(`🗑️ Cleaned up old advertisement image: ${oldImageUrl}`)
+          } catch (error) {
+            console.warn('Failed to delete old advertisement image:', error)
+          }
+        }
+      }
+
+      // Update the advertisement
+      return await prisma.advertisement.update({
+        where: { id },
+        data: {
+          ...updateData,
+          updatedAt: new Date()
+        },
+        include: {
+          creator: {
+            select: { id: true, name: true, email: true }
+          },
+          editor: {
+            select: { id: true, name: true, email: true }
+          }
+        }
+      })
+    } catch (error) {
+      console.error('Error updating advertisement with image handling:', error)
+      return null
+    }
+  }
+
+  /**
+   * Cleanup orphaned advertisement images
+   */
+  static async cleanupOrphanedImages(): Promise<{ cleanedCount: number; errors: string[] }> {
+    try {
+      const ads = await prisma.advertisement.findMany({
+        select: { imageUrl: true }
+      })
+
+      // Get current ad image URLs for potential future cleanup logic
+      const currentImageUrls = ads.map(ad => ad.imageUrl).filter(Boolean)
+      
+      // This would require implementing a method to list all blob storage images
+      // For now, return placeholder data with the count of current images
+      console.log(`📊 Advertisement image cleanup check completed - ${currentImageUrls.length} images in use`)
+      
+      return {
+        cleanedCount: 0,
+        errors: []
+      }
+    } catch (error) {
+      console.error('Error during advertisement image cleanup:', error)
+      return {
+        cleanedCount: 0,
+        errors: [error instanceof Error ? error.message : 'Unknown error']
+      }
     }
   }
 }

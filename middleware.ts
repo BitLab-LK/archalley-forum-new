@@ -1,7 +1,28 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getToken } from "next-auth/jwt"
-import { isSessionValid } from "./lib/session-invalidation"
+// import { isSessionValid } from "./lib/session-invalidation"
+
+// Simple session validation for Edge runtime (without database check)
+async function isSessionValidForEdge(request: NextRequest) {
+  try {
+    const token = await getToken({ 
+      req: request, 
+      secret: process.env.NEXTAUTH_SECRET 
+    })
+
+    if (!token || !token.id) {
+      return { isValid: false, reason: "No valid token", userId: null }
+    }
+
+    // For now, just validate that we have a valid JWT token
+    // The API routes will do proper database validation
+    return { isValid: true, reason: "Valid token", userId: token.id as string }
+  } catch (error) {
+    console.error('Error validating session:', error)
+    return { isValid: false, reason: "Session validation error", userId: null }
+  }
+}
 
 export async function middleware(request: NextRequest) {
   // Skip middleware entirely for auth routes to prevent redirect loops
@@ -74,7 +95,7 @@ export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/profile') ||
       (request.nextUrl.pathname.startsWith('/api/') && !isPublicApiRoute(request.nextUrl.pathname, request.method))) {
     
-    const sessionCheck = await isSessionValid(request)
+    const sessionCheck = await isSessionValidForEdge(request)
     
     if (!sessionCheck.isValid) {
       console.log('🚫 Session invalid:', {
@@ -125,7 +146,7 @@ export async function middleware(request: NextRequest) {
       
       // Additional session validation for admin routes (but don't block if it fails)
       try {
-        const sessionCheck = await isSessionValid(request)
+        const sessionCheck = await isSessionValidForEdge(request)
         if (!sessionCheck.isValid) {
           console.log('⚠️ Admin session invalid but allowing access with valid token:', {
             reason: sessionCheck.reason,

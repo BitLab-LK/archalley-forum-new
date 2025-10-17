@@ -5,6 +5,9 @@ import { getRolePermissions } from "@/lib/role-permissions"
 import AdvertisementService from "@/lib/advertisement-service"
 import { initialAdConfigs } from "@/lib/adConfig"
 
+// Force this route to run in Node.js runtime (not Edge)
+export const runtime = 'nodejs'
+
 // Fallback function to provide mock ads when database is unavailable
 function getFallbackAdsBySize(size: string) {
   return initialAdConfigs.filter(ad => ad.size === size)
@@ -37,18 +40,42 @@ export async function GET(request: NextRequest) {
 
     if (action === 'stats') {
       // Return ad statistics
-      const stats = await AdvertisementService.getAdStats()
-      const banners = await AdvertisementService.getAllAds()
-      
-      return NextResponse.json({
-        success: true,
-        stats,
-        banners: banners.map(banner => ({
-          ...banner,
-          clickCount: banner.clickCount || 0,
-          impressions: banner.impressions || 0
-        }))
-      })
+      try {
+        const stats = await AdvertisementService.getAdStats()
+        const banners = await AdvertisementService.getAllAds()
+        
+        return NextResponse.json({
+          success: true,
+          stats,
+          banners: banners.map(banner => ({
+            ...banner,
+            clickCount: banner.clickCount || 0,
+            impressions: (banner as any).impressions || 0
+          }))
+        })
+      } catch (error) {
+        console.warn('Database unavailable for stats, using fallback data')
+        const fallbackBanners = getAllFallbackAds()
+        const fallbackStats = {
+          totalBanners: fallbackBanners.length,
+          activeBanners: fallbackBanners.filter(b => b.active).length,
+          totalClicks: fallbackBanners.reduce((sum, b) => sum + (b.clickCount || 0), 0),
+          totalImpressions: fallbackBanners.reduce((sum, b) => sum + ((b as any).impressions || 0), 0),
+          averageClicksPerBanner: fallbackBanners.length > 0 ? 
+            (fallbackBanners.reduce((sum, b) => sum + (b.clickCount || 0), 0) / fallbackBanners.length).toFixed(2) : '0',
+          availableSizes: [...new Set(fallbackBanners.map(b => b.size))].length
+        }
+        
+        return NextResponse.json({
+          success: true,
+          stats: fallbackStats,
+          banners: fallbackBanners.map(banner => ({
+            ...banner,
+            clickCount: banner.clickCount || 0,
+            impressions: (banner as any).impressions || 0
+          }))
+        })
+      }
     }
 
     if (action === 'sizes') {
@@ -244,16 +271,32 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Ad data required" }, { status: 400 })
       }
 
-      const newBanner = await AdvertisementService.createAd({
-        ...adData,
-        createdBy: session.user.id
-      })
-      
-      return NextResponse.json({
-        success: true,
-        message: "Advertisement created successfully",
-        banner: newBanner
-      })
+      // Validate required fields
+      const { imageUrl, redirectUrl, size } = adData
+      if (!imageUrl || !redirectUrl || !size) {
+        return NextResponse.json({ 
+          error: "Missing required fields: imageUrl, redirectUrl, and size are required" 
+        }, { status: 400 })
+      }
+
+      try {
+        const newBanner = await AdvertisementService.createAd({
+          ...adData,
+          createdBy: session.user.id
+        })
+        
+        return NextResponse.json({
+          success: true,
+          message: "Advertisement created successfully",
+          banner: newBanner
+        })
+      } catch (error) {
+        console.error("Failed to create advertisement:", error)
+        return NextResponse.json({
+          error: "Failed to create advertisement",
+          details: error instanceof Error ? error.message : 'Unknown error'
+        }, { status: 500 })
+      }
     }
 
     if (action === 'update') {
@@ -266,19 +309,35 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Banner ID and data required" }, { status: 400 })
       }
 
-      const updatedBanner = await AdvertisementService.updateAd(bannerId, {
-        ...adData,
-        lastEditedBy: session.user.id
-      })
-      
-      if (updatedBanner) {
-        return NextResponse.json({
-          success: true,
-          message: "Advertisement updated successfully",
-          banner: updatedBanner
+      try {
+        // Get current ad for image cleanup if needed
+        const currentAd = await AdvertisementService.getAdById(bannerId)
+        if (!currentAd) {
+          return NextResponse.json({ error: "Advertisement not found" }, { status: 404 })
+        }
+
+        // Use the image handling update method
+        const updatedBanner = await AdvertisementService.updateAdWithImageHandling(bannerId, {
+          ...adData,
+          oldImageUrl: currentAd.imageUrl,
+          lastEditedBy: session.user.id
         })
-      } else {
-        return NextResponse.json({ error: "Banner not found" }, { status: 404 })
+        
+        if (updatedBanner) {
+          return NextResponse.json({
+            success: true,
+            message: "Advertisement updated successfully",
+            banner: updatedBanner
+          })
+        } else {
+          return NextResponse.json({ error: "Failed to update advertisement" }, { status: 500 })
+        }
+      } catch (error) {
+        console.error("Failed to update advertisement:", error)
+        return NextResponse.json({
+          error: "Failed to update advertisement",
+          details: error instanceof Error ? error.message : 'Unknown error'
+        }, { status: 500 })
       }
     }
 
@@ -314,8 +373,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Banner ID required" }, { status: 400 })
     }
 
-    // Soft delete by deactivating the banner
-    const success = await AdvertisementService.deleteAd(bannerId, session.user.id)
+    // Delete with image cleanup
+    const success = await AdvertisementService.deleteAdWithCleanup(bannerId, session.user.id)
     
     if (success) {
       return NextResponse.json({
