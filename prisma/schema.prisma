@@ -331,6 +331,10 @@ model users {
   bannedByUser        users?           @relation("UserBan", fields: [bannedBy], references: [id])
   bannedUsers         users[]          @relation("UserBan")
   
+  // Advertisement relations
+  createdAds          Advertisement[]  @relation("AdCreator")
+  editedAds           Advertisement[]  @relation("AdEditor")
+  
   // Performance and security indexes
   @@index([email])
   @@index([role])
@@ -556,4 +560,40 @@ enum PrivacyLevel {
   EVERYONE
   MEMBERS_ONLY
   ONLY_ME
+}
+
+// Advertisement Management
+model Advertisement {
+  id            String   @id @default(cuid())
+  title         String?
+  description   String?
+  imageUrl      String
+  redirectUrl   String
+  size          String   // e.g., "320x320", "90%x180"
+  active        Boolean  @default(true)
+  weight        Int      @default(1) // 1-10 for weighted selection
+  priority      AdPriority @default(LOW)
+  clickCount    Int      @default(0)
+  impressions   Int      @default(0)
+  
+  // Metadata
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdBy     String?
+  lastEditedBy  String?
+  
+  // Relations
+  creator       users?   @relation("AdCreator", fields: [createdBy], references: [id])
+  editor        users?   @relation("AdEditor", fields: [lastEditedBy], references: [id])
+  
+  @@index([active])
+  @@index([size, active])
+  @@index([priority, weight])
+  @@index([createdAt])
+}
+
+enum AdPriority {
+  HIGH
+  MEDIUM  
+  LOW
 }

@@ -19,12 +19,17 @@ export default function AdManagementPanel() {
 
   useEffect(() => {
     // Load all banners and available sizes
-    setBanners(getAllActiveBanners())
-    setAvailableSizes(getAvailableSizes())
+    const loadData = async () => {
+      const bannersData = await getAllActiveBanners()
+      const sizesData = await getAvailableSizes()
+      setBanners(bannersData)
+      setAvailableSizes(sizesData)
+    }
+    loadData()
   }, [])
 
-  const handleToggleStatus = (bannerId: string, active: boolean) => {
-    const success = updateBannerStatus(bannerId, active)
+  const handleToggleStatus = async (bannerId: string, active: boolean) => {
+    const success = await updateBannerStatus(bannerId, active)
     if (success) {
       setBanners(prev => 
         prev.map(banner => 

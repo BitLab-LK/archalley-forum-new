@@ -9,7 +9,7 @@ import {
   getEnhancedAdBanner, 
   getNextRotationAd, 
   releaseAdPosition, 
-  trackAdClick, 
+  trackAdClickClient, 
   type AdBanner 
 } from "@/lib/adConfig"
 
@@ -38,21 +38,21 @@ export default function AdBannerComponent({
   const componentMountedRef = useRef(true)
 
   // Load initial ad
-  const loadInitialAd = useCallback(() => {
-    const selectedBanner = getEnhancedAdBanner(size, positionId)
+  const loadInitialAd = useCallback(async () => {
+    const selectedBanner = await getEnhancedAdBanner(size, positionId)
     setBanner(selectedBanner)
     setImageLoaded(false)
     setImageError(false)
   }, [size, positionId])
 
   // Rotate to next ad
-  const rotateAd = useCallback(() => {
+  const rotateAd = useCallback(async () => {
     if (!banner || !componentMountedRef.current) return
     
     setIsRotating(true)
     
     // Get next ad for rotation
-    const nextBanner = getNextRotationAd(banner.id, size, positionId)
+    const nextBanner = await getNextRotationAd(banner.id, size, positionId)
     
     if (nextBanner && nextBanner.id !== banner.id) {
       // Fade out current ad, then load new one
@@ -103,7 +103,7 @@ export default function AdBannerComponent({
 
   const handleClick = () => {
     if (banner) {
-      trackAdClick(banner.id)
+      trackAdClickClient(banner.id)
       window.open(banner.redirectUrl, '_blank', 'noopener,noreferrer')
     }
   }

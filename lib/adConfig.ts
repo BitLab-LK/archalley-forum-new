@@ -1,28 +1,29 @@
-// Advertisement banner configuration - ENHANCED IMPLEMENTATION
+// Advertisement banner configuration - CLIENT-SIDE API IMPLEMENTATION
+
+// Note: This runs in the browser, so we use fetch API instead of direct database calls
+
 export interface AdBanner {
-  id: string           // Unique identifier
-  size: string         // Banner dimensions
-  imageUrl: string     // Direct URL to banner image
-  redirectUrl: string  // Advertiser's landing page
-  active: boolean      // Enable/disable banner
-  title?: string       // Optional title for admin panel
-  description?: string // Optional description for admin panel
-  clickCount?: number  // Optional click tracking
-  weight?: number      // Weight for selection probability (1-10, higher = more frequent)
-  priority?: 'high' | 'medium' | 'low' // Priority level
+  id: string
+  size: string
+  imageUrl: string
+  redirectUrl: string
+  active: boolean
+  title?: string
+  description?: string
+  clickCount?: number
+  weight?: number
+  priority?: 'high' | 'medium' | 'low'
 }
 
-// Global state for ad session management
 interface AdSessionState {
-  usedAds: Set<string>           // Ads shown in current session
-  currentlyDisplayed: Set<string> // Ads currently visible on page
-  lastRotation: number           // Timestamp of last rotation
-  sessionStartTime: number       // When session started
-  adHistory: string[]            // History of shown ads
+  usedAds: Set<string>
+  currentlyDisplayed: Set<string>
+  lastRotation: number
+  sessionStartTime: number
+  adHistory: string[]
 }
 
-// Initialize session state
-let adSessionState: AdSessionState = {
+let adSession: AdSessionState = {
   usedAds: new Set(),
   currentlyDisplayed: new Set(),
   lastRotation: Date.now(),
@@ -30,370 +31,365 @@ let adSessionState: AdSessionState = {
   adHistory: []
 }
 
-// ACTUAL Configuration Structure - Enhanced with weights and priorities
-export const initialAdConfigs: AdBanner[] = [
-  // Position 2: Square Sidebar (320x320) - Fixed ad (always shows) - REDUCED SIZE
-  {
-    id: "exel-square",
-    size: "320x320",  // Reduced from 400x400 for better proportions
-    imageUrl: "https://archalley.com/wp-content/uploads/2025/02/Exel-Banner-345-x-345-main-banner.webp",
-    redirectUrl: "https://exel.com",
-    active: true,
-    title: "Exel Design Software",
-    description: "Professional architectural design tools",
-    weight: 10, // Always show (fixed)
-    priority: 'high'
-  },
-  
-  // Position 1: Medium Rectangle (680x180) - Between Projects & Articles
-  // 5 possible ads (1 randomly selected) - WEIGHTED SELECTION
-  {
-    id: "abrand-680",
-    size: "90%x180", // Reduced width and height for better proportions
-    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/A-Brand-Banner-680x180-1.webp",
-    redirectUrl: "https://abrand.com",
-    active: true,
-    title: "A-Brand Architecture",
-    description: "Premium architectural solutions",
-    weight: 8, // High priority advertiser
-    priority: 'high'
-  },
-  {
-    id: "access-680",
-    size: "90%x180", // Reduced width and height for better proportions
-    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/Access-Banner-680x180-1.webp",
-    redirectUrl: "https://access.com",
-    active: true,
-    title: "Access Solutions",
-    description: "Advanced access control systems",
-    weight: 6, // Medium priority
-    priority: 'medium'
-  },
-  {
-    id: "noorbhoy-680",
-    size: "90%x180", // Reduced width and height for better proportions
-    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/Noorbhoy-Banner-680x180-1.webp",
-    redirectUrl: "https://noorbhoy.com",
-    active: true,
-    title: "Noorbhoy Construction",
-    description: "Quality construction services",
-    weight: 7, // Medium-high priority
-    priority: 'medium'
-  },
-  {
-    id: "bw-680",
-    size: "90%x180", // Reduced width and height for better proportions
-    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/BW-banner-680x180-1.webp",
-    redirectUrl: "https://bw.com",
-    active: true,
-    title: "BW Engineering",
-    description: "Engineering excellence",
-    weight: 5, // Medium priority
-    priority: 'medium'
-  },
-  {
-    id: "crystal-680",
-    size: "90%x180", // Reduced width and height for better proportions
-    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/Crystal-banner-680x180-1.webp",
-    redirectUrl: "https://crystal.com",
-    active: true,
-    title: "Crystal Design",
-    description: "Crystal clear architectural solutions",
-    weight: 4, // Lower priority
-    priority: 'low'
-  },
-  
-  // Position 3 & 4: Large Leaderboard (90%x180) - Middle & Bottom Section - REDUCED SIZE
-  // 5 possible ads (1 randomly selected for each position) - WEIGHTED SELECTION
-  {
-    id: "abrand-970",
-    size: "90%x180", // Reduced width and height for better proportions
-    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/A-Brand-Banner-970x180-1.webp",
-    redirectUrl: "https://abrand.com",
-    active: true,
-    title: "A-Brand Architecture",
-    description: "Premium architectural solutions",
-    weight: 9, // Highest priority for leaderboard
-    priority: 'high'
-  },
-  {
-    id: "access-970",
-    size: "90%x180", // Reduced width and height for better proportions
-    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/Access-Banner-970x180-1.webp",
-    redirectUrl: "https://access.com",
-    active: true,
-    title: "Access Solutions",
-    description: "Advanced access control systems",
-    weight: 6, // Medium priority
-    priority: 'medium'
-  },
-  {
-    id: "noorbhoy-970",
-    size: "90%x180", // Reduced width and height for better proportions
-    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/Noorbhoy-Banner-970x180-1.webp",
-    redirectUrl: "https://noorbhoy.com",
-    active: true,
-    title: "Noorbhoy Construction",
-    description: "Quality construction services",
-    weight: 7, // Medium-high priority
-    priority: 'medium'
-  },
-  {
-    id: "bw-970",
-    size: "90%x180", // Reduced width and height for better proportions
-    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/BW-banner-970x180-1.webp",
-    redirectUrl: "https://bw.com",
-    active: true,
-    title: "BW Engineering",
-    description: "Engineering excellence",
-    weight: 5, // Medium priority
-    priority: 'medium'
-  },
-  {
-    id: "crystal-970",
-    size: "90%x180", // Reduced width and height for better proportions
-    imageUrl: "https://archalley.com/wp-content/uploads/2025/01/Crystal-banner-970x180-1.webp",
-    redirectUrl: "https://crystal.com",
-    active: true,
-    title: "Crystal Design",
-    description: "Crystal clear architectural solutions",
-    weight: 3, // Lower priority for variety
-    priority: 'low'
-  }
-]
+export function resetAdSession() {
+  adSession.usedAds.clear()
+  adSession.adHistory = []
+  console.log('🔄 Ad session reset - starting fresh cycle')
+}
 
-/**
- * ENHANCED AD SELECTION SYSTEM
- * Features: Duplicate Prevention, Weighted Selection, Session Management
- */
+function trackRotationEvent(adId: string, type: 'rotation' | 'manual') {
+  console.log(`📊 Ad rotation: ${adId} (${type})`)
+  adSession.lastRotation = Date.now()
+  adSession.adHistory.push(adId)
+}
 
-/**
- * Reset session state (call when user navigates or starts new session)
- */
-export function resetAdSession(): void {
-  adSessionState = {
-    usedAds: new Set(),
-    currentlyDisplayed: new Set(),
-    lastRotation: Date.now(),
-    sessionStartTime: Date.now(),
-    adHistory: []
+export async function getAvailableSizes(): Promise<string[]> {
+  try {
+    const response = await fetch('/api/admin/ads?action=sizes')
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sizes: ${response.status}`)
+    }
+    const data = await response.json()
+    return data.sizes || ['350x350', '680x180', '970x180']
+  } catch (error) {
+    console.error('Error fetching available sizes:', error)
+    return ['350x350', '680x180', '970x180']
   }
 }
 
-/**
- * Weighted random selection - ads with higher weights appear more frequently
- */
-function getWeightedRandomAd(ads: AdBanner[]): AdBanner | null {
-  if (ads.length === 0) return null
+export async function getAllActiveBanners(): Promise<AdBanner[]> {
+  try {
+    const response = await fetch('/api/admin/ads?action=active')
+    if (!response.ok) {
+      throw new Error(`Failed to fetch active banners: ${response.status}`)
+    }
+    const data = await response.json()
+    return data.ads || []
+  } catch (error) {
+    console.error('Error fetching active banners:', error)
+    return []
+  }
+}
 
-  // Calculate total weight
-  const totalWeight = ads.reduce((sum, ad) => sum + (ad.weight || 1), 0)
+export async function getEnhancedAdBanner(size: string, positionId?: string): Promise<AdBanner | null> {
+  try {
+    const position = positionId || 'default'
+    console.log(`🎯 Requesting ${size} banner from API for position: ${position}`)
+    
+    // Fetch ads by size from API
+    const response = await fetch(`/api/admin/ads?action=bySize&size=${encodeURIComponent(size)}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ads: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    const ads = data.ads || []
+    
+    if (ads.length === 0) {
+      console.log(`❌ No active ${size} ads found`)
+      return null
+    }
+
+    const availableAds: AdBanner[] = ads.map((ad: any) => ({
+      id: ad.id,
+      size: ad.size,
+      imageUrl: ad.imageUrl,
+      redirectUrl: ad.redirectUrl,
+      active: ad.active,
+      title: ad.title,
+      description: ad.description,
+      clickCount: ad.clickCount,
+      weight: ad.weight,
+      priority: ad.priority as 'high' | 'medium' | 'low'
+    }))
+
+    const unusedAds = availableAds.filter(ad => !adSession.usedAds.has(ad.id))
+    const adsToChooseFrom = unusedAds.length > 0 ? unusedAds : availableAds
+
+    if (unusedAds.length === 0) {
+      resetAdSession()
+    }
+
+    let selectedAd = selectWeightedAd(adsToChooseFrom)
+    
+    if (selectedAd) {
+      adSession.usedAds.add(selectedAd.id)
+      adSession.currentlyDisplayed.add(selectedAd.id)
+      
+      console.log(`✅ Selected ${size} ad: ${selectedAd.id} (${selectedAd.title || 'No title'}) for position: ${position}`)
+      
+      // Track impression via API
+      await trackAdImpression(selectedAd.id)
+      
+      return selectedAd
+    }
+    
+    return null
+  } catch (error) {
+    console.error(`Error fetching ${size} banner:`, error)
+    return null
+  }
+}
+
+function selectWeightedAd(ads: AdBanner[]): AdBanner | null {
+  if (ads.length === 0) return null
+  if (ads.length === 1) return ads[0]
+
+  const totalWeight = ads.reduce((sum, ad) => {
+    const weight = ad.weight || 5
+    const priorityMultiplier = ad.priority === 'high' ? 2 : ad.priority === 'low' ? 0.5 : 1
+    return sum + (weight * priorityMultiplier)
+  }, 0)
+
+  let random = Math.random() * totalWeight
   
-  // Generate random number between 0 and totalWeight
-  let randomWeight = Math.random() * totalWeight
-  
-  // Find the ad that corresponds to this weight
   for (const ad of ads) {
-    randomWeight -= (ad.weight || 1)
-    if (randomWeight <= 0) {
+    const weight = ad.weight || 5
+    const priorityMultiplier = ad.priority === 'high' ? 2 : ad.priority === 'low' ? 0.5 : 1
+    const effectiveWeight = weight * priorityMultiplier
+    
+    random -= effectiveWeight
+    if (random <= 0) {
       return ad
     }
   }
   
-  // Fallback to last ad
   return ads[ads.length - 1]
 }
 
-/**
- * Get available ads excluding currently displayed ones (prevents duplicates)
- */
-function getAvailableAds(size: string): AdBanner[] {
-  const sizeMap: Record<string, string> = {
-    '680x180': '100%x250',
-    '350x350': '400x400', 
-    '970x180': '100%x250',
-    '800x200': '100%x250',
-    '1200x240': '100%x250',
-    '1200x300': '100%x250',
-    '100%x250': '100%x250'
-  }
-
-  const targetSize = sizeMap[size] || size
-  
-  return initialAdConfigs.filter(banner => 
-    banner.size === targetSize && 
-    banner.active &&
-    !adSessionState.currentlyDisplayed.has(banner.id)
-  )
-}
-
-/**
- * Session-aware ad selection with variety enhancement
- */
-function getSessionAwareAd(availableAds: AdBanner[]): AdBanner | null {
-  if (availableAds.length === 0) return null
-
-  // Prefer ads that haven't been shown in this session
-  const newAds = availableAds.filter(ad => !adSessionState.usedAds.has(ad.id))
-  
-  if (newAds.length > 0) {
-    return getWeightedRandomAd(newAds)
-  }
-  
-  // If all ads have been shown, reset and start over with lower frequency ads first
-  const lowerWeightAds = availableAds.filter(ad => (ad.weight || 1) <= 5)
-  if (lowerWeightAds.length > 0) {
-    return getWeightedRandomAd(lowerWeightAds)
-  }
-  
-  // Fallback to any available ad
-  return getWeightedRandomAd(availableAds)
-}
-
-/**
- * Enhanced ad banner selection with all features
- * @param size - Banner size
- * @param positionId - Unique identifier for ad position (prevents duplicates)
- * @returns Selected ad banner or null if none available
- */
-export function getEnhancedAdBanner(
-  size: '680x180' | '350x350' | '970x180' | '800x200' | '400x400' | '320x320' | '1200x240' | '1200x300' | '100%x250' | '90%x180',
-  positionId?: string
-): AdBanner | null {
-  const availableAds = getAvailableAds(size)
-  const selectedAd = getSessionAwareAd(availableAds)
-  
-  if (selectedAd) {
-    // Track the selection
-    adSessionState.currentlyDisplayed.add(selectedAd.id)
-    adSessionState.usedAds.add(selectedAd.id)
-    adSessionState.adHistory.push(selectedAd.id)
+export async function getNextRotationAd(currentAdId: string, size: string, positionId?: string): Promise<AdBanner | null> {
+  try {
+    const position = positionId || 'default'
+    console.log(`🔄 Rotating from ${currentAdId} for size ${size} at position: ${position}`)
     
-    // Limit history size to prevent memory issues
-    if (adSessionState.adHistory.length > 50) {
-      adSessionState.adHistory = adSessionState.adHistory.slice(-30)
+    // Fetch ads by size from API
+    const response = await fetch(`/api/admin/ads?action=bySize&size=${encodeURIComponent(size)}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ads: ${response.status}`)
     }
     
-    console.log(`🎯 Ad Selected: ${selectedAd.title} (Weight: ${selectedAd.weight}, Position: ${positionId})`)
+    const data = await response.json()
+    const ads = data.ads || []
+    
+    if (ads.length <= 1) {
+      console.log(`❌ Not enough ${size} ads for rotation`)
+      return null
+    }
+
+    const availableAds: AdBanner[] = ads
+      .filter((ad: any) => ad.id !== currentAdId)
+      .map((ad: any) => ({
+        id: ad.id,
+        size: ad.size,
+        imageUrl: ad.imageUrl,
+        redirectUrl: ad.redirectUrl,
+        active: ad.active,
+        title: ad.title,
+        description: ad.description,
+        clickCount: ad.clickCount,
+        weight: ad.weight,
+        priority: ad.priority as 'high' | 'medium' | 'low'
+      }))
+
+    adSession.currentlyDisplayed.delete(currentAdId)
+    
+    const selectedAd = selectWeightedAd(availableAds)
+    
+    if (selectedAd) {
+      adSession.usedAds.add(selectedAd.id)
+      adSession.currentlyDisplayed.add(selectedAd.id)
+      trackRotationEvent(selectedAd.id, 'rotation')
+      
+      // Track impression via API
+      await trackAdImpression(selectedAd.id)
+      
+      console.log(`✅ Rotated to ${size} ad: ${selectedAd.id} at position: ${position}`)
+      return selectedAd
+    }
+    
+    return null
+  } catch (error) {
+    console.error(`Error rotating ${size} banner:`, error)
+    return null
   }
-  
-  return selectedAd
 }
 
-/**
- * Release ad position (call when ad is unmounted)
- */
-export function releaseAdPosition(adId: string): void {
-  adSessionState.currentlyDisplayed.delete(adId)
+export async function trackAdClickClient(adId: string): Promise<void> {
+  try {
+    console.log(`🖱️ Tracking click for ad: ${adId}`)
+    
+    const response = await fetch('/api/admin/ads', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'trackClick',
+        adId: adId
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Failed to track click: ${response.status}`)
+    }
+    
+    const result = await response.json()
+    console.log(`✅ Click tracked successfully for ad: ${adId}`, result)
+  } catch (error) {
+    console.error(`Error tracking click for ad ${adId}:`, error)
+  }
 }
 
-/**
- * Get next ad for rotation (used by auto-rotation)
- */
-export function getNextRotationAd(
-  currentAdId: string,
-  size: '680x180' | '350x350' | '970x180' | '800x200' | '400x400' | '320x320' | '1200x240' | '1200x300' | '100%x250' | '90%x180',
-  positionId?: string
-): AdBanner | null {
-  // Release current ad position
-  releaseAdPosition(currentAdId)
-  
-  // Get new ad
-  return getEnhancedAdBanner(size, positionId)
+// Track ad impression via API
+export async function trackAdImpression(adId: string): Promise<void> {
+  try {
+    const response = await fetch('/api/admin/ads', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'trackImpression',
+        adId: adId
+      })
+    })
+    
+    if (!response.ok) {
+      console.warn(`Failed to track impression for ad ${adId}: ${response.status}`)
+      return
+    }
+    
+    console.log(`👁️ Impression tracked for ad: ${adId}`)
+  } catch (error) {
+    console.error(`Error tracking impression for ad ${adId}:`, error)
+  }
 }
 
-/**
- * Legacy function for backwards compatibility (now uses enhanced system)
- */
-export function getRandomAdBanner(size: '680x180' | '350x350' | '970x180' | '800x200' | '400x400' | '320x320' | '1200x240' | '1200x300' | '100%x250' | '90%x180'): AdBanner | null {
-  return getEnhancedAdBanner(size, `legacy-${Date.now()}`)
-}
-
-/**
- * Get all available ad sizes
- * @returns Array of available sizes
- */
-export function getAvailableSizes(): string[] {
-  const sizes = Array.from(new Set(initialAdConfigs.map(banner => banner.size)))
-  return sizes
-}
-
-/**
- * Get all active banners
- * @returns Array of all active banners
- */
-export function getAllActiveBanners(): AdBanner[] {
-  return initialAdConfigs.filter(banner => banner.active)
-}
-
-/**
- * Update banner status
- * @param bannerId - Banner ID
- * @param active - New active status
- */
-export function updateBannerStatus(bannerId: string, active: boolean): boolean {
-  const banner = initialAdConfigs.find(b => b.id === bannerId)
-  if (banner) {
-    banner.active = active
+export async function updateBannerStatus(bannerId: string, active: boolean): Promise<boolean> {
+  try {
+    const response = await fetch('/api/admin/ads', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'toggle',
+        id: bannerId,
+        active: active
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Failed to update banner status: ${response.status}`)
+    }
+    
+    console.log(`✅ Banner ${bannerId} status updated to: ${active}`)
     return true
+  } catch (error) {
+    console.error(`Error updating banner status:`, error)
+    return false
   }
-  return false
 }
 
-/**
- * Get all active banners for a specific size (enhanced)
- * @param size - Banner size
- * @returns Array of active banners
- */
-export function getAdBanners(size: '680x180' | '350x350' | '970x180' | '800x200' | '400x400' | '320x320' | '1200x240' | '1200x300' | '100%x250' | '90%x180'): AdBanner[] {
-  const sizeMap: Record<string, string> = {
-    '680x180': '90%x180',    // Updated mapping
-    '350x350': '320x320',    // Updated mapping
-    '970x180': '90%x180',    // Updated mapping
-    '800x200': '90%x180',    // Updated mapping
-    '1200x240': '90%x180',   // Updated mapping
-    '1200x300': '90%x180',   // Updated mapping
-    '100%x250': '90%x180',   // Updated mapping
-    '400x400': '320x320',    // Updated mapping
-    '320x320': '320x320',    // Direct mapping
-    '90%x180': '90%x180'     // Direct mapping
+export async function getAdStatistics(): Promise<any> {
+  try {
+    const response = await fetch('/api/admin/ads?action=stats')
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ad statistics: ${response.status}`)
+    }
+    
+    const stats = await response.json()
+    return stats
+  } catch (error) {
+    console.error('Error fetching ad statistics:', error)
+    return null
   }
-
-  const targetSize = sizeMap[size] || size
-  
-  return initialAdConfigs.filter(banner => 
-    banner.size === targetSize && banner.active
-  )
 }
 
-/**
- * Track ad click (enhanced with session tracking)
- * @param bannerId - Banner ID
- */
-export function trackAdClick(bannerId: string): void {
-  // In production, this would save to database/analytics
-  console.log(`🎯 Ad clicked: ${bannerId}`)
-  
-  // Update local click count for demonstration
-  const banner = initialAdConfigs.find(b => b.id === bannerId)
-  if (banner) {
-    banner.clickCount = (banner.clickCount || 0) + 1
-  }
-
-  // Track in session for analytics
-  adSessionState.adHistory.push(`click:${bannerId}`)
+export function clearAdSession(): void {
+  adSession.usedAds.clear()
+  adSession.currentlyDisplayed.clear()
+  adSession.adHistory = []
+  adSession.sessionStartTime = Date.now()
+  adSession.lastRotation = Date.now()
+  console.log('🧹 Ad session cleared')
 }
 
-/**
- * Get advertisement statistics for debugging/monitoring
- */
-export function getAdStats() {
+export function getSessionInfo(): AdSessionState {
   return {
-    sessionStartTime: adSessionState.sessionStartTime,
-    totalAdsShown: adSessionState.usedAds.size,
-    currentlyDisplayed: Array.from(adSessionState.currentlyDisplayed),
-    adHistory: adSessionState.adHistory.slice(-10), // Last 10 events
-    availableAds: initialAdConfigs.filter(ad => ad.active).length,
-    sessionDuration: Date.now() - adSessionState.sessionStartTime
+    ...adSession,
+    usedAds: new Set(adSession.usedAds),
+    currentlyDisplayed: new Set(adSession.currentlyDisplayed)
   }
 }
+
+// Release ad position (remove from currently displayed)
+export function releaseAdPosition(adId: string): void {
+  adSession.currentlyDisplayed.delete(adId)
+  console.log(`🔓 Released ad position: ${adId}`)
+}
+
+// Initial ad configurations for seeding
+export const initialAdConfigs = [
+  {
+    id: 'tech-banner-1',
+    title: 'Tech Solutions Pro',
+    description: 'Advanced technology solutions for your business',
+    imageUrl: 'https://via.placeholder.com/680x180/4F46E5/FFFFFF?text=Tech+Solutions+Pro',
+    redirectUrl: 'https://techsolutions.com',
+    size: '680x180',
+    active: true,
+    weight: 8,
+    priority: 'high',
+    clickCount: 0
+  },
+  {
+    id: 'design-banner-1',
+    title: 'Creative Design Studio',
+    description: 'Professional design services for all your needs',
+    imageUrl: 'https://via.placeholder.com/350x350/10B981/FFFFFF?text=Creative+Design',
+    redirectUrl: 'https://creativedesign.com',
+    size: '350x350',
+    active: true,
+    weight: 7,
+    priority: 'medium',
+    clickCount: 0
+  },
+  {
+    id: 'marketing-banner-1',
+    title: 'Digital Marketing Agency',
+    description: 'Boost your online presence with our marketing expertise',
+    imageUrl: 'https://via.placeholder.com/970x180/F59E0B/FFFFFF?text=Digital+Marketing',
+    redirectUrl: 'https://digitalmarketing.com',
+    size: '970x180',
+    active: true,
+    weight: 6,
+    priority: 'medium',
+    clickCount: 0
+  },
+  {
+    id: 'consulting-banner-1',
+    title: 'Business Consulting',
+    description: 'Expert business advice to grow your company',
+    imageUrl: 'https://via.placeholder.com/680x180/DC2626/FFFFFF?text=Business+Consulting',
+    redirectUrl: 'https://businessconsulting.com',
+    size: '680x180',
+    active: true,
+    weight: 5,
+    priority: 'low',
+    clickCount: 0
+  },
+  {
+    id: 'software-banner-1',
+    title: 'Software Development',
+    description: 'Custom software solutions for modern businesses',
+    imageUrl: 'https://via.placeholder.com/350x350/7C3AED/FFFFFF?text=Software+Dev',
+    redirectUrl: 'https://softwaredev.com',
+    size: '350x350',
+    active: true,
+    weight: 8,
+    priority: 'high',
+    clickCount: 0
+  }
+]

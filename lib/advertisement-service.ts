@@ -1,0 +1,295 @@
+import { PrismaClient, Advertisement, AdPriority } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+export interface CreateAdvertisementData {
+  title?: string
+  description?: string
+  imageUrl: string
+  redirectUrl: string
+  size: string
+  active?: boolean
+  weight?: number
+  priority?: AdPriority
+  createdBy?: string
+}
+
+export interface UpdateAdvertisementData {
+  title?: string
+  description?: string
+  imageUrl?: string
+  redirectUrl?: string
+  size?: string
+  active?: boolean
+  weight?: number
+  priority?: AdPriority
+  lastEditedBy?: string
+}
+
+export class AdvertisementService {
+  
+  /**
+   * Get all advertisements
+   */
+  static async getAllAds(): Promise<Advertisement[]> {
+    return await prisma.advertisement.findMany({
+      include: {
+        creator: {
+          select: { id: true, name: true, email: true }
+        },
+        editor: {
+          select: { id: true, name: true, email: true }
+        }
+      },
+      orderBy: [
+        { active: 'desc' },
+        { priority: 'desc' },
+        { weight: 'desc' },
+        { createdAt: 'desc' }
+      ]
+    })
+  }
+
+  /**
+   * Get active advertisements only
+   */
+  static async getActiveAds(): Promise<Advertisement[]> {
+    return await prisma.advertisement.findMany({
+      where: { active: true },
+      orderBy: [
+        { priority: 'desc' },
+        { weight: 'desc' },
+        { createdAt: 'desc' }
+      ]
+    })
+  }
+
+  /**
+   * Get advertisements by size
+   */
+  static async getAdsBySize(size: string): Promise<Advertisement[]> {
+    return await prisma.advertisement.findMany({
+      where: { 
+        size,
+        active: true 
+      },
+      orderBy: [
+        { priority: 'desc' },
+        { weight: 'desc' }
+      ]
+    })
+  }
+
+  /**
+   * Get advertisement by ID
+   */
+  static async getAdById(id: string): Promise<Advertisement | null> {
+    return await prisma.advertisement.findUnique({
+      where: { id },
+      include: {
+        creator: {
+          select: { id: true, name: true, email: true }
+        },
+        editor: {
+          select: { id: true, name: true, email: true }
+        }
+      }
+    })
+  }
+
+  /**
+   * Create a new advertisement
+   */
+  static async createAd(data: CreateAdvertisementData): Promise<Advertisement> {
+    return await prisma.advertisement.create({
+      data: {
+        title: data.title,
+        description: data.description,
+        imageUrl: data.imageUrl,
+        redirectUrl: data.redirectUrl,
+        size: data.size,
+        active: data.active ?? true,
+        weight: data.weight ?? 1,
+        priority: data.priority ?? AdPriority.LOW,
+        createdBy: data.createdBy
+      }
+    })
+  }
+
+  /**
+   * Update an advertisement
+   */
+  static async updateAd(id: string, data: UpdateAdvertisementData): Promise<Advertisement | null> {
+    try {
+      return await prisma.advertisement.update({
+        where: { id },
+        data: {
+          ...data,
+          updatedAt: new Date()
+        }
+      })
+    } catch (error) {
+      return null
+    }
+  }
+
+  /**
+   * Toggle advertisement active status
+   */
+  static async toggleAdStatus(id: string, active: boolean, userId?: string): Promise<Advertisement | null> {
+    try {
+      return await prisma.advertisement.update({
+        where: { id },
+        data: {
+          active,
+          lastEditedBy: userId,
+          updatedAt: new Date()
+        }
+      })
+    } catch (error) {
+      return null
+    }
+  }
+
+  /**
+   * Delete an advertisement (soft delete by deactivating)
+   */
+  static async deleteAd(id: string, userId?: string): Promise<boolean> {
+    try {
+      await prisma.advertisement.update({
+        where: { id },
+        data: {
+          active: false,
+          lastEditedBy: userId,
+          updatedAt: new Date()
+        }
+      })
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  /**
+   * Hard delete an advertisement (permanent)
+   */
+  static async hardDeleteAd(id: string): Promise<boolean> {
+    try {
+      await prisma.advertisement.delete({
+        where: { id }
+      })
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  /**
+   * Track click for an advertisement
+   */
+  static async trackClick(id: string): Promise<boolean> {
+    try {
+      await prisma.advertisement.update({
+        where: { id },
+        data: {
+          clickCount: {
+            increment: 1
+          }
+        }
+      })
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  /**
+   * Track impression for an advertisement
+   */
+  static async trackImpression(id: string): Promise<boolean> {
+    try {
+      await prisma.advertisement.update({
+        where: { id },
+        data: {
+          impressions: {
+            increment: 1
+          }
+        }
+      })
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  /**
+   * Get advertisement statistics
+   */
+  static async getAdStats() {
+    const [totalAds, activeAds, totalClicks, totalImpressions, availableSizes] = await Promise.all([
+      prisma.advertisement.count(),
+      prisma.advertisement.count({ where: { active: true } }),
+      prisma.advertisement.aggregate({ _sum: { clickCount: true } }),
+      prisma.advertisement.aggregate({ _sum: { impressions: true } }),
+      prisma.advertisement.findMany({ select: { size: true }, distinct: ['size'] })
+    ])
+
+    const avgClicksPerBanner = totalAds > 0 ? ((totalClicks._sum.clickCount || 0) / totalAds).toFixed(2) : '0'
+
+    return {
+      totalBanners: totalAds,
+      activeBanners: activeAds,
+      totalClicks: totalClicks._sum.clickCount || 0,
+      totalImpressions: totalImpressions._sum.impressions || 0,
+      averageClicksPerBanner: avgClicksPerBanner,
+      availableSizes: availableSizes.length
+    }
+  }
+
+  /**
+   * Get available advertisement sizes
+   */
+  static async getAvailableSizes(): Promise<string[]> {
+    const result = await prisma.advertisement.findMany({
+      select: { size: true },
+      distinct: ['size']
+    })
+    return result.map(r => r.size)
+  }
+
+  /**
+   * Seed initial advertisements from existing config
+   */
+  static async seedAds(initialAds: any[]): Promise<void> {
+    for (const ad of initialAds) {
+      await prisma.advertisement.upsert({
+        where: { id: ad.id },
+        update: {
+          title: ad.title,
+          description: ad.description,
+          imageUrl: ad.imageUrl,
+          redirectUrl: ad.redirectUrl,
+          size: ad.size,
+          active: ad.active,
+          weight: ad.weight || 1,
+          priority: ad.priority?.toUpperCase() as AdPriority || AdPriority.LOW,
+          clickCount: ad.clickCount || 0
+        },
+        create: {
+          id: ad.id,
+          title: ad.title,
+          description: ad.description,
+          imageUrl: ad.imageUrl,
+          redirectUrl: ad.redirectUrl,
+          size: ad.size,
+          active: ad.active,
+          weight: ad.weight || 1,
+          priority: ad.priority?.toUpperCase() as AdPriority || AdPriority.LOW,
+          clickCount: ad.clickCount || 0
+        }
+      })
+    }
+  }
+}
+
+export default AdvertisementService

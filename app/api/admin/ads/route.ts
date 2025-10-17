@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { 
-  getAllActiveBanners, 
-  updateBannerStatus, 
-  getAvailableSizes,
-  trackAdClick
-} from "@/lib/adConfig"
+import { getRolePermissions } from "@/lib/role-permissions"
+import AdvertisementService from "@/lib/advertisement-service"
+import { initialAdConfigs } from "@/lib/adConfig"
+
+// Fallback function to provide mock ads when database is unavailable
+function getFallbackAdsBySize(size: string) {
+  return initialAdConfigs.filter(ad => ad.size === size)
+}
+
+function getAllFallbackAds() {
+  return initialAdConfigs
+}
+
+function getFallbackSizes() {
+  return [...new Set(initialAdConfigs.map(ad => ad.size))].sort()
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +27,8 @@ export async function GET(request: NextRequest) {
 
     // Check if user has permission to view ads
     const userRole = session.user.role
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(userRole || '')) {
+    const permissions = getRolePermissions(userRole || 'MEMBER')
+    if (!permissions.canViewAds) {
       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
     }
 
@@ -26,34 +37,105 @@ export async function GET(request: NextRequest) {
 
     if (action === 'stats') {
       // Return ad statistics
-      const banners = getAllActiveBanners()
-      const totalClicks = banners.reduce((sum, banner) => sum + (banner.clickCount || 0), 0)
+      const stats = await AdvertisementService.getAdStats()
+      const banners = await AdvertisementService.getAllAds()
       
       return NextResponse.json({
         success: true,
-        stats: {
-          totalBanners: banners.length,
-          activeBanners: banners.filter(b => b.active).length,
-          totalClicks,
-          averageClicksPerBanner: banners.length > 0 ? (totalClicks / banners.length).toFixed(2) : 0,
-          availableSizes: getAvailableSizes().length
-        },
+        stats,
         banners: banners.map(banner => ({
           ...banner,
-          clickCount: banner.clickCount || 0
+          clickCount: banner.clickCount || 0,
+          impressions: banner.impressions || 0
         }))
       })
     }
 
+    if (action === 'sizes') {
+      // Return available ad sizes
+      try {
+        const sizes = await AdvertisementService.getAvailableSizes()
+        return NextResponse.json({
+          success: true,
+          sizes
+        })
+      } catch (error) {
+        console.warn('Database unavailable, using fallback sizes')
+        const sizes = getFallbackSizes()
+        return NextResponse.json({
+          success: true,
+          sizes
+        })
+      }
+    }
+
+    if (action === 'active') {
+      // Return active ads only
+      try {
+        const ads = await AdvertisementService.getActiveAds()
+        return NextResponse.json({
+          success: true,
+          ads
+        })
+      } catch (error) {
+        console.warn('Database unavailable, using fallback active ads')
+        const ads = getAllFallbackAds().filter(ad => ad.active)
+        return NextResponse.json({
+          success: true,
+          ads
+        })
+      }
+    }
+
+    if (action === 'bySize') {
+      // Return ads by specific size
+      const size = searchParams.get('size')
+      if (!size) {
+        return NextResponse.json({ error: "Size parameter required" }, { status: 400 })
+      }
+      
+      try {
+        const ads = await AdvertisementService.getAdsBySize(size)
+        return NextResponse.json({
+          success: true,
+          ads
+        })
+      } catch (error) {
+        // Fallback to mock data if database is unavailable
+        console.warn('Database unavailable, using fallback ads for size:', size)
+        const fallbackAds = getFallbackAdsBySize(size)
+        return NextResponse.json({
+          success: true,
+          ads: fallbackAds
+        })
+      }
+    }
+
     // Default: return all banners with details
-    const banners = getAllActiveBanners()
-    return NextResponse.json({
-      success: true,
-      banners,
-      availableSizes: getAvailableSizes(),
-      totalBanners: banners.length,
-      activeBanners: banners.filter(b => b.active).length
-    })
+    try {
+      const banners = await AdvertisementService.getAllAds()
+      const availableSizes = await AdvertisementService.getAvailableSizes()
+      
+      return NextResponse.json({
+        success: true,
+        banners,
+        availableSizes,
+        totalBanners: banners.length,
+        activeBanners: banners.filter(b => b.active).length
+      })
+    } catch (error) {
+      console.warn('Database unavailable, using fallback data')
+      const banners = getAllFallbackAds()
+      const availableSizes = getFallbackSizes()
+      
+      return NextResponse.json({
+        success: true,
+        banners,
+        availableSizes,
+        totalBanners: banners.length,
+        activeBanners: banners.filter(b => b.active).length
+      })
+    }
 
   } catch (error) {
     console.error("Error in ads API GET:", error)
@@ -71,24 +153,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Check if user has permission to create/edit ads
     const userRole = session.user.role
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(userRole || '')) {
-      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
-    }
-
+    const permissions = getRolePermissions(userRole || 'MEMBER')
     const body = await request.json()
     const { action, bannerId, active, adData } = body
 
     if (action === 'toggle') {
       // Toggle banner active status
+      if (!permissions.canToggleAds) {
+        return NextResponse.json({ error: "Insufficient permissions to toggle ads" }, { status: 403 })
+      }
+
       if (!bannerId || typeof active !== 'boolean') {
         return NextResponse.json({ error: "Invalid data for toggle action" }, { status: 400 })
       }
 
-      const success = updateBannerStatus(bannerId, active)
+      const updatedBanner = await AdvertisementService.toggleAdStatus(bannerId, active, session.user.id)
       
-      if (success) {
+      if (updatedBanner) {
         return NextResponse.json({
           success: true,
           message: `Banner ${active ? 'activated' : 'deactivated'} successfully`,
@@ -100,49 +182,104 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (action === 'track-click') {
+    if (action === 'trackClick') {
       // Track ad click
-      if (!bannerId) {
-        return NextResponse.json({ error: "Banner ID required" }, { status: 400 })
+      const { adId } = body
+      if (!adId) {
+        return NextResponse.json({ error: "Ad ID required" }, { status: 400 })
       }
 
-      trackAdClick(bannerId)
-      
-      return NextResponse.json({
-        success: true,
-        message: "Click tracked successfully",
-        bannerId
-      })
+      try {
+        const success = await AdvertisementService.trackClick(adId)
+        
+        return NextResponse.json({
+          success,
+          message: success ? "Click tracked successfully" : "Failed to track click",
+          adId
+        })
+      } catch (error) {
+        console.warn('Database unavailable, simulating click tracking for:', adId)
+        // Simulate successful tracking when database is unavailable
+        return NextResponse.json({
+          success: true,
+          message: "Click tracked successfully (fallback mode)",
+          adId
+        })
+      }
+    }
+
+    if (action === 'trackImpression') {
+      // Track ad impression
+      const { adId } = body
+      if (!adId) {
+        return NextResponse.json({ error: "Ad ID required" }, { status: 400 })
+      }
+
+      try {
+        const success = await AdvertisementService.trackImpression(adId)
+        
+        return NextResponse.json({
+          success,
+          message: success ? "Impression tracked successfully" : "Failed to track impression",
+          adId
+        })
+      } catch (error) {
+        console.warn('Database unavailable, simulating impression tracking for:', adId)
+        // Simulate successful tracking when database is unavailable
+        return NextResponse.json({
+          success: true,
+          message: "Impression tracked successfully (fallback mode)",
+          adId
+        })
+      }
     }
 
     if (action === 'create') {
-      // Create new banner (for future implementation)
+      // Create new banner
+      if (!permissions.canCreateAds) {
+        return NextResponse.json({ error: "Insufficient permissions to create ads" }, { status: 403 })
+      }
+
       if (!adData) {
         return NextResponse.json({ error: "Ad data required" }, { status: 400 })
       }
 
-      // TODO: Implement banner creation
-      // This would require updating the adConfig system to support dynamic banner creation
+      const newBanner = await AdvertisementService.createAd({
+        ...adData,
+        createdBy: session.user.id
+      })
       
       return NextResponse.json({
-        success: false,
-        error: "Banner creation not yet implemented"
-      }, { status: 501 })
+        success: true,
+        message: "Advertisement created successfully",
+        banner: newBanner
+      })
     }
 
     if (action === 'update') {
-      // Update existing banner (for future implementation)
+      // Update existing banner
+      if (!permissions.canEditAds) {
+        return NextResponse.json({ error: "Insufficient permissions to edit ads" }, { status: 403 })
+      }
+
       if (!bannerId || !adData) {
         return NextResponse.json({ error: "Banner ID and data required" }, { status: 400 })
       }
 
-      // TODO: Implement banner updates
-      // This would require updating the adConfig system to support dynamic banner updates
+      const updatedBanner = await AdvertisementService.updateAd(bannerId, {
+        ...adData,
+        lastEditedBy: session.user.id
+      })
       
-      return NextResponse.json({
-        success: false,
-        error: "Banner updates not yet implemented"
-      }, { status: 501 })
+      if (updatedBanner) {
+        return NextResponse.json({
+          success: true,
+          message: "Advertisement updated successfully",
+          banner: updatedBanner
+        })
+      } else {
+        return NextResponse.json({ error: "Banner not found" }, { status: 404 })
+      }
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 })
@@ -163,10 +300,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Check if user has permission to delete ads
     const userRole = session.user.role
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(userRole || '')) {
-      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
+    const permissions = getRolePermissions(userRole || 'MEMBER')
+    
+    if (!permissions.canDeleteAds) {
+      return NextResponse.json({ error: "Insufficient permissions to delete ads" }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -176,9 +314,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Banner ID required" }, { status: 400 })
     }
 
-    // For now, we'll just deactivate the banner since deletion would require
-    // restructuring the adConfig system
-    const success = updateBannerStatus(bannerId, false)
+    // Soft delete by deactivating the banner
+    const success = await AdvertisementService.deleteAd(bannerId, session.user.id)
     
     if (success) {
       return NextResponse.json({
