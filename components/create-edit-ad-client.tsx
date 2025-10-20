@@ -12,23 +12,38 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
 export default function CreateEditAdClient() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
   
-  const adId = searchParams.get('id')
+  const adId = searchParams.get('edit') || searchParams.get('id') // Support both ?edit= and ?id=
   const mode = adId ? 'edit' : 'create'
   
   const [isLoading, setIsLoading] = useState(false)
   const [initialData, setInitialData] = useState<Partial<AdFormData> | undefined>()
   const [error, setError] = useState<string | null>(null)
 
-  // Load existing ad data for editing
+  // Check authentication and permissions first
   useEffect(() => {
-    if (mode === 'edit' && adId) {
+    if (status === 'loading') return // Still loading session
+
+    if (status === 'unauthenticated') {
+      toast.error('Please log in to access this page')
+      router.push('/auth/login')
+      return
+    }
+
+    if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'MODERATOR') {
+      toast.error('You do not have permission to access this page')
+      router.push('/admin#advertisements')
+      return
+    }
+
+    // Load ad data only after authentication is confirmed
+    if (mode === 'edit' && adId && session) {
       loadAdData(adId)
     }
-  }, [mode, adId])
+  }, [status, session, mode, adId, router])
 
   const loadAdData = async (id: string) => {
     try {
@@ -107,7 +122,7 @@ export default function CreateEditAdClient() {
 
       if (result.success) {
         toast.success(result.message || `Advertisement ${mode === 'create' ? 'created' : 'updated'} successfully`)
-        router.push('/admin/ads')
+        router.push('/admin#advertisements')
       } else {
         throw new Error(result.error || 'Unexpected response from server')
       }
@@ -122,10 +137,24 @@ export default function CreateEditAdClient() {
   }
 
   const handleCancel = () => {
-    router.push('/admin/ads')
+    router.push('/admin#advertisements')
   }
 
-  // Check permissions
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="container mx-auto p-6 max-w-6xl">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Checking authentication...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Check permissions after loading is complete
   if (!session?.user) {
     return (
       <div className="container mx-auto p-6">
@@ -144,10 +173,10 @@ export default function CreateEditAdClient() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
-          <Link href="/admin/ads">
+          <Link href="/admin#advertisements">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Ads
+              Back to Advertisements
             </Button>
           </Link>
         </div>
