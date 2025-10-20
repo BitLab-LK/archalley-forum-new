@@ -375,7 +375,12 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
                               View Details
                             </DropdownMenuItem>
                             {userPermissions.canEditAds && (
-                              <DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  // Navigate to edit page with banner ID
+                                  window.location.href = `/admin/ads/create?edit=${banner.id}`
+                                }}
+                              >
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit Banner
                               </DropdownMenuItem>
@@ -497,7 +502,7 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
 
       {/* Banner Details Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Advertisement Details
@@ -505,17 +510,17 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
           </DialogHeader>
           
           {selectedBanner && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Banner Preview */}
-              <div className="space-y-4">
-                <h4 className="font-semibold">Preview</h4>
-                <div className="relative bg-gray-100 rounded-lg overflow-hidden mx-auto max-w-2xl">
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm">Preview</h4>
+                <div className="relative bg-gray-100 rounded-lg overflow-hidden mx-auto">
                   <Image
                     src={selectedBanner.imageUrl}
                     alt={selectedBanner.title || selectedBanner.id}
-                    width={800}
-                    height={200}
-                    className="object-contain w-full"
+                    width={600}
+                    height={150}
+                    className="object-contain w-full max-h-32"
                     style={{
                       aspectRatio: selectedBanner.size === '320x320' ? '1/1' : '90/18'
                     }}
@@ -524,17 +529,17 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
               </div>
 
               {/* Banner Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h4 className="font-semibold">Basic Information</h4>
-                  <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-sm">Basic Information</h4>
+                  <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between">
                       <span className="font-medium">Title:</span>
-                      <span>{selectedBanner.title || 'No title'}</span>
+                      <span className="text-right">{selectedBanner.title || 'No title'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">ID:</span>
-                      <span className="font-mono text-sm">{selectedBanner.id}</span>
+                      <span className="font-mono text-xs">{selectedBanner.id}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Size:</span>
@@ -542,20 +547,20 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Status:</span>
-                      <Badge variant={selectedBanner.active ? "default" : "secondary"}>
+                      <Badge variant={selectedBanner.active ? "default" : "secondary"} className="text-xs">
                         {selectedBanner.active ? "Active" : "Inactive"}
                       </Badge>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Priority:</span>
-                      <Badge variant="outline">{selectedBanner.priority || 'low'}</Badge>
+                      <Badge variant="outline" className="text-xs">{selectedBanner.priority || 'low'}</Badge>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h4 className="font-semibold">Performance</h4>
-                  <div className="space-y-2">
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-sm">Performance</h4>
+                  <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between">
                       <span className="font-medium">Total Clicks:</span>
                       <span className="text-blue-600 font-semibold">
@@ -571,30 +576,31 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
               </div>
 
               {/* URLs */}
-              <div className="space-y-4">
-                <h4 className="font-semibold">URLs</h4>
-                <div className="space-y-2">
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm">URLs</h4>
+                <div className="space-y-2 text-sm">
                   <div>
-                    <Label className="text-sm font-medium">Image URL:</Label>
+                    <Label className="text-xs font-medium">Image URL:</Label>
                     <Input
                       value={selectedBanner.imageUrl}
                       readOnly
-                      className="mt-1 bg-gray-50"
+                      className="mt-1 bg-gray-50 text-xs"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Redirect URL:</Label>
+                    <Label className="text-xs font-medium">Redirect URL:</Label>
                     <div className="flex gap-2 mt-1">
                       <Input
                         value={selectedBanner.redirectUrl}
                         readOnly
-                        className="bg-gray-50"
+                        className="bg-gray-50 text-xs"
                       />
                       <Button
                         variant="outline"
+                        size="sm"
                         onClick={() => window.open(selectedBanner.redirectUrl, '_blank')}
                       >
-                        <ExternalLink className="h-4 w-4" />
+                        <ExternalLink className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
@@ -604,8 +610,8 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
               {/* Description */}
               {selectedBanner.description && (
                 <div className="space-y-2">
-                  <h4 className="font-semibold">Description</h4>
-                  <p className="text-gray-600 dark:text-gray-400">
+                  <h4 className="font-semibold text-sm">Description</h4>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">
                     {selectedBanner.description}
                   </p>
                 </div>
