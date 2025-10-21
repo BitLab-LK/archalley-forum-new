@@ -55,85 +55,121 @@ export default function MainPage() {
             </div>
           </div>
         </div>
+        
+        {/* Hero Leaderboard Ad */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
+          <div className="flex justify-center">
+            <div className="max-w-4xl w-full">
+              <div className="bg-gradient-to-r from-gray-50/30 via-white/50 to-gray-50/30 dark:from-gray-900/30 dark:via-gray-800/20 dark:to-gray-900/30 rounded-lg p-4 border border-gray-100/50 dark:border-gray-800/50">
+                <AdBannerComponent 
+                  size="970x180" 
+                  className="w-full min-h-[180px] rounded-md" 
+                  positionId="hero-leaderboard"
+                  autoRotate={true}
+                  rotationInterval={60}
+                  showLabel={false}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Horizontal Trending Section */}
       <ServerHorizontalTrendingSection />
 
-      {/* Main Content Layout - Full width sections with animations */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          {/* Featured Blog Carousel - Full width */}
-          <AnimatedContentWrapper direction="up" delay={100}>
-            <ServerBlogCarousel />
-          </AnimatedContentWrapper>
+      {/* Main Content Layout - Grid with Sidebar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Main Content Column */}
+          <div className="lg:col-span-3 space-y-16">
+            {/* Featured Blog Carousel */}
+            <AnimatedContentWrapper direction="up" delay={100}>
+              <ServerBlogCarousel />
+            </AnimatedContentWrapper>
 
-          {/* First Ad Placement - After Blog Carousel */}
-          <AnimatedContentWrapper direction="fade" delay={150}>
-            <div className="w-full py-6">
-              <AdBannerComponent 
-                size="90%x180" 
-                className="w-full" 
-                positionId="main-position-1"
-                autoRotate={true}
-                rotationInterval={50}
-              />
+            {/* Projects Section */}
+            <AnimatedContentWrapper direction="up" delay={200}>
+              <ServerProjectsSection />
+            </AnimatedContentWrapper>
+
+            {/* Horizontal Ad - Between Projects and Articles */}
+            <AnimatedContentWrapper direction="fade" delay={250}>
+              <div className="py-8">
+                {/* Clean horizontal ad container - no labels */}
+                <div className="bg-gradient-to-r from-gray-50/30 via-white/50 to-gray-50/30 dark:from-gray-900/30 dark:via-gray-800/20 dark:to-gray-900/30 rounded-lg p-4 shadow-sm border border-gray-100/50 dark:border-gray-800/50">
+                  <div className="flex justify-center">
+                    <div className="w-full max-w-4xl">
+                      <AdBannerComponent 
+                        size="970x180" 
+                        className="w-full rounded-lg overflow-hidden" 
+                        positionId="projects-articles-horizontal"
+                        autoRotate={true}
+                        rotationInterval={45}
+                        showLabel={false}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Mobile version */}
+                <div className="lg:hidden mt-4">
+                  <div className="flex justify-center">
+                    <div className="w-full max-w-sm">
+                      <AdBannerComponent 
+                        size="350x350" 
+                        className="w-full rounded-lg overflow-hidden" 
+                        positionId="projects-articles-mobile"
+                        autoRotate={true}
+                        rotationInterval={45}
+                        showLabel={false}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </AnimatedContentWrapper>
+
+            {/* Articles Section */}
+            <AnimatedContentWrapper direction="up" delay={300}>
+              <ServerArticlesSection />
+            </AnimatedContentWrapper>
+
+            {/* News Section */}
+            <AnimatedContentWrapper direction="up" delay={400}>
+              <ServerNewsSection />
+            </AnimatedContentWrapper>
+          </div>
+
+          {/* Sidebar Column */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-8 space-y-8">
+              {/* Square Ad in Sidebar */}
+              <AnimatedContentWrapper direction="fade" delay={150}>
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm p-1">
+                  <AdBannerComponent 
+                    size="320x320" 
+                    className="w-full" 
+                    positionId="sidebar-square"
+                    autoRotate={true}
+                    rotationInterval={30}
+                    showLabel={false}
+                  />
+                </div>
+              </AnimatedContentWrapper>
+
+              {/* Additional sidebar content can go here */}
+              <div className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg p-6">
+                <h3 className="font-semibold mb-3">Join Our Community</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Connect with architects and designers worldwide
+                </p>
+                <Button size="sm" className="w-full" asChild>
+                  <Link href="/forum">Join Forum</Link>
+                </Button>
+              </div>
             </div>
-          </AnimatedContentWrapper>
-
-          {/* Projects Section - Full width */}
-          <AnimatedContentWrapper direction="up" delay={200}>
-            <ServerProjectsSection />
-          </AnimatedContentWrapper>
-
-          {/* Second Ad Placement - Between Projects and Articles */}
-          <AnimatedContentWrapper direction="fade" delay={250}>
-            <div className="w-full py-6">
-              <AdBannerComponent 
-                size="90%x180" 
-                className="w-full" 
-                positionId="main-position-2"
-                autoRotate={true}
-                rotationInterval={45}
-              />
-            </div>
-          </AnimatedContentWrapper>
-
-          {/* Articles Section - Full width */}
-          <AnimatedContentWrapper direction="up" delay={300}>
-            <ServerArticlesSection />
-          </AnimatedContentWrapper>
-
-          {/* Third Ad Placement - Between Articles and News */}
-          <AnimatedContentWrapper direction="fade" delay={350}>
-            <div className="w-full py-6">
-              <AdBannerComponent 
-                size="90%x180" 
-                className="w-full" 
-                positionId="main-position-3"
-                autoRotate={true}
-                rotationInterval={40}
-              />
-            </div>
-          </AnimatedContentWrapper>
-
-          {/* News Section - Full width */}
-          <AnimatedContentWrapper direction="up" delay={400}>
-            <ServerNewsSection />
-          </AnimatedContentWrapper>
-
-          {/* Final Ad Placement - After News */}
-          <AnimatedContentWrapper direction="fade" delay={500}>
-            <div className="w-full pt-6">
-              <AdBannerComponent 
-                size="90%x180" 
-                className="w-full" 
-                positionId="main-position-4"
-                autoRotate={true}
-                rotationInterval={35}
-              />
-            </div>
-          </AnimatedContentWrapper>
+          </div>
         </div>
       </div>
 

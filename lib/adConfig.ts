@@ -45,21 +45,21 @@ function trackRotationEvent(adId: string, type: 'rotation' | 'manual') {
 
 export async function getAvailableSizes(): Promise<string[]> {
   try {
-    const response = await fetch('/api/admin/ads?action=sizes')
+    const response = await fetch('/api/ads?action=sizes')
     if (!response.ok) {
       throw new Error(`Failed to fetch sizes: ${response.status}`)
     }
     const data = await response.json()
-    return data.sizes || ['350x350', '680x180', '970x180']
+    return data.sizes || ['350x350', '320x320', '680x180', '970x180']
   } catch (error) {
     console.error('Error fetching available sizes:', error)
-    return ['350x350', '680x180', '970x180']
+    return ['350x350', '320x320', '680x180', '970x180']
   }
 }
 
 export async function getAllActiveBanners(): Promise<AdBanner[]> {
   try {
-    const response = await fetch('/api/admin/ads?action=active')
+    const response = await fetch('/api/ads')
     if (!response.ok) {
       throw new Error(`Failed to fetch active banners: ${response.status}`)
     }
@@ -71,22 +71,63 @@ export async function getAllActiveBanners(): Promise<AdBanner[]> {
   }
 }
 
+// Admin version with full details and authentication
+export async function getAllActiveBannersAdmin(): Promise<AdBanner[]> {
+  try {
+    const response = await fetch('/api/admin/ads?action=active')
+    if (!response.ok) {
+      throw new Error(`Failed to fetch active banners: ${response.status}`)
+    }
+    const data = await response.json()
+    return data.ads || []
+  } catch (error) {
+    console.error('Error fetching active banners (admin):', error)
+    return []
+  }
+}
+
 export async function getEnhancedAdBanner(size: string, positionId?: string): Promise<AdBanner | null> {
   try {
     const position = positionId || 'default'
     console.log(`🎯 Requesting ${size} banner from API for position: ${position}`)
     
+    // Map requested sizes to database sizes (your WordPress ads use 90%x180)
+    let dbSize = size
+    if (size === '970x180' || size === '680x180' || size === '100%x250') {
+      dbSize = '90%x180'  // Your WordPress ads use this size format
+    }
+    
+    console.log(`🔄 Mapping ${size} to database size: ${dbSize}`)
+    
     // Fetch ads by size from API
-    const response = await fetch(`/api/admin/ads?action=bySize&size=${encodeURIComponent(size)}`)
+    let response = await fetch(`/api/ads?action=bySize&size=${encodeURIComponent(dbSize)}`)
     if (!response.ok) {
       throw new Error(`Failed to fetch ads: ${response.status}`)
     }
     
-    const data = await response.json()
-    const ads = data.ads || []
+    let data = await response.json()
+    let ads = data.ads || []
+    
+    // If no ads found for exact size, try fallback sizes for sidebar
+    if (ads.length === 0 && (size === '320x320' || size === '350x350')) {
+      console.log(`🔄 No ${size} ads found, trying fallback sizes...`)
+      const fallbackSizes = size === '320x320' ? ['350x350'] : ['320x320']
+      
+      for (const fallbackSize of fallbackSizes) {
+        const fallbackResponse = await fetch(`/api/ads?action=bySize&size=${encodeURIComponent(fallbackSize)}`)
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json()
+          if (fallbackData.ads && fallbackData.ads.length > 0) {
+            ads = fallbackData.ads
+            console.log(`✅ Found ${ads.length} ads with fallback size: ${fallbackSize}`)
+            break
+          }
+        }
+      }
+    }
     
     if (ads.length === 0) {
-      console.log(`❌ No active ${size} ads found`)
+      console.log(`❌ No active ${size} ads found (including fallbacks)`)
       return null
     }
 
@@ -162,8 +203,14 @@ export async function getNextRotationAd(currentAdId: string, size: string, posit
     const position = positionId || 'default'
     console.log(`🔄 Rotating from ${currentAdId} for size ${size} at position: ${position}`)
     
+    // Map requested sizes to database sizes (your WordPress ads use 90%x180)
+    let dbSize = size
+    if (size === '970x180' || size === '680x180' || size === '100%x250') {
+      dbSize = '90%x180'  // Your WordPress ads use this size format
+    }
+    
     // Fetch ads by size from API
-    const response = await fetch(`/api/admin/ads?action=bySize&size=${encodeURIComponent(size)}`)
+    const response = await fetch(`/api/ads?action=bySize&size=${encodeURIComponent(dbSize)}`)
     if (!response.ok) {
       throw new Error(`Failed to fetch ads: ${response.status}`)
     }
@@ -218,7 +265,7 @@ export async function trackAdClickClient(adId: string): Promise<void> {
   try {
     console.log(`🖱️ Tracking click for ad: ${adId}`)
     
-    const response = await fetch('/api/admin/ads', {
+    const response = await fetch('/api/ads', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -243,7 +290,7 @@ export async function trackAdClickClient(adId: string): Promise<void> {
 // Track ad impression via API
 export async function trackAdImpression(adId: string): Promise<void> {
   try {
-    const response = await fetch('/api/admin/ads', {
+    const response = await fetch('/api/ads', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -330,66 +377,9 @@ export function releaseAdPosition(adId: string): void {
   console.log(`🔓 Released ad position: ${adId}`)
 }
 
-// Initial ad configurations for seeding
-export const initialAdConfigs = [
-  {
-    id: 'tech-banner-1',
-    title: 'Tech Solutions Pro',
-    description: 'Advanced technology solutions for your business',
-    imageUrl: 'https://via.placeholder.com/680x180/4F46E5/FFFFFF?text=Tech+Solutions+Pro',
-    redirectUrl: 'https://techsolutions.com',
-    size: '680x180',
-    active: true,
-    weight: 8,
-    priority: 'high',
-    clickCount: 0
-  },
-  {
-    id: 'design-banner-1',
-    title: 'Creative Design Studio',
-    description: 'Professional design services for all your needs',
-    imageUrl: 'https://via.placeholder.com/350x350/10B981/FFFFFF?text=Creative+Design',
-    redirectUrl: 'https://creativedesign.com',
-    size: '350x350',
-    active: true,
-    weight: 7,
-    priority: 'medium',
-    clickCount: 0
-  },
-  {
-    id: 'marketing-banner-1',
-    title: 'Digital Marketing Agency',
-    description: 'Boost your online presence with our marketing expertise',
-    imageUrl: 'https://via.placeholder.com/970x180/F59E0B/FFFFFF?text=Digital+Marketing',
-    redirectUrl: 'https://digitalmarketing.com',
-    size: '970x180',
-    active: true,
-    weight: 6,
-    priority: 'medium',
-    clickCount: 0
-  },
-  {
-    id: 'consulting-banner-1',
-    title: 'Business Consulting',
-    description: 'Expert business advice to grow your company',
-    imageUrl: 'https://via.placeholder.com/680x180/DC2626/FFFFFF?text=Business+Consulting',
-    redirectUrl: 'https://businessconsulting.com',
-    size: '680x180',
-    active: true,
-    weight: 5,
-    priority: 'low',
-    clickCount: 0
-  },
-  {
-    id: 'software-banner-1',
-    title: 'Software Development',
-    description: 'Custom software solutions for modern businesses',
-    imageUrl: 'https://via.placeholder.com/350x350/7C3AED/FFFFFF?text=Software+Dev',
-    redirectUrl: 'https://softwaredev.com',
-    size: '350x350',
-    active: true,
-    weight: 8,
-    priority: 'high',
-    clickCount: 0
-  }
+// Initial ad configurations for seeding (minimal fallback - use database ads instead)
+export const initialAdConfigs: AdBanner[] = [
+  // This is now just a fallback when database is unavailable
+  // The actual ads should be managed through the admin dashboard
+  // Keeping one minimal fallback to maintain type safety
 ]

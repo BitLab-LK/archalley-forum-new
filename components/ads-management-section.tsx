@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -40,6 +41,7 @@ interface AdsManagementSectionProps {
 }
 
 export default function AdsManagementSection({ userPermissions }: AdsManagementSectionProps) {
+  const router = useRouter()
   const [banners, setBanners] = useState<AdBanner[]>([])
   const [stats, setStats] = useState<AdStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -49,6 +51,11 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all')
   const [sortBy, setSortBy] = useState<'title' | 'clicks' | 'priority'>('title')
+
+  // Navigate to create ad page
+  const handleCreateAd = () => {
+    router.push('/admin/ads/create')
+  }
 
   // Fetch ads data
   const fetchAdsData = async (showRefreshIndicator = false) => {
@@ -216,7 +223,10 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
             Refresh
           </Button>
           {userPermissions.canCreateAds && (
-            <Button className="bg-yellow-500 hover:bg-yellow-600 text-white">
+            <Button 
+              onClick={handleCreateAd}
+              className="bg-yellow-500 hover:bg-yellow-600 text-white"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Banner
             </Button>
@@ -491,7 +501,10 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
               }
             </p>
             {userPermissions.canCreateAds && (
-              <Button className="bg-yellow-500 hover:bg-yellow-600 text-white">
+              <Button 
+                onClick={handleCreateAd}
+                className="bg-yellow-500 hover:bg-yellow-600 text-white"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Advertisement
               </Button>

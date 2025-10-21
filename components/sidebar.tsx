@@ -6,7 +6,7 @@ import { useEffect, useState, memo } from "react"
 import { useSidebar } from "@/lib/sidebar-context"
 import { cn } from "@/lib/utils"
 import { generateCategoryStyles } from "@/lib/color-utils"
-import { ExelAd } from "@/components/ad-banner"
+import { SquareAd } from "@/components/ad-banner"
 
 interface Category {
   id: string
@@ -196,6 +196,11 @@ function Sidebar() {
 
   return (
     <div className="space-y-6">
+      {/* Top Advertisement - Square Ad */}
+      <div className="animate-fade-in-up">
+        <SquareAd />
+      </div>
+
       {/* Categories */}
       <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50 smooth-transition hover-lift animate-fade-in-up animate-delay-100">
         <CardHeader className="pb-3">
@@ -423,11 +428,6 @@ function Sidebar() {
           )}
         </CardContent>
       </Card>
-
-      {/* Advertisement in Sidebar - Fixed Exel Ad */}
-      <div className="animate-fade-in-up animate-delay-300">
-        <ExelAd />
-      </div>
     </div>
   )
 }

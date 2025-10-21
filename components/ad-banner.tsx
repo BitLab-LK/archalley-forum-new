@@ -25,7 +25,7 @@ interface AdBannerProps {
 export default function AdBannerComponent({ 
   size, 
   className = "", 
-  showLabel = true,
+  showLabel = false,  // Changed default to false
   positionId = `ad-${Math.random().toString(36).substr(2, 9)}`,
   autoRotate = true,
   rotationInterval = 45 // 45 seconds default
@@ -113,7 +113,47 @@ export default function AdBannerComponent({
   }
 
   if (!banner) {
-    return null
+    // Show fallback placeholder when no ads are available
+    return (
+      <div className={`relative ${className}`}>
+        {showLabel && (
+          <div className="flex justify-center mb-2">
+            <Badge variant="outline" className="text-xs text-muted-foreground bg-gray-50 dark:bg-gray-800">
+              Advertisement Space
+            </Badge>
+          </div>
+        )}
+        <div 
+          className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center"
+          style={{
+            aspectRatio: size === '350x350' || size === '400x400' || size === '320x320' ? '1/1' : 
+                        size === '680x180' || size === '800x200' ? '680/180' : 
+                        size === '970x180' || size === '1200x240' ? '970/180' : 
+                        size === '1200x300' ? '1200/300' :
+                        size === '100%x250' ? '1200/250' : '680/180',
+            minHeight: size === '100%x250' ? '250px' : 
+                      size === '1200x300' ? '300px' :
+                      size === '1200x240' ? '240px' :
+                      size === '970x180' ? '180px' :
+                      size === '680x180' ? '180px' :
+                      size === '800x200' ? '200px' :
+                      size === '400x400' ? '400px' : 
+                      size === '350x350' ? '350px' :
+                      size === '320x320' ? '320px' : '180px'
+          }}
+        >
+          <div className="text-center p-4">
+            <div className="text-2xl text-gray-400 dark:text-gray-600 mb-2">📢</div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+              Your Ad Here
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              {size} space available
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Generate placeholder image URL if actual image fails to load
@@ -138,25 +178,27 @@ export default function AdBannerComponent({
           animation: `fadeInAd 0.8s ease-out forwards`,
           opacity: isRotating ? 0.7 : 1,
           transition: 'opacity 0.3s ease-in-out',
-          maxWidth: size === '90%x180' ? '90%' : size === '320x320' ? '320px' : '100%',
-          margin: size === '90%x180' || size === '320x320' ? '0 auto' : 'auto'
+          maxWidth: size === '350x350' ? '350px' : '100%',
+          margin: size === '350x350' ? '0 auto' : 'auto'
         }}
       >
         <div 
           className="relative overflow-hidden bg-gray-50 w-full rounded-xl"
           style={{
             aspectRatio: size === '350x350' || size === '400x400' || size === '320x320' ? '1/1' : 
-                        size === '680x180' || size === '800x200' || size === '90%x180' ? '5/1' : 
-                        size === '970x180' || size === '1200x240' ? '5/1' : 
-                        size === '1200x300' ? '4/1' :
-                        size === '100%x250' ? '5/1' : '5/1',
+                        size === '680x180' || size === '800x200' ? '680/180' : 
+                        size === '970x180' || size === '1200x240' ? '970/180' : 
+                        size === '1200x300' ? '1200/300' :
+                        size === '100%x250' ? '1200/250' : '680/180',
             minHeight: size === '100%x250' ? '250px' : 
-                      size === '90%x180' ? '180px' :
                       size === '1200x300' ? '300px' :
                       size === '1200x240' ? '240px' :
+                      size === '970x180' ? '180px' :
+                      size === '680x180' ? '180px' :
                       size === '800x200' ? '200px' :
                       size === '400x400' ? '400px' : 
-                      size === '320x320' ? '320px' : 'auto'
+                      size === '350x350' ? '350px' :
+                      size === '320x320' ? '320px' : '180px'
           }}
         >
           <Image
@@ -170,12 +212,14 @@ export default function AdBannerComponent({
             onError={handleImageError}
             sizes={
               size === '350x350' || size === '400x400' || size === '320x320'
-                ? "(max-width: 768px) 100vw, 320px"
-                : size === '680x180' || size === '800x200' || size === '90%x180'
-                ? "(max-width: 768px) 100vw, 90vw" 
+                ? "(max-width: 768px) 100vw, 350px"
+                : size === '680x180' || size === '800x200'
+                ? "(max-width: 768px) 100vw, 680px" 
+                : size === '970x180' || size === '1200x240' || size === '1200x300'
+                ? "(max-width: 768px) 100vw, 970px"
                 : size === '100%x250'
                 ? "100vw"
-                : "(max-width: 768px) 100vw, 90vw"
+                : "(max-width: 768px) 100vw, 680px"
             }
           />
           
@@ -244,11 +288,12 @@ export function LeaderboardAd({ className }: { className?: string }) {
 export function HorizontalAd({ className }: { className?: string }) {
   return (
     <AdBannerComponent 
-      size="100%x250" 
+      size="970x180" 
       className={`w-full ${className}`} 
       positionId="horizontal-main"
       autoRotate={true}
-      rotationInterval={45} // 45 seconds for horizontal
+      rotationInterval={45}
+      showLabel={false}
     />
   )
 }
@@ -260,7 +305,8 @@ export function SquareAd({ className }: { className?: string }) {
       className={className} 
       positionId="square-sidebar"
       autoRotate={true}
-      rotationInterval={30} // 30 seconds for sidebar (faster rotation)
+      rotationInterval={30}
+      showLabel={false}
     />
   )
 }

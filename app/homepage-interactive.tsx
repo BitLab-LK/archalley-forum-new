@@ -38,6 +38,7 @@ import SearchParamsHandler from "@/components/homepage-search-params"
 import { Button } from "@/components/ui/button"
 import { useIsHydrated } from "@/hooks/use-performance"
 import { useSocket } from "@/lib/socket-context"
+import AdBannerComponent from "@/components/ad-banner"
 
 /**
  * Post interface - Represents a complete forum post with all associated data
@@ -794,6 +795,18 @@ export default function HomePageInteractive({
             {/* Post creation component with optimistic updates and real-time callback */}
             <LazyPostCreator onPostCreated={handlePostCreate} />
             
+            {/* Leaderboard Ad - Strategic placement after post creation */}
+            <div className="mb-6">
+              <AdBannerComponent 
+                size="970x180"
+                positionId="forum-header"
+                showLabel={false}
+                className="w-full rounded-lg"
+                autoRotate={true}
+                rotationInterval={60}
+              />
+            </div>
+            
             {/* Handle empty state when no posts are available */}
             {combinedPosts.length === 0 && !isLoading ? (
               <div className="text-center py-12">
@@ -813,16 +826,36 @@ export default function HomePageInteractive({
             ) : (
               <>
                 {/* Render all posts with optimistic updates and real-time features */}
-                {combinedPosts.map((post) => (
-                  <div key={post.id} className={`transition-all duration-300 ${
-                    post.id.startsWith('temp-') ? 'opacity-75 animate-pulse' : ''
-                  } ${
-                    highlightedPostId === post.id ? 'ring-2 ring-blue-500 ring-opacity-50' : ''
-                  }`}>
-                    <PostCard
-                      post={post}
-                      onCommentCountChange={handleCommentCountChange}
-                    />
+                {combinedPosts.map((post, index) => (
+                  <div key={post.id}>
+                    <div className={`transition-all duration-300 ${
+                      post.id.startsWith('temp-') ? 'opacity-75 animate-pulse' : ''
+                    } ${
+                      highlightedPostId === post.id ? 'ring-2 ring-blue-500 ring-opacity-50' : ''
+                    }`}>
+                      <PostCard
+                        post={post}
+                        onCommentCountChange={handleCommentCountChange}
+                      />
+                    </div>
+                    
+                    {/* Strategic Ad Placement - Every 3rd post */}
+                    {(index + 1) % 3 === 0 && index < combinedPosts.length - 1 && (
+                      <div className="my-8">
+                        <div className="border-t border-b border-gray-200 dark:border-gray-700 py-6">
+                          <div className="flex justify-center">
+                            <AdBannerComponent 
+                              size="680x180"
+                              positionId={`forum-content-${Math.floor(index / 3) + 1}`}
+                              showLabel={true}
+                              className="rounded-lg shadow-sm"
+                              autoRotate={true}
+                              rotationInterval={45}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
 

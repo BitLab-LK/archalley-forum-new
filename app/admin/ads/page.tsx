@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { ExternalLink, BarChart3 } from "lucide-react"
 import { 
-  getAllActiveBanners, 
+  getAllActiveBannersAdmin, 
   updateBannerStatus, 
   getAvailableSizes,
   type AdBanner 
@@ -20,7 +20,7 @@ export default function AdManagementPanel() {
   useEffect(() => {
     // Load all banners and available sizes
     const loadData = async () => {
-      const bannersData = await getAllActiveBanners()
+      const bannersData = await getAllActiveBannersAdmin()
       const sizesData = await getAvailableSizes()
       setBanners(bannersData)
       setAvailableSizes(sizesData)

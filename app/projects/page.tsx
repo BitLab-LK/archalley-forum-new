@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Box, Home, Factory, Palette, TreePine, Landmark, Wrench, Church, HouseIcon } from "lucide-react"
 import { HorizontalAd } from "@/components/ad-banner"
+import Sidebar from "@/components/sidebar"
 
 const projectCategories = [
   {
@@ -75,6 +76,9 @@ export default function ProjectsPage() {
   return (
     <div className="min-h-screen py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-3">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold tracking-tight mb-4">
@@ -170,9 +174,18 @@ export default function ProjectsPage() {
           </Card>
         </div>
 
-        {/* Advertisement after content */}
-        <div className="mt-12">
-          <HorizontalAd className="mx-auto animate-fade-in" />
+            {/* Advertisement after content */}
+            <div className="mt-12">
+              <HorizontalAd className="mx-auto animate-fade-in" />
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-8">
+              <Sidebar />
+            </div>
+          </div>
         </div>
       </div>
     </div>

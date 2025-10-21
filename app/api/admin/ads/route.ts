@@ -3,22 +3,22 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { getRolePermissions } from "@/lib/role-permissions"
 import AdvertisementService from "@/lib/advertisement-service"
-import { initialAdConfigs } from "@/lib/adConfig"
+import { initialAdConfigs, type AdBanner } from "@/lib/adConfig"
 
 // Force this route to run in Node.js runtime (not Edge)
 export const runtime = 'nodejs'
 
 // Fallback function to provide mock ads when database is unavailable
-function getFallbackAdsBySize(size: string) {
+function getFallbackAdsBySize(size: string): AdBanner[] {
   return initialAdConfigs.filter(ad => ad.size === size)
 }
 
-function getAllFallbackAds() {
+function getAllFallbackAds(): AdBanner[] {
   return initialAdConfigs
 }
 
-function getFallbackSizes() {
-  return [...new Set(initialAdConfigs.map(ad => ad.size))].sort()
+function getFallbackSizes(): string[] {
+  return initialAdConfigs.length > 0 ? [...new Set(initialAdConfigs.map(ad => ad.size))].sort() : []
 }
 
 export async function GET(request: NextRequest) {
@@ -58,22 +58,22 @@ export async function GET(request: NextRequest) {
         const fallbackBanners = getAllFallbackAds()
         const fallbackStats = {
           totalBanners: fallbackBanners.length,
-          activeBanners: fallbackBanners.filter(b => b.active).length,
-          totalClicks: fallbackBanners.reduce((sum, b) => sum + (b.clickCount || 0), 0),
-          totalImpressions: fallbackBanners.reduce((sum, b) => sum + ((b as any).impressions || 0), 0),
+          activeBanners: fallbackBanners.length > 0 ? fallbackBanners.filter(b => b.active).length : 0,
+          totalClicks: fallbackBanners.length > 0 ? fallbackBanners.reduce((sum, b) => sum + (b.clickCount || 0), 0) : 0,
+          totalImpressions: fallbackBanners.length > 0 ? fallbackBanners.reduce((sum, b) => sum + ((b as any).impressions || 0), 0) : 0,
           averageClicksPerBanner: fallbackBanners.length > 0 ? 
             (fallbackBanners.reduce((sum, b) => sum + (b.clickCount || 0), 0) / fallbackBanners.length).toFixed(2) : '0',
-          availableSizes: [...new Set(fallbackBanners.map(b => b.size))].length
+          availableSizes: fallbackBanners.length > 0 ? [...new Set(fallbackBanners.map(b => b.size))].length : 0
         }
         
         return NextResponse.json({
           success: true,
           stats: fallbackStats,
-          banners: fallbackBanners.map(banner => ({
+          banners: fallbackBanners.length > 0 ? fallbackBanners.map(banner => ({
             ...banner,
             clickCount: banner.clickCount || 0,
             impressions: (banner as any).impressions || 0
-          }))
+          })) : []
         })
       }
     }
@@ -106,7 +106,8 @@ export async function GET(request: NextRequest) {
         })
       } catch (error) {
         console.warn('Database unavailable, using fallback active ads')
-        const ads = getAllFallbackAds().filter(ad => ad.active)
+        const fallbackAds = getAllFallbackAds()
+        const ads = fallbackAds.length > 0 ? fallbackAds.filter(ad => ad.active) : []
         return NextResponse.json({
           success: true,
           ads
@@ -160,7 +161,7 @@ export async function GET(request: NextRequest) {
         banners,
         availableSizes,
         totalBanners: banners.length,
-        activeBanners: banners.filter(b => b.active).length
+        activeBanners: banners.length > 0 ? banners.filter(b => b.active).length : 0
       })
     }
 
