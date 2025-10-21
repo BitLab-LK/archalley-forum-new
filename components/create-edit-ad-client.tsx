@@ -35,7 +35,7 @@ export default function CreateEditAdClient() {
 
     if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'MODERATOR') {
       toast.error('You do not have permission to access this page')
-      router.push('/admin#advertisements')
+      router.push('/admin?tab=ads')
       return
     }
 
@@ -122,7 +122,7 @@ export default function CreateEditAdClient() {
 
       if (result.success) {
         toast.success(result.message || `Advertisement ${mode === 'create' ? 'created' : 'updated'} successfully`)
-        router.push('/admin#advertisements')
+        router.push('/admin?tab=ads')
       } else {
         throw new Error(result.error || 'Unexpected response from server')
       }
@@ -137,7 +137,7 @@ export default function CreateEditAdClient() {
   }
 
   const handleCancel = () => {
-    router.push('/admin#advertisements')
+    router.push('/admin?tab=ads')
   }
 
   // Show loading while checking authentication
@@ -173,7 +173,7 @@ export default function CreateEditAdClient() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
-          <Link href="/admin#advertisements">
+          <Link href="/admin?tab=ads">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Advertisements

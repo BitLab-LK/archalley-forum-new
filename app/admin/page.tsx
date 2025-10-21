@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -133,7 +134,12 @@ interface Post {
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState("statistics")
+  const searchParams = useSearchParams()
+  const [activeTab, setActiveTab] = useState(() => {
+    // Check URL parameter for initial tab
+    const tabParam = searchParams.get('tab')
+    return tabParam || "statistics"
+  })
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalPosts: 0,
@@ -203,6 +209,14 @@ export default function AdminDashboard() {
       return
     }
   }, [authenticatedUser, authLoading, router])
+
+  // Sync activeTab with URL parameter changes
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam)
+    }
+  }, [searchParams, activeTab])
 
   // Set default tab based on role permissions
   useEffect(() => {
@@ -652,6 +666,66 @@ export default function AdminDashboard() {
       console.log('� Post editing started:', editingPost.id)
     }
   }, [editingPost])
+
+  // In-dialog image navigation functions - moved before early return to fix hooks order
+  const goToPreviousImage = useCallback(() => {
+    if (viewingPost?.images && viewingPost.images.length > 1) {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === 0 ? viewingPost.images.length - 1 : prevIndex - 1
+      )
+    }
+  }, [viewingPost?.images])
+
+  const goToNextImage = useCallback(() => {
+    if (viewingPost?.images && viewingPost.images.length > 1) {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === viewingPost.images.length - 1 ? 0 : prevIndex + 1
+      )
+    }
+  }, [viewingPost?.images])
+
+  const goToImage = useCallback((index: number) => {
+    setCurrentImageIndex(index)
+  }, [])
+
+  const zoomIn = useCallback(() => {
+    setImageZoom(prev => Math.min(prev + 25, 200))
+  }, [])
+
+  const zoomOut = useCallback(() => {
+    setImageZoom(prev => Math.max(prev - 25, 25))
+  }, [])
+
+  const resetZoom = useCallback(() => {
+    setImageZoom(100)
+  }, [])
+
+  // Reset image index when viewing a new post
+  useEffect(() => {
+    if (viewingPost) {
+      setCurrentImageIndex(0)
+      setImageZoom(100)
+    }
+  }, [viewingPost])
+
+  // Keyboard navigation for image slider
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!viewingPost || !viewingPost.images || viewingPost.images.length <= 1) return
+      
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        goToPreviousImage()
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        goToNextImage()
+      }
+    }
+
+    // Always add the listener, but the handler itself checks for viewingPost
+    document.addEventListener('keydown', handleKeyPress)
+    return () => document.removeEventListener('keydown', handleKeyPress)
+  }, [viewingPost, goToPreviousImage, goToNextImage])
 
   // Don't render anything if user is not admin, super admin, or moderator (after all hooks are declared)
   if (authLoading || !authenticatedUser || !['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(authenticatedUser.role || '')) {
@@ -1198,66 +1272,6 @@ export default function AdminDashboard() {
       setLoadingFullPost(false)
     }
   }
-
-  // In-dialog image navigation functions
-  const goToPreviousImage = useCallback(() => {
-    if (viewingPost?.images && viewingPost.images.length > 1) {
-      setCurrentImageIndex((prevIndex) => 
-        prevIndex === 0 ? viewingPost.images.length - 1 : prevIndex - 1
-      )
-    }
-  }, [viewingPost?.images])
-
-  const goToNextImage = useCallback(() => {
-    if (viewingPost?.images && viewingPost.images.length > 1) {
-      setCurrentImageIndex((prevIndex) => 
-        prevIndex === viewingPost.images.length - 1 ? 0 : prevIndex + 1
-      )
-    }
-  }, [viewingPost?.images])
-
-  const goToImage = useCallback((index: number) => {
-    setCurrentImageIndex(index)
-  }, [])
-
-  const zoomIn = useCallback(() => {
-    setImageZoom(prev => Math.min(prev + 25, 200))
-  }, [])
-
-  const zoomOut = useCallback(() => {
-    setImageZoom(prev => Math.max(prev - 25, 25))
-  }, [])
-
-  const resetZoom = useCallback(() => {
-    setImageZoom(100)
-  }, [])
-
-  // Reset image index when viewing a new post
-  useEffect(() => {
-    if (viewingPost) {
-      setCurrentImageIndex(0)
-      setImageZoom(100)
-    }
-  }, [viewingPost])
-
-  // Keyboard navigation for image slider
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (!viewingPost || !viewingPost.images || viewingPost.images.length <= 1) return
-      
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault()
-        goToPreviousImage()
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault()
-        goToNextImage()
-      }
-    }
-
-    // Always add the listener, but the handler itself checks for viewingPost
-    document.addEventListener('keydown', handleKeyPress)
-    return () => document.removeEventListener('keydown', handleKeyPress)
-  }, [viewingPost, goToPreviousImage, goToNextImage])
 
   if (isLoading) {
     return (
