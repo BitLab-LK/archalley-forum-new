@@ -5,50 +5,102 @@ import { initialAdConfigs } from "@/lib/adConfig"
 // Force this route to run in Node.js runtime (not Edge)
 export const runtime = 'nodejs'
 
-// Simplified: Database-only with sample fallback
-async function getAdsBySize(size: string): Promise<any[]> {
+// WordPress API configuration
+const WORDPRESS_API_BASE = process.env.WORDPRESS_API_URL || 'https://archalley.com/wp-json/wp/v2'
+
+// Fetch ads from WordPress API
+async function fetchWordPressAds(): Promise<any[]> {
   try {
-    console.log(`🎯 Fetching ads for size: ${size}`)
+    // Fetch ads from your WordPress custom post type or posts
+    const response = await fetch(`${WORDPRESS_API_BASE}/advertisements?per_page=100&status=publish`, {
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
     
-    // Get ads from database
-    const dbAds = await AdvertisementService.getAdsBySize(size)
-    
-    if (dbAds.length > 0) {
-      console.log(`✅ Found ${dbAds.length} database ads for size ${size}`)
-      return dbAds.map(ad => ({ ...ad, source: 'database' }))
+    if (!response.ok) {
+      throw new Error(`WordPress API error: ${response.status}`)
     }
     
-    // Fallback to sample ads if no database ads
-    console.log(`⚠️ No database ads found for size ${size}, using sample ads`)
-    const sampleAds = initialAdConfigs.filter(ad => ad.size === size && ad.active)
-    return sampleAds.map(ad => ({ ...ad, source: 'sample' }))
+    const wpAds = await response.json()
     
+    // Transform WordPress ads to our format
+    return wpAds.map((ad: any) => ({
+      id: `wp-${ad.id}`,
+      size: ad.acf?.ad_size || ad.meta?.ad_size || '970x180', // ACF or meta fields
+      imageUrl: ad.acf?.ad_image?.url || ad.featured_media_url || ad.acf?.ad_image,
+      redirectUrl: ad.acf?.ad_link || ad.meta?.ad_link || '#',
+      active: ad.status === 'publish',
+      title: ad.title?.rendered || ad.acf?.ad_title || 'Advertisement',
+      description: ad.acf?.ad_description || ad.excerpt?.rendered || '',
+      weight: parseInt(ad.acf?.ad_weight || ad.meta?.ad_weight || '50'),
+      priority: ad.acf?.ad_priority || ad.meta?.ad_priority || 'medium',
+      source: 'wordpress'
+    }))
   } catch (error) {
-    console.error('Database error, using sample ads:', error)
-    const sampleAds = initialAdConfigs.filter(ad => ad.size === size && ad.active)
-    return sampleAds.map(ad => ({ ...ad, source: 'sample_fallback' }))
+    console.error('Error fetching WordPress ads:', error)
+    return []
   }
 }
 
-async function getActiveAds(): Promise<any[]> {
+// Hybrid function: Get ads from database + WordPress + fallback
+async function getHybridAdsBySize(size: string): Promise<any[]> {
+  let allAds: any[] = []
+  
   try {
-    console.log('🎯 Fetching all active ads from database')
-    
-    const dbAds = await AdvertisementService.getActiveAds()
-    
-    if (dbAds.length > 0) {
-      console.log(`✅ Found ${dbAds.length} active database ads`)
-      return dbAds.map(ad => ({ ...ad, source: 'database' }))
-    }
-    
-    // Fallback to sample ads if no database ads
-    console.log('⚠️ No database ads found, using sample ads')
-    return initialAdConfigs.filter(ad => ad.active).map(ad => ({ ...ad, source: 'sample' }))
-    
+    // 1. First, get ads from your database
+    const dbAds = await AdvertisementService.getAdsBySize(size)
+    allAds = dbAds.map(ad => ({ ...ad, source: 'database' }))
+    console.log(`Found ${dbAds.length} database ads for size ${size}`)
   } catch (error) {
-    console.error('Database error, using sample ads:', error)
-    return initialAdConfigs.filter(ad => ad.active).map(ad => ({ ...ad, source: 'sample_fallback' }))
+    console.error('Database error:', error)
   }
+  
+  try {
+    // 2. Then, get ads from WordPress
+    const wpAds = await fetchWordPressAds()
+    const wpAdsForSize = wpAds.filter(ad => ad.size === size)
+    allAds = [...allAds, ...wpAdsForSize]
+    console.log(`Found ${wpAdsForSize.length} WordPress ads for size ${size}`)
+  } catch (error) {
+    console.error('WordPress API error:', error)
+  }
+  
+  // 3. Finally, add sample ads if we still have no ads
+  if (allAds.length === 0) {
+    const sampleAds = initialAdConfigs.filter(ad => ad.size === size && ad.active)
+    allAds = sampleAds.map(ad => ({ ...ad, source: 'sample' }))
+    console.log(`Using ${sampleAds.length} sample ads for size ${size}`)
+  }
+  
+  return allAds
+}
+
+async function getHybridActiveAds(): Promise<any[]> {
+  let allAds: any[] = []
+  
+  try {
+    // 1. Database ads
+    const dbAds = await AdvertisementService.getActiveAds()
+    allAds = dbAds.map(ad => ({ ...ad, source: 'database' }))
+  } catch (error) {
+    console.error('Database error:', error)
+  }
+  
+  try {
+    // 2. WordPress ads
+    const wpAds = await fetchWordPressAds()
+    allAds = [...allAds, ...wpAds]
+  } catch (error) {
+    console.error('WordPress API error:', error)
+  }
+  
+  // 3. Sample ads as last resort
+  if (allAds.length === 0) {
+    allAds = initialAdConfigs.filter(ad => ad.active).map(ad => ({ ...ad, source: 'sample' }))
+  }
+  
+  return allAds
 }
 
 // Fallback function to provide mock ads when all sources fail
@@ -77,11 +129,12 @@ export async function GET(request: NextRequest) {
       }
       
       try {
-        const ads = await getAdsBySize(size)
+        console.log(`🎯 Fetching ads for size: ${size}`)
+        const ads = await getHybridAdsBySize(size)
         
         return NextResponse.json({
           success: true,
-          ads: ads.map((ad: any) => ({
+          ads: ads.map(ad => ({
             id: ad.id,
             size: ad.size,
             imageUrl: ad.imageUrl,
@@ -94,7 +147,7 @@ export async function GET(request: NextRequest) {
             source: ad.source
           })),
           count: ads.length,
-          sources: [...new Set(ads.map((ad: any) => ad.source))]
+          sources: [...new Set(ads.map(ad => ad.source))]
         })
       } catch (error) {
         // Final fallback to sample data
@@ -139,11 +192,12 @@ export async function GET(request: NextRequest) {
 
     // Default: return all active ads (hybrid approach)
     try {
-      const ads = await getActiveAds()
+      console.log('🎯 Fetching all active ads (hybrid)')
+      const ads = await getHybridActiveAds()
       
       return NextResponse.json({
         success: true,
-        ads: ads.map((ad: any) => ({
+        ads: ads.map(ad => ({
           id: ad.id,
           size: ad.size,
           imageUrl: ad.imageUrl,
@@ -190,15 +244,6 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // Only track clicks for database ads (not sample ads)
-        if (adId.startsWith('sample-')) {
-          console.log(`📊 Sample ad click tracked (not persisted): ${adId}`)
-          return NextResponse.json({
-            success: true,
-            message: "Click tracked (sample ad)"
-          })
-        }
-
         const success = await AdvertisementService.trackClick(adId)
         if (success) {
           return NextResponse.json({
@@ -227,14 +272,6 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // Only track impressions for database ads (not sample ads)
-        if (adId.startsWith('sample-')) {
-          return NextResponse.json({
-            success: true,
-            message: "Impression tracked (sample ad)"
-          })
-        }
-
         const success = await AdvertisementService.trackImpression(adId)
         if (success) {
           return NextResponse.json({

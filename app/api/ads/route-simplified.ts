@@ -51,7 +51,6 @@ async function getActiveAds(): Promise<any[]> {
   }
 }
 
-// Fallback function to provide mock ads when all sources fail
 function getFallbackAdsBySize(size: string) {
   return initialAdConfigs.filter(ad => ad.size === size && ad.active)
 }
@@ -70,7 +69,6 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action')
 
     if (action === 'bySize') {
-      // Return active ads by specific size (hybrid: database + WordPress + sample)
       const size = searchParams.get('size')
       if (!size) {
         return NextResponse.json({ error: "Size parameter required" }, { status: 400 })
@@ -81,7 +79,7 @@ export async function GET(request: NextRequest) {
         
         return NextResponse.json({
           success: true,
-          ads: ads.map((ad: any) => ({
+          ads: ads.map(ad => ({
             id: ad.id,
             size: ad.size,
             imageUrl: ad.imageUrl,
@@ -94,10 +92,9 @@ export async function GET(request: NextRequest) {
             source: ad.source
           })),
           count: ads.length,
-          sources: [...new Set(ads.map((ad: any) => ad.source))]
+          sources: [...new Set(ads.map(ad => ad.source))]
         })
       } catch (error) {
-        // Final fallback to sample data
         console.error('All sources failed, using sample ads for size:', size, error)
         const fallbackAds = getFallbackAdsBySize(size)
         return NextResponse.json({
@@ -110,12 +107,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (action === 'sizes') {
-      // Return available ad sizes (public)
       try {
         const sizes = await AdvertisementService.getAvailableSizes()
         const activeSizes = []
         
-        // Only return sizes that have active ads
         for (const size of sizes) {
           const adsForSize = await AdvertisementService.getAdsBySize(size)
           if (adsForSize.length > 0) {
@@ -125,7 +120,7 @@ export async function GET(request: NextRequest) {
         
         return NextResponse.json({
           success: true,
-          sizes: activeSizes
+          sizes: activeSizes.length > 0 ? activeSizes : getFallbackSizes()
         })
       } catch (error) {
         console.warn('Database unavailable, using fallback sizes')
@@ -137,13 +132,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Default: return all active ads (hybrid approach)
+    // Default: return all active ads
     try {
       const ads = await getActiveAds()
       
       return NextResponse.json({
         success: true,
-        ads: ads.map((ad: any) => ({
+        ads: ads.map(ad => ({
           id: ad.id,
           size: ad.size,
           imageUrl: ad.imageUrl,
@@ -170,7 +165,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error("Error in public ads API GET:", error)
+    console.error("Error in ads API GET:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -184,7 +179,6 @@ export async function POST(request: NextRequest) {
     const { action, adId } = body
 
     if (action === 'trackClick') {
-      // Track advertisement click (public action)
       if (!adId) {
         return NextResponse.json({ error: "Ad ID required" }, { status: 400 })
       }
@@ -221,7 +215,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'trackImpression') {
-      // Track advertisement impression (public action)
       if (!adId) {
         return NextResponse.json({ error: "Ad ID required" }, { status: 400 })
       }
@@ -259,7 +252,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 })
 
   } catch (error) {
-    console.error("Error in public ads API POST:", error)
+    console.error("Error in ads API POST:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

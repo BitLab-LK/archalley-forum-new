@@ -356,7 +356,7 @@ export default function AdManagementPanel() {
 
           {/* Ads Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredAds.map(banner => (
+            {filteredAds.map((banner: AdBanner) => (
               <Card key={banner.id} className="overflow-hidden">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">

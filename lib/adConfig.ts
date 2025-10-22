@@ -91,13 +91,10 @@ export async function getEnhancedAdBanner(size: string, positionId?: string): Pr
     const position = positionId || 'default'
     console.log(`🎯 Requesting ${size} banner from API for position: ${position}`)
     
-    // Map requested sizes to database sizes (your WordPress ads use 90%x180)
-    let dbSize = size
-    if (size === '970x180' || size === '680x180' || size === '100%x250') {
-      dbSize = '90%x180'  // Your WordPress ads use this size format
-    }
+    // Use exact size for our sample ads (no mapping needed)
+    const dbSize = size
     
-    console.log(`🔄 Mapping ${size} to database size: ${dbSize}`)
+    console.log(`🔄 Using exact size for lookup: ${dbSize}`)
     
     // Fetch ads by size from API
     let response = await fetch(`/api/ads?action=bySize&size=${encodeURIComponent(dbSize)}`)
@@ -203,11 +200,8 @@ export async function getNextRotationAd(currentAdId: string, size: string, posit
     const position = positionId || 'default'
     console.log(`🔄 Rotating from ${currentAdId} for size ${size} at position: ${position}`)
     
-    // Map requested sizes to database sizes (your WordPress ads use 90%x180)
-    let dbSize = size
-    if (size === '970x180' || size === '680x180' || size === '100%x250') {
-      dbSize = '90%x180'  // Your WordPress ads use this size format
-    }
+    // Use exact size for our sample ads (no mapping needed)
+    const dbSize = size
     
     // Fetch ads by size from API
     const response = await fetch(`/api/ads?action=bySize&size=${encodeURIComponent(dbSize)}`)
@@ -379,7 +373,97 @@ export function releaseAdPosition(adId: string): void {
 
 // Initial ad configurations for seeding (minimal fallback - use database ads instead)
 export const initialAdConfigs: AdBanner[] = [
-  // This is now just a fallback when database is unavailable
-  // The actual ads should be managed through the admin dashboard
-  // Keeping one minimal fallback to maintain type safety
+  // Sample ads for different sizes - these will rotate automatically
+  
+  // Large leaderboard ads (970x180, 1200x240, 1200x300)
+  {
+    id: "sample-leaderboard-1",
+    size: "970x180",
+    imageUrl: "https://via.placeholder.com/970x180/2563eb/ffffff?text=Modern+Architecture+Solutions",
+    redirectUrl: "https://example-architecture-firm.com",
+    active: true,
+    title: "Modern Architecture Solutions",
+    description: "Innovative designs for the future",
+    weight: 100,
+    priority: "high"
+  },
+  {
+    id: "sample-leaderboard-2", 
+    size: "970x180",
+    imageUrl: "https://via.placeholder.com/970x180/059669/ffffff?text=Premium+Construction+Services",
+    redirectUrl: "https://example-construction.com",
+    active: true,
+    title: "Premium Construction Services",
+    description: "Building excellence since 1985",
+    weight: 90,
+    priority: "medium"
+  },
+  {
+    id: "sample-leaderboard-3",
+    size: "1200x240",
+    imageUrl: "https://via.placeholder.com/1200x240/7c3aed/ffffff?text=Professional+Design+Software", 
+    redirectUrl: "https://example-design-software.com",
+    active: true,
+    title: "Professional Design Software", 
+    description: "Tools for modern architects",
+    weight: 95,
+    priority: "high"
+  },
+  {
+    id: "sample-leaderboard-4",
+    size: "1200x240",
+    imageUrl: "https://via.placeholder.com/1200x240/dc2626/ffffff?text=Sustainable+Building+Materials",
+    redirectUrl: "https://example-materials.com",
+    active: true,
+    title: "Sustainable Building Materials",
+    description: "Eco-friendly construction solutions", 
+    weight: 85,
+    priority: "medium"
+  },
+  
+  // Square/medium rectangle ads (320x320, 350x350, 680x180)
+  {
+    id: "sample-square-1",
+    size: "320x320", 
+    imageUrl: "https://via.placeholder.com/320x320/f59e0b/ffffff?text=Designer+Furniture",
+    redirectUrl: "https://example-furniture.com",
+    active: true,
+    title: "Designer Furniture",
+    description: "Furnish your architectural vision",
+    weight: 80,
+    priority: "medium"
+  },
+  {
+    id: "sample-square-2",
+    size: "350x350",
+    imageUrl: "https://via.placeholder.com/350x350/06b6d4/ffffff?text=Architectural+Lighting", 
+    redirectUrl: "https://example-lighting.com",
+    active: true,
+    title: "Architectural Lighting",
+    description: "Illuminate your designs",
+    weight: 75,
+    priority: "medium" 
+  },
+  {
+    id: "sample-medium-1",
+    size: "680x180",
+    imageUrl: "https://via.placeholder.com/680x180/10b981/ffffff?text=Architecture+Consulting",
+    redirectUrl: "https://example-consulting.com", 
+    active: true,
+    title: "Architecture Consulting",
+    description: "Expert guidance for your projects",
+    weight: 88,
+    priority: "high"
+  },
+  {
+    id: "sample-medium-2",
+    size: "680x180", 
+    imageUrl: "https://via.placeholder.com/680x180/8b5cf6/ffffff?text=Professional+Training",
+    redirectUrl: "https://example-training.com",
+    active: true,
+    title: "Professional Training",
+    description: "Advance your architecture career",
+    weight: 70,
+    priority: "low"
+  }
 ]

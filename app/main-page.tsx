@@ -55,24 +55,6 @@ export default function MainPage() {
             </div>
           </div>
         </div>
-        
-        {/* Hero Leaderboard Ad */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
-          <div className="flex justify-center">
-            <div className="max-w-4xl w-full">
-              <div className="bg-gradient-to-r from-gray-50/30 via-white/50 to-gray-50/30 dark:from-gray-900/30 dark:via-gray-800/20 dark:to-gray-900/30 rounded-lg p-4 border border-gray-100/50 dark:border-gray-800/50">
-                <AdBannerComponent 
-                  size="970x180" 
-                  className="w-full min-h-[180px] rounded-md" 
-                  positionId="hero-leaderboard"
-                  autoRotate={true}
-                  rotationInterval={60}
-                  showLabel={false}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* Horizontal Trending Section */}
@@ -135,6 +117,43 @@ export default function MainPage() {
               <ServerArticlesSection />
             </AnimatedContentWrapper>
 
+            {/* Horizontal Ad - Between Articles and News */}
+            <AnimatedContentWrapper direction="fade" delay={350}>
+              <div className="py-8">
+                {/* Clean horizontal ad container - no labels */}
+                <div className="bg-gradient-to-r from-gray-50/30 via-white/50 to-gray-50/30 dark:from-gray-900/30 dark:via-gray-800/20 dark:to-gray-900/30 rounded-lg p-4 shadow-sm border border-gray-100/50 dark:border-gray-800/50">
+                  <div className="flex justify-center">
+                    <div className="w-full max-w-4xl">
+                      <AdBannerComponent 
+                        size="970x180" 
+                        className="w-full rounded-lg overflow-hidden" 
+                        positionId="articles-news-horizontal"
+                        autoRotate={true}
+                        rotationInterval={45}
+                        showLabel={false}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Mobile version */}
+                <div className="lg:hidden mt-4">
+                  <div className="flex justify-center">
+                    <div className="w-full max-w-sm">
+                      <AdBannerComponent 
+                        size="350x350" 
+                        className="w-full rounded-lg overflow-hidden" 
+                        positionId="articles-news-mobile"
+                        autoRotate={true}
+                        rotationInterval={45}
+                        showLabel={false}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </AnimatedContentWrapper>
+
             {/* News Section */}
             <AnimatedContentWrapper direction="up" delay={400}>
               <ServerNewsSection />
@@ -172,6 +191,46 @@ export default function MainPage() {
           </div>
         </div>
       </div>
+
+      {/* Horizontal Ad - Above Features Section */}
+      <section className="py-8 bg-gradient-to-r from-gray-50/30 via-white/50 to-gray-50/30 dark:from-gray-900/30 dark:via-gray-800/20 dark:to-gray-900/30">
+        <AnimatedContentWrapper direction="fade" delay={100}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-center">
+              <div className="w-full max-w-5xl">
+                <div className="bg-white/70 dark:bg-gray-800/70 rounded-lg p-4 shadow-sm border border-gray-100/50 dark:border-gray-700/50 backdrop-blur-sm">
+                  <AdBannerComponent 
+                    size="1200x240" 
+                    className="w-full rounded-lg overflow-hidden" 
+                    positionId="pre-features-leaderboard"
+                    autoRotate={true}
+                    rotationInterval={60}
+                    showLabel={false}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Mobile version */}
+            <div className="lg:hidden mt-4">
+              <div className="flex justify-center">
+                <div className="w-full max-w-sm">
+                  <div className="bg-white/70 dark:bg-gray-800/70 rounded-lg p-3 shadow-sm border border-gray-100/50 dark:border-gray-700/50 backdrop-blur-sm">
+                    <AdBannerComponent 
+                      size="320x320" 
+                      className="w-full rounded-lg overflow-hidden" 
+                      positionId="pre-features-mobile"
+                      autoRotate={true}
+                      rotationInterval={60}
+                      showLabel={false}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </AnimatedContentWrapper>
+      </section>
 
       {/* Features Section - Moved after main content for better flow */}
       <AnimatedFeaturesSection />
