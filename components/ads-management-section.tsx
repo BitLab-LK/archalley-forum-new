@@ -135,6 +135,42 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
     }
   }
 
+  // Delete banner
+  const deleteBanner = async (bannerId: string, bannerTitle?: string) => {
+    if (!userPermissions.canDeleteAds) {
+      toast.error('You do not have permission to delete ads')
+      return
+    }
+
+    // Confirm deletion
+    const confirmMessage = `Are you sure you want to delete the advertisement "${bannerTitle || bannerId}"? This action cannot be undone.`
+    if (!window.confirm(confirmMessage)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/ads?id=${bannerId}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Remove from local state
+        setBanners(prev => prev.filter(banner => banner.id !== bannerId))
+        toast.success('Advertisement deleted successfully')
+        
+        // Refresh stats
+        fetchAdsData(true)
+      } else {
+        toast.error(data.error || 'Failed to delete advertisement')
+      }
+    } catch (error) {
+      console.error('Error deleting banner:', error)
+      toast.error('Failed to delete advertisement')
+    }
+  }
+
   // Filter and sort banners
   const filteredBanners = banners
     .filter(banner => {
@@ -405,9 +441,12 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
                             {userPermissions.canDeleteAds && (
                               <>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-red-600">
+                                <DropdownMenuItem 
+                                  className="text-red-600"
+                                  onClick={() => deleteBanner(banner.id, banner.title)}
+                                >
                                   <Trash2 className="h-4 w-4 mr-2" />
-                                  Deactivate
+                                  Delete
                                 </DropdownMenuItem>
                               </>
                             )}
