@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, MapPin, Calendar, CheckCircle, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import MinimalBadgeDisplay from "@/components/minimal-badge-display"
-import Sidebar from "@/components/sidebar"
 
 interface Member {
   id: string
@@ -251,10 +250,7 @@ export default function MembersPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fade-in">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            <main className="members-page-container">
+        <main className="members-page-container">
         <div className="mb-4 sm:mb-8 animate-fade-in-up animate-delay-100">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">Community Members</h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
@@ -516,16 +512,7 @@ export default function MembersPage() {
             )}
           </>
         )}
-            </main>
-          </div>
-
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-8">
-              <Sidebar />
-            </div>
-          </div>
-        </div>
+        </main>
       </div>
     </div>
   )

@@ -113,18 +113,18 @@ export default function AdBannerComponent({
   }
 
   if (!banner) {
-    // Show fallback placeholder when no ads are available
+    // Show loading indicator while ads are being fetched
     return (
       <div className={`relative ${className}`}>
         {showLabel && (
           <div className="flex justify-center mb-2">
             <Badge variant="outline" className="text-xs text-muted-foreground bg-gray-50 dark:bg-gray-800">
-              Advertisement Space
+              Loading Advertisement
             </Badge>
           </div>
         )}
         <div 
-          className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center"
+          className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center"
           style={{
             aspectRatio: size === '350x350' || size === '400x400' || size === '320x320' ? '1/1' : 
                         size === '680x180' || size === '800x200' ? '680/180' : 
@@ -143,12 +143,12 @@ export default function AdBannerComponent({
           }}
         >
           <div className="text-center p-4">
-            <div className="text-2xl text-gray-400 dark:text-gray-600 mb-2">📢</div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 dark:border-gray-500 mx-auto mb-3"></div>
             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-              Your Ad Here
+              Loading...
             </p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              {size} space available
+              Advertisement
             </p>
           </div>
         </div>
