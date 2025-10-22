@@ -200,7 +200,7 @@ export default function MainPage() {
               <div className="w-full max-w-5xl">
                 <div className="bg-white/70 dark:bg-gray-800/70 rounded-lg p-4 shadow-sm border border-gray-100/50 dark:border-gray-700/50 backdrop-blur-sm">
                   <AdBannerComponent 
-                    size="1200x240" 
+                    size="970x180" 
                     className="w-full rounded-lg overflow-hidden" 
                     positionId="pre-features-leaderboard"
                     autoRotate={true}

@@ -18,8 +18,20 @@ async function getAdsBySize(size: string): Promise<any[]> {
       return dbAds.map(ad => ({ ...ad, source: 'database' }))
     }
     
-    // Fallback to sample ads if no database ads
-    console.log(`⚠️ No database ads found for size ${size}, using sample ads`)
+    // Try fallback sizes for database ads (square ads compatibility)
+    if (size === '320x320' || size === '350x350') {
+      const fallbackSize = size === '320x320' ? '350x350' : '320x320'
+      console.log(`🔄 No ${size} database ads found, trying fallback size: ${fallbackSize}`)
+      
+      const fallbackDbAds = await AdvertisementService.getAdsBySize(fallbackSize)
+      if (fallbackDbAds.length > 0) {
+        console.log(`✅ Found ${fallbackDbAds.length} database ads with fallback size ${fallbackSize}`)
+        return fallbackDbAds.map(ad => ({ ...ad, source: 'database', originalSize: ad.size, requestedSize: size }))
+      }
+    }
+    
+    // Last resort: fallback to sample ads
+    console.log(`⚠️ No database ads found for size ${size} (including fallbacks), using sample ads`)
     const sampleAds = initialAdConfigs.filter(ad => ad.size === size && ad.active)
     return sampleAds.map(ad => ({ ...ad, source: 'sample' }))
     
@@ -32,21 +44,17 @@ async function getAdsBySize(size: string): Promise<any[]> {
 
 async function getActiveAds(): Promise<any[]> {
   try {
-    console.log('🎯 Fetching all active ads from database')
-    
     const dbAds = await AdvertisementService.getActiveAds()
     
     if (dbAds.length > 0) {
-      console.log(`✅ Found ${dbAds.length} active database ads`)
       return dbAds.map(ad => ({ ...ad, source: 'database' }))
     }
     
     // Fallback to sample ads if no database ads
-    console.log('⚠️ No database ads found, using sample ads')
     return initialAdConfigs.filter(ad => ad.active).map(ad => ({ ...ad, source: 'sample' }))
     
   } catch (error) {
-    console.error('Database error, using sample ads:', error)
+    console.error('Database error in ads API:', error)
     return initialAdConfigs.filter(ad => ad.active).map(ad => ({ ...ad, source: 'sample_fallback' }))
   }
 }
