@@ -2,6 +2,10 @@ import { Metadata } from "next"
 import { getAllCategories, getPostsByCategory, type WordPressPost } from "@/lib/wordpress-api"
 import NewsPageClient from "./news-page-client"
 
+// Force dynamic rendering to avoid build timeouts
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export const metadata: Metadata = {
   title: "Architecture News | Archalley - Latest Industry Updates",
   description: "Stay updated with the latest architecture news, design trends, industry regulations, and innovative projects from around the world. Breaking news and insights from the architecture community.",

@@ -7,6 +7,10 @@ import {
 } from '@/lib/wordpress-api'
 import EventsPageClient from './events-page-client'
 
+// Force dynamic rendering to avoid build timeouts
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export const metadata: Metadata = {
   title: 'Architecture Events | Archalley',
   description: 'Discover conferences, workshops, exhibitions, and networking events in the architecture and design community.',

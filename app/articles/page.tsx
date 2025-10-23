@@ -7,6 +7,10 @@ import {
 } from '@/lib/wordpress-api'
 import ArticlesPageClient from './articles-page-client'
 
+// Force dynamic rendering to avoid build timeouts
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export const metadata: Metadata = {
   title: 'Architecture Articles | Archalley',
   description: 'Discover in-depth articles, research papers, and expert insights on architecture, design theory, and construction technology.',
