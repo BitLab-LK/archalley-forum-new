@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Save, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import AdImageUpload from '@/components/ad-image-upload'
+import { AdSizeQuickReference } from '@/components/ad-placement-guide'
 import { type AdImageUploadResult } from '@/hooks/use-ad-image-upload'
 
 export interface AdFormData {
@@ -285,6 +286,13 @@ export default function AdForm({
                     </Select>
                     {errors.size && (
                       <p className="text-sm text-red-500 mt-1">{errors.size}</p>
+                    )}
+                    
+                    {/* Show placement guide for selected size */}
+                    {formData.size && (
+                      <div className="mt-3">
+                        <AdSizeQuickReference selectedSize={formData.size} />
+                      </div>
                     )}
                   </div>
 

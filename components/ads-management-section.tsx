@@ -13,6 +13,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { BarChart3, ExternalLink, MoreHorizontal, Plus, Edit, Trash2, Eye, RefreshCw, TrendingUp, Activity, DollarSign } from "lucide-react"
 import { toast } from "sonner"
 import Image from "next/image"
+import { DeleteConfirmationDialog } from "@/components/confirmation-dialog"
+import AdPlacementGuide from "@/components/ad-placement-guide"
 import type { RolePermissions } from "@/lib/role-permissions"
 
 interface AdBanner {
@@ -51,6 +53,11 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all')
   const [sortBy, setSortBy] = useState<'title' | 'clicks' | 'priority'>('title')
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    open: boolean
+    bannerId: string
+    bannerTitle: string
+  }>({ open: false, bannerId: '', bannerTitle: '' })
 
   // Navigate to create ad page
   const handleCreateAd = () => {
@@ -135,18 +142,23 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
     }
   }
 
-  // Delete banner
-  const deleteBanner = async (bannerId: string, bannerTitle?: string) => {
+  // Open delete confirmation dialog
+  const openDeleteConfirmation = (bannerId: string, bannerTitle?: string) => {
     if (!userPermissions.canDeleteAds) {
       toast.error('You do not have permission to delete ads')
       return
     }
 
-    // Confirm deletion
-    const confirmMessage = `Are you sure you want to delete the advertisement "${bannerTitle || bannerId}"? This action cannot be undone.`
-    if (!window.confirm(confirmMessage)) {
-      return
-    }
+    setDeleteConfirmation({
+      open: true,
+      bannerId,
+      bannerTitle: bannerTitle || `Ad #${bannerId.slice(-8)}`
+    })
+  }
+
+  // Delete banner (called after confirmation)
+  const deleteBanner = async () => {
+    const { bannerId } = deleteConfirmation
 
     try {
       const response = await fetch(`/api/admin/ads?id=${bannerId}`, {
@@ -335,6 +347,9 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
         </div>
       )}
 
+      {/* Ad Placement Guide */}
+      <AdPlacementGuide compact />
+
       {/* Search and Filters */}
       <Card>
         <CardContent className="p-4">
@@ -443,7 +458,7 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
                                   className="text-red-600"
-                                  onClick={() => deleteBanner(banner.id, banner.title)}
+                                  onClick={() => openDeleteConfirmation(banner.id, banner.title)}
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Delete
@@ -672,6 +687,15 @@ export default function AdsManagementSection({ userPermissions }: AdsManagementS
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteConfirmation.open}
+        onOpenChange={(open) => setDeleteConfirmation(prev => ({ ...prev, open }))}
+        itemName={deleteConfirmation.bannerTitle}
+        itemType="advertisement"
+        onConfirm={deleteBanner}
+      />
     </div>
   )
 }
