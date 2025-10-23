@@ -25,6 +25,9 @@ import {
   type WordPressPost,
   type WordPressCategory
 } from "@/lib/wordpress-api"
+import AdBannerComponent from "@/components/ad-banner"
+import SidebarYouTube from "@/components/sidebar-youtube"
+import SidebarFacebook from "@/components/sidebar-facebook"
 
 interface NewsPageClientProps {
   initialNews?: WordPressPost[]
@@ -154,7 +157,7 @@ export default function NewsPageClient({ initialNews = [], initialCategories = [
 
   return (
     <div className="min-h-screen py-16">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header - Minimalistic */}
         <div className="text-center mb-16" 
              style={{
@@ -162,16 +165,16 @@ export default function NewsPageClient({ initialNews = [], initialCategories = [
                opacity: 0,
                transform: 'translateY(30px)'
              }}>
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6">
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6 text-center">
             News
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed text-center">
             Latest updates in architecture and design
           </p>
         </div>
 
         {/* Search Bar - Minimalistic */}
-        <div className="max-w-2xl mx-auto mb-16"
+        <div className="max-w-2xl mx-auto mb-16 text-center"
              style={{
                animation: 'fadeInUp 0.8s ease-out forwards 0.2s',
                opacity: 0,
@@ -187,6 +190,10 @@ export default function NewsPageClient({ initialNews = [], initialCategories = [
             />
           </div>
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-3">
 
         {/* Results Count */}
         {searchTerm && (
@@ -285,6 +292,31 @@ export default function NewsPageClient({ initialNews = [], initialCategories = [
               <Button variant="outline" asChild className="rounded-full">
                 <Link href="/auth/register">Subscribe</Link>
               </Button>
+            </div>
+          </div>
+        </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-8 space-y-8">
+              {/* Square Ad in Sidebar */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm p-1">
+                <AdBannerComponent 
+                  size="320x320" 
+                  className="w-full" 
+                  positionId="sidebar-square-news"
+                  autoRotate={true}
+                  rotationInterval={30}
+                  showLabel={false}
+                />
+              </div>
+
+              {/* YouTube Section */}
+              <SidebarYouTube />
+
+              {/* Facebook Section */}
+              <SidebarFacebook />
             </div>
           </div>
         </div>

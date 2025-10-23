@@ -25,6 +25,9 @@ import {
   type WordPressPost,
   type WordPressCategory
 } from "@/lib/wordpress-api"
+import AdBannerComponent from "@/components/ad-banner"
+import SidebarYouTube from "@/components/sidebar-youtube"
+import SidebarFacebook from "@/components/sidebar-facebook"
 
 interface EventsPageClientProps {
   initialEvents?: WordPressPost[]
@@ -203,38 +206,41 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
 
   return (
     <div className="min-h-screen py-16">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header - Minimalistic */}
         <div className={`text-center mb-16 ${showAnimations ? 'animate-fade-in-up' : 'opacity-0'}`}>
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6">
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6 text-center">
             Events
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed text-center">
             Discover conferences, workshops, exhibitions, and networking events in the architecture and design community
           </p>
         </div>
 
         {/* Search Bar - Minimalistic */}
-        <div className={`max-w-2xl mx-auto mb-16 ${showAnimations ? 'animate-fade-in-up-delay' : 'opacity-0'}`}>
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Search events..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 py-3 text-base border-0 bg-muted/30 rounded-full focus:bg-background transition-all duration-300"
-            />
-          </div>
-        </div>
+        <div className={`max-w-2xl mx-auto mb-16 text-center ${showAnimations ? 'animate-fade-in-up-delay' : 'opacity-0'}`}>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  placeholder="Search events..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-12 py-3 text-base border-0 bg-muted/30 rounded-full focus:bg-background transition-all duration-300"
+                />
+              </div>
+            </div>
 
-        {/* Results Count */}
-        {searchTerm && (
-          <div className={`text-center mb-12 ${showAnimations ? 'animate-fade-in' : 'opacity-0'}`}>
-            <p className="text-sm text-muted-foreground">
-              {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''} found
-            </p>
-          </div>
-        )}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            {/* Results Count */}
+            {searchTerm && (
+              <div className={`text-center mb-12 ${showAnimations ? 'animate-fade-in' : 'opacity-0'}`}>
+                <p className="text-sm text-muted-foreground">
+                  {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''} found
+                </p>
+              </div>
+            )}
 
         {/* Events Grid - Minimalistic Layout */}
         {filteredEvents.length > 0 && (
@@ -320,6 +326,31 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
               <Button variant="outline" asChild className="rounded-full">
                 <Link href="/auth/register">Subscribe</Link>
               </Button>
+            </div>
+          </div>
+        </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-8 space-y-8">
+              {/* Square Ad in Sidebar */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm p-1">
+                <AdBannerComponent 
+                  size="320x320" 
+                  className="w-full" 
+                  positionId="sidebar-square-events"
+                  autoRotate={true}
+                  rotationInterval={30}
+                  showLabel={false}
+                />
+              </div>
+
+              {/* YouTube Section */}
+              <SidebarYouTube />
+
+              {/* Facebook Section */}
+              <SidebarFacebook />
             </div>
           </div>
         </div>
