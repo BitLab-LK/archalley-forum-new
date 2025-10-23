@@ -11,6 +11,8 @@ import ServerInstagramSlider from "@/components/server-instagram-slider"
 import { AnimatedContentWrapper, AnimatedFeaturesSection } from "@/components/animated-wrappers"
 import AdBannerComponent from "@/components/ad-banner"
 import { AdSessionManager } from "@/components/ad-session-manager"
+import SidebarYouTube from "@/components/sidebar-youtube"
+import SidebarFacebook from "@/components/sidebar-facebook"
 import { 
   MessageCircle, 
   Navigation
@@ -187,6 +189,16 @@ export default function MainPage() {
                   <Link href="/forum">Join Forum</Link>
                 </Button>
               </div>
+
+              {/* YouTube Section */}
+              <AnimatedContentWrapper direction="up" delay={200}>
+                <SidebarYouTube />
+              </AnimatedContentWrapper>
+
+              {/* Facebook Section */}
+              <AnimatedContentWrapper direction="up" delay={250}>
+                <SidebarFacebook />
+              </AnimatedContentWrapper>
             </div>
           </div>
         </div>
