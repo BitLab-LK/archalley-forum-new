@@ -3,8 +3,6 @@
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Youtube, ExternalLink } from "lucide-react"
 import Link from 'next/link'
 
 interface SidebarYouTubeProps {
@@ -13,46 +11,32 @@ interface SidebarYouTubeProps {
 
 export default function SidebarYouTube({ className }: SidebarYouTubeProps) {
   return (
-    <Card className={className}>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Youtube className="h-5 w-5 text-red-500" />
-          Latest Video
-          <Badge variant="secondary" className="ml-auto text-xs">
-            YouTube
-          </Badge>
+    <Card className={`${className} border-0 shadow-sm bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm`}>
+      <CardHeader className="pb-2 px-4 pt-4">
+        <CardTitle className="text-base text-gray-900 dark:text-gray-100">
+          YouTube
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="px-4 pb-4 space-y-3">
         {/* Video Thumbnail/Embed */}
-        <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+        <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden">
           <iframe
             width="100%"
             height="100%"
-            src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-            title="Welcome to Archalley"
+            src="https://www.youtube.com/embed/D0A-MIeq9gw"
+            title="Latest YouTube Video"
             frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             className="absolute inset-0"
+            loading="lazy"
           />
         </div>
         
-        {/* Video Info */}
-        <div className="space-y-2">
-          <h4 className="font-semibold text-sm line-clamp-2">
-            Welcome to Archalley - Architecture & Design Community
-          </h4>
-          <p className="text-xs text-muted-foreground line-clamp-2">
-            Discover innovative architectural designs and join our growing community of professionals.
-          </p>
-        </div>
-        
-        {/* YouTube Channel Link */}
-        <Link href="https://youtube.com/@archalley" target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="sm" className="w-full">
-            <ExternalLink className="h-3 w-3 mr-2" />
-            Visit Our YouTube Channel
+        {/* Minimal Channel Link */}
+        <Link href="https://www.youtube.com/@archalleytube" target="_blank" rel="noopener noreferrer">
+          <Button variant="ghost" size="sm" className="w-full h-8 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800">
+            View Channel →
           </Button>
         </Link>
       </CardContent>

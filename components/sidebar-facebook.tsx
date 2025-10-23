@@ -1,10 +1,8 @@
 "use client"
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Facebook, ExternalLink, ThumbsUp, MessageCircle } from "lucide-react"
 import Link from 'next/link'
 
 interface SidebarFacebookProps {
@@ -12,67 +10,91 @@ interface SidebarFacebookProps {
 }
 
 export default function SidebarFacebook({ className }: SidebarFacebookProps) {
+  useEffect(() => {
+    // Load Facebook SDK with better error handling
+    const loadFacebookSDK = () => {
+      if (typeof window === 'undefined') return
+
+      // Check if SDK is already loading/loaded
+      if (document.getElementById('facebook-jssdk')) {
+        if ((window as any).FB) {
+          setTimeout(() => {
+            (window as any).FB.XFBML.parse()
+          }, 100)
+        }
+        return
+      }
+
+      // Create and load Facebook SDK
+      const script = document.createElement('script')
+      script.id = 'facebook-jssdk'
+      script.src = 'https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v18.0&appId=YOUR_APP_ID'
+      script.async = true
+      script.defer = true
+      script.crossOrigin = 'anonymous'
+      
+      script.onload = () => {
+        if ((window as any).FB) {
+          (window as any).FB.init({
+            xfbml: true,
+            version: 'v18.0'
+          })
+          // Parse after a short delay to ensure DOM is ready
+          setTimeout(() => {
+            (window as any).FB.XFBML.parse()
+          }, 500)
+        }
+      }
+
+      script.onerror = () => {
+        console.warn('Failed to load Facebook SDK')
+      }
+      
+      document.head.appendChild(script)
+    }
+
+    // Delay loading to improve performance
+    const timer = setTimeout(loadFacebookSDK, 1000)
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
-    <Card className={className}>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Facebook className="h-5 w-5 text-blue-600" />
-          Latest Updates
-          <Badge variant="secondary" className="ml-auto text-xs">
-            Facebook
-          </Badge>
+    <Card className={`${className} border-0 shadow-sm bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm`}>
+      <CardHeader className="pb-2 px-4 pt-4">
+        <CardTitle className="text-base text-gray-900 dark:text-gray-100">
+          Facebook
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Facebook Page Like Plugin Alternative */}
-        <div className="space-y-3">
-          <div className="flex items-center space-x-3">
-            <div className="relative h-12 w-12 rounded-full overflow-hidden bg-blue-600 flex items-center justify-center">
-              <Facebook className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-sm">Archalley Official</h4>
-              <p className="text-xs text-muted-foreground">Architecture Community</p>
-            </div>
-          </div>
-          
-          {/* Sample Post */}
-          <div className="border rounded-lg p-3 space-y-2">
-            <p className="text-xs text-muted-foreground">2 hours ago</p>
-            <p className="text-sm">
-              🏗️ New architectural project showcase: Modern sustainable design meets traditional craftsmanship. 
-              What do you think about this innovative approach?
-            </p>
-            
-            {/* Post Stats */}
-            <div className="flex items-center gap-4 pt-2 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <ThumbsUp className="h-3 w-3" />
-                <span>24</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <MessageCircle className="h-3 w-3" />
-                <span>8 comments</span>
+      <CardContent className="px-4 pb-4 space-y-3">
+        {/* Live Facebook Page Plugin */}
+        <div className="w-full">
+          <div 
+            className="fb-page" 
+            data-href="https://www.facebook.com/archalley/"
+            data-tabs="timeline"
+            data-width=""
+            data-height="300"
+            data-small-header="true"
+            data-adapt-container-width="true"
+            data-hide-cover="true"
+            data-show-facepile="false"
+          >
+            {/* Minimal loading state */}
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-6 h-72 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded mx-auto animate-pulse mb-2"></div>
+                <p className="text-xs text-muted-foreground">Loading updates...</p>
               </div>
             </div>
           </div>
         </div>
         
-        {/* Facebook Page Link */}
-        <div className="space-y-2">
-          <Link href="https://facebook.com/archalley" target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="sm" className="w-full">
-              <ExternalLink className="h-3 w-3 mr-2" />
-              Follow Our Facebook Page
-            </Button>
-          </Link>
-          <Link href="https://facebook.com/archalley" target="_blank" rel="noopener noreferrer">
-            <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
-              <Facebook className="h-3 w-3 mr-2" />
-              Like Our Page
-            </Button>
-          </Link>
-        </div>
+        {/* Minimal Page Link */}
+        <Link href="https://www.facebook.com/archalley/" target="_blank" rel="noopener noreferrer">
+          <Button variant="ghost" size="sm" className="w-full h-8 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800">
+            View Page →
+          </Button>
+        </Link>
       </CardContent>
     </Card>
   )

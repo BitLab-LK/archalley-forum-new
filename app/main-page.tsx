@@ -6,7 +6,6 @@ import ServerProjectsSection from "@/components/server-projects-section"
 import ServerArticlesSection from "@/components/server-articles-section"
 import ServerNewsSection from "@/components/server-news-section"
 import ServerHorizontalTrendingSection from "@/components/server-horizontal-trending-section"
-import SocialMediaSection from "@/components/social-media-section"
 import ServerInstagramSlider from "@/components/server-instagram-slider"
 import { AnimatedContentWrapper, AnimatedFeaturesSection } from "@/components/animated-wrappers"
 import AdBannerComponent from "@/components/ad-banner"
@@ -274,9 +273,8 @@ export default function MainPage() {
         </AnimatedContentWrapper>
       </section>
 
-      {/* Footer Content - Social & Instagram combined */}
+      {/* Footer Content - Instagram */}
       <div className="bg-muted/50">
-        <SocialMediaSection />
         <ServerInstagramSlider />
       </div>
     </div>

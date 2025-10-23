@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, Instagram, ExternalLink, Heart } from "lucide-react"
-import { fetchInstagramPosts, formatInstagramDate, truncateCaption, type InstagramPost } from "@/app/actions/instagram"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { fetchInstagramPosts, truncateCaption, type InstagramPost } from "@/app/actions/instagram"
 import { SOCIAL_MEDIA } from "@/lib/constants"
 
 interface InstagramSliderProps {
@@ -87,18 +85,13 @@ export default function InstagramSlider({ initialPosts = [] }: InstagramSliderPr
 
   if (isLoading) {
     return (
-      <section className="py-8 bg-gradient-to-br from-pink-50 to-purple-50">
+      <section className="py-6 bg-white/50 dark:bg-gray-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Latest from Instagram</h2>
-            <div className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {[...Array(12)].map((_, i) => (
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Instagram</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+            {[...Array(6)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="bg-gray-200 aspect-square rounded-xl mb-2"></div>
+                <div className="bg-gray-200 dark:bg-gray-800 aspect-square rounded-lg"></div>
               </div>
             ))}
           </div>
@@ -109,163 +102,118 @@ export default function InstagramSlider({ initialPosts = [] }: InstagramSliderPr
 
   if (error || posts.length === 0) {
     return (
-      <section className="py-8 bg-gradient-to-br from-pink-50 to-purple-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Latest from Instagram</h2>
-          <p className="text-muted-foreground mb-6">
-            {error || "No Instagram posts available at the moment."}
-          </p>
-          <Button onClick={fetchPosts} variant="outline">
-            Try Again
-          </Button>
+      <section className="py-6 bg-white/50 dark:bg-gray-900/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Instagram</h2>
+            <Button onClick={fetchPosts} variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+              Try Again
+            </Button>
+          </div>
         </div>
       </section>
     )
   }
 
   return (
-    <section className="py-8 bg-gradient-to-br from-pink-50 to-purple-50">
+    <section className="py-6 bg-white/50 dark:bg-gray-900/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <Instagram className="h-8 w-8 text-pink-500 mr-3" />
-            <h2 className="text-3xl md:text-4xl font-bold">
-              Latest from Instagram
-            </h2>
-          </div>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Follow our journey and see the latest architectural inspirations, behind-the-scenes moments, and project updates.
-          </p>
+        {/* Minimal Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Instagram</h2>
+          <Button asChild variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800">
+            <a href={SOCIAL_MEDIA.instagram} target="_blank" rel="noopener noreferrer">
+              View All →
+            </a>
+          </Button>
         </div>
 
-        {/* Instagram Slider */}
+        {/* Minimal Instagram Grid */}
         <div className="relative">
-          {/* Navigation Buttons */}
+          {/* Subtle Navigation */}
           {posts.length > postsPerView && (
             <>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
                 onClick={prevSlide}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full"
+                className="absolute -left-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 bg-white/60 hover:bg-white/80 shadow-sm rounded-full"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
                 onClick={nextSlide}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full"
+                className="absolute -right-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 bg-white/60 hover:bg-white/80 shadow-sm rounded-full"
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </>
           )}
 
-          {/* Posts Grid */}
-          <div className="overflow-hidden mx-8">
+          {/* Clean Posts Grid */}
+          <div className="overflow-hidden">
             <div 
-              className="flex transition-transform duration-500 ease-in-out gap-4"
+              className="flex transition-transform duration-300 ease-out gap-3"
               style={{ transform: `translateX(-${currentIndex * (100 / postsPerView)}%)` }}
             >
-              {posts.map((post, index) => (
+              {posts.map((post) => (
                 <div 
                   key={post.id} 
                   className="flex-shrink-0"
-                  style={{ width: `calc(${100 / postsPerView}% - ${16 * (postsPerView - 1) / postsPerView}px)` }}
+                  style={{ width: `calc(${100 / postsPerView}% - ${12 * (postsPerView - 1) / postsPerView}px)` }}
                 >
-                  <InstagramCard post={post} index={index} />
+                  <InstagramCard post={post} />
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Dots Indicator */}
+          {/* Minimal Dots */}
           {posts.length > postsPerView && (
-            <div className="flex justify-center mt-8 space-x-2">
+            <div className="flex justify-center mt-4 space-x-1">
               {Array.from({ length: Math.ceil((posts.length - postsPerView + 1)) }).map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentIndex(index)}
-                  className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                    index === currentIndex ? 'bg-pink-500' : 'bg-gray-300'
+                  className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+                    index === currentIndex ? 'bg-pink-500 w-6' : 'bg-gray-300'
                   }`}
                 />
               ))}
             </div>
           )}
         </div>
-
-        {/* Follow Instagram Link */}
-        <div className="text-center mt-8">
-          <Button asChild variant="outline" size="lg" className="border-pink-200 text-pink-700 hover:bg-pink-50">
-            <a href={SOCIAL_MEDIA.instagram} target="_blank" rel="noopener noreferrer">
-              <Instagram className="mr-2 h-5 w-5" />
-              Follow us on Instagram
-              <ExternalLink className="ml-2 h-4 w-4" />
-            </a>
-          </Button>
-        </div>
       </div>
     </section>
   )
 }
 
-function InstagramCard({ post, index }: { post: InstagramPost; index: number }) {
+function InstagramCard({ post }: { post: InstagramPost }) {
   const [imageLoaded, setImageLoaded] = useState(false)
 
   return (
-    <Card 
-      className="group overflow-hidden hover:shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 bg-white border-0"
-      style={{
-        animationDelay: `${index * 100}ms`,
-        animation: `fadeInScale 0.6s ease-out forwards ${index * 100}ms`,
-        opacity: 0,
-        transform: 'scale(0.9)'
-      }}
-    >
-      <div className="relative aspect-square overflow-hidden">
+    <div className="group cursor-pointer">
+      <div className="relative aspect-square overflow-hidden rounded-lg">
         <Image
           src={post.media_url}
           alt={truncateCaption(post.caption, 50)}
           fill
-          className={`object-cover transition-all duration-300 ease-in-out group-hover:scale-110 ${
+          className={`object-cover transition-all duration-200 ease-out group-hover:scale-105 ${
             imageLoaded ? 'opacity-100' : 'opacity-0'
           }`}
           onLoad={() => setImageLoaded(true)}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 16vw"
         />
         
-        {/* Loading placeholder */}
+        {/* Simple loading placeholder */}
         {!imageLoaded && (
-          <div className="absolute inset-0 bg-gradient-to-br from-pink-100 to-purple-100 animate-pulse" />
+          <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 animate-pulse" />
         )}
         
-        {/* Overlay on hover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <div className="absolute bottom-4 left-4 right-4 text-white">
-            {post.caption && (
-              <p className="text-sm font-medium mb-2 line-clamp-2">
-                {truncateCaption(post.caption, 80)}
-              </p>
-            )}
-            <div className="flex items-center justify-between text-xs">
-              <span>{formatInstagramDate(post.timestamp)}</span>
-              <div className="flex items-center">
-                <Heart className="h-3 w-3 mr-1" />
-                <Instagram className="h-3 w-3" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Instagram badge */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <Badge variant="secondary" className="bg-white/90 text-pink-700 hover:bg-white">
-            <Instagram className="h-3 w-3 mr-1" />
-            IG
-          </Badge>
+        {/* Minimal overlay */}
+        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         </div>
 
         {/* Link overlay */}
@@ -274,18 +222,9 @@ function InstagramCard({ post, index }: { post: InstagramPost; index: number }) 
           target="_blank" 
           rel="noopener noreferrer"
           className="absolute inset-0 z-10"
-          aria-label={`View Instagram post: ${truncateCaption(post.caption, 50)}`}
+          aria-label={`View Instagram post`}
         />
       </div>
-
-      <style jsx>{`
-        @keyframes fadeInScale {
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-      `}</style>
-    </Card>
+    </div>
   )
 }
