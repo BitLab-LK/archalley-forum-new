@@ -375,16 +375,16 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete with image cleanup
-    const success = await AdvertisementService.deleteAdWithCleanup(bannerId, session.user.id)
+    const success = await AdvertisementService.deleteAdWithCleanup(bannerId)
     
     if (success) {
       return NextResponse.json({
         success: true,
-        message: "Banner deactivated successfully",
+        message: "Advertisement deleted successfully",
         bannerId
       })
     } else {
-      return NextResponse.json({ error: "Banner not found" }, { status: 404 })
+      return NextResponse.json({ error: "Advertisement not found" }, { status: 404 })
     }
 
   } catch (error) {

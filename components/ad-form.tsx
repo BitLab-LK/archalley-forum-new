@@ -35,11 +35,11 @@ interface AdFormProps {
 }
 
 const AD_SIZES = [
+  { value: '320x320', label: '320×320 (Small Square)' },
   { value: '350x350', label: '350×350 (Square)' },
   { value: '680x180', label: '680×180 (Banner)' },
-  { value: '970x180', label: '970×180 (Leaderboard)' },
-  { value: '320x320', label: '320×320 (Small Square)' },
   { value: '800x200', label: '800×200 (Wide Banner)' },
+  { value: '970x180', label: '970×180 (Leaderboard)' },
   { value: '1200x240', label: '1200×240 (Large Banner)' },
   { value: '1200x300', label: '1200×300 (Mega Banner)' }
 ]

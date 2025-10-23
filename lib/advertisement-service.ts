@@ -292,18 +292,23 @@ export class AdvertisementService {
   }
 
   /**
-   * Delete advertisement with blob cleanup
+   * Delete advertisement with blob cleanup (Hard delete - permanent removal)
    */
-  static async deleteAdWithCleanup(id: string, deletedBy?: string): Promise<boolean> {
+  static async deleteAdWithCleanup(id: string): Promise<boolean> {
     try {
+      console.log(`🗑️ Starting deletion process for advertisement: ${id}`)
+      
       // Get the ad first to check for images
       const ad = await prisma.advertisement.findUnique({
         where: { id }
       })
 
       if (!ad) {
+        console.warn(`Advertisement not found: ${id}`)
         return false
       }
+
+      console.log(`📋 Found advertisement: "${ad.title}" (${ad.size})`)
 
       // Delete the image from blob storage if it exists and is from our blob storage
       if (ad.imageUrl) {
@@ -316,22 +321,20 @@ export class AdvertisementService {
             console.warn('Failed to delete advertisement image from blob:', error)
             // Don't fail the whole operation if image deletion fails
           }
+        } else {
+          console.log(`🔗 External image URL, skipping blob cleanup: ${ad.imageUrl}`)
         }
       }
 
-      // Soft delete the advertisement
-      await prisma.advertisement.update({
-        where: { id },
-        data: {
-          active: false,
-          lastEditedBy: deletedBy,
-          updatedAt: new Date()
-        }
+      // Hard delete the advertisement (permanent removal)
+      await prisma.advertisement.delete({
+        where: { id }
       })
 
+      console.log(`✅ Advertisement permanently deleted from database: ${id}`)
       return true
     } catch (error) {
-      console.error('Error deleting advertisement with cleanup:', error)
+      console.error('❌ Error deleting advertisement with cleanup:', error)
       return false
     }
   }
