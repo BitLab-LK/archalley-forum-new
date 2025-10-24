@@ -40,7 +40,9 @@ import {
   type WordPressPost,
   type WordPressCategory
 } from "@/lib/wordpress-api"
-import { HorizontalAd } from "@/components/ad-banner"
+import AdBannerComponent from "@/components/ad-banner"
+import SidebarYouTube from "@/components/sidebar-youtube"
+import SidebarFacebook from "@/components/sidebar-facebook"
 
 interface CommercialProjectsClientProps {
   initialProjects?: WordPressPost[]
@@ -154,31 +156,24 @@ export default function CommercialProjectsClient({
   ]
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-primary/10 via-background to-secondary/10 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-              Commercial & Offices
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Explore our portfolio of innovative commercial spaces and office buildings 
-              that redefine modern workplace environments.
-            </p>
-          </div>
+    <div className="min-h-screen bg-background py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Hero Section */}
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+            Commercial & Offices
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+            Explore our portfolio of innovative commercial spaces and office buildings 
+            that redefine modern workplace environments.
+          </p>
         </div>
-      </div>
 
-      {/* Ad Banner */}
-      <div className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <HorizontalAd />
-        </div>
-      </div>
-
-      {/* Filters and Search */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            {/* Filters and Search */}
+            <div className="mb-8">
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-8">
           <div className="flex flex-col sm:flex-row gap-4 flex-1">
             <div className="relative flex-1 max-w-md">
@@ -304,17 +299,42 @@ export default function CommercialProjectsClient({
             </Button>
           </div>
         )}
-      </div>
+            </div>
+          </div>
 
-      {/* Project Detail Modal */}
-      {selectedProject && (
-        <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl mb-4">
-                {selectedProject.title.rendered}
-              </DialogTitle>
-            </DialogHeader>
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="space-y-8">
+              {/* Square Ad in Sidebar */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm p-1">
+                <AdBannerComponent 
+                  size="320x320" 
+                  className="w-full" 
+                  positionId="sidebar-square-commercial"
+                  autoRotate={true}
+                  rotationInterval={30}
+                  showLabel={false}
+                />
+              </div>
+
+              {/* YouTube Section */}
+              <SidebarYouTube />
+
+              {/* Facebook Section */}
+              <SidebarFacebook />
+            </div>
+          </div>
+        </div>
+
+        {/* Project Detail Modal */}
+        {selectedProject && (
+          <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-2xl mb-4">
+                  {selectedProject.title.rendered}
+                </DialogTitle>
+              </DialogHeader>
             <div className="space-y-6">
               <div className="relative h-64 md:h-96 rounded-lg overflow-hidden">
                 <Image
@@ -353,7 +373,8 @@ export default function CommercialProjectsClient({
             </div>
           </DialogContent>
         </Dialog>
-      )}
+        )}
+      </div>
     </div>
   )
 }

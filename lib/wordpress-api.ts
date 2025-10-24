@@ -213,14 +213,33 @@ export async function getPostsByCategory(categoryId: number, page: number = 1, p
  */
 export async function getCommercialProjects(page: number = 1, perPage: number = 20): Promise<WordPressPost[]> {
   try {
-    // For simplicity and reliability, just get all posts and filter client-side
-    // This avoids the complexity of category matching and potential 400 errors
+    // Try to find commercial/office category first
+    const categories = await getAllCategories()
+    const commercialCategory = categories.find((cat: WordPressCategory) => 
+      cat.slug.toLowerCase().includes('commercial') || 
+      cat.slug.toLowerCase().includes('office') ||
+      cat.name.toLowerCase().includes('commercial') ||
+      cat.name.toLowerCase().includes('office')
+    )
+    
+    // If we found a commercial category, fetch posts from that category
+    if (commercialCategory) {
+      console.log(`✅ Found commercial category: ${commercialCategory.name} (ID: ${commercialCategory.id})`)
+      const posts = await getPostsByCategory(commercialCategory.id, page, perPage)
+      if (posts.length > 0) {
+        return posts
+      }
+    }
+    
+    // Fallback: get all posts and filter by keywords
+    console.log('⚠️ No commercial category found, filtering all posts by keywords')
     const posts = await getAllPosts(page, perPage)
     
-    // Filter posts that might be commercial/office related based on title and content
+    // Filter posts that are related to commercial/office based on title and content
     const commercialPosts = posts.filter(post => {
       const title = post.title.rendered.toLowerCase()
-      const excerpt = post.excerpt.rendered.toLowerCase()
+      const excerpt = stripHtml(post.excerpt.rendered).toLowerCase()
+      const content = stripHtml(post.content.rendered).toLowerCase()
       
       return (
         title.includes('office') ||
@@ -228,17 +247,20 @@ export async function getCommercialProjects(page: number = 1, perPage: number = 
         title.includes('corporate') ||
         title.includes('workplace') ||
         title.includes('business') ||
+        title.includes('retail') ||
+        title.includes('shop') ||
         excerpt.includes('office') ||
         excerpt.includes('commercial') ||
         excerpt.includes('corporate') ||
         excerpt.includes('workplace') ||
         excerpt.includes('business') ||
-        // Include all posts if no specific commercial keywords found
-        // This ensures we show content even if categorization is different
-        true
+        content.includes('commercial space') ||
+        content.includes('office building') ||
+        content.includes('workspace')
       )
     })
     
+    console.log(`📊 Found ${commercialPosts.length} commercial projects from ${posts.length} total posts`)
     return commercialPosts
     
   } catch (error) {
