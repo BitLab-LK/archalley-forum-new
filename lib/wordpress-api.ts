@@ -899,6 +899,74 @@ export async function getResearchPosts(page: number = 1, perPage: number = 20): 
 }
 
 /**
+ * Get student projects and academic work
+ * This function specifically looks for student projects, coursework, and academic portfolios
+ */
+export async function getStudentProjects(page: number = 1, perPage: number = 20): Promise<WordPressPost[]> {
+  try {
+    // Try to find student projects category first
+    const categories = await getAllCategories()
+    const studentCategory = categories.find((cat: WordPressCategory) => 
+      cat.slug.toLowerCase().includes('student') || 
+      cat.slug.toLowerCase().includes('coursework') ||
+      cat.slug.toLowerCase().includes('portfolio') ||
+      cat.slug.toLowerCase().includes('academic-project') ||
+      cat.name.toLowerCase().includes('student') ||
+      cat.name.toLowerCase().includes('student project') ||
+      cat.name.toLowerCase().includes('coursework')
+    )
+    
+    // If we found a student projects category, fetch posts from that category
+    if (studentCategory) {
+      console.log(`✅ Found student projects category: ${studentCategory.name} (ID: ${studentCategory.id})`)
+      const posts = await getPostsByCategory(studentCategory.id, page, perPage)
+      if (posts.length > 0) {
+        return posts
+      }
+    }
+    
+    // Fallback: get all posts and filter by keywords
+    console.log('⚠️ No student projects category found, filtering all posts by keywords')
+    const posts = await getAllPosts(page, perPage)
+    
+    // Filter posts that are related to student projects and academic work
+    const studentPosts = posts.filter(post => {
+      const title = post.title.rendered.toLowerCase()
+      const excerpt = stripHtml(post.excerpt.rendered).toLowerCase()
+      const content = stripHtml(post.content.rendered).toLowerCase()
+      
+      return (
+        title.includes('student') ||
+        title.includes('coursework') ||
+        title.includes('portfolio') ||
+        title.includes('academic project') ||
+        title.includes('thesis project') ||
+        title.includes('capstone') ||
+        title.includes('semester project') ||
+        title.includes('final year') ||
+        excerpt.includes('student') ||
+        excerpt.includes('coursework') ||
+        excerpt.includes('academic project') ||
+        excerpt.includes('student work') ||
+        content.includes('student project') ||
+        content.includes('academic portfolio') ||
+        content.includes('student work') ||
+        content.includes('coursework') ||
+        content.includes('thesis project')
+      )
+    })
+    
+    console.log(`📊 Found ${studentPosts.length} student projects from ${posts.length} total posts`)
+    return studentPosts
+    
+  } catch (error) {
+    console.error('Error fetching student projects:', error)
+    // Return empty array on error, client will use fallback data
+    return []
+  }
+}
+
+/**
  * Search posts by title and content
  */
 export async function searchPosts(searchTerm: string, page: number = 1, perPage: number = 10): Promise<WordPressPost[]> {
