@@ -183,11 +183,34 @@ async function migrateComments() {
 }
 
 async function migrateNotifications() {
-  await migrateTable(
-    'notifications',
-    () => supabaseClient.notifications.findMany(),
-    (data) => azureClient.notifications.createMany({ data, skipDuplicates: true })
-  )
+  try {
+    console.log(`📦 Migrating notifications...`)
+    
+    const data = await supabaseClient.notifications.findMany()
+    if (data.length === 0) {
+      console.log(`   ⚠️  No notifications data to migrate`)
+      return
+    }
+
+    // Transform data to handle data field type conversion
+    const transformedData = data.map(notification => ({
+      ...notification,
+      data: notification.data as any
+    }))
+
+    // Insert data in batches to avoid memory issues
+    const batchSize = 100
+    for (let i = 0; i < transformedData.length; i += batchSize) {
+      const batch = transformedData.slice(i, i + batchSize)
+      await azureClient.notifications.createMany({ data: batch, skipDuplicates: true })
+    }
+
+    stats.notifications = transformedData.length
+    console.log(`   ✅ Migrated ${transformedData.length} notifications records`)
+  } catch (error) {
+    console.error(`   ❌ Error migrating notifications:`, error)
+    throw error
+  }
 }
 
 async function migrateBadges() {
@@ -247,11 +270,34 @@ async function migrateSettings() {
 }
 
 async function migrateEmailLogs() {
-  await migrateTable(
-    'emailLogs',
-    () => supabaseClient.emailLogs.findMany(),
-    (data) => azureClient.emailLogs.createMany({ data, skipDuplicates: true })
-  )
+  try {
+    console.log(`📦 Migrating emailLogs...`)
+    
+    const data = await supabaseClient.emailLogs.findMany()
+    if (data.length === 0) {
+      console.log(`   ⚠️  No emailLogs data to migrate`)
+      return
+    }
+
+    // Transform data to handle metadata field type conversion
+    const transformedData = data.map(log => ({
+      ...log,
+      metadata: log.metadata as any
+    }))
+
+    // Insert data in batches to avoid memory issues
+    const batchSize = 100
+    for (let i = 0; i < transformedData.length; i += batchSize) {
+      const batch = transformedData.slice(i, i + batchSize)
+      await azureClient.emailLogs.createMany({ data: batch, skipDuplicates: true })
+    }
+
+    stats.emailLogs = transformedData.length
+    console.log(`   ✅ Migrated ${transformedData.length} emailLogs records`)
+  } catch (error) {
+    console.error(`   ❌ Error migrating emailLogs:`, error)
+    throw error
+  }
 }
 
 async function migrateAdvertisements() {
@@ -271,11 +317,35 @@ async function migratePostFlags() {
 }
 
 async function migrateModerationActions() {
-  await migrateTable(
-    'moderationActions',
-    () => supabaseClient.moderationAction.findMany(),
-    (data) => azureClient.moderationAction.createMany({ data, skipDuplicates: true })
-  )
+  try {
+    console.log(`📦 Migrating moderationActions...`)
+    
+    const data = await supabaseClient.moderationAction.findMany()
+    if (data.length === 0) {
+      console.log(`   ⚠️  No moderationActions data to migrate`)
+      return
+    }
+
+    // Transform data to handle JSON field type conversion
+    const transformedData = data.map(action => ({
+      ...action,
+      metadata: action.metadata as any,
+      previousState: action.previousState as any
+    }))
+
+    // Insert data in batches to avoid memory issues
+    const batchSize = 100
+    for (let i = 0; i < transformedData.length; i += batchSize) {
+      const batch = transformedData.slice(i, i + batchSize)
+      await azureClient.moderationAction.createMany({ data: batch, skipDuplicates: true })
+    }
+
+    stats.moderationActions = transformedData.length
+    console.log(`   ✅ Migrated ${transformedData.length} moderationActions records`)
+  } catch (error) {
+    console.error(`   ❌ Error migrating moderationActions:`, error)
+    throw error
+  }
 }
 
 async function migratePostCategories() {
