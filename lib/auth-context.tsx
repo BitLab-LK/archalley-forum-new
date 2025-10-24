@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState, useMemo } from "react"
 import { useSession } from "next-auth/react"
 
 interface AuthContextType {
@@ -25,11 +25,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(status === "loading")
   }, [status])
 
-  const value = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     user: session?.user || null,
     isLoading,
-    isAuthenticated: !!session?.user,
-  }
+    isAuthenticated: !!session?.user && status === "authenticated",
+  }), [session?.user, isLoading, status])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

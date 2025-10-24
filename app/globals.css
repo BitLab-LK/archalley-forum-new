@@ -1,3 +1,4 @@
+/* stylelint-disable at-rule-no-unknown */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -76,6 +77,406 @@
 .category-informative {
   @apply bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200;
 }
+.category-jobs {
+  @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+}
 .category-other {
   @apply bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200;
+}
+
+/* Line clamp utilities */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;     /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;             /* Safari and Chrome */
+}
+
+/* Loading shimmer effect */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 468px 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.dark .animate-shimmer {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 468px 100%;
+}
+
+/* Safe animations that won't conflict with modals */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 30px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation utility classes - scoped to avoid modal conflicts */
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.4s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+.animate-bounce-in {
+  animation: bounceIn 0.5s ease-out forwards;
+}
+
+/* Hover animations */
+.hover-lift {
+  transition: transform 0.2s ease-in-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.hover-scale {
+  transition: transform 0.2s ease-in-out;
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/* Smooth transitions */
+.smooth-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Stagger animation delays for list items */
+.animate-stagger-1 { animation-delay: 0.1s; }
+.animate-stagger-2 { animation-delay: 0.2s; }
+.animate-stagger-3 { animation-delay: 0.3s; }
+.animate-stagger-4 { animation-delay: 0.4s; }
+.animate-stagger-5 { animation-delay: 0.5s; }
+
+/* Layout stability and cumulative layout shift prevention */
+.layout-stable {
+  /* Prevent layout shifts during loading */
+  contain: layout style;
+}
+
+.skeleton-container {
+  /* Ensure skeleton and real content have same dimensions */
+  min-height: inherit;
+  width: 100%;
+}
+
+/* Prevent content reflow during hydration */
+.hydration-stable {
+  /* Keep dimensions stable during hydration */
+  contain: layout;
+  min-height: var(--min-content-height, auto);
+}
+
+/* Consistent spacing for homepage layout - Mobile First */
+.homepage-layout {
+  /* Mobile: Stack vertically, sidebar completely removed */
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Desktop: Side by side layout */
+@media (min-width: 1024px) {
+  .homepage-layout {
+    flex-direction: row;
+    gap: 2rem;
+  }
+}
+
+.homepage-content {
+  /* Mobile: Full width layout within its column */
+  flex: 1;
+  min-width: 0; /* Allow flexbox shrinking */
+  width: 100%;
+  padding-left: 0; /* Remove padding since container handles it */
+  padding-right: 0;
+}
+
+@media (min-width: 1024px) {
+  .homepage-content {
+    /* Match the header max-width for consistent alignment */
+    max-width: 80rem; /* ~1280px - same as header */
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 0; /* Remove extra padding since container already has padding */
+    padding-right: 0;
+  }
+}
+
+.homepage-sidebar {
+  /* Mobile: Completely hidden and not rendered */
+  display: none;
+  visibility: hidden;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  position: absolute;
+  left: -9999px;
+}
+
+@media (min-width: 1024px) {
+  .homepage-sidebar {
+    display: block;
+    visibility: visible;
+    width: 20rem; /* 80 */
+    height: auto;
+    overflow: visible;
+    position: static;
+    left: auto;
+  }
+}
+
+/* Optimize image loading to prevent layout shifts */
+.post-image-container {
+  /* Reserve space for images during loading */
+  position: relative;
+  aspect-ratio: var(--image-aspect-ratio, 16/9);
+  background-color: rgb(243 244 246); /* gray-100 */
+}
+
+.dark .post-image-container {
+  background-color: rgb(31 41 55); /* gray-800 */
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  /* Ensure proper touch targets on mobile */
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent horizontal scrolling on mobile */
+  .mobile-no-overflow {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  
+  /* Mobile spacing adjustments */
+  .mobile-spacing {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Better mobile typography */
+  .mobile-text-size {
+    font-size: 0.875rem; /* 14px */
+    line-height: 1.25rem; /* 20px */
+  }
+}
+
+/* Ensure consistent mobile layout */
+@media (max-width: 1023px) {
+  .homepage-content {
+    /* Ensure main content is always visible and takes full space */
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 100%;
+    order: 1;
+  }
+  
+  /* Completely remove sidebar from mobile layout flow */
+  .homepage-sidebar {
+    display: none !important;
+    visibility: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    order: -1;
+  }
+  
+  /* Ensure mobile layout stability */
+  .homepage-layout {
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+  }
+  
+  /* Prevent any mobile overflow issues */
+  .mobile-no-overflow {
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+  }
+}
+
+/* Custom scrollbar styles for image galleries */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-track-gray-100 {
+  scrollbar-color: #6b7280 #f3f4f6;
+}
+
+.dark .scrollbar-track-gray-800 {
+  scrollbar-color: #6b7280 #1f2937;
+}
+
+/* Webkit scrollbar styles */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-track-gray-100::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+.scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.scrollbar-thumb-gray-300::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.dark .scrollbar-track-gray-800::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.dark .scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.dark .scrollbar-thumb-gray-600::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Project cards animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }

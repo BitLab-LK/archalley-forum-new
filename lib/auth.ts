@@ -1,10 +1,11 @@
 import type { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import FacebookProvider from "next-auth/providers/facebook"
+import LinkedInProvider from "next-auth/providers/linkedin"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
+import { updateUserActivityAsync } from "@/lib/activity-service"
 import bcrypt from "bcryptjs"
-import crypto from "crypto"
 
 export const authOptions: NextAuthOptions = {
   // Removed PrismaAdapter to avoid conflicts with custom signIn callback
@@ -17,6 +18,20 @@ export const authOptions: NextAuthOptions = {
     FacebookProvider({
       clientId: process.env.FACEBOOK_CLIENT_ID!,
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          scope: "email"
+        }
+      }
+    }),
+    LinkedInProvider({
+      clientId: process.env.LINKEDIN_CLIENT_ID!,
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          scope: "openid profile email",
+        },
+      },
     }),
     CredentialsProvider({
       name: "credentials",
@@ -51,7 +66,6 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           image: user.image,
           role: user.role,
-          rank: user.rank,
           isVerified: user.isVerified,
         }
       },
@@ -66,17 +80,40 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
+    async redirect({ url, baseUrl }) {
+      // For logout, always redirect to home page
+      if (url.includes('signout') || url.includes('logout')) {
+        return baseUrl
+      }
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url
+      // Default redirect to home page
+      return baseUrl
+    },
+    async jwt({ token, user, trigger }) {
+      // Always fetch fresh user data when token is updated or session is refreshed
+      if (user || trigger === "update") {
         const dbUser = await prisma.users.findUnique({
-          where: { email: user.email! },
+          where: { email: token.email! },
+          select: {
+            id: true,
+            role: true,
+            isVerified: true,
+            name: true,
+            image: true,
+            roleChangedAt: true
+          }
         })
 
         if (dbUser) {
           token.role = dbUser.role
-          token.rank = dbUser.rank
           token.isVerified = dbUser.isVerified
           token.id = dbUser.id
+          token.name = dbUser.name
+          token.image = dbUser.image
+          token.roleChangedAt = dbUser.roleChangedAt?.toISOString() || null
         }
       }
       return token
@@ -85,16 +122,14 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.id = token.id as string || token.sub!
         session.user.role = token.role as any
-        session.user.rank = token.rank as any
         session.user.isVerified = token.isVerified as boolean
+        session.user.name = token.name as string
+        session.user.image = token.image as string
       }
       return session
     },
     async signIn({ user, account }) {
-      console.log("=== SIGNIN CALLBACK ===")
-      console.log("User:", user?.email, "Provider:", account?.provider)
-      
-      if (account?.provider === "google" || account?.provider === "facebook") {
+      if (account?.provider === "google" || account?.provider === "facebook" || account?.provider === "linkedin") {
         try {
           // Check if user exists
           const existingUser = await prisma.users.findUnique({
@@ -102,27 +137,64 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (!existingUser) {
-            console.log("Creating new social user:", user.email)
-            // Create new user for social login with all required fields
-            const newUser = await prisma.users.create({
-              data: {
-                id: crypto.randomUUID(),
-                email: user.email!,
-                name: user.name || '',
-                image: user.image || null,
-                role: 'MEMBER',
-                rank: 'NEW_MEMBER',
-                isVerified: true,
-                updatedAt: new Date(),
-              },
-            })
-            console.log("Successfully created new social user:", newUser.email)
+            // Redirect to registration with OAuth data for account linking
+            console.log(`New user detected for ${account.provider}, redirecting to complete profile`)
+            const redirectUrl = `/auth/register?provider=${account.provider}&email=${encodeURIComponent(user.email!)}&name=${encodeURIComponent(user.name || '')}&image=${encodeURIComponent(user.image || '')}&providerAccountId=${encodeURIComponent(account.providerAccountId)}&message=${encodeURIComponent('Complete your profile to join our community!')}`
+            return redirectUrl
           } else {
-            console.log("Existing social user signing in:", existingUser.email)
+            // Check if this social account is already linked
+            const existingAccount = await prisma.account.findUnique({
+              where: {
+                provider_providerAccountId: {
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                }
+              }
+            })
+
+            if (!existingAccount) {
+              // Link the social account to the existing user
+              console.log(`Linking ${account.provider} account to existing user ${existingUser.email}`)
+              await prisma.account.create({
+                data: {
+                  userId: existingUser.id,
+                  type: account.type,
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                }
+              })
+            }
+            
+            // Update user info if needed for existing users
+            // Preserve uploaded profile image over SSO image
+            const updateData: any = {
+              name: user.name || existingUser.name,
+              updatedAt: new Date(),
+            }
+            
+            // Only update image if user doesn't have one, or if the current image is from an SSO provider
+            // This preserves manually uploaded images
+            const isCurrentImageFromSSO = existingUser.image && (
+              existingUser.image.includes('googleusercontent.com') ||
+              existingUser.image.includes('facebook.com') ||
+              existingUser.image.includes('fbcdn.net') ||
+              existingUser.image.includes('linkedin.com') ||
+              existingUser.image.includes('licdn.com')
+            )
+            
+            if (!existingUser.image || isCurrentImageFromSSO) {
+              updateData.image = user.image || existingUser.image
+            }
+            // If user has uploaded their own image (not from SSO), keep it
+            
+            await prisma.users.update({
+              where: { id: existingUser.id },
+              data: updateData,
+            })
+            
+            console.log(`${account.provider} sign-in successful for existing user: ${existingUser.email}`)
+            return true
           }
-          
-          console.log("Sign-in successful, returning true")
-          return true
         } catch (error) {
           console.error("=== SIGNIN ERROR ===")
           console.error("Error during social sign in:", error)
@@ -137,15 +209,29 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: "/auth/login",
+    signIn: "/auth/register?tab=login", // Updated to use the register page with login tab
+    signOut: "/auth/logout",  // Use custom logout page for better control
     error: "/auth/error", // Error code passed in query string as ?error=
   },
   events: {
     async signIn({ user, account, isNewUser }) {
       console.log('SignIn event:', { user: user.email, provider: account?.provider, isNewUser })
+      
+      // Update user activity on sign in
+      if (user?.id) {
+        updateUserActivityAsync(user.id)
+      }
     },
     async signOut({ session, token }) {
       console.log('SignOut event:', { userEmail: session?.user?.email || token?.email })
+      
+      // Update user activity on sign out (they were active when they signed out)
+      const userId = session?.user?.id || token?.id
+      if (userId) {
+        updateUserActivityAsync(userId as string)
+      }
+      
+      // Clear any additional session data if needed
     },
   },
   // Security configurations
@@ -153,7 +239,26 @@ export const authOptions: NextAuthOptions = {
   useSecureCookies: process.env.NODE_ENV === "production",
   cookies: {
     sessionToken: {
-      name: `next-auth.session-token`,
+      name: process.env.NODE_ENV === "production" ? "__Secure-next-auth.session-token" : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        // Let NextAuth handle domain automatically
+      },
+    },
+    callbackUrl: {
+      name: process.env.NODE_ENV === "production" ? "__Secure-next-auth.callback-url" : "next-auth.callback-url",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+    csrfToken: {
+      name: process.env.NODE_ENV === "production" ? "__Host-next-auth.csrf-token" : "next-auth.csrf-token",
       options: {
         httpOnly: true,
         sameSite: "lax",
@@ -162,4 +267,6 @@ export const authOptions: NextAuthOptions = {
       },
     },
   },
+  // Add debug for production
+  debug: process.env.NODE_ENV === "development",
 }

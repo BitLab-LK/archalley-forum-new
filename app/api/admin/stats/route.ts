@@ -1,42 +1,58 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { validateAdminAccess, logAdminAction } from "@/lib/admin-security"
+import { getStatsData } from "@/lib/stats-service"
+import { updateUserActivityAsync } from "@/lib/activity-service"
+import type { NextRequest } from "next/server"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return new NextResponse("Unauthorized", { status: 401 })
+    const validation = await validateAdminAccess(request)
+    
+    if (!validation.isValid) {
+      return validation.response!
     }
 
-    // Get total users
-    const totalUsers = await prisma.users.count()
-
-    // Get total posts
-    const totalPosts = await prisma.post.count()
-
-    // Get total comments
-    const totalComments = await prisma.comment.count()
-
-    // Get active users (users who have logged in within the last 24 hours)
-    const activeUsers = await prisma.users.count({
-      where: {
-        lastActiveAt: {
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
-        }
-      }
+    const { user } = validation
+    
+    // Update admin activity for active user tracking
+    updateUserActivityAsync(user!.id)
+    
+    // Log admin action
+    logAdminAction("VIEW_STATS", user!.id, {
+      ip: request.headers.get("x-forwarded-for") || "unknown"
     })
+
+    // Get stats using the service (with caching)
+    const stats = await getStatsData()
 
     return NextResponse.json({
-      totalUsers,
-      totalPosts,
-      totalComments,
-      activeUsers
+      ...stats,
+      success: true
     })
   } catch (error) {
-    console.error("[ADMIN_STATS]", error)
-    return new NextResponse("Internal Error", { status: 500 })
+    console.error("[ADMIN_STATS] Error fetching statistics:", error)
+    
+    // Try to get user from validation if available
+    let userId = "unknown"
+    try {
+      const validation = await validateAdminAccess(request)
+      if (validation.isValid && validation.user) {
+        userId = validation.user.id
+      }
+    } catch {}
+    
+    // Log the error for debugging
+    logAdminAction("STATS_ERROR", userId, {
+      error: error instanceof Error ? error.message : "Unknown error",
+      ip: request.headers.get("x-forwarded-for") || "unknown"
+    })
+    
+    return NextResponse.json(
+      { 
+        error: "Failed to fetch statistics",
+        details: process.env.NODE_ENV === "development" ? error instanceof Error ? error.message : "Unknown error" : undefined
+      }, 
+      { status: 500 }
+    )
   }
 } 

@@ -2,17 +2,18 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { onCommentDeleted } from "@/lib/stats-service"
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { commentId: string } }
+  { params }: { params: Promise<{ commentId: string }> }
 ) {
   const session = await getServerSession(authOptions)
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { commentId } = params
+  const { commentId } = await params
 
   try {
     // Find the comment
@@ -25,11 +26,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Comment not found" }, { status: 404 })
     }
 
-    // Check if user is the author or admin
+    // Check if user is the author, admin, or super admin
     const isAuthor = comment.authorId === session.user.id
     const isAdmin = session.user.role === "ADMIN"
+    const isSuperAdmin = session.user.role === "SUPER_ADMIN"
 
-    if (!isAuthor && !isAdmin) {
+    if (!isAuthor && !isAdmin && !isSuperAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -43,6 +45,9 @@ export async function DELETE(
       }
     })
 
+    // Trigger real-time stats update
+    await onCommentDeleted()
+    
     return NextResponse.json({ message: "Comment deleted successfully" })
   } catch (error) {
     console.error("Error deleting comment:", error)

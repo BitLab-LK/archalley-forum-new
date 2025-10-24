@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -15,7 +16,7 @@ const errorMessages: Record<string, string> = {
   Default: "An error occurred during authentication.",
 }
 
-export default function AuthErrorPage() {
+function AuthErrorContent() {
   const searchParams = useSearchParams()
   const error = searchParams.get("error")
   const errorMessage = error ? errorMessages[error] || errorMessages.Default : errorMessages.Default
@@ -58,5 +59,13 @@ export default function AuthErrorPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense>
+      <AuthErrorContent />
+    </Suspense>
   )
 }

@@ -10,8 +10,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { AuthGuard } from "@/components/auth-guard"
 import { useAuth } from "@/lib/auth-context"
+import { useSocket } from "@/lib/socket-context"
+import { PostBadges } from "@/components/post-badges"
 import { ArrowUp, ArrowDown, Reply, Flag, Award } from "lucide-react"
-import io from "socket.io-client"
+
+interface UserBadge {
+  id: string
+  badges: {
+    id: string
+    name: string
+    description: string
+    icon: string
+    color: string
+    level: string
+    type: string
+  }
+  earnedAt: Date
+}
 
 interface Comment {
   id: string
@@ -21,6 +36,7 @@ interface Comment {
     image?: string
     rank: string
     isVerified: boolean
+    badges?: UserBadge[]
   }
   isAnonymous: boolean
   createdAt: string
@@ -42,17 +58,14 @@ export default function CommentSection({ postId, comments: initialComments, canM
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const { user } = useAuth()
   const [comments, setComments] = useState<Comment[]>(initialComments)
-  const [socket, setSocket] = useState<any>(null)
+  const { socket, joinPost, leavePost } = useSocket()
 
   useEffect(() => {
-    if (!socket && user) {
-      const s = io({
-        path: "/api/socketio",
-        auth: { userId: user.id }
-      })
-      setSocket(s)
-      s.emit("join-post", postId)
-      s.on("comment-vote-update", (data: { commentId: string, upvotes: number, downvotes: number, userVote: "UP" | "DOWN" | null }) => {
+    if (socket) {
+      joinPost(postId)
+      
+      // Listen for comment vote updates
+      const handleCommentVoteUpdate = (data: { commentId: string, upvotes: number, downvotes: number, userVote: "UP" | "DOWN" | null }) => {
         setComments(prev => prev.map(c =>
           c.id === data.commentId
             ? { ...c, votes: data.upvotes - data.downvotes, userVote: data.userVote?.toLowerCase() as "up" | "down" | undefined }
@@ -65,12 +78,27 @@ export default function CommentSection({ postId, comments: initialComments, canM
                 )
               }
         ))
-      })
+      }
+      
+      // Listen for new comments
+      const handleNewComment = (commentData: Comment) => {
+        setComments(prev => [...prev, commentData])
+      }
+      
+      socket.on("comment-vote-update", handleCommentVoteUpdate)
+      socket.on("new-comment", handleNewComment)
+      
       return () => {
-        s.disconnect()
+        socket.off("comment-vote-update", handleCommentVoteUpdate)
+        socket.off("new-comment", handleNewComment)
+        leavePost(postId)
       }
     }
-  }, [user, postId])
+    
+    return () => {
+      // Cleanup when socket is not available
+    }
+  }, [socket, postId, joinPost, leavePost])
 
   const handleSubmit = async (e: React.FormEvent, parentId?: string) => {
     e.preventDefault()
@@ -91,10 +119,20 @@ export default function CommentSection({ postId, comments: initialComments, canM
       })
 
       if (response.ok) {
+        const newCommentData = await response.json()
         setNewComment("")
         setReplyingTo(null)
-        // Refresh comments or update state
-        window.location.reload()
+        
+        // Emit socket event for real-time updates
+        if (socket) {
+          socket.emit("new-comment", {
+            postId,
+            comment: newCommentData
+          })
+        }
+        
+        // Add to local state immediately
+        setComments(prev => [...prev, newCommentData])
       }
     } catch (error) {
       console.error("Error creating comment:", error)
@@ -174,6 +212,14 @@ export default function CommentSection({ postId, comments: initialComments, canM
                     <Award className="w-3 h-3 mr-1" />
                     Best Answer
                   </Badge>
+                )}
+                {/* User badges */}
+                {!comment.isAnonymous && comment.author?.badges && comment.author.badges.length > 0 && (
+                  <PostBadges 
+                    badges={comment.author.badges.map(b => b.badges)} 
+                    maxDisplay={2} 
+                    size="xs"
+                  />
                 )}
                 <span className="text-xs text-muted-foreground">
                   {new Date(comment.createdAt).toLocaleDateString()}

@@ -1,0 +1,2531 @@
+"use client"
+
+import { useState, useEffect, useRef, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Textarea } from "@/components/ui/textarea"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ArrowLeft, Save, Plus, X, Briefcase, GraduationCap, ExternalLink, User, Camera, Mail, Shield, Eye, EyeOff, Download, Trash2, AlertTriangle } from "lucide-react"
+import Link from "next/link"
+import { useAuth } from "@/lib/auth-context"
+import { AuthGuard } from "@/components/auth-guard"
+import { useToast } from "@/hooks/use-toast"
+import { useVercelBlobUpload } from "@/hooks/use-vercel-blob-upload"
+import { useSession } from "next-auth/react"
+
+interface WorkExperience {
+  id?: string
+  jobTitle: string
+  company: string
+  startDate: string
+  endDate?: string
+  description?: string
+}
+
+interface Education {
+  id?: string
+  degree: string
+  institution: string
+  startDate: string
+  endDate?: string
+  description?: string
+}
+
+interface EmailPreferences {
+  emailNotifications: boolean
+  notifyOnComment: boolean
+  notifyOnLike: boolean
+  notifyOnMention: boolean
+  notifyOnReply: boolean
+  notifyOnNewPost: boolean
+  notifyOnSystem: boolean
+  emailDigest: 'DISABLED' | 'DAILY' | 'WEEKLY' | 'MONTHLY'
+}
+
+// Helper function to count words in text
+const countWords = (text: string): number => {
+  return text.trim() === '' ? 0 : text.trim().split(/\s+/).length
+}
+
+// Helper function to get word count status
+const getWordCountStatus = (text: string, limit: number = 150) => {
+  const count = countWords(text)
+  if (count === 0) return { status: 'empty', color: 'text-gray-400' }
+  if (count > limit) return { status: 'exceeded', color: 'text-red-500' }
+  if (count > limit - 10) return { status: 'warning', color: 'text-yellow-600' }
+  return { status: 'normal', color: 'text-gray-600' }
+}
+
+// Component that uses useSearchParams - needs to be wrapped in Suspense
+function EditProfileContent() {
+  const { user } = useAuth()
+  const { update } = useSession()
+  const { toast } = useToast()
+  const searchParams = useSearchParams()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState("")
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
+
+  // Get the tab from URL params, default to "personal"
+  const defaultTab = searchParams.get('tab') || 'personal'
+
+  // Image upload hook
+  const { uploadFiles, isUploading } = useVercelBlobUpload({
+    maxFiles: 1,
+    maxFileSize: 2 * 1024 * 1024, // 2MB for profile images
+    allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    onSuccess: (files) => {
+      if (files.length > 0) {
+        setProfileData(prev => ({ ...prev, image: files[0].url }))
+        setPreviewImage(files[0].url)
+        toast({
+          title: "Image Uploaded",
+          description: "Profile image uploaded successfully",
+        })
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Upload Failed",
+        description: error,
+        variant: "destructive",
+      })
+    }
+  })
+
+  const [profileData, setProfileData] = useState({
+    // Basic Information
+    firstName: "",
+    lastName: "",
+    name: "",
+    email: "",
+    phoneNumber: "",
+    image: "",
+    
+    // Professional Profile
+    headline: "",
+    skills: [] as string[],
+    industry: "",
+    country: "",
+    city: "",
+    bio: "",
+    portfolioUrl: "",
+    
+    // Social Media
+    linkedinUrl: "",
+    facebookUrl: "",
+    instagramUrl: "",
+    
+    // Legacy fields
+    profession: "",
+    company: "",
+    location: "",
+  })
+
+  const [workExperience, setWorkExperience] = useState<WorkExperience[]>([])
+  const [education, setEducation] = useState<Education[]>([])
+  const [newSkill, setNewSkill] = useState("")
+
+  // Settings state
+  const [accountSettings, setAccountSettings] = useState({
+    profileVisibility: "public",
+    newConnections: true,
+    messages: true,
+    jobAlerts: true,
+    weeklyDigest: true,
+    securityAlerts: true,
+    profileSearchable: true
+  })
+
+  const [connectedAccounts, setConnectedAccounts] = useState({
+    google: { connected: false, email: "" },
+    facebook: { connected: false, email: "" },
+    linkedin: { connected: false, email: "" }
+  })
+
+  const [emailPreferences, setEmailPreferences] = useState<EmailPreferences>({
+    emailNotifications: true,
+    notifyOnComment: true,
+    notifyOnLike: true,
+    notifyOnMention: true,
+    notifyOnReply: true,
+    notifyOnNewPost: false,
+    notifyOnSystem: true,
+    emailDigest: 'DISABLED'
+  })
+
+  const [privacySettings, setPrivacySettings] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+    twoFactorEnabled: false,
+    showPassword: false,
+    qrCode: "",
+    verificationCode: "",
+    deleteConfirmText: "",
+    deletePassword: "",
+    hasSocialAccount: false,
+    hasPassword: false
+  })
+
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserData()
+    }
+  }, [user?.id])
+
+  // Refresh connected accounts when the page gains focus (after OAuth redirect)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user?.id) {
+        fetchConnectedAccounts()
+      }
+    }
+
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [user?.id])
+
+  const fetchUserData = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/users/${user?.id}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch user data')
+      }
+
+      const data = await response.json()
+      const userData = data.user
+
+      setProfileData({
+        firstName: userData.firstName || "",
+        lastName: userData.lastName || "",
+        name: userData.name || "",
+        email: userData.email || "",
+        phoneNumber: userData.phoneNumber || "",
+        image: userData.image || "",
+        headline: userData.headline || "",
+        skills: userData.skills || [],
+        industry: userData.industry || "",
+        country: userData.country || "",
+        city: userData.city || "",
+        bio: userData.bio || "",
+        portfolioUrl: userData.portfolioUrl || "",
+        linkedinUrl: userData.linkedinUrl || "",
+        facebookUrl: userData.facebookUrl || "",
+        instagramUrl: userData.instagramUrl || "",
+        profession: userData.profession || "",
+        company: userData.company || "",
+        location: userData.location || "",
+      })
+
+      setPreviewImage(userData.image || null)
+
+      setWorkExperience(userData.workExperience || [])
+      setEducation(userData.education || [])
+
+      // Set account settings based on user data
+      setAccountSettings({
+        profileVisibility: userData.profileVisibility ? "public" : "private",
+        newConnections: true, // Default values for now since these aren't in the schema yet
+        messages: true,
+        jobAlerts: true,
+        weeklyDigest: true,
+        securityAlerts: true,
+        profileSearchable: true
+      })
+
+      // Set email preferences from user data
+      setEmailPreferences({
+        emailNotifications: userData.emailNotifications ?? true,
+        notifyOnComment: userData.notifyOnComment ?? true,
+        notifyOnLike: userData.notifyOnLike ?? true,
+        notifyOnMention: userData.notifyOnMention ?? true,
+        notifyOnReply: userData.notifyOnReply ?? true,
+        notifyOnNewPost: userData.notifyOnNewPost ?? false,
+        notifyOnSystem: userData.notifyOnSystem ?? true,
+        emailDigest: userData.emailDigest || 'DISABLED'
+      })
+
+      // Set 2FA status from user data
+      setPrivacySettings(prev => ({
+        ...prev,
+        twoFactorEnabled: userData.twoFactorEnabled ?? false,
+        hasPassword: userData.password !== null,
+        hasSocialAccount: userData.Account && userData.Account.length > 0
+      }))
+
+      // Fetch connected accounts
+      await fetchConnectedAccounts()
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load user data')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchConnectedAccounts = async () => {
+    try {
+      const response = await fetch(`/api/users/${user?.id}/connected-accounts`)
+      if (response.ok) {
+        const accounts = await response.json()
+        
+        // Update connected accounts state based on actual data
+        const newConnectedAccounts = {
+          google: { connected: false, email: "" },
+          facebook: { connected: false, email: "" },
+          linkedin: { connected: false, email: "" }
+        }
+
+        accounts.forEach((account: any) => {
+          if (account.provider === 'google') {
+            newConnectedAccounts.google = {
+              connected: true,
+              email: account.email || user?.email || ""
+            }
+          } else if (account.provider === 'facebook') {
+            newConnectedAccounts.facebook = {
+              connected: true,
+              email: account.email || user?.email || ""
+            }
+          } else if (account.provider === 'linkedin') {
+            newConnectedAccounts.linkedin = {
+              connected: true,
+              email: account.email || user?.email || ""
+            }
+          }
+        })
+
+        setConnectedAccounts(newConnectedAccounts)
+      }
+    } catch (error) {
+      console.error('Failed to fetch connected accounts:', error)
+    }
+  }
+
+  const handleConnectAccount = async (provider: string) => {
+    try {
+      // Use NextAuth signIn function to initiate OAuth flow while keeping current session
+      const callbackUrl = `${window.location.origin}/profile/edit?tab=connected`
+      
+      // Open OAuth in a popup or redirect
+      window.location.href = `/api/auth/signin/${provider}?callbackUrl=${encodeURIComponent(callbackUrl)}`
+    } catch (error) {
+      toast({
+        title: "Connection Failed",
+        description: `Failed to connect ${provider} account. Please try again.`,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDisconnectAccount = async (provider: string) => {
+    try {
+      const response = await fetch(`/api/users/${user?.id}/connected-accounts?provider=${provider}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        // Update local state
+        setConnectedAccounts(prev => ({
+          ...prev,
+          [provider]: { connected: false, email: "" }
+        }))
+        
+        toast({
+          title: "Account Disconnected",
+          description: `${provider.charAt(0).toUpperCase() + provider.slice(1)} account disconnected successfully.`,
+        })
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to disconnect account')
+      }
+    } catch (error) {
+      toast({
+        title: "Disconnection Failed",
+        description: error instanceof Error ? error.message : "Failed to disconnect account. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleInputChange = (field: string, value: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  const addSkill = () => {
+    if (newSkill.trim() && !profileData.skills.includes(newSkill.trim())) {
+      setProfileData(prev => ({
+        ...prev,
+        skills: [...prev.skills, newSkill.trim()]
+      }))
+      setNewSkill("")
+    }
+  }
+
+  const removeSkill = (skillToRemove: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      skills: prev.skills.filter(skill => skill !== skillToRemove)
+    }))
+  }
+
+  // Image upload functions
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    try {
+      setIsUploadingImage(true)
+      await uploadFiles(Array.from(files))
+    } catch (error) {
+      // console.error('Upload error:', error) // Removed for production
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
+  const triggerImageUpload = () => {
+    fileInputRef.current?.click()
+  }
+
+  const addWorkExperience = () => {
+    setWorkExperience(prev => [...prev, {
+      jobTitle: "",
+      company: "",
+      startDate: "",
+      endDate: "",
+      description: ""
+    }])
+  }
+
+  const updateWorkExperience = (index: number, field: string, value: string) => {
+    setWorkExperience(prev => prev.map((work, i) => 
+      i === index ? { ...work, [field]: value } : work
+    ))
+  }
+
+  const removeWorkExperience = (index: number) => {
+    setWorkExperience(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const addEducation = () => {
+    setEducation(prev => [...prev, {
+      degree: "",
+      institution: "",
+      startDate: "",
+      endDate: "",
+      description: ""
+    }])
+  }
+
+  const updateEducation = (index: number, field: string, value: string) => {
+    setEducation(prev => prev.map((edu, i) => 
+      i === index ? { ...edu, [field]: value } : edu
+    ))
+  }
+
+  const removeEducation = (index: number) => {
+    setEducation(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true)
+      setError("")
+
+      // Validate bio word count
+      if (countWords(profileData.bio) > 150) {
+        setError("Bio must not exceed 150 words")
+        setIsSaving(false)
+        return
+      }
+
+      // Update basic profile data
+      const profileResponse = await fetch(`/api/users/${user?.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileData),
+      })
+
+      if (!profileResponse.ok) {
+        throw new Error('Failed to update profile')
+      }
+
+      // Update work experience
+      if (workExperience.length > 0) {
+        const workResponse = await fetch(`/api/users/${user?.id}/work-experience`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ workExperience }),
+        })
+
+        if (!workResponse.ok) {
+          // console.warn('Failed to update work experience') // Removed for production
+        }
+      }
+
+      // Update education
+      if (education.length > 0) {
+        const educationResponse = await fetch(`/api/users/${user?.id}/education`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ education }),
+        })
+
+        if (!educationResponse.ok) {
+          // console.warn('Failed to update education') // Removed for production
+        }
+      }
+
+      // Save account settings (profile visibility)
+      const accountResponse = await fetch(`/api/users/${user?.id}/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(accountSettings)
+      });
+
+      if (!accountResponse.ok) {
+        console.warn('Failed to update account settings');
+      }
+
+      // Save email preferences
+      const emailResponse = await fetch('/api/users/preferences/email', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(emailPreferences)
+      });
+
+      if (!emailResponse.ok) {
+        console.warn('Failed to update email preferences');
+      }
+
+      // Save password changes if provided
+      if (privacySettings.newPassword && privacySettings.currentPassword) {
+        const passwordResponse = await fetch(`/api/users/${user?.id}/change-password`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentPassword: privacySettings.currentPassword,
+            newPassword: privacySettings.newPassword,
+            confirmPassword: privacySettings.confirmPassword
+          })
+        });
+
+        if (!passwordResponse.ok) {
+          console.warn('Failed to update password');
+        } else {
+          // Clear password fields on success
+          setPrivacySettings(prev => ({
+            ...prev,
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: ""
+          }));
+        }
+      }
+
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been successfully updated.",
+      })
+
+      // Refresh the session to get updated user data
+      // console.log('🔄 Refreshing session to update profile data...') // Removed for production
+      await update()
+
+      // Navigate back to profile with cache busting
+      // console.log('🔄 Navigating to profile page with updated data...') // Removed for production
+      
+      // Add a timestamp to force cache invalidation
+      const timestamp = Date.now()
+      window.location.href = `/profile/${user?.id}?updated=${timestamp}`
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save profile')
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Password change handler
+  const handlePasswordChange = async () => {
+    if (!privacySettings.newPassword) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a new password.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (privacySettings.hasPassword && !privacySettings.currentPassword) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter your current password.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (privacySettings.newPassword !== privacySettings.confirmPassword) {
+      toast({
+        title: "Password Mismatch",
+        description: "New passwords do not match.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/users/${user?.id}/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: privacySettings.hasPassword ? privacySettings.currentPassword : undefined,
+          newPassword: privacySettings.newPassword,
+          confirmPassword: privacySettings.confirmPassword
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to change password')
+      }
+
+      toast({
+        title: "Password Updated",
+        description: privacySettings.hasPassword 
+          ? "Your password has been updated successfully."
+          : "Password has been set for your account successfully."
+      })
+
+      setPrivacySettings(prev => ({ 
+        ...prev, 
+        currentPassword: "", 
+        newPassword: "", 
+        confirmPassword: "",
+        hasPassword: true // Now they have a password
+      }))
+
+    } catch (error) {
+      toast({
+        title: "Password Change Failed",
+        description: error instanceof Error ? error.message : 'Failed to change password',
+        variant: "destructive"
+      })
+    }
+  }
+
+  // 2FA handlers
+  const handle2FASetup = async () => {
+    try {
+      const response = await fetch(`/api/users/${user?.id}/two-factor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'enable' })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to setup 2FA')
+      }
+
+      setPrivacySettings(prev => ({ 
+        ...prev, 
+        qrCode: result.qrCode 
+      }))
+
+      toast({
+        title: "2FA Setup",
+        description: "Scan the QR code with your authenticator app and enter the code to verify."
+      })
+
+    } catch (error) {
+      toast({
+        title: "2FA Setup Failed",
+        description: error instanceof Error ? error.message : 'Failed to setup 2FA',
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handle2FAVerify = async () => {
+    if (!privacySettings.verificationCode) {
+      toast({
+        title: "Missing Code",
+        description: "Please enter the verification code from your authenticator app.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/users/${user?.id}/two-factor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'verify',
+          token: privacySettings.verificationCode 
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to verify 2FA')
+      }
+
+      setPrivacySettings(prev => ({ 
+        ...prev, 
+        twoFactorEnabled: true,
+        qrCode: "",
+        verificationCode: ""
+      }))
+
+      toast({
+        title: "2FA Enabled",
+        description: "Two-factor authentication has been enabled successfully."
+      })
+
+    } catch (error) {
+      toast({
+        title: "2FA Verification Failed",
+        description: error instanceof Error ? error.message : 'Failed to verify 2FA',
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handle2FADisable = async () => {
+    if (!privacySettings.verificationCode) {
+      toast({
+        title: "Missing Code",
+        description: "Please enter the verification code to disable 2FA.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/users/${user?.id}/two-factor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'disable',
+          token: privacySettings.verificationCode 
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to disable 2FA')
+      }
+
+      setPrivacySettings(prev => ({ 
+        ...prev, 
+        twoFactorEnabled: false,
+        verificationCode: ""
+      }))
+
+      toast({
+        title: "2FA Disabled",
+        description: "Two-factor authentication has been disabled."
+      })
+
+    } catch (error) {
+      toast({
+        title: "2FA Disable Failed",
+        description: error instanceof Error ? error.message : 'Failed to disable 2FA',
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handlePDFExport = async () => {
+    try {
+      // Import jsPDF dynamically to avoid SSR issues
+      const { default: jsPDF } = await import('jspdf');
+      
+      const response = await fetch(`/api/users/${user?.id}/export-pdf-data`, {
+        method: 'POST'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to get export data')
+      }
+
+      const data = await response.json()
+
+      // Create PDF with modern styling
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 25;
+      let yPosition = margin;
+
+      // Define colors with proper tuple types
+      const primaryColor: [number, number, number] = [37, 99, 235]; // Blue
+      const secondaryColor: [number, number, number] = [75, 85, 99]; // Gray
+      const lightGray: [number, number, number] = [249, 250, 251];
+      const textColor: [number, number, number] = [31, 41, 55];
+
+      // Helper function to add modern header
+      const addHeader = () => {
+        // Header background
+        pdf.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+        pdf.rect(0, 0, pageWidth, 30, 'F');
+        
+        // Logo/Title area
+        pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        pdf.rect(margin, 8, pageWidth - 2 * margin, 14, 'F');
+        
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('ArchAlley Forum - Profile Export', margin + 5, 18);
+        
+        // Reset colors
+        pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+        pdf.setFont('helvetica', 'normal');
+        
+        yPosition = 35;
+      };
+
+      // Helper function to add footer
+      const addFooter = (pageNum: number, totalPages: number) => {
+        pdf.setFontSize(8);
+        pdf.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+        pdf.text(`Page ${pageNum} of ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+        pdf.text(`Generated on ${data.exportDate}`, margin, pageHeight - 10);
+      };
+
+      // Helper function to add text with modern styling
+      const addText = (text: string, fontSize = 10, isBold = false, color: [number, number, number] = textColor, indent = 0) => {
+        pdf.setFontSize(fontSize);
+        pdf.setTextColor(color[0], color[1], color[2]);
+        if (isBold) pdf.setFont('helvetica', 'bold');
+        else pdf.setFont('helvetica', 'normal');
+        
+        const lines = pdf.splitTextToSize(text, pageWidth - 2 * margin - indent);
+        lines.forEach((line: string) => {
+          if (yPosition > pageHeight - 30) { // New page if near bottom
+            pdf.addPage();
+            addHeader();
+          }
+          pdf.text(line, margin + indent, yPosition);
+          yPosition += fontSize * 0.5;
+        });
+        yPosition += 3; // Extra spacing
+      };
+
+      // Helper function to add modern section headers
+      const addSection = (title: string) => {
+        yPosition += 8;
+        
+        // Section background
+        pdf.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+        pdf.rect(margin - 5, yPosition - 8, pageWidth - 2 * margin + 10, 12, 'F');
+        
+        // Section title
+        pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        pdf.rect(margin - 5, yPosition - 8, 4, 12, 'F');
+        
+        addText(title, 12, true, primaryColor);
+        yPosition += 3;
+      };
+
+      // Helper function to add info cards
+      const addInfoCard = (label: string, value: string) => {
+        if (!value) return;
+        
+        // Card background
+        pdf.setFillColor(255, 255, 255);
+        pdf.setDrawColor(229, 231, 235);
+        pdf.rect(margin, yPosition - 2, pageWidth - 2 * margin, 8, 'FD');
+        
+        // Label and value
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+        pdf.text(label + ':', margin + 3, yPosition + 2);
+        
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+        pdf.text(value, margin + 3, yPosition + 5);
+        
+        yPosition += 10;
+      };
+
+      // Start first page
+      addHeader();
+
+      // User profile header
+      if (data.profile.fullName) {
+        pdf.setFontSize(20);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        pdf.text(data.profile.fullName, margin, yPosition);
+        yPosition += 8;
+      }
+
+      if (data.profile.headline) {
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+        pdf.text(data.profile.headline, margin, yPosition);
+        yPosition += 10;
+      }
+
+      // Profile Information Section
+      addSection('Profile Information');
+      addInfoCard('Email', data.profile.email);
+      addInfoCard('Company', data.profile.company);
+      addInfoCard('Profession', data.profile.profession);
+      addInfoCard('Industry', data.profile.industry);
+      addInfoCard('Location', data.profile.location);
+      addInfoCard('Phone', data.profile.phoneNumber);
+      addInfoCard('Website', data.profile.website);
+      addInfoCard('Portfolio', data.profile.portfolioUrl);
+      addInfoCard('Member Since', data.profile.memberSince);
+      addInfoCard('Last Active', data.profile.lastActive);
+
+      if (data.profile.bio) {
+        yPosition += 5;
+        addText('Bio:', 10, true, secondaryColor);
+        addText(data.profile.bio, 10, false, textColor, 10);
+      }
+
+      // Skills Section
+      if (data.profile.skills && data.profile.skills.length > 0) {
+        addSection('Skills & Expertise');
+        
+        // Create skill tags
+        const skills = data.profile.skills;
+        let xPos = margin;
+        let currentY = yPosition;
+        
+        skills.forEach((skill: string) => {
+          const skillWidth = pdf.getTextWidth(skill) + 8;
+          
+          if (xPos + skillWidth > pageWidth - margin) {
+            xPos = margin;
+            currentY += 8;
+          }
+          
+          // Skill tag background
+          pdf.setFillColor(239, 246, 255);
+          pdf.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+          pdf.roundedRect(xPos, currentY - 3, skillWidth, 6, 2, 2, 'FD');
+          
+          // Skill text
+          pdf.setFontSize(8);
+          pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+          pdf.text(skill, xPos + 4, currentY + 1);
+          
+          xPos += skillWidth + 5;
+        });
+        
+        yPosition = currentY + 10;
+      }
+
+      // Social Links Section
+      const socialLinks = Object.entries(data.socialLinks).filter(([, url]) => url);
+      if (socialLinks.length > 0) {
+        addSection('Social Links');
+        socialLinks.forEach(([platform, url]) => {
+          addInfoCard(platform.charAt(0).toUpperCase() + platform.slice(1), url as string);
+        });
+      }
+
+      // Work Experience Section
+      if (data.workExperience && data.workExperience.length > 0) {
+        addSection('Work Experience');
+        data.workExperience.forEach((work: any) => {
+          // Experience card
+          pdf.setFillColor(248, 250, 252);
+          pdf.setDrawColor(203, 213, 225);
+          pdf.rect(margin, yPosition, pageWidth - 2 * margin, 20, 'FD');
+          
+          yPosition += 5;
+          addText(`${work.position}`, 11, true, primaryColor, 5);
+          addText(`${work.company} • ${work.duration}`, 9, false, secondaryColor, 5);
+          if (work.description) {
+            addText(work.description, 9, false, textColor, 5);
+          }
+          yPosition += 5;
+        });
+      }
+
+      // Education Section
+      if (data.education && data.education.length > 0) {
+        addSection('Education');
+        data.education.forEach((edu: any) => {
+          // Education card
+          pdf.setFillColor(248, 250, 252);
+          pdf.setDrawColor(203, 213, 225);
+          pdf.rect(margin, yPosition, pageWidth - 2 * margin, 18, 'FD');
+          
+          yPosition += 5;
+          addText(`${edu.degree}`, 11, true, primaryColor, 5);
+          addText(`${edu.institution} • ${edu.duration}`, 9, false, secondaryColor, 5);
+          if (edu.description) {
+            addText(edu.description, 9, false, textColor, 5);
+          }
+          yPosition += 5;
+        });
+      }
+
+      // Activity Statistics Section
+      addSection('Activity Statistics');
+      
+      // Statistics cards in a grid
+      const stats = [
+        { label: 'Total Posts', value: data.activity.totalPosts },
+        { label: 'Total Comments', value: data.activity.totalComments }
+      ];
+      
+      const cardWidth = (pageWidth - 2 * margin - 10) / 2;
+      let xPos = margin;
+      
+      stats.forEach((stat) => {
+        // Stat card
+        pdf.setFillColor(239, 246, 255);
+        pdf.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        pdf.rect(xPos, yPosition, cardWidth, 15, 'FD');
+        
+        // Large number
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        pdf.text(stat.value.toString(), xPos + 5, yPosition + 8);
+        
+        // Label
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+        pdf.text(stat.label, xPos + 5, yPosition + 12);
+        
+        xPos += cardWidth + 10;
+      });
+      
+      yPosition += 20;
+
+      // Privacy Preferences Section
+      addSection('Privacy & Notification Preferences');
+      Object.entries(data.preferences).forEach(([key, value]) => {
+        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+        const statusColor: [number, number, number] = value === 'true' || value === true ? [34, 197, 94] : [239, 68, 68];
+        const statusText = value === 'true' || value === true ? 'Enabled' : 'Disabled';
+        
+        // Preference row
+        pdf.setFillColor(255, 255, 255);
+        pdf.setDrawColor(229, 231, 235);
+        pdf.rect(margin, yPosition, pageWidth - 2 * margin, 8, 'FD');
+        
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+        pdf.text(label, margin + 3, yPosition + 5);
+        
+        // Status badge
+        pdf.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+        const badgeWidth = 20;
+        pdf.rect(pageWidth - margin - badgeWidth - 3, yPosition + 1, badgeWidth, 6, 'F');
+        
+        pdf.setFontSize(7);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text(statusText, pageWidth - margin - badgeWidth + 2, yPosition + 4.5);
+        
+        yPosition += 10;
+      });
+
+      // Add page numbers to all pages
+      const totalPages = pdf.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        addFooter(i, totalPages);
+      }
+
+      // Save PDF with modern filename
+      const fileName = `ArchAlley-Profile-${data.profile.fullName || 'User'}-${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+
+      toast({
+        title: "PDF Export Complete",
+        description: "Your professional profile report has been downloaded successfully."
+      })
+
+    } catch (error) {
+      toast({
+        title: "PDF Export Failed",
+        description: error instanceof Error ? error.message : 'Failed to generate PDF',
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleZipExport = async () => {
+    try {
+      const response = await fetch(`/api/users/${user?.id}/export-zip-data`, {
+        method: 'POST'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export data')
+      }
+
+      // Get the ZIP file as a blob
+      const blob = await response.blob()
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.style.display = 'none'
+      a.href = url
+      a.download = `archalley_forum_complete_export_${new Date().toISOString().split('T')[0]}.zip`
+      
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      toast({
+        title: "ZIP Export Complete",
+        description: "Your complete data archive (posts, images, and profile) has been downloaded successfully."
+      })
+
+    } catch (error) {
+      toast({
+        title: "ZIP Export Failed", 
+        description: error instanceof Error ? error.message : 'Failed to generate ZIP archive',
+        variant: "destructive"
+      })
+    }
+  }
+
+  // Account deletion handler with confirmation
+  const handleAccountDeletion = async () => {
+    if (privacySettings.deleteConfirmText !== "DELETE MY ACCOUNT") {
+      toast({
+        title: "Confirmation Required",
+        description: 'Please type "DELETE MY ACCOUNT" to confirm.',
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (privacySettings.hasPassword && !privacySettings.deletePassword) {
+      toast({
+        title: "Password Required",
+        description: "Please enter your password to confirm account deletion.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Show confirmation modal
+    setShowDeleteConfirmation(true)
+  }
+
+  // Actual account deletion after confirmation
+  const confirmAccountDeletion = async () => {
+    try {
+      setShowDeleteConfirmation(false)
+      
+      const response = await fetch(`/api/users/${user?.id}/delete-account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: privacySettings.hasPassword ? privacySettings.deletePassword : undefined,
+          confirmText: privacySettings.deleteConfirmText
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete account')
+      }
+
+      toast({
+        title: "Account Deleted Successfully",
+        description: "Your account has been permanently deleted. You will be logged out and redirected to the homepage."
+      })
+
+      // Sign out and redirect to non-login homepage
+      setTimeout(async () => {
+        try {
+          // Import signOut from next-auth/react
+          const { signOut } = await import('next-auth/react')
+          
+          // Sign out and redirect to home page
+          await signOut({ 
+            redirect: true,
+            callbackUrl: '/' 
+          })
+        } catch (error) {
+          // Fallback: manual redirect if signOut fails
+          window.location.href = '/'
+        }
+      }, 2000)
+
+    } catch (error) {
+      toast({
+        title: "Account Deletion Failed",
+        description: error instanceof Error ? error.message : 'Failed to delete account',
+        variant: "destructive"
+      })
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading profile...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fade-in">
+        <main className="max-w-[80rem] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+          {/* Header */}
+          <div className="mb-4 sm:mb-8 animate-fade-in-up animate-delay-100">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <Link href={`/profile/${user?.id}`}>
+                  <Button variant="ghost" size="sm" className="self-start smooth-transition hover-lift">
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Profile
+                  </Button>
+                </Link>
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Edit Profile</h1>
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Update your profile information</p>
+                </div>
+              </div>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 animate-fade-in-up animate-delay-200">
+                <p className="text-sm sm:text-base text-red-800 dark:text-red-200">{error}</p>
+              </div>
+            )}
+          </div>
+
+          <Tabs defaultValue={defaultTab} className="w-full animate-fade-in-up animate-delay-300">
+            <div className="overflow-x-auto mb-4 sm:mb-6">
+              <TabsList className="grid w-full grid-cols-7 min-w-max sm:min-w-0 smooth-transition hover-lift">
+                <TabsTrigger value="personal" className="text-xs sm:text-sm smooth-transition">Personal</TabsTrigger>
+                <TabsTrigger value="professional" className="text-xs sm:text-sm smooth-transition">Professional</TabsTrigger>
+                <TabsTrigger value="experience" className="text-xs sm:text-sm smooth-transition">Experience</TabsTrigger>
+                <TabsTrigger value="education" className="text-xs sm:text-sm smooth-transition">Education</TabsTrigger>
+                <TabsTrigger value="connected" className="text-xs sm:text-sm smooth-transition">Connected</TabsTrigger>
+                <TabsTrigger value="account" className="text-xs sm:text-sm smooth-transition">Account</TabsTrigger>
+                <TabsTrigger value="privacy" className="text-xs sm:text-sm smooth-transition">Privacy</TabsTrigger>
+              </TabsList>
+            </div>
+
+            {/* Personal Information */}
+            <TabsContent value="personal" className="space-y-4 sm:space-y-6">
+              <Card className="smooth-transition hover-lift animate-scale-in animate-delay-400">
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Personal Information
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Update your basic personal information and profile picture
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                    <Avatar className="w-16 h-16 sm:w-20 sm:h-20 mx-auto sm:mx-0">
+                      <AvatarImage src={previewImage || profileData.image || "/placeholder-user.jpg"} alt={user?.name} />
+                      <AvatarFallback className="text-lg sm:text-xl">
+                        {user?.name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="text-center sm:text-left">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={triggerImageUpload}
+                        disabled={isUploadingImage || isUploading}
+                        className="w-full sm:w-auto"
+                      >
+                        <Camera className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                        {isUploadingImage || isUploading ? 'Uploading...' : 'Change Photo'}
+                      </Button>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Upload a new profile picture (JPEG, PNG, WebP - Max 2MB)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName" className="text-sm font-medium">First Name</Label>
+                      <Input
+                        id="firstName"
+                        value={profileData.firstName}
+                        onChange={(e) => handleInputChange('firstName', e.target.value)}
+                        placeholder="Enter your first name"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName" className="text-sm font-medium">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        value={profileData.lastName}
+                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                        placeholder="Enter your last name"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="name" className="text-sm font-medium">Display Name</Label>
+                      <Input
+                        id="name"
+                        value={profileData.name}
+                        onChange={(e) => handleInputChange('name', e.target.value)}
+                        placeholder="Enter your display name"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="phoneNumber" className="text-sm font-medium">Phone Number</Label>
+                      <Input
+                        id="phoneNumber"
+                        value={profileData.phoneNumber}
+                        onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                        placeholder="Enter your phone number"
+                        className="text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center mb-2">
+                      <Label htmlFor="bio" className="text-sm font-medium">Bio</Label>
+                      <span className={`text-xs font-medium ${getWordCountStatus(profileData.bio, 150).color}`}>
+                        {countWords(profileData.bio)}/150 words
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      <Textarea
+                        id="bio"
+                        value={profileData.bio}
+                        onChange={(e) => {
+                          const text = e.target.value
+                          const wordCount = countWords(text)
+                          
+                          // Allow typing if under limit or if deleting text
+                          if (wordCount <= 150 || text.length < profileData.bio.length) {
+                            handleInputChange('bio', text)
+                          }
+                        }}
+                        placeholder="Write a brief description about yourself..."
+                        rows={4}
+                        className={`resize-none ${
+                          (() => {
+                            const status = getWordCountStatus(profileData.bio, 150)
+                            if (status.status === 'exceeded') return 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                            if (status.status === 'warning') return 'border-yellow-300 focus:border-yellow-500 focus:ring-yellow-500'
+                            return ''
+                          })()
+                        }`}
+                      />
+                      {(() => {
+                        const wordCount = countWords(profileData.bio)
+                        const status = getWordCountStatus(profileData.bio, 150)
+                        
+                        if (wordCount > 140) {
+                          return (
+                            <div className={`text-xs p-2 rounded-md ${
+                              status.status === 'exceeded' 
+                                ? 'bg-red-50 text-red-700 border border-red-200' 
+                                : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                            }`}>
+                              {status.status === 'exceeded' 
+                                ? '⚠️ Bio exceeds 150 words. Please shorten your text.' 
+                                : `⚡ Approaching word limit (${150 - wordCount} words remaining)`
+                              }
+                            </div>
+                          )
+                        }
+                        return null
+                      })()}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Professional Information */}
+            <TabsContent value="professional" className="space-y-4 sm:space-y-6">
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Briefcase className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Professional Information
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Update your professional details and location
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="profession" className="text-sm font-medium">Profession</Label>
+                      <Input
+                        id="profession"
+                        value={profileData.profession}
+                        onChange={(e) => handleInputChange('profession', e.target.value)}
+                        placeholder="e.g., Software Engineer"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="company" className="text-sm font-medium">Company</Label>
+                      <Input
+                        id="company"
+                        value={profileData.company}
+                        onChange={(e) => handleInputChange('company', e.target.value)}
+                        placeholder="e.g., Tech Corp"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="industry" className="text-sm font-medium">Industry</Label>
+                      <Input
+                        id="industry"
+                        value={profileData.industry}
+                        onChange={(e) => handleInputChange('industry', e.target.value)}
+                        placeholder="e.g., Information Technology"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="headline" className="text-sm font-medium">Professional Headline</Label>
+                      <Input
+                        id="headline"
+                        value={profileData.headline}
+                        onChange={(e) => handleInputChange('headline', e.target.value)}
+                        placeholder="e.g., Senior Developer at Tech Corp"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="city" className="text-sm font-medium">City</Label>
+                      <Input
+                        id="city"
+                        value={profileData.city}
+                        onChange={(e) => handleInputChange('city', e.target.value)}
+                        placeholder="e.g., New York"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="country">Country</Label>
+                      <Input
+                        id="country"
+                        value={profileData.country}
+                        onChange={(e) => handleInputChange('country', e.target.value)}
+                        placeholder="e.g., United States"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="portfolioUrl">Portfolio URL</Label>
+                    <Input
+                      id="portfolioUrl"
+                      value={profileData.portfolioUrl}
+                      onChange={(e) => handleInputChange('portfolioUrl', e.target.value)}
+                      placeholder="https://yourportfolio.com"
+                    />
+                  </div>
+
+                  {/* Skills */}
+                  <div>
+                    <Label>Skills</Label>
+                    <div className="flex gap-2 mt-2 mb-4">
+                      <Input
+                        value={newSkill}
+                        onChange={(e) => setNewSkill(e.target.value)}
+                        placeholder="Add a skill..."
+                        onKeyPress={(e) => e.key === 'Enter' && addSkill()}
+                      />
+                      <Button type="button" onClick={addSkill} variant="outline">
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {profileData.skills.map((skill, index) => (
+                        <div key={index} className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm">
+                          {skill}
+                          <button onClick={() => removeSkill(skill)} className="ml-1 hover:text-red-600">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Social Media Links */}
+                  <div className="space-y-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-medium">Professional Links</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="linkedinUrl" className="text-sm font-medium">LinkedIn URL</Label>
+                        <Input
+                          id="linkedinUrl"
+                          value={profileData.linkedinUrl}
+                          onChange={(e) => handleInputChange('linkedinUrl', e.target.value)}
+                          placeholder="https://linkedin.com/in/yourprofile"
+                          className="text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="portfolioUrl" className="text-sm font-medium">Portfolio/Website URL</Label>
+                        <Input
+                          id="portfolioUrl"
+                          value={profileData.portfolioUrl}
+                          onChange={(e) => handleInputChange('portfolioUrl', e.target.value)}
+                          placeholder="https://yourportfolio.com"
+                          className="text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Work Experience */}
+            <TabsContent value="experience" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Briefcase className="w-5 h-5" />
+                        Work Experience
+                      </CardTitle>
+                      <CardDescription>
+                        Add your work experience and career history
+                      </CardDescription>
+                    </div>
+                    <Button onClick={addWorkExperience} variant="outline" size="sm">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Experience
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {workExperience.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <Briefcase className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No work experience added yet.</p>
+                      <Button onClick={addWorkExperience} variant="outline" className="mt-4">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Your First Experience
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {workExperience.map((work, index) => (
+                        <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-medium">Experience #{index + 1}</h4>
+                            <Button 
+                              onClick={() => removeWorkExperience(index)} 
+                              variant="ghost" 
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor={`work-title-${index}`}>Job Title</Label>
+                              <Input
+                                id={`work-title-${index}`}
+                                value={work.jobTitle}
+                                onChange={(e) => updateWorkExperience(index, 'jobTitle', e.target.value)}
+                                placeholder="e.g., Software Engineer"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`work-company-${index}`}>Company</Label>
+                              <Input
+                                id={`work-company-${index}`}
+                                value={work.company}
+                                onChange={(e) => updateWorkExperience(index, 'company', e.target.value)}
+                                placeholder="e.g., Tech Corp"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`work-start-${index}`}>Start Date</Label>
+                              <Input
+                                id={`work-start-${index}`}
+                                type="date"
+                                value={work.startDate}
+                                onChange={(e) => updateWorkExperience(index, 'startDate', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`work-end-${index}`}>End Date (Leave empty if current)</Label>
+                              <Input
+                                id={`work-end-${index}`}
+                                type="date"
+                                value={work.endDate || ''}
+                                onChange={(e) => updateWorkExperience(index, 'endDate', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                          <div className="mt-4">
+                            <Label htmlFor={`work-desc-${index}`}>Description</Label>
+                            <Textarea
+                              id={`work-desc-${index}`}
+                              value={work.description || ''}
+                              onChange={(e) => updateWorkExperience(index, 'description', e.target.value)}
+                              placeholder="Describe your role and achievements..."
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Education */}
+            <TabsContent value="education" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <GraduationCap className="w-5 h-5" />
+                        Education
+                      </CardTitle>
+                      <CardDescription>
+                        Add your educational background and qualifications
+                      </CardDescription>
+                    </div>
+                    <Button onClick={addEducation} variant="outline" size="sm">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Education
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {education.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <GraduationCap className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No education added yet.</p>
+                      <Button onClick={addEducation} variant="outline" className="mt-4">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Your First Education
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {education.map((edu, index) => (
+                        <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-medium">Education #{index + 1}</h4>
+                            <Button 
+                              onClick={() => removeEducation(index)} 
+                              variant="ghost" 
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor={`edu-degree-${index}`}>Degree</Label>
+                              <Input
+                                id={`edu-degree-${index}`}
+                                value={edu.degree}
+                                onChange={(e) => updateEducation(index, 'degree', e.target.value)}
+                                placeholder="e.g., Bachelor of Science in Computer Science"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edu-institution-${index}`}>Institution</Label>
+                              <Input
+                                id={`edu-institution-${index}`}
+                                value={edu.institution}
+                                onChange={(e) => updateEducation(index, 'institution', e.target.value)}
+                                placeholder="e.g., University of Technology"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edu-start-${index}`}>Start Date</Label>
+                              <Input
+                                id={`edu-start-${index}`}
+                                type="date"
+                                value={edu.startDate}
+                                onChange={(e) => updateEducation(index, 'startDate', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edu-end-${index}`}>End Date (Leave empty if current)</Label>
+                              <Input
+                                id={`edu-end-${index}`}
+                                type="date"
+                                value={edu.endDate || ''}
+                                onChange={(e) => updateEducation(index, 'endDate', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                          <div className="mt-4">
+                            <Label htmlFor={`edu-desc-${index}`}>Description</Label>
+                            <Textarea
+                              id={`edu-desc-${index}`}
+                              value={edu.description || ''}
+                              onChange={(e) => updateEducation(index, 'description', e.target.value)}
+                              placeholder="Describe your studies, achievements, etc..."
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Connected Accounts */}
+            <TabsContent value="connected" className="space-y-4 sm:space-y-6">
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Connected Accounts
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Connect your social media accounts to easily sign in and share your professional updates.
+                  </CardDescription>
+                  
+                  
+                </CardHeader>
+                <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+                  {/* Connected Accounts List */}
+                  {(connectedAccounts.google.connected || connectedAccounts.facebook.connected || connectedAccounts.linkedin.connected) ? (
+                    <div className="space-y-3">
+                      {/* Google - Connected */}
+                      {connectedAccounts.google.connected && (
+                        <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white font-bold">
+                              G
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">Google</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {connectedAccounts.google.email || "Connected account"}
+                              </p>
+                              <p className="text-xs text-gray-500">Connected Aug 28, 2025</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-full font-medium">
+                              Active
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-gray-600 hover:text-red-600 border-gray-300"
+                              onClick={() => handleDisconnectAccount('google')}
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Disconnect
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Facebook - Connected */}
+                      {connectedAccounts.facebook.connected && (
+                        <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                              f
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">Facebook</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {connectedAccounts.facebook.email || "Connected account"}
+                              </p>
+                              <p className="text-xs text-gray-500">Connected Aug 28, 2025</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-full font-medium">
+                              Active
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-gray-600 hover:text-red-600 border-gray-300"
+                              onClick={() => handleDisconnectAccount('facebook')}
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Disconnect
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* LinkedIn - Connected */}
+                      {connectedAccounts.linkedin.connected && (
+                        <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center text-white font-bold">
+                              in
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">LinkedIn</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {connectedAccounts.linkedin.email || "Connected account"}
+                              </p>
+                              <p className="text-xs text-gray-500">Connected Aug 28, 2025</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-full font-medium">
+                              Active
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-gray-600 hover:text-red-600 border-gray-300"
+                              onClick={() => handleDisconnectAccount('linkedin')}
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Disconnect
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <ExternalLink className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-medium mb-2">No Connected Accounts</p>
+                      <p className="text-sm">Connect your social media accounts to get started with enhanced features.</p>
+                    </div>
+                  )}
+
+                  {/* Connect New Account Section */}
+                  <div className="space-y-3">
+                    <h3 className="font-medium text-gray-900 dark:text-white">Connect New Account</h3>
+                    <div className="flex flex-wrap gap-3">
+                      {/* Google Connect Button */}
+                      {!connectedAccounts.google.connected && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2 border-red-200 hover:border-red-300 hover:bg-red-50"
+                          onClick={() => handleConnectAccount('google')}
+                        >
+                          <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                            G
+                          </div>
+                          Google
+                        </Button>
+                      )}
+
+                      {/* Facebook Connect Button */}
+                      {!connectedAccounts.facebook.connected && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50"
+                          onClick={() => handleConnectAccount('facebook')}
+                        >
+                          <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                            f
+                          </div>
+                          Facebook
+                        </Button>
+                      )}
+
+                      {/* LinkedIn Connect Button */}
+                      {!connectedAccounts.linkedin.connected && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50"
+                          onClick={() => handleConnectAccount('linkedin')}
+                        >
+                          <div className="w-4 h-4 bg-blue-700 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                            in
+                          </div>
+                          LinkedIn
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <Button 
+                      className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3"
+                      onClick={async () => {
+                        // Refresh connected accounts to get latest data
+                        await fetchConnectedAccounts()
+                        toast({
+                          title: "Settings Saved",
+                          description: "Connected accounts updated successfully.",
+                        })
+                      }}
+                    >
+                      Save Connected Accounts
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Account Settings */}
+            <TabsContent value="account" className="space-y-4 sm:space-y-6">
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Account Settings
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Manage your account preferences and notification settings.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6 p-4 sm:p-6">
+                  {/* Profile Visibility */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Profile Visibility</Label>
+                    <p className="text-sm text-gray-500">Make your profile visible to other users</p>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant={accountSettings.profileVisibility === "public" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setAccountSettings(prev => ({ ...prev, profileVisibility: "public" }))}
+                      >
+                        Public
+                      </Button>
+                      <Button
+                        variant={accountSettings.profileVisibility === "private" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setAccountSettings(prev => ({ ...prev, profileVisibility: "private" }))}
+                      >
+                        Private
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Notification Preferences */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">Notification Preferences</h3>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">New Connections</p>
+                          <p className="text-sm text-gray-500">Get notified when someone connects with you</p>
+                        </div>
+                        <Switch
+                          checked={accountSettings.newConnections}
+                          onCheckedChange={(checked) => setAccountSettings(prev => ({ ...prev, newConnections: checked }))}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Messages</p>
+                          <p className="text-sm text-gray-500">Receive notifications for new messages</p>
+                        </div>
+                        <Switch
+                          checked={accountSettings.messages}
+                          onCheckedChange={(checked) => setAccountSettings(prev => ({ ...prev, messages: checked }))}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Job Alerts</p>
+                          <p className="text-sm text-gray-500">Receive notifications about relevant job opportunities</p>
+                        </div>
+                        <Switch
+                          checked={accountSettings.jobAlerts}
+                          onCheckedChange={(checked) => setAccountSettings(prev => ({ ...prev, jobAlerts: checked }))}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Weekly Digest</p>
+                          <p className="text-sm text-gray-500">Get a weekly summary of your network activity</p>
+                        </div>
+                        <Switch
+                          checked={accountSettings.weeklyDigest}
+                          onCheckedChange={(checked) => setAccountSettings(prev => ({ ...prev, weeklyDigest: checked }))}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Security Alerts</p>
+                          <p className="text-sm text-gray-500">Important security notifications (always enabled)</p>
+                        </div>
+                        <Switch
+                          checked={accountSettings.securityAlerts}
+                          onCheckedChange={(checked) => setAccountSettings(prev => ({ ...prev, securityAlerts: checked }))}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Profile Searchable</p>
+                          <p className="text-sm text-gray-500">Allow others to find your profile in search</p>
+                        </div>
+                        <Switch
+                          checked={accountSettings.profileSearchable}
+                          onCheckedChange={(checked) => setAccountSettings(prev => ({ ...prev, profileSearchable: checked }))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Email Preferences */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      Email Preferences
+                    </h3>
+                    
+                    <div className="space-y-3">
+                      {/* Master Email Toggle */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Email Notifications</p>
+                          <p className="text-sm text-gray-500">Receive email notifications for forum activities</p>
+                        </div>
+                        <Switch
+                          checked={emailPreferences.emailNotifications}
+                          onCheckedChange={(checked) => setEmailPreferences(prev => ({ ...prev, emailNotifications: checked }))}
+                        />
+                      </div>
+
+                      {/* Email Digest */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Email Digest</p>
+                          <p className="text-sm text-gray-500">Receive a summary of forum activity</p>
+                        </div>
+                        <Select
+                          value={emailPreferences.emailDigest}
+                          onValueChange={(value) => setEmailPreferences(prev => ({ ...prev, emailDigest: value as any }))}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="DISABLED">Disabled</SelectItem>
+                            <SelectItem value="DAILY">Daily</SelectItem>
+                            <SelectItem value="WEEKLY">Weekly</SelectItem>
+                            <SelectItem value="MONTHLY">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Individual Email Settings */}
+                      <div className="space-y-3 pl-4 border-l-2 border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">New Comments</p>
+                            <p className="text-sm text-gray-500">When someone comments on your posts</p>
+                          </div>
+                          <Switch
+                            checked={emailPreferences.notifyOnComment}
+                            onCheckedChange={(checked) => setEmailPreferences(prev => ({ ...prev, notifyOnComment: checked }))}
+                            disabled={!emailPreferences.emailNotifications}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">Post Likes</p>
+                            <p className="text-sm text-gray-500">When someone likes your posts or comments</p>
+                          </div>
+                          <Switch
+                            checked={emailPreferences.notifyOnLike}
+                            onCheckedChange={(checked) => setEmailPreferences(prev => ({ ...prev, notifyOnLike: checked }))}
+                            disabled={!emailPreferences.emailNotifications}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">Mentions</p>
+                            <p className="text-sm text-gray-500">When someone mentions you in a post or comment</p>
+                          </div>
+                          <Switch
+                            checked={emailPreferences.notifyOnMention}
+                            onCheckedChange={(checked) => setEmailPreferences(prev => ({ ...prev, notifyOnMention: checked }))}
+                            disabled={!emailPreferences.emailNotifications}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">Comment Replies</p>
+                            <p className="text-sm text-gray-500">When someone replies to your comments</p>
+                          </div>
+                          <Switch
+                            checked={emailPreferences.notifyOnReply}
+                            onCheckedChange={(checked) => setEmailPreferences(prev => ({ ...prev, notifyOnReply: checked }))}
+                            disabled={!emailPreferences.emailNotifications}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">New Posts in Categories</p>
+                            <p className="text-sm text-gray-500">When new posts are created in categories you follow</p>
+                          </div>
+                          <Switch
+                            checked={emailPreferences.notifyOnNewPost}
+                            onCheckedChange={(checked) => setEmailPreferences(prev => ({ ...prev, notifyOnNewPost: checked }))}
+                            disabled={!emailPreferences.emailNotifications}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">System Notifications</p>
+                            <p className="text-sm text-gray-500">Important updates and announcements</p>
+                          </div>
+                          <Switch
+                            checked={emailPreferences.notifyOnSystem}
+                            onCheckedChange={(checked) => setEmailPreferences(prev => ({ ...prev, notifyOnSystem: checked }))}
+                            disabled={!emailPreferences.emailNotifications}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Privacy & Security */}
+            <TabsContent value="privacy" className="space-y-4 sm:space-y-6">
+              {/* Password Section */}
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Change Password
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Update your account password to keep it secure.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 p-4 sm:p-6">
+                  <div className="space-y-3">
+                    {privacySettings.hasPassword && (
+                      <div className="space-y-2">
+                        <Label htmlFor="currentPassword" className="text-sm">Current Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="currentPassword"
+                            type={privacySettings.showPassword ? "text" : "password"}
+                            value={privacySettings.currentPassword}
+                            onChange={(e) => setPrivacySettings(prev => ({ ...prev, currentPassword: e.target.value }))}
+                            placeholder="Enter current password"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-auto p-1"
+                            onClick={() => setPrivacySettings(prev => ({ ...prev, showPassword: !prev.showPassword }))}
+                          >
+                            {privacySettings.showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {!privacySettings.hasPassword && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <p className="text-sm text-blue-800">
+                          <strong>Set a password:</strong> You signed up with a social account. Setting a password will allow you to sign in directly.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword" className="text-sm">New Password</Label>
+                      <Input
+                        id="newPassword"
+                        type={privacySettings.showPassword ? "text" : "password"}
+                        value={privacySettings.newPassword}
+                        onChange={(e) => setPrivacySettings(prev => ({ ...prev, newPassword: e.target.value }))}
+                        placeholder="Enter new password (min 8 characters)"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword" className="text-sm">Confirm New Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        type={privacySettings.showPassword ? "text" : "password"}
+                        value={privacySettings.confirmPassword}
+                        onChange={(e) => setPrivacySettings(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        placeholder="Confirm new password"
+                      />
+                    </div>
+
+                    <Button 
+                      className="w-full"
+                      onClick={handlePasswordChange}
+                      disabled={!privacySettings.newPassword || !privacySettings.confirmPassword || (privacySettings.hasPassword && !privacySettings.currentPassword)}
+                    >
+                      {privacySettings.hasPassword ? "Update Password" : "Set Password"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Two-Factor Authentication */}
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Two-Factor Authentication
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Add an extra layer of security to your account with 2FA.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 p-4 sm:p-6">
+                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <div>
+                      <p className="text-sm font-medium">
+                        Two-Factor Authentication is {privacySettings.twoFactorEnabled ? "Enabled" : "Disabled"}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {privacySettings.twoFactorEnabled 
+                          ? "Your account is protected with 2FA" 
+                          : "Enable 2FA to secure your account"
+                        }
+                      </p>
+                    </div>
+                    {!privacySettings.twoFactorEnabled ? (
+                      <Button onClick={handle2FASetup} size="sm">
+                        Enable 2FA
+                      </Button>
+                    ) : (
+                      <Button variant="destructive" size="sm" onClick={() => setPrivacySettings(prev => ({ ...prev, verificationCode: "" }))}>
+                        Disable 2FA
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* QR Code for 2FA Setup */}
+                  {privacySettings.qrCode && (
+                    <div className="space-y-4 p-4 border border-blue-200 rounded-lg bg-blue-50">
+                      <h4 className="font-medium text-sm">Setup Two-Factor Authentication</h4>
+                      <div className="flex flex-col items-center space-y-4">
+                        <img src={privacySettings.qrCode} alt="QR Code for 2FA" className="w-48 h-48" />
+                        <div className="text-center text-sm text-gray-600">
+                          <p>1. Open your authenticator app (Google Authenticator, Authy, etc.)</p>
+                          <p>2. Scan this QR code</p>
+                          <p>3. Enter the verification code below</p>
+                        </div>
+                        <div className="flex gap-2 w-full">
+                          <Input
+                            placeholder="Enter verification code"
+                            value={privacySettings.verificationCode}
+                            onChange={(e) => setPrivacySettings(prev => ({ ...prev, verificationCode: e.target.value }))}
+                          />
+                          <Button onClick={handle2FAVerify}>Verify</Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 2FA Disable Form */}
+                  {privacySettings.twoFactorEnabled && !privacySettings.qrCode && (
+                    <div className="space-y-4 p-4 border border-red-200 rounded-lg bg-red-50">
+                      <h4 className="font-medium text-sm text-red-800">Disable Two-Factor Authentication</h4>
+                      <p className="text-sm text-red-600">
+                        Enter a verification code from your authenticator app to disable 2FA.
+                      </p>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Enter verification code"
+                          value={privacySettings.verificationCode}
+                          onChange={(e) => setPrivacySettings(prev => ({ ...prev, verificationCode: e.target.value }))}
+                        />
+                        <Button variant="destructive" onClick={handle2FADisable}>
+                          Disable 2FA
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Data Management */}
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Data Management
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Export your data in different formats or manage your account information.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 p-4 sm:p-6">
+                  <div className="space-y-4">
+                    {/* PDF Export */}
+                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium">Export as PDF Report</p>
+                        <p className="text-sm text-gray-500">
+                          Download a formatted PDF report of your profile and activity
+                        </p>
+                      </div>
+                      <Button variant="default" onClick={handlePDFExport}>
+                        <Download className="w-4 h-4 mr-2" />
+                        Export PDF
+                      </Button>
+                    </div>
+
+                    {/* ZIP Export */}
+                    <div className="flex items-center justify-between p-4 border border-blue-200 rounded-lg bg-blue-50">
+                      <div>
+                        <p className="text-sm font-medium text-blue-900">Complete Data Archive</p>
+                        <p className="text-sm text-blue-700">
+                          Download all your posts, images, and profile data in a ZIP archive
+                        </p>
+                      </div>
+                      <Button variant="outline" onClick={handleZipExport} className="border-blue-300 text-blue-700 hover:bg-blue-100">
+                        <Download className="w-4 h-4 mr-2" />
+                        Export ZIP
+                      </Button>
+                    </div>
+
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Danger Zone */}
+              <Card className="border-red-200">
+                <CardHeader className="p-4 sm:p-6 bg-red-50">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-red-700">
+                    <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Danger Zone
+                  </CardTitle>
+                  <CardDescription className="text-sm text-red-600">
+                    Permanently delete your account and all associated data. This action cannot be undone.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 p-4 sm:p-6">
+                  <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-red-800">
+                          Type "DELETE MY ACCOUNT" to confirm:
+                        </Label>
+                        <Input
+                          value={privacySettings.deleteConfirmText}
+                          onChange={(e) => setPrivacySettings(prev => ({ ...prev, deleteConfirmText: e.target.value }))}
+                          placeholder="DELETE MY ACCOUNT"
+                          className="border-red-300"
+                        />
+                      </div>
+
+                      {privacySettings.hasPassword && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-red-800">
+                            Enter your password to confirm:
+                          </Label>
+                          <Input
+                            type="password"
+                            value={privacySettings.deletePassword}
+                            onChange={(e) => setPrivacySettings(prev => ({ ...prev, deletePassword: e.target.value }))}
+                            placeholder="Enter your password"
+                            className="border-red-300"
+                          />
+                        </div>
+                      )}
+
+                      {!privacySettings.hasPassword && privacySettings.hasSocialAccount && (
+                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                          <p className="text-sm text-yellow-800">
+                            <strong>Social Account:</strong> Since you signed up with a social account, only confirmation text is required for deletion.
+                          </p>
+                        </div>
+                      )}
+
+                      <Button 
+                        variant="destructive" 
+                        className="w-full"
+                        onClick={handleAccountDeletion}
+                        disabled={
+                          privacySettings.deleteConfirmText !== "DELETE MY ACCOUNT" || 
+                          (privacySettings.hasPassword && !privacySettings.deletePassword)
+                        }
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Account Permanently
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          {/* Fixed Save Button */}
+          <div className="sticky bottom-2 sm:bottom-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 pt-3 sm:pt-4 mt-4 sm:mt-8">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-4">
+              <Link href={`/profile/${user?.id}`} className="order-2 sm:order-1">
+                <Button variant="outline" className="w-full sm:w-auto text-sm">Cancel</Button>
+              </Link>
+              <Button onClick={handleSave} disabled={isSaving} className="order-1 sm:order-2 w-full sm:w-auto text-sm">
+                <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {/* Account Deletion Confirmation Dialog */}
+      <Dialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              Final Warning - Account Deletion
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground text-left space-y-4">
+            <div className="space-y-4">
+              <div className="font-semibold text-red-800">
+                This action will PERMANENTLY delete your account and ALL associated data including:
+              </div>
+              <ul className="list-disc list-inside space-y-2 text-sm text-gray-700 ml-4">
+                <li>All your posts and comments</li>
+                <li>Your profile information</li>
+                <li>Your connections and activity history</li>
+                <li>All uploaded files and images</li>
+              </ul>
+              <div className="font-bold text-red-800 bg-red-50 p-4 rounded border border-red-200">
+                ⚠️ This action CANNOT be undone!
+              </div>
+              <div className="text-gray-800 font-medium">
+                Are you absolutely sure you want to proceed?
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-6">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteConfirmation(false)}
+              className="w-full sm:w-auto"
+            >
+              Cancel - Keep My Account
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmAccountDeletion}
+              className="w-full sm:w-auto"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Yes, Delete Permanently
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+    </AuthGuard>
+  )
+}
+
+// Loading component for Suspense fallback
+function EditProfileLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+        <p className="mt-2 text-gray-600">Loading profile editor...</p>
+      </div>
+    </div>
+  )
+}
+
+// Main component with Suspense boundary
+export default function EditProfilePage() {
+  return (
+    <Suspense fallback={<EditProfileLoading />}>
+      <EditProfileContent />
+    </Suspense>
+  )
+}

@@ -8,28 +8,21 @@ datasource db {
 }
 
 model Account {
-  id                String  @id
+  id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
   user              users   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
 
 model Comment {
-  id            String    @id
+  id            String    @id @default(cuid())
   content       String
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime  @updatedAt
   postId        String
   authorId      String
   parentId      String?
@@ -40,79 +33,160 @@ model Comment {
 }
 
 model Post {
-  id                String     @id
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime
-  title             String?
+  id                String         @id @default(cuid())
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
   content           String
-  isAnonymous       Boolean    @default(false)
-  isPinned          Boolean    @default(false)
-  isLocked          Boolean    @default(false)
-  aiCategory        String?
+  isAnonymous       Boolean        @default(false)
+  // Moderation Status Fields
+  isPinned          Boolean        @default(false)
+  isLocked          Boolean        @default(false)
+  isHidden          Boolean        @default(false)
+  isFlagged         Boolean        @default(false)
+  isApproved        Boolean        @default(true) // Auto-approved by default
+  moderationStatus  ModerationStatus @default(APPROVED)
+  // Moderation Metadata
+  flagCount         Int            @default(0)
+  lastModeratedAt   DateTime?
+  moderatedBy       String?
+  moderationReason  String?
+  moderationNotes   String?        // Internal notes for moderators
+  // Content and Display
+  images            String[]       @default([]) // Store Vercel Blob URLs directly
   aiTags            String[]
-  originalLanguage  String     @default("English")
+  originalLanguage  String         @default("English")
   translatedContent String?
-  viewCount         Int        @default(0)
-  shareCount        Int        @default(0)
+  viewCount         Int            @default(0)
+  shareCount        Int            @default(0)
   authorId          String
-  categoryId        String
+  categoryIds       String[]       @default([])
+  aiSuggestions     Json?
+  primaryCategoryId String?
+  // Relations
   Comment           Comment[]
-  users             users      @relation(fields: [authorId], references: [id])
-  categories        categories @relation(fields: [categoryId], references: [id])
+  users             users          @relation(fields: [authorId], references: [id])
+  moderator         users?         @relation("PostModerator", fields: [moderatedBy], references: [id])
+  primaryCategory   categories?    @relation("PrimaryCategory", fields: [primaryCategoryId], references: [id])
+  postCategories    PostCategory[]
+  flags             PostFlag[]     // Relation to flag reports
+  moderationActions ModerationAction[]
 
   @@index([authorId])
-  @@index([categoryId])
-}
-
-model Session {
-  id           String   @id
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         users    @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
-model attachments {
-  id        String   @id
-  filename  String
-  url       String
-  size      Int
-  mimeType  String
-  postId    String
-  createdAt DateTime @default(now())
+  @@index([categoryIds])
+  @@index([primaryCategoryId])
+  @@index([moderationStatus])
+  @@index([isFlagged])
+  @@index([moderatedBy])
+  @@index([lastModeratedAt])
+  @@index([createdAt, moderationStatus]) // Compound index for queries
+  @@index([isHidden, moderationStatus]) // For filtering visible posts
+  @@index([isPinned, createdAt]) // For ordering by pinned status and date
+  @@index([createdAt]) // For date-based sorting
+  @@index([viewCount]) // For popular posts
 }
 
 model categories {
-  id          String   @id
-  name        String   @unique
-  description String
-  color       String
-  icon        String
-  slug        String   @unique
-  postCount   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime
-  Post        Post[]
+  id             String         @id
+  name           String         @unique
+  color          String
+  slug           String         @unique
+  postCount      Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  primaryPosts   Post[]         @relation("PrimaryCategory")
+  postCategories PostCategory[]
 }
 
-model flags {
-  id        String     @id
-  reason    String
-  status    FlagStatus @default(PENDING)
-  userId    String
-  postId    String?
-  commentId String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime
-  users     users      @relation(fields: [userId], references: [id], onDelete: Cascade)
+model PostCategory {
+  id         String     @id @default(cuid())
+  postId     String
+  categoryId String
+  createdAt  DateTime   @default(now())
+  category   categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  post       Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, categoryId])
+  @@index([postId])
+  @@index([categoryId])
+}
+
+model PostFlag {
+  id          String     @id @default(cuid())
+  reason      FlagReason
+  customReason String?   // For "OTHER" flag reason
+  description String?   // Optional detailed description
+  status      FlagStatus @default(PENDING)
+  severity    FlagSeverity @default(MEDIUM)
+  
+  // Relationships
+  userId      String
+  postId      String
+  commentId   String?   // For future comment flagging
+  
+  // Moderation tracking
+  reviewedBy  String?   // Moderator who reviewed this flag
+  reviewedAt  DateTime?
+  reviewNotes String?   // Internal moderation notes
+  
+  // Audit fields
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  ipAddress   String?    // For security tracking
+  userAgent   String?    // For abuse detection
+  
+  // Relations
+  user        users      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post        Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reviewer    users?     @relation("FlagReviewer", fields: [reviewedBy], references: [id])
+  
+  // Constraints
+  @@unique([userId, postId, reason]) // Prevent duplicate flags from same user for same reason
+  @@index([postId])
+  @@index([userId])
+  @@index([status])
+  @@index([reviewedBy])
+  @@index([createdAt])
+  @@index([postId, status]) // Compound index for moderation queries
+}
+
+model ModerationAction {
+  id          String           @id @default(cuid())
+  action      ModerationActionType
+  reason      String?          // Reason for the moderation action
+  notes       String?          // Internal notes
+  metadata    Json?            // Additional action-specific data
+  
+  // Target content
+  postId      String?
+  commentId   String?
+  userId      String?          // Target user (for user-level actions)
+  
+  // Moderation details
+  moderatorId String
+  moderatedAt DateTime         @default(now())
+  expiresAt   DateTime?        // For temporary actions like suspensions
+  isActive    Boolean          @default(true)
+  
+  // Previous state (for rollback capability)
+  previousState Json?
+  
+  // Audit fields
+  ipAddress   String?
+  userAgent   String?
+  
+  // Relations
+  post        Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  moderator   users            @relation("ModerationActionModerator", fields: [moderatorId], references: [id])
+  targetUser  users?           @relation("ModerationActionTarget", fields: [userId], references: [id])
+  
+  // Indexes for performance
+  @@index([postId])
+  @@index([moderatorId])
+  @@index([userId])
+  @@index([action])
+  @@index([moderatedAt])
+  @@index([isActive])
+  @@index([postId, action]) // Compound index for post history
 }
 
 model notifications {
@@ -125,6 +199,27 @@ model notifications {
   userId    String
   createdAt DateTime         @default(now())
   users     users            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailLogs {
+  id        String           @id @default(cuid())
+  email     String
+  subject   String
+  template  String
+  type      NotificationType
+  status    EmailStatus      @default(PENDING)
+  sentAt    DateTime?
+  error     String?
+  userId    String?
+  postId    String?
+  commentId String?
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  @@index([email])
+  @@index([userId])
+  @@index([type])
+  @@index([status])
 }
 
 model pages {
@@ -150,43 +245,173 @@ model settings {
 }
 
 model users {
-  id                String          @id
-  name              String?
-  email             String          @unique
-  emailVerified     DateTime?
-  image             String?
-  password          String?
-  company           String?
-  profession        String?
-  bio               String?
-  location          String?
-  website           String?
-  phone             String?
-  profileVisibility Boolean         @default(true)
-  linkedinUrl       String?
-  twitterUrl        String?
-  instagramUrl      String?
-  role              UserRole        @default(MEMBER)
-  rank              UserRank        @default(NEW_MEMBER)
-  isVerified        Boolean         @default(false)
-  isSuspended       Boolean         @default(false)
-  suspendedUntil    DateTime?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime
-  lastActiveAt      DateTime        @default(now())
-  Account           Account[]
-  Comment           Comment[]
-  Post              Post[]
-  Session           Session[]
-  flags             flags[]
-  notifications     notifications[]
-  pages             pages[]
-  settings          settings[]
-  votes             votes[]
+  id                  String           @id
+  name                String?
+  email               String           @unique
+  emailVerified       DateTime?
+  image               String?
+  password            String?
+  company             String?
+  profession          String?
+  bio                 String?
+  location            String?
+  profileVisibility   Boolean          @default(true)
+  linkedinUrl         String?
+  twitterUrl          String?
+  instagramUrl        String?
+  // User management and security
+  role                UserRole         @default(MEMBER)
+  roleChangedAt       DateTime?        // When role was last changed (for session invalidation)
+  isVerified          Boolean          @default(false)
+  isSuspended         Boolean          @default(false)
+  suspendedUntil      DateTime?
+  suspendedBy         String?          // Who suspended this user
+  suspensionReason    String?          // Reason for suspension
+  moderationNotes     String?          // Internal notes about this user
+  isBanned            Boolean          @default(false)
+  bannedAt            DateTime?
+  bannedBy            String?
+  banReason           String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime
+  lastActiveAt        DateTime         @default(now())
+  city                String?
+  country             String?
+  facebookUrl         String?
+  firstName           String?
+  headline            String?
+  industry            String?
+  lastName            String?
+  phoneNumber         String?
+  portfolioUrl        String?
+  portfolioLinks      String[]         @default([])
+  skills              String[]         @default([])
+  behanceUrl          String?
+  dribbbleUrl         String?
+  emailPrivacy        PrivacyLevel     @default(MEMBERS_ONLY)
+  githubUrl           String?
+  otherSocialUrl      String?
+  phonePrivacy        PrivacyLevel     @default(ONLY_ME)
+  profilePhotoPrivacy PrivacyLevel     @default(EVERYONE)
+  tiktokUrl           String?
+  youtubeUrl          String?
+  professions         String[]         @default([])
+  emailDigest         EmailDigestFreq  @default(DISABLED)
+  emailNotifications  Boolean          @default(true)
+  notifyOnComment     Boolean          @default(true)
+  notifyOnLike        Boolean          @default(true)
+  notifyOnMention     Boolean          @default(true)
+  notifyOnNewPost     Boolean          @default(false)
+  notifyOnReply       Boolean          @default(true)
+  notifyOnSystem      Boolean          @default(true)
+  twoFactorEnabled    Boolean          @default(false)
+  twoFactorSecret     String?
+  // Existing relations
+  Account             Account[]
+  Comment             Comment[]
+  education           Education[]
+  Post                Post[]
+  workExperience      WorkExperience[]
+  flags               PostFlag[]       // Updated relation name
+  notifications       notifications[]
+  pages               pages[]
+  settings            settings[]
+  userBadges          userBadges[]
+  votes               votes[]
+  
+  // New moderation relations
+  moderatedPosts      Post[]           @relation("PostModerator")
+  flagsReviewed       PostFlag[]       @relation("FlagReviewer")
+  moderationActions   ModerationAction[] @relation("ModerationActionModerator")
+  moderationTargets   ModerationAction[] @relation("ModerationActionTarget")
+  
+  // User management relations
+  suspendedByUser     users?           @relation("UserSuspension", fields: [suspendedBy], references: [id])
+  suspendedUsers      users[]          @relation("UserSuspension")
+  bannedByUser        users?           @relation("UserBan", fields: [bannedBy], references: [id])
+  bannedUsers         users[]          @relation("UserBan")
+  
+  // Advertisement relations
+  createdAds          Advertisement[]  @relation("AdCreator")
+  editedAds           Advertisement[]  @relation("AdEditor")
+  
+  // Performance and security indexes
+  @@index([email])
+  @@index([role])
+  @@index([isVerified])
+  @@index([isSuspended])
+  @@index([isBanned])
+  @@index([lastActiveAt])
+  @@index([createdAt])
+  @@index([role, isVerified]) // Compound index for user management
+}
+
+model WorkExperience {
+  id          String    @id @default(cuid())
+  jobTitle    String
+  company     String
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean   @default(false)
+  description String?
+  userId      String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Education {
+  id          String    @id @default(cuid())
+  degree      String
+  institution String
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean   @default(false)
+  description String?
+  userId      String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model badges {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String
+  icon        String
+  color       String
+  type        BadgeType
+  level       BadgeLevel   @default(BRONZE)
+  criteria    Json
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  userBadges  userBadges[]
+
+  @@index([type])
+  @@index([isActive])
+}
+
+model userBadges {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  earnedAt  DateTime @default(now())
+  awardedBy String?
+  badges    badges   @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
 }
 
 model votes {
-  id        String   @id
+  id        String   @id @default(cuid())
   type      VoteType
   userId    String
   postId    String?
@@ -196,6 +421,18 @@ model votes {
 
   @@unique([userId, commentId])
   @@unique([userId, postId])
+  @@index([postId, type]) // For efficient vote aggregation by post
+  @@index([commentId, type]) // For efficient vote aggregation by comment
+  @@index([postId]) // For quick post vote lookups
+  @@index([commentId]) // For quick comment vote lookups
+  @@index([type]) // For filtering by vote type
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  BOUNCED
 }
 
 enum FlagStatus {
@@ -203,6 +440,71 @@ enum FlagStatus {
   REVIEWED
   RESOLVED
   DISMISSED
+  ESCALATED     // For complex cases requiring higher authority
+}
+
+enum FlagReason {
+  SPAM
+  HARASSMENT
+  HATE_SPEECH
+  INAPPROPRIATE_CONTENT
+  MISINFORMATION
+  COPYRIGHT_VIOLATION
+  PERSONAL_INFORMATION
+  OFF_TOPIC
+  DUPLICATE_CONTENT
+  SCAM_FRAUD
+  VIOLENCE_THREATS
+  SEXUAL_CONTENT
+  ILLEGAL_CONTENT
+  OTHER
+}
+
+enum FlagSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ModerationStatus {
+  PENDING         // Awaiting moderation
+  APPROVED        // Content is approved
+  REJECTED        // Content is rejected
+  FLAGGED         // Content is flagged for review
+  HIDDEN          // Content is hidden from public view
+  REMOVED         // Content is permanently removed
+}
+
+enum ModerationActionType {
+  // Post actions
+  APPROVE_POST
+  REJECT_POST
+  HIDE_POST
+  UNHIDE_POST
+  PIN_POST
+  UNPIN_POST
+  LOCK_POST
+  UNLOCK_POST
+  DELETE_POST
+  RESTORE_POST
+  EDIT_POST
+  
+  // Flag actions
+  APPROVE_FLAG
+  DISMISS_FLAG
+  ESCALATE_FLAG
+  
+  // User actions
+  WARN_USER
+  SUSPEND_USER
+  UNSUSPEND_USER
+  BAN_USER
+  UNBAN_USER
+  
+  // System actions
+  AUTO_MODERATE
+  BULK_ACTION
 }
 
 enum NotificationType {
@@ -212,25 +514,86 @@ enum NotificationType {
   MENTION
   BEST_ANSWER
   SYSTEM
+  EMAIL_VERIFICATION
+  NEW_POST_IN_CATEGORY
+  NEW_FOLLOWER
+  MODERATION_ACTION    // New notification type for moderation
 }
 
-enum UserRank {
-  NEW_MEMBER
-  CONVERSATION_STARTER
-  RISING_STAR
-  VISUAL_STORYTELLER
-  VALUED_RESPONDER
-  COMMUNITY_EXPERT
-  TOP_CONTRIBUTOR
+enum BadgeType {
+  ACTIVITY
+  APPRECIATION
+  ENGAGEMENT
+  TENURE
+  ACHIEVEMENT
+  CONTENT_TYPE
+  QUALITY
+}
+
+enum BadgeLevel {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
 }
 
 enum UserRole {
   ADMIN
   MODERATOR
   MEMBER
+  SUPER_ADMIN
 }
 
 enum VoteType {
   UP
   DOWN
+}
+
+enum EmailDigestFreq {
+  DISABLED
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum PrivacyLevel {
+  EVERYONE
+  MEMBERS_ONLY
+  ONLY_ME
+}
+
+// Advertisement Management
+model Advertisement {
+  id            String   @id @default(cuid())
+  title         String?
+  description   String?
+  imageUrl      String
+  redirectUrl   String
+  size          String   // e.g., "320x320", "90%x180"
+  active        Boolean  @default(true)
+  weight        Int      @default(1) // 1-10 for weighted selection
+  priority      AdPriority @default(LOW)
+  clickCount    Int      @default(0)
+  impressions   Int      @default(0)
+  
+  // Metadata
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdBy     String?
+  lastEditedBy  String?
+  
+  // Relations
+  creator       users?   @relation("AdCreator", fields: [createdBy], references: [id])
+  editor        users?   @relation("AdEditor", fields: [lastEditedBy], references: [id])
+  
+  @@index([active])
+  @@index([size, active])
+  @@index([priority, weight])
+  @@index([createdAt])
+}
+
+enum AdPriority {
+  HIGH
+  MEDIUM  
+  LOW
 }

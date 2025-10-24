@@ -29,7 +29,20 @@ function checkSocketRateLimit(socketId) {
   return true;
 }
 
-app.prepare().then(() => {
+app.prepare().then(async () => {
+  // Initialize email service on startup
+  try {
+    const { initializeEmailService } = require('./lib/email-service');
+    const emailResult = await initializeEmailService();
+    if (emailResult.success) {
+      console.log('✅ Email service initialized successfully');
+    } else {
+      console.warn('⚠️ Email service initialization failed:', emailResult.error);
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize email service:', error.message);
+  }
+
   const server = createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
     handle(req, res, parsedUrl);
@@ -45,7 +58,19 @@ app.prepare().then(() => {
     },
     transports: ['websocket', 'polling'],
     allowEIO3: true,
+    pingTimeout: 60000, // 60 seconds
+    pingInterval: 25000, // 25 seconds
+    connectTimeout: 10000 // 10 seconds connection timeout
   });
+
+  // Initialize stats service with Socket.IO
+  try {
+    const { setSocketIOServer } = require('./lib/stats-service');
+    setSocketIOServer(io);
+    console.log('✅ Stats service initialized with Socket.IO');
+  } catch (error) {
+    console.error('❌ Failed to initialize stats service:', error.message);
+  }
 
   // Authentication middleware
   io.use(async (socket, next) => {
@@ -77,6 +102,34 @@ app.prepare().then(() => {
   // Socket.IO logic for comments with improved security
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id, "User ID:", socket.userId);
+
+    // Join admin stats room if user is admin
+    if (socket.userRole === 'ADMIN') {
+      socket.join('admin-stats');
+      console.log(`Admin user ${socket.userId} joined admin-stats room`);
+    }
+
+    // Handle admin stats room joining
+    socket.on("join-admin-stats", () => {
+      if (socket.userRole !== 'ADMIN') {
+        socket.emit("error", { message: "Admin access required" });
+        return;
+      }
+      
+      if (!checkSocketRateLimit(socket.id)) {
+        socket.emit("error", { message: "Rate limit exceeded" });
+        return;
+      }
+
+      socket.join('admin-stats');
+      console.log(`Admin user ${socket.userId} joined admin-stats room`);
+    });
+
+    // Handle leaving admin stats room
+    socket.on("leave-admin-stats", () => {
+      socket.leave('admin-stats');
+      console.log(`User ${socket.userId} left admin-stats room`);
+    });
 
     // Clean up rate limit data on disconnect
     socket.on("disconnect", () => {

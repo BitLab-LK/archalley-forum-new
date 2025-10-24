@@ -2,17 +2,19 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { randomUUID } from "crypto"
 
 // Get all pages
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user || session.user.role !== "ADMIN") {
+    const userRole = session?.user?.role as string;
+    if (!session?.user || (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN")) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    const pages = await prisma.page.findMany({
+    const pages = await prisma.pages.findMany({
       orderBy: {
         updatedAt: "desc"
       }
@@ -30,7 +32,8 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user || session.user.role !== "ADMIN") {
+    const userRole = session?.user?.role as string;
+    if (!session?.user || (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN")) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
@@ -42,7 +45,7 @@ export async function POST(req: Request) {
     }
 
     // Check if slug is unique
-    const existingPage = await prisma.page.findUnique({
+    const existingPage = await prisma.pages.findUnique({
       where: { slug }
     })
 
@@ -50,13 +53,15 @@ export async function POST(req: Request) {
       return new NextResponse("Page with this slug already exists", { status: 400 })
     }
 
-    const page = await prisma.page.create({
+const page = await prisma.pages.create({
       data: {
+        id: randomUUID(),
         title,
         slug,
         content,
         isPublished: isPublished || false,
-        authorId: session.user.id
+        authorId: session.user.id,
+        updatedAt: new Date()
       }
     })
 
@@ -72,7 +77,8 @@ export async function PATCH(req: Request) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user || session.user.role !== "ADMIN") {
+    const userRole = session?.user?.role as string;
+    if (!session?.user || (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN")) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
@@ -84,7 +90,7 @@ export async function PATCH(req: Request) {
     }
 
     // Check if slug is unique (excluding current page)
-    const existingPage = await prisma.page.findFirst({
+    const existingPage = await prisma.pages.findFirst({
       where: {
         slug,
         id: { not: id }
@@ -95,13 +101,14 @@ export async function PATCH(req: Request) {
       return new NextResponse("Page with this slug already exists", { status: 400 })
     }
 
-    const page = await prisma.page.update({
+    const page = await prisma.pages.update({
       where: { id },
       data: {
         title,
         slug,
         content,
-        isPublished: isPublished || false
+        isPublished: isPublished || false,
+        updatedAt: new Date()
       }
     })
 
@@ -117,7 +124,8 @@ export async function DELETE(req: Request) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user || session.user.role !== "ADMIN") {
+    const userRole = session?.user?.role as string;
+    if (!session?.user || (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN")) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
@@ -128,7 +136,7 @@ export async function DELETE(req: Request) {
       return new NextResponse("Missing page ID", { status: 400 })
     }
 
-    await prisma.page.delete({
+    await prisma.pages.delete({
       where: { id: pageId }
     })
 

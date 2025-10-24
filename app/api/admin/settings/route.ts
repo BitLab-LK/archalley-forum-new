@@ -2,13 +2,15 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { randomUUID } from "crypto"
 
 // Get all settings
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user || session.user.role !== "ADMIN") {
+    const userRole = session?.user?.role as string;
+    if (!session?.user || (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN")) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
@@ -34,7 +36,8 @@ export async function PATCH(req: Request) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user || session.user.role !== "ADMIN") {
+    const userRole = session?.user?.role as string;
+    if (!session?.user || (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN")) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
@@ -51,12 +54,15 @@ export async function PATCH(req: Request) {
         where: { key },
         update: {
           value,
-          updatedBy: session.user.id
+          updatedById: session.user.id,
+          updatedAt: new Date()
         },
         create: {
+          id: randomUUID(),
           key,
           value,
-          updatedBy: session.user.id,
+          updatedById: session.user.id,
+          updatedAt: new Date(),
           description: getSettingDescription(key)
         }
       })

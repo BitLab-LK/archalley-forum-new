@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { classifyPost, testAIService } from "@/lib/ai-service"
+import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
 const classifyRequestSchema = z.object({
@@ -10,26 +11,23 @@ const classifyRequestSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    console.log("🔍 AI classification request received")
-    
-    // Check authentication
+
+// Check authentication
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      console.log("❌ Unauthorized AI classification request")
+      
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
       )
     }
 
-    console.log("✅ User authenticated:", session.user.email)
-
-    // Get and validate the request body
+// Get and validate the request body
     const body = await req.json()
     const validationResult = classifyRequestSchema.safeParse(body)
     
     if (!validationResult.success) {
-      console.log("❌ Invalid request body:", validationResult.error.errors)
+      
       return NextResponse.json(
         { 
           error: "Invalid request", 
@@ -40,19 +38,29 @@ export async function POST(req: Request) {
     }
 
     const { content } = validationResult.data
-    console.log("📝 Processing content:", content.substring(0, 100) + "...")
 
-    // Get AI classification
-    const classification = await classifyPost(content)
+    // Fetch available categories from database
+    try {
+      const categories = await prisma.categories.findMany({
+        select: { name: true },
+        orderBy: { name: 'asc' }
+      })
+      
+      const categoryNames = categories.map(cat => cat.name)
+      console.log("📋 Available categories for AI:", categoryNames)
+      
+      // Get AI classification with dynamic categories
+      const classification = await classifyPost(content, categoryNames)
 
-    console.log("✅ Classification completed:", {
-      category: classification.category,
-      tagsCount: classification.tags.length,
-      confidence: classification.confidence,
-      originalLanguage: classification.originalLanguage
-    })
+      return NextResponse.json(classification)
+    } catch (dbError) {
+      console.error("Database error when fetching categories:", dbError)
+      
+      // Fallback to AI classification without dynamic categories
+      const classification = await classifyPost(content)
 
-    return NextResponse.json(classification)
+      return NextResponse.json(classification)
+    }
   } catch (error) {
     console.error("❌ AI classification error:", {
       error,
@@ -71,11 +79,10 @@ export async function POST(req: Request) {
 }
 
 // Test endpoint to verify AI service is working
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    console.log("🧪 AI service test request received")
-    
-    // Check authentication
+
+// Check authentication
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json(
@@ -85,16 +92,15 @@ export async function GET(req: Request) {
     }
 
     // Only allow admins to test AI service
-    if (session.user.role !== "ADMIN") {
+    const userRole = session.user.role as string;
+    if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 }
       )
     }
 
-    console.log("✅ Admin user testing AI service:", session.user.email)
-
-    // Test the AI service
+// Test the AI service
     const isWorking = await testAIService()
 
     if (isWorking) {

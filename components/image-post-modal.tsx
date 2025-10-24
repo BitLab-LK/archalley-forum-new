@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import Image from "next/image"
+import { createPortal } from "react-dom"
+import PostImage from "./post-image"
 import { 
   ThumbsUp, 
   ThumbsDown, 
   MessageCircle, 
-  Share2, 
   ChevronLeft, 
   ChevronRight, 
   Trash2, 
@@ -21,8 +21,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import { usePostSync } from "@/hooks/use-post-sync"
+import { useGlobalVoteState } from "@/lib/vote-sync"
+import { activityEventManager } from "@/lib/activity-events"
 import { useAuth } from "@/lib/auth-context"
+import { useToast } from "@/hooks/use-toast"
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
+import ShareDropdown from "./share-dropdown"
+import { PostBadges } from "./post-badges"
 
 // Types
 interface Comment {
@@ -30,7 +35,8 @@ interface Comment {
   author: string
   authorId: string
   authorImage: string
-  authorRank?: string
+  authorBadges?: any[]
+  authorIsVerified?: boolean
   content: string
   createdAt: string
   upvotes: number
@@ -45,7 +51,7 @@ interface ImagePostModalProps {
   onClose: () => void
   onCommentAdded?: () => void
   onCommentCountUpdate?: (newCount: number) => void
-  onVoteUpdate?: (upvotes: number, downvotes: number, userVote: "up" | "down" | null) => void
+  onTopCommentVoteChange?: (postId: string, topComment: { id: string, author: { name: string, image?: string }, content: string, upvotes: number, downvotes: number, isBestAnswer: boolean, userVote?: "up" | "down" } | null) => void
   post: {
     id: string
     author: {
@@ -53,8 +59,7 @@ interface ImagePostModalProps {
       name: string
       avatar: string
       isVerified: boolean
-      rank: string
-      rankIcon: string
+      badges?: any[]
     }
     content: string
     category: string
@@ -62,13 +67,17 @@ interface ImagePostModalProps {
     isPinned: boolean
     upvotes: number
     downvotes: number
+    userVote?: "up" | "down" | null
     comments: number
     timeAgo: string
     images?: string[]
     topComment?: {
-      author: string
+      author: { name: string, image?: string }
       content: string
+      upvotes: number
+      downvotes: number
       isBestAnswer: boolean
+      userVote?: "up" | "down"
     }
   }
   initialImage?: number
@@ -79,7 +88,7 @@ export default function ImagePostModal({
   onClose, 
   onCommentAdded, 
   onCommentCountUpdate,
-  onVoteUpdate, 
+  onTopCommentVoteChange,
   post, 
   initialImage = 0 
 }: ImagePostModalProps) {
@@ -92,15 +101,49 @@ export default function ImagePostModal({
   const [loading, setLoading] = useState(false)
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
   
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+      return () => {
+        document.body.style.overflow = 'unset'
+      }
+    }
+    return undefined
+  }, [open])
+  
   // Refs and hooks
   const commentInputRef = useRef<HTMLInputElement>(null)
+  const previousCommentCount = useRef<number>(0) // Track previous comment count
   const { user } = useAuth()
-  const { userVote, upvotes, downvotes, handleVote, commentCount, syncCommentCount } = usePostSync(
-    post.id,
-    post.upvotes, 
-    post.downvotes,
-    post.comments
-  )  // Computed values
+  const { toast } = useToast()
+  const { confirm } = useConfirmDialog()
+  
+  // Effect to update comment count whenever comments change
+  useEffect(() => {
+    const totalComments = comments.reduce((total, comment) => {
+      return total + 1 + (comment.replies?.length || 0)
+    }, 0)
+    
+    // Only call update if the count actually changed and callback exists
+    if (totalComments !== previousCommentCount.current && onCommentCountUpdate) {
+      previousCommentCount.current = totalComments
+      onCommentCountUpdate(totalComments)
+    }
+  }, [comments]) // Remove onCommentCountUpdate from dependencies
+  
+  // Use global vote state for real-time synchronization
+  const { voteState, updateVote } = useGlobalVoteState(post.id, {
+    upvotes: post.upvotes,
+    downvotes: post.downvotes,
+    userVote: post.userVote || null
+  })
+  
+  // Extract values for easier use
+  const { upvotes, downvotes, userVote } = voteState
+  const [isVoting, setIsVoting] = useState(false)
+  
+  // Computed values
   const images = post.images || []
   const hasImages = images.length > 0
 
@@ -109,40 +152,155 @@ export default function ImagePostModal({
     setCarouselIndex(initialImage)
   }, [initialImage, open])
 
-  // Sync vote changes with parent component
-  useEffect(() => {
-    if (onVoteUpdate) {
-      onVoteUpdate(upvotes, downvotes, userVote)
-    }
-  }, [upvotes, downvotes, userVote, onVoteUpdate])
-
   // Fetch comments when modal opens
   useEffect(() => {
-    if (!open) return
+    if (!open) return undefined
     
     setLoading(true)
-    fetch(`/api/comments?postId=${post.id}`)
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
-        return res.json()
-      })
-      .then(data => {
-        if (Array.isArray(data.comments)) {
-          setComments(data.comments)
-          
-          // Calculate and sync the actual comment count with parent
-          const totalComments = data.comments.reduce((total: number, comment: any) => {
-            return total + 1 + (comment.replies?.length || 0)
-          }, 0)
-          onCommentCountUpdate?.(totalComments)
+    
+    const fetchComments = async () => {
+      try {
+        const commentsUrl = `/api/comments?postId=${post.id}`;
+        
+        const res = await fetch(commentsUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-cache'
+        });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('ImageModal: Comments fetch failed:', res.status, errorText);
+          throw new Error(`HTTP error! status: ${res.status} - ${errorText}`);
         }
-      })
-      .catch(error => {
-        console.error("Error fetching comments:", error)
-        setComments([])
-      })
-      .finally(() => setLoading(false))
+        
+        const data = await res.json();
+        
+        if (Array.isArray(data.comments)) {
+          setComments(data.comments);
+        } else {
+          console.warn('ImageModal: Comments data is not an array:', data);
+          setComments([]);
+        }
+      } catch (error) {
+        console.error("ImageModal: Error fetching comments:", error);
+        setComments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchComments();
+    return undefined
   }, [open, post.id])
+
+  // Handle vote action with smooth animation and global sync
+  const handleVote = async (type: "up" | "down") => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to vote on posts",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    if (isVoting) {
+      return // Prevent double clicks
+    }
+    
+    setIsVoting(true)
+
+// Calculate optimistic update
+    let newUpvotes = upvotes
+    let newDownvotes = downvotes
+    let newUserVote: "up" | "down" | null = userVote
+    
+    if (userVote === type) {
+      // Remove vote
+      newUserVote = null
+      if (type === "up") {
+        newUpvotes = Math.max(0, upvotes - 1)
+      } else {
+        newDownvotes = Math.max(0, downvotes - 1)
+      }
+    } else if (userVote) {
+      // Change vote
+      if (type === "up") {
+        newUpvotes = upvotes + 1
+        newDownvotes = Math.max(0, downvotes - 1)
+      } else {
+        newUpvotes = Math.max(0, upvotes - 1)
+        newDownvotes = downvotes + 1
+      }
+      newUserVote = type
+    } else {
+      // New vote
+      newUserVote = type
+      if (type === "up") {
+        newUpvotes = upvotes + 1
+      } else {
+        newDownvotes = downvotes + 1
+      }
+    }
+    
+    // Update UI immediately using global state manager
+    updateVote({
+      upvotes: newUpvotes,
+      downvotes: newDownvotes,
+      userVote: newUserVote
+    })
+    
+    try {
+      // Send to server
+      const response = await fetch(`/api/posts/${post.id}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: type.toUpperCase() }),
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Vote failed: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      
+      // Update with server response using global state
+      updateVote({
+        upvotes: result.upvotes,
+        downvotes: result.downvotes,
+        userVote: result.userVote
+      })
+      
+      // Emit activity event for real-time feed updates
+      if (user?.id) {
+        
+        activityEventManager.emitVote(user.id, post.id)
+      } else {
+        
+      }
+
+} catch (error) {
+      console.error('❌ Vote failed:', error)
+      
+      // Rollback on error using global state
+      updateVote({
+        upvotes: upvotes,
+        downvotes: downvotes,
+        userVote: userVote
+      })
+      
+      toast({
+        title: "Vote Failed",
+        description: "Failed to vote. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsVoting(false)
+    }
+  }
 
   // Event handlers
   const handleCommentClick = () => {
@@ -150,13 +308,12 @@ export default function ImagePostModal({
     commentInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
   }
 
-  const handleShare = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.origin + "/posts/" + post.id)
-      alert("Post link copied to clipboard!")
-    } catch {
-      alert("Failed to copy link")
+  const handleDebouncedVote = async (type: "up" | "down") => {
+    if (isVoting) {
+      return // Prevent multiple clicks while processing
     }
+    
+    await handleVote(type)
   }
 
   const handleSubmitComment = async () => {
@@ -167,7 +324,6 @@ export default function ImagePostModal({
       author: user?.name || "Anonymous",
       authorId: user?.id || "",
       authorImage: user?.image || "/placeholder-user.jpg",
-      authorRank: user?.rank || "NEW_MEMBER",
       content: commentInput.trim(),
       createdAt: new Date().toISOString(),
       upvotes: 0,
@@ -199,29 +355,41 @@ export default function ImagePostModal({
               ? {
                   ...data.comment,
                   author: data.comment.users?.name || "Anonymous",
-                  authorImage: data.comment.users?.image || "/placeholder-user.jpg",
-                  authorRank: data.comment.users?.rank || "NEW_MEMBER"
+                  authorImage: data.comment.users?.image || "/placeholder-user.jpg"
                 }
               : comment
           )
-          // Sync comment count with the updated length
-          syncCommentCount(updatedComments.length)
+          
+          // Emit activity event for real-time feed updates
+          try {
+            if (user?.id) {
+              activityEventManager.emitComment(user.id, post.id, data.comment.id)
+            }
+          } catch (activityError) {
+            // Silently handle activity event errors - don't fail the comment
+          }
+          
           return updatedComments
         })
         
         onCommentAdded?.()
-        
-        // Update comment count in parent - new comment added
-        onCommentCountUpdate?.(comments.length + 1)
       } else {
         // Remove temp comment on error
         setComments(prev => prev.filter(comment => comment.id !== tempComment.id))
-        console.error("Failed to post comment")
+        toast({
+          title: "Failed to post comment",
+          description: "Please try again",
+          variant: "destructive"
+        })
       }
     } catch (error) {
       // Remove temp comment on error
       setComments(prev => prev.filter(comment => comment.id !== tempComment.id))
-      console.error("Error posting comment:", error)
+      toast({
+        title: "Error posting comment", 
+        description: "Please check your connection and try again",
+        variant: "destructive"
+      })
     }
   }
 
@@ -260,7 +428,6 @@ export default function ImagePostModal({
       author: user?.name || "Anonymous",
       authorId: user?.id || "",
       authorImage: user?.image || "/placeholder-user.jpg",
-      authorRank: user?.rank || "NEW_MEMBER",
       content: replyInput.trim(),
       createdAt: new Date().toISOString(),
       parentId: replyTo,
@@ -302,8 +469,7 @@ export default function ImagePostModal({
                       ? {
                           ...data.comment,
                           author: data.comment.users?.name || "Anonymous",
-                          authorImage: data.comment.users?.image || "/placeholder-user.jpg",
-                          authorRank: data.comment.users?.rank || "NEW_MEMBER"
+                          authorImage: data.comment.users?.image || "/placeholder-user.jpg"
                         } as Comment
                       : reply
                   ) || []
@@ -311,24 +477,15 @@ export default function ImagePostModal({
               : comment
           )
           
-          // Calculate total comments including replies after adding the new reply
-          const totalComments = updatedComments.reduce((total, comment) => {
-            return total + 1 + (comment.replies?.length || 0)
-          }, 0)
-          
-          // Instantly sync the new comment count
-          syncCommentCount(totalComments)
+          // Emit activity event for real-time feed updates
+          if (user?.id) {
+            activityEventManager.emitComment(user.id, post.id, data.comment.id)
+          }
           
           return updatedComments
         })
         
         onCommentAdded?.()
-        
-        // Update comment count in parent - new reply added
-        const totalComments = comments.reduce((total, comment) => {
-          return total + 1 + (comment.replies?.length || 0)
-        }, 0)
-        onCommentCountUpdate?.(totalComments + 1) // +1 for the new reply
       } else {
         // Remove temp reply on error
         setComments(prev => prev.map(comment => 
@@ -360,25 +517,6 @@ export default function ImagePostModal({
     return `${Math.floor(diffInSeconds / 86400)}d`
   }
 
-  // Format rank for display
-  const formatRank = (rank: string) => {
-    return rank.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-  };
-
-  // Get rank color based on rank level
-  const getRankColor = (rank: string) => {
-    const rankColors = {
-      'NEW_MEMBER': 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-      'CONVERSATION_STARTER': 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-      'RISING_STAR': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-      'VISUAL_STORYTELLER': 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-      'VALUED_RESPONDER': 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-      'COMMUNITY_EXPERT': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
-      'TOP_CONTRIBUTOR': 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
-    };
-    return rankColors[rank as keyof typeof rankColors] || rankColors.NEW_MEMBER;
-  };
-
   // Render comment function like text post modal
   const renderComment = (comment: Comment, depth: number = 0) => {
     const hasReplies = comment.replies && comment.replies.length > 0
@@ -401,8 +539,8 @@ export default function ImagePostModal({
           
           <Avatar className={cn("flex-shrink-0", isNested ? "h-6 w-6" : "h-8 w-8")}>
             <AvatarImage src={comment.authorImage || "/placeholder-user.jpg"} />
-            <AvatarFallback className="bg-blue-500 text-white text-xs">
-              {comment.author ? comment.author[0].toUpperCase() : "U"}
+            <AvatarFallback className="bg-orange-500 text-white text-xs">
+              {comment.author && comment.author.length > 0 ? comment.author[0].toUpperCase() : "U"}
             </AvatarFallback>
           </Avatar>
           
@@ -423,17 +561,8 @@ export default function ImagePostModal({
                     )}>
                       {comment.author || "Anonymous"}
                     </span>
-                    {comment.authorRank && (
-                      <span className={cn(
-                        "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium",
-                        getRankColor(comment.authorRank),
-                        isNested ? "text-xs" : "text-xs"
-                      )}>
-                        {formatRank(comment.authorRank)}
-                      </span>
-                    )}
                     {isAuthor && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                         Author
                       </span>
                     )}
@@ -447,7 +576,7 @@ export default function ImagePostModal({
                 </div>
                 
                 {/* Delete button for comment author or admin */}
-                {(user?.id === comment.authorId || user?.role === "ADMIN") && (
+                {(user?.id === comment.authorId || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && (
                   <div className="relative">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -482,18 +611,22 @@ export default function ImagePostModal({
             <div className="flex items-center gap-4 mt-1 text-xs">
               <button 
                 onClick={() => handleCommentVote(comment.id, "up")}
+                disabled={comment.id.startsWith('temp-')}
                 className={cn(
                   "font-semibold transition-all duration-100 hover:underline active:scale-95",
-                  comment.userVote === "up" ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
+                  comment.userVote === "up" ? "text-orange-600 dark:text-orange-400" : "text-gray-500 dark:text-gray-400",
+                  comment.id.startsWith('temp-') && "opacity-50 cursor-not-allowed"
                 )}
               >
                 {comment.userVote === "up" ? "Unlike" : "Like"}
               </button>
               <button 
                 onClick={() => handleCommentVote(comment.id, "down")}
+                disabled={comment.id.startsWith('temp-')}
                 className={cn(
                   "font-semibold transition-all duration-100 hover:underline active:scale-95",
-                  comment.userVote === "down" ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"
+                  comment.userVote === "down" ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400",
+                  comment.id.startsWith('temp-') && "opacity-50 cursor-not-allowed"
                 )}
               >
                 {comment.userVote === "down" ? "Remove Dislike" : "Dislike"}
@@ -510,7 +643,7 @@ export default function ImagePostModal({
               {hasReplies && (
                 <button 
                   onClick={() => toggleReplies(comment.id)}
-                  className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline transition-colors duration-75 flex items-center gap-1"
+                  className="font-semibold text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 hover:underline transition-colors duration-75 flex items-center gap-1"
                 >
                   {isExpanded ? (
                     <>
@@ -535,7 +668,7 @@ export default function ImagePostModal({
                   {comment.upvotes > 0 && (
                     <div className="flex items-center">
                       <div className="flex items-center -space-x-0.5">
-                        <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">👍</div>
+                        <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs">👍</div>
                         {comment.upvotes > 5 && <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">❤️</div>}
                         {comment.upvotes > 10 && <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs">😂</div>}
                       </div>
@@ -558,7 +691,7 @@ export default function ImagePostModal({
                 <div className="flex items-start gap-2">
                   <Avatar className="h-6 w-6 flex-shrink-0">
                     <AvatarImage src={user?.image || "/placeholder-user.jpg"} />
-                    <AvatarFallback className="bg-blue-500 text-white text-xs">
+                    <AvatarFallback className="bg-orange-500 text-white text-xs">
                       {user?.name?.[0]?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
@@ -569,7 +702,7 @@ export default function ImagePostModal({
                     onChange={(e) => setReplyInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSubmitReply()}
                     autoFocus
-                    className="w-full bg-transparent rounded-full px-4 py-2 text-sm border-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-150"
+                    className="w-full bg-transparent rounded-full px-4 py-2 text-sm border-none focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 transition-all duration-150"
                   />
                   </div>
                 </div>
@@ -592,24 +725,40 @@ export default function ImagePostModal({
 
   // Keyboard navigation
   useEffect(() => {
-    if (!open) return
+    if (!open) return undefined
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") setCarouselIndex(i => (i > 0 ? i - 1 : images.length - 1))
-      if (e.key === "ArrowRight") setCarouselIndex(i => (i < images.length - 1 ? i + 1 : 0))
-      if (e.key === "Escape") onClose()
+      if (e.key === "ArrowLeft") {
+        e.preventDefault()
+        setCarouselIndex(i => (i > 0 ? i - 1 : images.length - 1))
+      }
+      if (e.key === "ArrowRight") {
+        e.preventDefault()
+        setCarouselIndex(i => (i < images.length - 1 ? i + 1 : 0))
+      }
+      if (e.key === "Escape") {
+        e.preventDefault()
+        e.stopPropagation()
+        onClose()
+      }
     }
-    window.addEventListener("keydown", handleKey)
-    return () => window.removeEventListener("keydown", handleKey)
+    window.addEventListener("keydown", handleKey, { capture: true })
+    return () => window.removeEventListener("keydown", handleKey, { capture: true })
   }, [open, images.length, onClose])
 
   const handleCommentVote = async (commentId: string, voteType: "up" | "down") => {
     if (!user) return
     
+    // Prevent voting on optimistic comments (temporary comments that haven't been saved to server yet)
+    if (commentId.startsWith('temp-')) {
+      console.warn('Cannot vote on optimistic comment, please wait for it to be saved')
+      return
+    }
+    
     // Store previous state for rollback
     const previousComments = comments
     
     // Update local state immediately (optimistic update)
-    setComments(prev => prev.map(comment => {
+    const updatedComments = comments.map(comment => {
       if (comment.id === commentId) {
         const currentVote = comment.userVote
         let newUpvotes = comment.upvotes || 0
@@ -675,7 +824,48 @@ export default function ImagePostModal({
           return reply
         })
       }
-    }))
+    })
+    
+    // Update state with the new comments
+    setComments(updatedComments)
+    
+    // Check if the top comment has changed after the vote
+    const newTopComment = updatedComments.reduce((top, comment) => {
+      const currentActivity = (comment.upvotes || 0) + (comment.downvotes || 0)
+      const topActivity = (top?.upvotes || 0) + (top?.downvotes || 0)
+      return currentActivity > topActivity ? comment : top
+    }, updatedComments[0])
+    
+    // Always notify the parent about top comment changes (even for vote count updates)
+    if (onTopCommentVoteChange) {
+      if (!newTopComment || (newTopComment.upvotes || 0) + (newTopComment.downvotes || 0) === 0) {
+        // No top comment or no votes left
+        onTopCommentVoteChange(post.id, null)
+      } else {
+        // Update top comment with complete data - handle both string and object author
+        const authorName = typeof newTopComment.author === 'string' 
+          ? newTopComment.author 
+          : (newTopComment.author as any)?.name || "Anonymous"
+        const authorImage = typeof newTopComment.author === 'string' 
+          ? newTopComment.authorImage 
+          : (newTopComment.author as any)?.image || newTopComment.authorImage
+          
+        const topCommentData = {
+          id: newTopComment.id,
+          author: {
+            name: authorName,
+            image: authorImage || "/placeholder-user.jpg"
+          },
+          content: newTopComment.content,
+          upvotes: newTopComment.upvotes || 0,
+          downvotes: newTopComment.downvotes || 0,
+          isBestAnswer: false, // Comments don't have best answer feature yet
+          userVote: newTopComment.userVote // Include user vote state
+        }
+        
+        onTopCommentVoteChange(post.id, topCommentData)
+      }
+    }
     
     // Send request to server
     try {
@@ -688,17 +878,81 @@ export default function ImagePostModal({
       if (!response.ok) {
         // Rollback on error
         setComments(previousComments)
-        console.error("Failed to vote on comment")
+        console.error(`Failed to vote on comment ${commentId}: ${response.status}`, await response.text())
+        
+        // Also revert the top comment change
+        if (onTopCommentVoteChange) {
+          const originalTopComment = previousComments.reduce((top, comment) => {
+            const currentActivity = (comment.upvotes || 0) + (comment.downvotes || 0)
+            const topActivity = (top?.upvotes || 0) + (top?.downvotes || 0)
+            return currentActivity > topActivity ? comment : top
+          }, previousComments[0])
+          
+          if (!originalTopComment || (originalTopComment.upvotes || 0) + (originalTopComment.downvotes || 0) === 0) {
+            onTopCommentVoteChange(post.id, null)
+          } else {
+            // Use fallback values to avoid type issues
+            const authorData = originalTopComment as any
+            onTopCommentVoteChange(post.id, {
+              id: originalTopComment.id,
+              author: {
+                name: authorData.author || "Anonymous",
+                image: authorData.authorImage || "/placeholder-user.jpg"
+              },
+              content: originalTopComment.content,
+              upvotes: originalTopComment.upvotes || 0,
+              downvotes: originalTopComment.downvotes || 0,
+              isBestAnswer: false,
+              userVote: originalTopComment.userVote
+            })
+          }
+        }
       }
     } catch (error) {
       // Rollback on error
       setComments(previousComments)
-      console.error("Error voting on comment:", error)
+      console.error(`Error voting on comment ${commentId}:`, error)
+      
+      // Also revert the top comment change
+      if (onTopCommentVoteChange) {
+        const originalTopComment = previousComments.reduce((top, comment) => {
+          const currentActivity = (comment.upvotes || 0) + (comment.downvotes || 0)
+          const topActivity = (top?.upvotes || 0) + (top?.downvotes || 0)
+          return currentActivity > topActivity ? comment : top
+        }, previousComments[0])
+        
+        if (!originalTopComment || (originalTopComment.upvotes || 0) + (originalTopComment.downvotes || 0) === 0) {
+          onTopCommentVoteChange(post.id, null)
+        } else {
+          // Use fallback values to avoid type issues
+          const authorData = originalTopComment as any
+          onTopCommentVoteChange(post.id, {
+            id: originalTopComment.id,
+            author: {
+              name: authorData.author || "Anonymous",
+              image: authorData.authorImage || "/placeholder-user.jpg"
+            },
+            content: originalTopComment.content,
+            upvotes: originalTopComment.upvotes || 0,
+            downvotes: originalTopComment.downvotes || 0,
+            isBestAnswer: false,
+            userVote: originalTopComment.userVote
+          })
+        }
+      }
     }
   }
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!confirm("Are you sure you want to delete this comment?")) return
+    const confirmed = await confirm({
+      title: "Delete Comment",
+      description: "Are you sure you want to delete this comment? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      variant: "destructive"
+    })
+    
+    if (!confirmed) return
     
     try {
       const response = await fetch(`/api/comments/${commentId}`, {
@@ -717,44 +971,68 @@ export default function ImagePostModal({
             return comment
           }).filter(Boolean) as Comment[]
           
-          // Calculate total comments including replies
-          const totalComments = updatedComments.reduce((total, comment) => {
-            return total + 1 + (comment.replies?.length || 0)
-          }, 0)
-          
-          // Instantly sync the new comment count after deletion
-          syncCommentCount(totalComments)
-          
           return updatedComments
         })
       } else {
         console.error("Failed to delete comment:", response.status)
-        alert("Failed to delete comment. Please try again.")
+        toast({
+          title: "Delete Failed",
+          description: "Failed to delete comment. Please try again.",
+          variant: "destructive"
+        })
       }
     } catch (error) {
       console.error("Error deleting comment:", error)
-      alert("An error occurred while deleting the comment. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting the comment. Please try again.",
+        variant: "destructive"
+      })
     }
   }
 
   if (!open || !hasImages) return null
 
-  return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 p-4">
-      <div className="relative h-[85vh] min-h-[600px] max-h-[800px] w-full max-w-7xl flex flex-col md:flex-row bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden">
-        {/* Left: Image Carousel */}
-        <div className="flex-1 flex items-center justify-center bg-black relative min-h-[400px]">
+  const modalContent = (
+    <div 
+      className="fixed bg-black/80 backdrop-blur-sm z-[99999] animate-in fade-in-0 duration-200 flex items-center justify-center p-2"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          e.stopPropagation()
+          onClose()
+        }
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      style={{ 
+        position: 'fixed',
+        top: '64px', // Space for navigation bar (adjust this value based on your nav height)
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 99999,
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}
+    >
+      <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden animate-in slide-in-from-bottom-2 zoom-in-95 duration-300 w-full h-full max-w-5xl max-h-[calc(100vh-120px)] flex flex-col md:flex-row mx-auto my-auto">
+        {/* Left: Image Carousel - Reduced sizing */}
+        <div className="flex-1 bg-black relative min-h-[250px] md:min-h-full max-h-[50vh] md:max-h-full">
           {hasImages && (
             <div className="w-full h-full flex items-center justify-center relative">
               <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
                 <div className="w-full h-full transition-transform duration-500 ease-in-out flex items-center justify-center">
-                  <Image
+                  <PostImage
                     src={images[carouselIndex]}
                     alt={`Post image ${carouselIndex + 1}`}
-                    className="object-contain w-full h-full"
-                    width={800}
-                    height={1200}
+                    width={750}
+                    height={500}
+                    className="object-contain w-full h-full max-w-full max-h-full"
+                    sizes="(max-width: 768px) 100vw, 55vw"
                     priority
+                    enableDownload={true}
                   />
                 </div>
                 {/* Navigation Arrows */}
@@ -785,37 +1063,38 @@ export default function ImagePostModal({
           )}
         </div>
 
-        {/* Right: Facebook-style Post Content */}
-        <div className="w-full md:w-[450px] lg:w-[550px] xl:w-[550px] flex flex-col bg-white dark:bg-gray-900 h-full max-h-[800px]">
-          {/* Header - Fixed */}
-          <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        {/* Right: Facebook-style Post Content - Increased width */}
+        <div className="w-full md:w-[320px] lg:w-[380px] xl:w-[420px] flex flex-col bg-white dark:bg-gray-900 h-full border-l border-gray-200 dark:border-gray-700">
+          {/* Header - More Compact */}
+          <div className="flex-shrink-0 flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
+              <Avatar className="h-9 w-9">
                 <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
-                <AvatarFallback className="bg-blue-500 text-white">{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
+                <AvatarFallback className="bg-orange-500 text-white">{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
               </Avatar>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
                     {post.isAnonymous ? "Anonymous" : post.author.name}
                   </h3>
                   {!post.isAnonymous && post.author.isVerified && (
-                    <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                      <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <div className="w-3.5 h-3.5 bg-orange-500 rounded-full flex items-center justify-center">
+                      <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     </div>
                   )}
-                  {!post.isAnonymous && post.author.rank && (
-                    <span className={cn(
-                      "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
-                      getRankColor(post.author.rank)
-                    )}>
-                      {formatRank(post.author.rank)}
-                    </span>
-                  )}
                 </div>
-                <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                {!post.isAnonymous && post.author.badges && post.author.badges.length > 0 && (
+                  <div className="flex items-center mt-1">
+                    <PostBadges 
+                      badges={post.author.badges.map ? post.author.badges.map(b => b.badges) : post.author.badges}
+                      maxDisplay={2}
+                      size="xs"
+                    />
+                  </div>
+                )}
+                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                   <span>{post.timeAgo}</span>
                   <span>•</span>
                   <Globe className="w-3 h-3" />
@@ -824,9 +1103,9 @@ export default function ImagePostModal({
             </div>
             <button 
               onClick={onClose} 
-              className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-100 active:scale-95"
+              className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-100 active:scale-95"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -834,109 +1113,73 @@ export default function ImagePostModal({
 
           {/* Scrollable Content Area */}
           <div className="flex-1 overflow-y-auto min-h-0">
-            {/* Post Content */}
-            <div className="p-6 border-b border-gray-100 dark:border-gray-700">
-              <p className="text-gray-900 dark:text-white text-[16px] leading-relaxed whitespace-pre-line break-words mb-4">
+            {/* Post Content - Better spacing */}
+            <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+              <p className="text-gray-900 dark:text-white text-sm leading-relaxed whitespace-pre-line break-words mb-2.5">
                 {post.content}
               </p>
               
               {/* Category Tag (subtle) */}
               {post.category && (
-                <div className="mb-4">
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                <div className="mb-3">
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                     #{post.category}
                   </span>
                 </div>
               )}
-              
-              {/* Stats */}
-              <div className="flex items-center justify-between pt-3 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-4">
-                  {(upvotes > 0 || downvotes > 0) && (
-                    <span className="flex items-center gap-1">
-                      <div className="flex items-center">
-                        {upvotes > 0 && (
-                          <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                            <ThumbsUp className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                        {downvotes > 0 && (
-                          <div className={cn(
-                            "w-5 h-5 bg-red-500 rounded-full flex items-center justify-center",
-                            upvotes > 0 && "-ml-1"
-                          )}>
-                            <ThumbsDown className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                      </div>
-                      <span>
-                        {upvotes > 0 && downvotes > 0 
-                          ? `${upvotes} • ${downvotes}` 
-                          : upvotes > 0 
-                            ? upvotes 
-                            : downvotes
-                        }
-                      </span>
-                    </span>
-                  )}
-                </div>
-                {commentCount > 0 && (
-                  <span>{commentCount} comments</span>
-                )}
-              </div>
             </div>
 
             {/* Action Buttons - Sticky */}
             <div className="sticky top-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-2 py-1 z-10">
-              <div className="flex">
+              <div className="flex items-center justify-center gap-2">
                 <button 
-                  onClick={() => handleVote("up")} 
+                  onClick={() => handleDebouncedVote("up")} 
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 font-medium active:scale-95",
+                    "flex items-center justify-center gap-1 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 font-medium active:scale-95 min-w-[70px]",
                     userVote === "up" 
-                      ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950" 
+                      ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950" 
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   )}
                 >
-                  <ThumbsUp className="w-5 h-5" />
-                  <span>{userVote === "up" ? "Unlike" : "Like"}</span>
-                  {upvotes > 0 && <span className="text-sm">({upvotes})</span>}
+                  <ThumbsUp className="w-4 h-4" />
+                  <span className="text-sm">{upvotes}</span>
                 </button>
                 <button 
-                  onClick={() => handleVote("down")} 
+                  onClick={() => handleDebouncedVote("down")} 
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 font-medium active:scale-95",
+                    "flex items-center justify-center gap-1 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 font-medium active:scale-95 min-w-[70px]",
                     userVote === "down" 
                       ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950" 
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   )}
                 >
-                  <ThumbsDown className="w-5 h-5" />
-                  <span>{userVote === "down" ? "Remove Dislike" : "Dislike"}</span>
-                  {downvotes > 0 && <span className="text-sm">({downvotes})</span>}
+                  <ThumbsDown className="w-4 h-4" />
+                  <span className="text-sm">{downvotes}</span>
                 </button>
                 <button 
                   onClick={handleCommentClick} 
-                  className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95"
+                  className="flex items-center justify-center gap-1 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95 min-w-[90px]"
                 >
-                  <MessageCircle className="w-5 h-5" />
-                  <span>Comment</span>
+                  <MessageCircle className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-sm whitespace-nowrap">
+                    Comment {post.comments}
+                  </span>
                 </button>
-                <button 
-                  onClick={handleShare} 
-                  className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium active:scale-95"
-                >
-                  <Share2 className="w-5 h-5" />
-                  <span>Share</span>
-                </button>
+                <ShareDropdown 
+                  post={post}
+                  variant="ghost"
+                  className="flex items-center justify-center gap-1 py-3 px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium min-w-[70px]"
+                  showLabel={true}
+                  context="modal"
+                />
               </div>
             </div>
 
             {/* Comments Section */}
-            <div className="px-4 py-3 space-y-3">
+            <div className="px-3 py-3 space-y-3">
               {loading ? (
                 <div className="flex justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
                 </div>
               ) : comments.length > 0 ? (
                 <div className="space-y-3">
@@ -951,12 +1194,14 @@ export default function ImagePostModal({
             </div>
           </div>
 
-          {/* Comment Input - Fixed at bottom */}
-          <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
+          {/* Comment Input - Fixed at bottom with better spacing */}
+          <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
             <div className="flex items-center gap-3">
               <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarImage src="/placeholder-user.jpg" />
-                <AvatarFallback className="bg-blue-500 text-white text-xs">U</AvatarFallback>
+                <AvatarImage src={user?.image || "/placeholder-user.jpg"} />
+                <AvatarFallback className="bg-orange-500 text-white text-xs">
+                  {user?.name?.[0]?.toUpperCase() || "U"}
+                </AvatarFallback>
               </Avatar>
               <div className="flex-1 relative">
                 <input 
@@ -966,12 +1211,12 @@ export default function ImagePostModal({
                   value={commentInput}
                   onChange={(e) => setCommentInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSubmitComment()}
-                  className="w-full bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 pr-10 text-sm border-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-150"
+                  className="w-full bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 pr-10 text-sm border-none focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 transition-all duration-150"
                 />
                 <button 
                   onClick={handleSubmitComment}
                   disabled={!commentInput.trim()}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-100 active:scale-95"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-100 active:scale-95"
                 >
                   {commentInput.trim() ? (
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -990,4 +1235,7 @@ export default function ImagePostModal({
       </div>
     </div>
   )
+
+  // Use portal to render modal at document body level to ensure it covers entire homepage
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null
 }

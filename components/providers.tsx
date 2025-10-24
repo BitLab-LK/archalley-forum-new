@@ -1,22 +1,29 @@
-'use client'
-
+"use client";
+import { MantineProvider } from "@mantine/core";
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/lib/auth-context"
+import { SidebarProvider } from "@/lib/sidebar-context"
+// import { SocketProvider } from "@/lib/socket-context"  // Temporarily disabled
 import { SessionProvider } from "next-auth/react"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider 
-      // Refetch session every 5 minutes
-      refetchInterval={5 * 60}
-      // Re-fetch session if window is focused
-      refetchOnWindowFocus={true}
+      refetchInterval={0}
+      refetchOnWindowFocus={false}
+      refetchWhenOffline={false}
     >
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
-      </ThemeProvider>
+      <MantineProvider>
+        <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" disableTransitionOnChange>
+          <AuthProvider>
+            <SidebarProvider>
+              {/* <SocketProvider> */}
+                {children}
+              {/* </SocketProvider> */}
+            </SidebarProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </MantineProvider>
     </SessionProvider>
   )
 }
