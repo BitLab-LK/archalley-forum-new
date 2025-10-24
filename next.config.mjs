@@ -15,12 +15,17 @@ const nextConfig = {
             value: 'strict-origin-when-cross-origin',
           },
           {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
-          },
-          {
             key: 'Content-Security-Policy',
-            value: "frame-src 'self' https://www.youtube.com https://youtube.com https://www.facebook.com https://facebook.com https://connect.facebook.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net; style-src 'self' 'unsafe-inline';",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https: http:",
+              "font-src 'self' data:",
+              "frame-src 'self' https://www.youtube.com https://youtube.com https://www.facebook.com https://facebook.com https://web.facebook.com https://connect.facebook.net",
+              "connect-src 'self' https://connect.facebook.net https://www.facebook.com",
+              "media-src 'self' https://www.youtube.com https://youtube.com",
+            ].join('; '),
           },
         ],
       },
