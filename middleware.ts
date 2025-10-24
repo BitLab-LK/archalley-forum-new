@@ -46,7 +46,8 @@ export async function middleware(request: NextRequest) {
     '/api/contributors/top',
     '/api/health',
     '/api/search',
-    '/api/analytics/share'
+    '/api/analytics/share',
+    '/api/users'
   ]
 
   // Check if the API route is public
