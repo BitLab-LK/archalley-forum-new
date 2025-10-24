@@ -178,13 +178,25 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
   
-  // Add CSP header in production
-  if (process.env.NODE_ENV === 'production') {
-    response.headers.set(
-      'Content-Security-Policy',
-      "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none';"
-    )
-  }
+  // Add comprehensive CSP headers to allow YouTube and Facebook embeds
+  response.headers.set(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com",
+      "script-src-elem 'self' 'unsafe-inline' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https: http:",
+      "font-src 'self' data:",
+      "frame-src 'self' https://www.youtube.com https://youtube.com https://www.facebook.com https://facebook.com https://web.facebook.com https://connect.facebook.net",
+      "child-src 'self' https://www.youtube.com https://youtube.com https://www.facebook.com https://facebook.com",
+      "connect-src 'self' https://connect.facebook.net https://www.facebook.com https:",
+      "media-src 'self' https://www.youtube.com https://youtube.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "frame-ancestors 'none'"
+    ].join('; ')
+  )
 
   console.log('✅ Middleware allowing request:', request.nextUrl.pathname)
   return response
