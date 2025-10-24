@@ -10,64 +10,6 @@
  */
 
 import fs from 'fs'
-import path from 'path'
-
-const CONFIG_FILES = [
-  'vercel.json',
-  'package.json',
-  'next.config.mjs'
-]
-
-interface ConfigUpdate {
-  file: string
-  changes: Array<{
-    description: string
-    oldContent?: string
-    newContent: string
-    type: 'replace' | 'add' | 'remove'
-  }>
-}
-
-const configUpdates: ConfigUpdate[] = [
-  {
-    file: 'vercel.json',
-    changes: [
-      {
-        description: 'Add Azure PostgreSQL environment variables to Vercel config',
-        newContent: `{
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "PGHOST": "@pg_host",
-    "PGUSER": "@pg_user", 
-    "PGPORT": "@pg_port",
-    "PGDATABASE": "@pg_database",
-    "PGPASSWORD": "@pg_password"
-  },
-  "build": {
-    "env": {
-      "PRISMA_CLIENT_ENGINE_TYPE": "library"
-    }
-  }
-}`,
-        type: 'add'
-      }
-    ]
-  },
-  {
-    file: 'package.json',
-    changes: [
-      {
-        description: 'Add Azure-specific database scripts',
-        oldContent: '    "db:migrate": "prisma migrate deploy",',
-        newContent: `    "db:migrate": "prisma migrate deploy",
-    "db:migrate:azure": "prisma migrate deploy --schema=./prisma/schema.prisma",
-    "db:test:azure": "tsx scripts/test-azure-connection.ts",
-    "db:migrate:data": "tsx scripts/migrate-to-azure.ts",`,
-        type: 'replace'
-      }
-    ]
-  }
-]
 
 async function updateVercelConfig() {
   const vercelPath = 'vercel.json'

@@ -214,11 +214,34 @@ async function migrateNotifications() {
 }
 
 async function migrateBadges() {
-  await migrateTable(
-    'badges',
-    () => supabaseClient.badges.findMany(),
-    (data) => azureClient.badges.createMany({ data, skipDuplicates: true })
-  )
+  try {
+    console.log(`📦 Migrating badges...`)
+    
+    const data = await supabaseClient.badges.findMany()
+    if (data.length === 0) {
+      console.log(`   ⚠️  No badges data to migrate`)
+      return
+    }
+
+    // Transform data to handle criteria field type conversion
+    const transformedData = data.map(badge => ({
+      ...badge,
+      criteria: badge.criteria as any
+    }))
+
+    // Insert data in batches to avoid memory issues
+    const batchSize = 100
+    for (let i = 0; i < transformedData.length; i += batchSize) {
+      const batch = transformedData.slice(i, i + batchSize)
+      await azureClient.badges.createMany({ data: batch, skipDuplicates: true })
+    }
+
+    stats.badges = transformedData.length
+    console.log(`   ✅ Migrated ${transformedData.length} badges records`)
+  } catch (error) {
+    console.error(`   ❌ Error migrating badges:`, error)
+    throw error
+  }
 }
 
 async function migrateUserBadges() {

@@ -131,7 +131,7 @@ async function testPrismaOperations() {
     // Test a simple write operation (if possible)
     try {
       // This will only work if we have write permissions
-      const testResult = await prisma.$queryRaw`SELECT NOW() as current_time`
+      await prisma.$queryRaw`SELECT NOW() as current_time`
       console.log('   ✅ Write operations available')
     } catch (error) {
       console.log('   ⚠️  Write operations may be restricted')
