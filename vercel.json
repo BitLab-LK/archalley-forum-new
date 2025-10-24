@@ -4,15 +4,6 @@
       "maxDuration": 30
     }
   },
-  "env": {
-    "PRISMA_CLIENT_ENGINE_TYPE": "library",
-    "DATABASE_URL": "@database_url",
-    "PGHOST": "@pg_host",
-    "PGUSER": "@pg_user",
-    "PGPORT": "@pg_port",
-    "PGDATABASE": "@pg_database",
-    "PGPASSWORD": "@pg_password"
-  },
   "buildCommand": "prisma generate && next build",
   "headers": [
     {
