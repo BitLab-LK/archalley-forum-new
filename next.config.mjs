@@ -51,12 +51,13 @@ const nextConfig = {
         port: '',
         pathname: '/wp-content/uploads/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'vnvpjdgzlsratzhmyiry.supabase.co',
-        port: '',
-        pathname: '/**',
-      },
+      // Removed Supabase hostname - migrated to Azure PostgreSQL
+      // {
+      //   protocol: 'https',
+      //   hostname: 'vnvpjdgzlsratzhmyiry.supabase.co',
+      //   port: '',
+      //   pathname: '/**',
+      // },
       {
         protocol: 'https',
         hostname: '**.blob.vercel-storage.com',
