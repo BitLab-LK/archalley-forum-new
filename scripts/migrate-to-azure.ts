@@ -144,11 +144,34 @@ async function migrateCategories() {
 }
 
 async function migratePosts() {
-  await migrateTable(
-    'posts',
-    () => supabaseClient.post.findMany(),
-    (data) => azureClient.post.createMany({ data, skipDuplicates: true })
-  )
+  try {
+    console.log(`📦 Migrating posts...`)
+    
+    const data = await supabaseClient.post.findMany()
+    if (data.length === 0) {
+      console.log(`   ⚠️  No posts data to migrate`)
+      return
+    }
+
+    // Transform data to handle aiSuggestions type conversion
+    const transformedData = data.map(post => ({
+      ...post,
+      aiSuggestions: post.aiSuggestions as any
+    }))
+
+    // Insert data in batches to avoid memory issues
+    const batchSize = 100
+    for (let i = 0; i < transformedData.length; i += batchSize) {
+      const batch = transformedData.slice(i, i + batchSize)
+      await azureClient.post.createMany({ data: batch, skipDuplicates: true })
+    }
+
+    stats.posts = transformedData.length
+    console.log(`   ✅ Migrated ${transformedData.length} posts records`)
+  } catch (error) {
+    console.error(`   ❌ Error migrating posts:`, error)
+    throw error
+  }
 }
 
 async function migrateComments() {
