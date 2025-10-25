@@ -713,7 +713,7 @@ export default function SimplifiedEnhancedRegisterPage() {
       <Card className={`w-full max-w-2xl ${!hasAnimated ? 'animate-scale-in animate-delay-100' : ''}`}>
         <CardHeader className="space-y-1 p-4 sm:p-6">
           <CardTitle className={`text-xl sm:text-2xl font-bold text-center ${!hasAnimated ? 'animate-fade-in-up animate-delay-200' : ''}`} style={{ color: '#ffa500' }}>
-            {activeTab === "login" ? "Welcome to Archalley Forum" : "Join Archalley Forum"}
+            {activeTab === "login" ? "Welcome to Archalley" : "Join Archalley"}
           </CardTitle>
           <CardDescription className={`text-center text-sm sm:text-base ${!hasAnimated ? 'animate-fade-in-up animate-delay-300' : ''}`}>
             {activeTab === "login" 
