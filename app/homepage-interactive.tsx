@@ -684,7 +684,7 @@ export default function HomePageInteractive({
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 mobile-no-overflow">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
-          <div className="max-w-[80rem] mx-auto">
+          <div className="container mx-auto">
             <div className="homepage-layout">
             {/* Main content - ensure consistent width */}
             <div className="homepage-content">
@@ -788,7 +788,7 @@ export default function HomePageInteractive({
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 mobile-no-overflow">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
-        <div className="max-w-[80rem] mx-auto">
+        <div className="container mx-auto">
           <div className="homepage-layout">
           {/* Main content area - maintains consistent width during loading */}
           <div className="homepage-content layout-stable">

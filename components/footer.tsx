@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Facebook, Twitter, Instagram, Linkedin, Youtube, Tiktok, Pinterest } from "lucide-react"
+import { Facebook, Twitter, Instagram, Linkedin, Youtube } from "lucide-react"
 
 export default function Footer() {
   return (
@@ -19,14 +19,6 @@ export default function Footer() {
           <Link href="#" className="hover:text-orange-400 flex items-center gap-2 transition-colors">
             <Youtube className="w-5 h-5" />
             <span>Youtube</span>
-          </Link>
-          <Link href="#" className="hover:text-orange-400 flex items-center gap-2 transition-colors">
-            <Tiktok className="w-5 h-5" />
-            <span>TikTok</span>
-          </Link>
-          <Link href="#" className="hover:text-orange-400 flex items-center gap-2 transition-colors">
-            <Pinterest className="w-5 h-5" />
-            <span>Pinterest</span>
           </Link>
           <Link href="#" className="hover:text-orange-400 flex items-center gap-2 transition-colors">
             <Linkedin className="w-5 h-5" />
@@ -167,7 +159,6 @@ export default function Footer() {
         <div className="container mx-auto px-4 text-center text-sm text-gray-500">
           © 2025 Archalley™ | All Rights Reserved | Designed & Developed by BitLab (Pvt) Ltd ✨
         </div>
-      </div>
       </div>
     </footer>
   )

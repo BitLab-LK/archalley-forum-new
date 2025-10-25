@@ -87,8 +87,8 @@ export default function Header() {
       {/* Desktop Header */}
       <header className="hidden md:block sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ease-in-out">
         {/* Align inner header content to match page content max width */}
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="max-w-[80rem] mx-auto h-16 flex items-center justify-between">
+        <div className="container mx-auto px-4">
+          <div className="h-16 flex items-center justify-between">
           {/* Logo and Navigation */}
           <div className="flex items-center space-x-12">
             <Link href="/" className="flex items-center space-x-3 group">
