@@ -17,7 +17,7 @@ interface NavigationBarProps {
   categories?: Category[]
 }
 
-export default function NavigationBar({ categories = [] }: NavigationBarProps) {
+export default function NavigationBar({ categories: _categories = [] }: NavigationBarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null)
   const pathname = usePathname()
@@ -32,12 +32,17 @@ export default function NavigationBar({ categories = [] }: NavigationBarProps) {
     {
       title: "Projects",
       path: "/projects",
-      submenu: categories
-        .filter((cat) => cat.parent === 0 && cat.slug.includes("project"))
-        .map((cat) => ({
-          title: cat.name,
-          path: `/category/${cat.slug}`,
-        })),
+      submenu: [
+        { title: "Commercial & Offices", path: "/projects/commercial" },
+        { title: "Hospitality Architecture", path: "/projects/hospitality" },
+        { title: "Industrial & Infrastructure", path: "/projects/industrial" },
+        { title: "Interior Design", path: "/projects/interior" },
+        { title: "Landscape & Urbanism", path: "/projects/landscape" },
+        { title: "Public Architecture", path: "/projects/public" },
+        { title: "Refurbishment", path: "/projects/refurbishment" },
+        { title: "Religious Architecture", path: "/projects/religious" },
+        { title: "Residential Architecture", path: "/projects/residential" },
+      ],
     },
     {
       title: "Academic",
@@ -45,7 +50,7 @@ export default function NavigationBar({ categories = [] }: NavigationBarProps) {
       submenu: [
         { title: "Research", path: "/academic/research" },
         { title: "Student Projects", path: "/academic/student-projects" },
-        { title: "Submit Academic Projects", path: "/academic/submit" },
+        { title: "Submit Projects", path: "/academic/submit" },
       ],
     },
     {

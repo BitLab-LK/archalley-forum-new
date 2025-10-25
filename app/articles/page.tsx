@@ -1,9 +1,7 @@
 import { Metadata } from 'next'
 import { 
   getAllCategories,
-  getPostsByCategory,
-  type WordPressCategory,
-  type WordPressPost
+  getArticlesPosts
 } from '@/lib/wordpress-api'
 import ArticlesPageClient from './articles-page-client'
 
@@ -17,29 +15,16 @@ export const metadata: Metadata = {
 }
 
 export default async function ArticlesPage() {
-  // Try to fetch articles from WordPress
-  let initialArticles: WordPressPost[] = []
-  let initialCategories: WordPressCategory[] = []
-  
   try {
-    // Fetch all categories first
+    // Fetch articles from category ID 41
+    const articles = await getArticlesPosts(1, 20)
     const categories = await getAllCategories()
-    initialCategories = categories
     
-    // Look for "articles" category (case insensitive)
-    const articlesCategory = categories.find((cat: WordPressCategory) => 
-      cat.slug.toLowerCase().includes('article') || 
-      cat.name.toLowerCase().includes('article')
-    )
-    
-    if (articlesCategory) {
-      // Fetch articles from the articles category
-      const articles = await getPostsByCategory(articlesCategory.id, 1, 20)
-      initialArticles = articles
-    }
+    console.log(`✅ Articles page: Fetched ${articles.length} articles from WordPress`)
+    return <ArticlesPageClient initialArticles={articles} initialCategories={categories} />
   } catch (error) {
-    console.error('Error fetching articles:', error)
+    console.error('❌ Articles page: Error fetching articles:', error)
+    // Fall back to client-side fetching
+    return <ArticlesPageClient />
   }
-
-  return <ArticlesPageClient initialArticles={initialArticles} initialCategories={initialCategories} />
 }

@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { getAllCategories, getPostsByCategory, type WordPressPost } from "@/lib/wordpress-api"
+import { getAllCategories, getNewsPosts } from "@/lib/wordpress-api"
 import NewsPageClient from "./news-page-client"
 
 // Force dynamic rendering to avoid build timeouts
@@ -14,19 +14,14 @@ export const metadata: Metadata = {
 
 export default async function NewsPage() {
   try {
-    // Fetch categories to find the news category ID
+    // Fetch news posts from category ID 42
+    const news = await getNewsPosts(1, 20)
     const categories = await getAllCategories()
-    const newsCategoryId = categories.find((cat) => cat.slug === "news")?.id || 0
     
-    let news: WordPressPost[] = []
-    if (newsCategoryId > 0) {
-      // Fetch more news posts for the dedicated news page (20 posts)
-      news = await getPostsByCategory(newsCategoryId, 1, 20)
-    }
-    
+    console.log(`✅ News page: Fetched ${news.length} news posts from WordPress`)
     return <NewsPageClient initialNews={news} initialCategories={categories} />
   } catch (error) {
-    console.error('Failed to fetch news on server:', error)
+    console.error('❌ News page: Error fetching news:', error)
     // Fall back to client-side fetching
     return <NewsPageClient />
   }

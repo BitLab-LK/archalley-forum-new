@@ -8,8 +8,44 @@ import AdBannerComponent from "@/components/ad-banner"
 import { AdSessionManager } from "@/components/ad-session-manager"
 import SidebarYouTube from "@/components/sidebar-youtube"
 import SidebarFacebook from "@/components/sidebar-facebook"
+import { getAllPosts, getPostsByCategory, type WordPressPost } from "@/lib/wordpress-api"
 
-export default function MainPage() {
+export default async function MainPage() {
+  // Fetch latest posts from multiple WordPress categories
+  let latestPosts: WordPressPost[] = []
+  let projectsPosts: WordPressPost[] = []
+  let academicPosts: WordPressPost[] = []
+  let newsPosts: WordPressPost[] = []
+  let articlesPosts: WordPressPost[] = []
+
+  try {
+    // Fetch posts from multiple categories in parallel
+    const [
+      latestPostsResult,
+      projectsPostsResult,
+      academicPostsResult,
+      newsPostsResult,
+      articlesPostsResult
+    ] = await Promise.allSettled([
+      getAllPosts(1, 6), // Latest posts from all categories
+      getPostsByCategory(33, 1, 6), // Projects category
+      getPostsByCategory(58, 1, 6), // Academic category
+      getPostsByCategory(42, 1, 6), // News category
+      getPostsByCategory(41, 1, 6)  // Articles category
+    ])
+
+    // Extract results safely
+    latestPosts = latestPostsResult.status === 'fulfilled' ? latestPostsResult.value : []
+    projectsPosts = projectsPostsResult.status === 'fulfilled' ? projectsPostsResult.value : []
+    academicPosts = academicPostsResult.status === 'fulfilled' ? academicPostsResult.value : []
+    newsPosts = newsPostsResult.status === 'fulfilled' ? newsPostsResult.value : []
+    articlesPosts = articlesPostsResult.status === 'fulfilled' ? articlesPostsResult.value : []
+
+    console.log(`✅ Homepage: Fetched ${latestPosts.length} latest posts, ${projectsPosts.length} projects, ${academicPosts.length} academic, ${newsPosts.length} news, ${articlesPosts.length} articles`)
+  } catch (error) {
+    console.error('❌ Homepage: Error fetching WordPress posts:', error)
+  }
+
   return (
     <main className="min-h-screen flex flex-col">
       {/* Ad Session Management */}

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Box, Home, Factory, Palette, TreePine, Landmark, Wrench, Church, HouseIcon } from "lucide-react"
 import { HorizontalAd } from "@/components/ad-banner"
 import Sidebar from "@/components/sidebar"
+import { getAllProjects, type WordPressPost } from "@/lib/wordpress-api"
 
 const projectCategories = [
   {
@@ -72,7 +73,17 @@ const projectCategories = [
   }
 ]
 
-export default function ProjectsPage() {
+export default async function ProjectsPage() {
+  // Fetch WordPress posts from projects category
+  let projectsPosts: WordPressPost[] = []
+  
+  try {
+    projectsPosts = await getAllProjects(1, 12)
+    console.log(`✅ Projects page: Fetched ${projectsPosts.length} projects from WordPress`)
+  } catch (error) {
+    console.error('❌ Projects page: Error fetching projects:', error)
+  }
+
   return (
     <div className="min-h-screen py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -95,7 +106,7 @@ export default function ProjectsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <Card>
             <CardHeader className="text-center">
-              <CardTitle className="text-3xl font-bold text-primary">350+</CardTitle>
+              <CardTitle className="text-3xl font-bold text-primary">{projectsPosts.length}+</CardTitle>
               <CardDescription>Total Projects</CardDescription>
             </CardHeader>
           </Card>

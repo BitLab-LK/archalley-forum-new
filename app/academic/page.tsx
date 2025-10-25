@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { GraduationCap, BookOpen, Users, Award, Upload, Search } from "lucide-react"
+import { getAcademicPosts, type WordPressPost } from "@/lib/wordpress-api"
 
 const academicSections = [
   {
@@ -85,7 +86,17 @@ const featuredProjects = [
   }
 ]
 
-export default function AcademicPage() {
+export default async function AcademicPage() {
+  // Fetch WordPress posts from academic category
+  let academicPosts: WordPressPost[] = []
+  
+  try {
+    academicPosts = await getAcademicPosts(1, 12)
+    console.log(`✅ Academic page: Fetched ${academicPosts.length} academic posts from WordPress`)
+  } catch (error) {
+    console.error('❌ Academic page: Error fetching academic posts:', error)
+  }
+
   return (
     <div className="min-h-screen py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -107,8 +118,8 @@ export default function AcademicPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
           <Card>
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold text-primary">2,050+</CardTitle>
-              <CardDescription>Research Papers</CardDescription>
+              <CardTitle className="text-2xl font-bold text-primary">{academicPosts.length}+</CardTitle>
+              <CardDescription>Academic Posts</CardDescription>
             </CardHeader>
           </Card>
           <Card>
