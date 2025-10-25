@@ -3,7 +3,8 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/providers"
-import Header from "@/components/header"
+import TopBar from "@/components/top-bar"
+import NavigationBar from "@/components/navigation-bar"
 import Footer from "@/components/footer"
 import { BadgeNotificationHandler } from "@/components/badge-notifications"
 import { Toaster } from "@/components/ui/toaster"
@@ -47,7 +48,8 @@ export default function RootLayout({
           <ConfirmDialogProvider>
             <SessionMonitor>
               <div className="min-h-screen flex flex-col">
-                <Header />
+                <TopBar />
+                <NavigationBar />
                 <main className="flex-1 pb-20 md:pb-0">{children}</main>
                 <Footer />
                 <BadgeNotificationHandler />

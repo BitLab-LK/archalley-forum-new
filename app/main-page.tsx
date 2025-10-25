@@ -12,6 +12,7 @@ import AdBannerComponent from "@/components/ad-banner"
 import { AdSessionManager } from "@/components/ad-session-manager"
 import SidebarYouTube from "@/components/sidebar-youtube"
 import SidebarFacebook from "@/components/sidebar-facebook"
+import ArchAlleySidebar from "@/components/archalley-sidebar"
 import { 
   MessageCircle, 
   Navigation
@@ -25,7 +26,7 @@ export default function MainPage() {
       
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-primary/10 via-background to-secondary/10 py-32 md:py-40 lg:py-48">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="container mx-auto px-4">
           <div className="text-center">
             <Badge className="mb-4" variant="secondary">
               Welcome to Archalley
@@ -62,10 +63,10 @@ export default function MainPage() {
       <ServerHorizontalTrendingSection />
 
       {/* Main Content Layout - Grid with Sidebar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Main Content Column */}
-          <div className="lg:col-span-3 space-y-16">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Main Content Column (75%) */}
+          <div className="w-full lg:w-3/4 space-y-16">
             {/* Featured Blog Carousel */}
             <AnimatedContentWrapper direction="up" delay={100}>
               <ServerBlogCarousel />
@@ -76,84 +77,84 @@ export default function MainPage() {
               <ServerProjectsSection />
             </AnimatedContentWrapper>
 
-            {/* Horizontal Ad - Between Projects and Articles */}
-            <AnimatedContentWrapper direction="fade" delay={250}>
-              <div className="py-8">
-                {/* Clean horizontal ad container - no labels */}
-                <div className="bg-gradient-to-r from-gray-50/30 via-white/50 to-gray-50/30 dark:from-gray-900/30 dark:via-gray-800/20 dark:to-gray-900/30 rounded-lg p-4 shadow-sm border border-gray-100/50 dark:border-gray-800/50">
-                  <div className="flex justify-center">
-                    <div className="w-full max-w-4xl">
-                      <AdBannerComponent 
-                        size="970x180" 
-                        className="w-full rounded-lg overflow-hidden" 
-                        positionId="projects-articles-horizontal"
-                        autoRotate={true}
-                        rotationInterval={45}
-                        showLabel={false}
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Mobile version */}
-                <div className="lg:hidden mt-4">
-                  <div className="flex justify-center">
-                    <div className="w-full max-w-sm">
-                      <AdBannerComponent 
-                        size="350x350" 
-                        className="w-full rounded-lg overflow-hidden" 
-                        positionId="projects-articles-mobile"
-                        autoRotate={true}
-                        rotationInterval={45}
-                        showLabel={false}
-                      />
-                    </div>
-                  </div>
-                </div>
+      {/* Horizontal Ad - Between Projects and Articles */}
+      <AnimatedContentWrapper direction="fade" delay={250}>
+        <div className="container mx-auto px-4 py-8">
+          {/* Clean horizontal ad container - no labels */}
+          <div className="bg-gradient-to-r from-gray-50/30 via-white/50 to-gray-50/30 dark:from-gray-900/30 dark:via-gray-800/20 dark:to-gray-900/30 rounded-lg p-4 shadow-sm border border-gray-100/50 dark:border-gray-800/50">
+            <div className="flex justify-center">
+              <div className="w-full max-w-4xl">
+                <AdBannerComponent 
+                  size="970x180" 
+                  className="w-full rounded-lg overflow-hidden" 
+                  positionId="projects-articles-horizontal"
+                  autoRotate={true}
+                  rotationInterval={45}
+                  showLabel={false}
+                />
               </div>
-            </AnimatedContentWrapper>
+            </div>
+          </div>
+          
+          {/* Mobile version */}
+          <div className="lg:hidden mt-4">
+            <div className="flex justify-center">
+              <div className="w-full max-w-sm">
+                <AdBannerComponent 
+                  size="350x350" 
+                  className="w-full rounded-lg overflow-hidden" 
+                  positionId="projects-articles-mobile"
+                  autoRotate={true}
+                  rotationInterval={45}
+                  showLabel={false}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </AnimatedContentWrapper>
 
             {/* Articles Section */}
             <AnimatedContentWrapper direction="up" delay={300}>
               <ServerArticlesSection />
             </AnimatedContentWrapper>
 
-            {/* Horizontal Ad - Between Articles and News */}
-            <AnimatedContentWrapper direction="fade" delay={350}>
-              <div className="py-8">
-                {/* Clean horizontal ad container - no labels */}
-                <div className="bg-gradient-to-r from-gray-50/30 via-white/50 to-gray-50/30 dark:from-gray-900/30 dark:via-gray-800/20 dark:to-gray-900/30 rounded-lg p-4 shadow-sm border border-gray-100/50 dark:border-gray-800/50">
-                  <div className="flex justify-center">
-                    <div className="w-full max-w-4xl">
-                      <AdBannerComponent 
-                        size="970x180" 
-                        className="w-full rounded-lg overflow-hidden" 
-                        positionId="articles-news-horizontal"
-                        autoRotate={true}
-                        rotationInterval={45}
-                        showLabel={false}
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Mobile version */}
-                <div className="lg:hidden mt-4">
-                  <div className="flex justify-center">
-                    <div className="w-full max-w-sm">
-                      <AdBannerComponent 
-                        size="350x350" 
-                        className="w-full rounded-lg overflow-hidden" 
-                        positionId="articles-news-mobile"
-                        autoRotate={true}
-                        rotationInterval={45}
-                        showLabel={false}
-                      />
-                    </div>
-                  </div>
-                </div>
+      {/* Horizontal Ad - Between Articles and News */}
+      <AnimatedContentWrapper direction="fade" delay={350}>
+        <div className="container mx-auto px-4 py-8">
+          {/* Clean horizontal ad container - no labels */}
+          <div className="bg-gradient-to-r from-gray-50/30 via-white/50 to-gray-50/30 dark:from-gray-900/30 dark:via-gray-800/20 dark:to-gray-900/30 rounded-lg p-4 shadow-sm border border-gray-100/50 dark:border-gray-800/50">
+            <div className="flex justify-center">
+              <div className="w-full max-w-4xl">
+                <AdBannerComponent 
+                  size="970x180" 
+                  className="w-full rounded-lg overflow-hidden" 
+                  positionId="articles-news-horizontal"
+                  autoRotate={true}
+                  rotationInterval={45}
+                  showLabel={false}
+                />
               </div>
-            </AnimatedContentWrapper>
+            </div>
+          </div>
+          
+          {/* Mobile version */}
+          <div className="lg:hidden mt-4">
+            <div className="flex justify-center">
+              <div className="w-full max-w-sm">
+                <AdBannerComponent 
+                  size="350x350" 
+                  className="w-full rounded-lg overflow-hidden" 
+                  positionId="articles-news-mobile"
+                  autoRotate={true}
+                  rotationInterval={45}
+                  showLabel={false}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </AnimatedContentWrapper>
 
             {/* News Section */}
             <AnimatedContentWrapper direction="up" delay={400}>
@@ -161,22 +162,11 @@ export default function MainPage() {
             </AnimatedContentWrapper>
           </div>
 
-          {/* Sidebar Column */}
-          <div className="lg:col-span-1">
+          {/* Sidebar Column (25%) */}
+          <div className="w-full lg:w-1/4">
             <div className="sticky top-8 space-y-8">
-              {/* Square Ad in Sidebar */}
-              <AnimatedContentWrapper direction="fade" delay={150}>
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm p-1">
-                  <AdBannerComponent 
-                    size="320x320" 
-                    className="w-full" 
-                    positionId="sidebar-square"
-                    autoRotate={true}
-                    rotationInterval={30}
-                    showLabel={false}
-                  />
-                </div>
-              </AnimatedContentWrapper>
+              {/* ArchAlley Style Sidebar */}
+              <ArchAlleySidebar />
 
               {/* Additional sidebar content can go here */}
               <div className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg p-6">
@@ -206,7 +196,7 @@ export default function MainPage() {
       {/* Horizontal Ad - Above Features Section */}
       <section className="py-8 bg-gradient-to-r from-gray-50/30 via-white/50 to-gray-50/30 dark:from-gray-900/30 dark:via-gray-800/20 dark:to-gray-900/30">
         <AnimatedContentWrapper direction="fade" delay={100}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="container mx-auto px-4">
             <div className="flex justify-center">
               <div className="w-full max-w-5xl">
                 <div className="bg-white/70 dark:bg-gray-800/70 rounded-lg p-4 shadow-sm border border-gray-100/50 dark:border-gray-700/50 backdrop-blur-sm">
@@ -249,7 +239,7 @@ export default function MainPage() {
       {/* CTA Section - Simplified */}
       <section className="py-12 bg-gradient-to-r from-primary/5 to-secondary/5">
         <AnimatedContentWrapper direction="up" delay={200}>
-          <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+          <div className="container mx-auto text-center px-4">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">
               Ready to Join the Community?
             </h2>
