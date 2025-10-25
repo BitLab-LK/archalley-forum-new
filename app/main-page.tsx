@@ -1,22 +1,13 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import ServerBlogCarousel from "@/components/server-blog-carousel"
 import ServerProjectsSection from "@/components/server-projects-section"
 import ServerArticlesSection from "@/components/server-articles-section"
 import ServerNewsSection from "@/components/server-news-section"
 import ServerTrendingSection from "@/components/server-trending-section"
 import ServerInstagramSlider from "@/components/server-instagram-slider"
-import { AnimatedContentWrapper, AnimatedFeaturesSection } from "@/components/animated-wrappers"
 import AdBannerComponent from "@/components/ad-banner"
 import { AdSessionManager } from "@/components/ad-session-manager"
 import SidebarYouTube from "@/components/sidebar-youtube"
 import SidebarFacebook from "@/components/sidebar-facebook"
-import ArchAlleySidebar from "@/components/archalley-sidebar"
-import { 
-  MessageCircle, 
-  Navigation
-} from "lucide-react"
 
 export default function MainPage() {
   return (
@@ -118,6 +109,6 @@ export default function MainPage() {
 
       {/* Instagram Slider */}
       <ServerInstagramSlider />
-    </div>
+    </main>
   )
 }

@@ -6,7 +6,6 @@ import Link from "next/link"
 import { 
   getAllPosts,
   getFeaturedImageUrl, 
-  getPostCategory,
   stripHtml, 
   formatDate,
   type WordPressPost
