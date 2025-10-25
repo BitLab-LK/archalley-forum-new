@@ -17,6 +17,18 @@ export interface WordPressPost {
   link: string
   featured_media: number
   categories: number[]
+  tags?: number[]
+  acf?: {
+    photos?: number[]
+    architects?: string
+    photographers?: string
+    sponsored?: boolean
+    sponsor?: string | null
+  }
+  meta?: {
+    _acf_changed?: boolean
+    footnotes?: string
+  }
   _embedded?: {
     'wp:featuredmedia'?: Array<{
       id: number
@@ -473,7 +485,7 @@ export async function searchPosts(searchTerm: string, page: number = 1, perPage:
 export async function getProjectBySlug(slug: string): Promise<WordPressPost | null> {
   try {
     const response = await fetch(
-      `${WORDPRESS_API_URL}/posts?_embed=wp:featuredmedia,wp:term&slug=${slug}&status=publish`,
+      `${WORDPRESS_API_URL}/posts?_embed=wp:featuredmedia,wp:term&slug=${slug}&status=publish&acf_format=standard`,
       {
         next: { revalidate: 300 },
       }
@@ -487,6 +499,57 @@ export async function getProjectBySlug(slug: string): Promise<WordPressPost | nu
     return posts.length > 0 ? posts[0] : null
   } catch (error) {
     console.error('Error fetching project by slug:', error)
+    return null
+  }
+}
+
+/**
+ * Get posts by category with pagination for next/previous navigation
+ */
+export async function getPostsByCategoryPaginated(
+  categoryId: number,
+  perPage: number = 100
+): Promise<WordPressPost[]> {
+  try {
+    const response = await fetch(
+      `${WORDPRESS_API_URL}/posts?_embed=wp:featuredmedia,wp:term&categories=${categoryId}&per_page=${perPage}&status=publish&orderby=date&order=desc`,
+      {
+        next: { revalidate: 300 },
+      }
+    )
+    
+    if (!response.ok) {
+      throw new Error(`WordPress API error: ${response.status}`)
+    }
+    
+    const posts: WordPressPost[] = await response.json()
+    return posts
+  } catch (error) {
+    console.error('Error fetching posts by category:', error)
+    return []
+  }
+}
+
+/**
+ * Get media details by ID
+ */
+export async function getMediaUrl(mediaId: number): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `${WORDPRESS_API_URL}/media/${mediaId}`,
+      {
+        next: { revalidate: 3600 },
+      }
+    )
+    
+    if (!response.ok) {
+      return null
+    }
+    
+    const media = await response.json()
+    return media.source_url || null
+  } catch (error) {
+    console.error('Error fetching media:', error)
     return null
   }
 }
