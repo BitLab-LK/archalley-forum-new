@@ -33,8 +33,8 @@ interface EventsPageClientProps {
   initialCategories?: WordPressCategory[]
 }
 
-// Static event for Tree Without a Tree competition
-const treeEvent: WordPressPost = {
+// Static events for competitions
+const treeEvent2024: WordPressPost = {
   id: -1, // Special ID to identify this static event
   date: '2024-12-01T00:00:00',
   title: {
@@ -54,7 +54,7 @@ const treeEvent: WordPressPost = {
     'wp:featuredmedia': [{
       id: 0,
       source_url: '/uploads/1749372032760-Tree_without_a_Tree_-_Thumbnail_for_Events_Page.webp',
-      alt_text: 'Tree Without a Tree Competition',
+      alt_text: 'Tree Without a Tree Competition 2024',
       media_details: {
         width: 800,
         height: 600,
@@ -70,8 +70,44 @@ const treeEvent: WordPressPost = {
   }
 }
 
+const architecturalEvent2025: WordPressPost = {
+  id: -2, // Special ID to identify this static event
+  date: '2025-03-15T00:00:00',
+  title: {
+    rendered: 'Innovative Design Challenge - 2025'
+  },
+  excerpt: {
+    rendered: 'Architecture & Design Competition - Push the boundaries of sustainable architecture and create innovative solutions for modern living spaces.'
+  },
+  content: {
+    rendered: '<p>The Innovative Design Challenge 2025 invites architects, designers, and creative minds to reimagine sustainable architecture. This competition focuses on creating innovative, eco-friendly solutions that address contemporary housing challenges while maintaining aesthetic excellence and environmental responsibility.</p>'
+  },
+  slug: 'innovative-design-challenge-2025',
+  link: '/events/innovative-design-challenge-2025',
+  featured_media: 0,
+  categories: [],
+  _embedded: {
+    'wp:featuredmedia': [{
+      id: 0,
+      source_url: '/uploads/design-challenge-2025-thumbnail.svg',
+      alt_text: 'Innovative Design Challenge 2025',
+      media_details: {
+        width: 800,
+        height: 600,
+        sizes: {
+          large: {
+            source_url: '/uploads/design-challenge-2025-thumbnail.svg',
+            width: 800,
+            height: 600
+          }
+        }
+      }
+    }]
+  }
+}
+
 export default function EventsPageClient({ initialEvents = [], initialCategories = [] }: EventsPageClientProps) {
-  const [events, setEvents] = useState<WordPressPost[]>([treeEvent, ...initialEvents])
+  const [events, setEvents] = useState<WordPressPost[]>([architecturalEvent2025, treeEvent2024, ...initialEvents])
   const [categories, setCategories] = useState<WordPressCategory[]>(initialCategories)
   const [searchTerm, setSearchTerm] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
@@ -128,7 +164,7 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
       if (eventsCategory) {
         // Fetch events posts
         const fetchedEvents = await getPostsByCategory(eventsCategory.id, 1, 20)
-        setEvents([treeEvent, ...fetchedEvents]) // Always prepend the static event
+        setEvents([architecturalEvent2025, treeEvent2024, ...fetchedEvents]) // Always prepend the static events
         setCurrentPage(1) // Reset to first page
         setHasMore(fetchedEvents.length === 20)
       } else {
@@ -176,14 +212,14 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
         if (moreEvents.length > 0) {
           console.log('Loaded', moreEvents.length, 'more events')
           // Deduplicate posts by ID to prevent duplicate keys
-          // Keep static event at the beginning if it exists
+          // Keep static events at the beginning if they exist
           setEvents(prev => {
-            const staticEvent = prev.find(e => e.id === -1)
-            const nonStaticEvents = prev.filter(e => e.id !== -1)
+            const staticEvents = prev.filter(e => e.id === -1 || e.id === -2)
+            const nonStaticEvents = prev.filter(e => e.id !== -1 && e.id !== -2)
             const existingIds = new Set(prev.map(post => post.id))
             const newPosts = moreEvents.filter(post => !existingIds.has(post.id))
             const updatedEvents = [...nonStaticEvents, ...newPosts]
-            return staticEvent ? [staticEvent, ...updatedEvents] : updatedEvents
+            return [...staticEvents, ...updatedEvents]
           })
           setCurrentPage(nextPage)
           setHasMore(moreEvents.length === 10)
@@ -533,8 +569,8 @@ function EventCard({
   const title = stripHtml(event.title.rendered)
   const excerpt = getPostExcerpt(event, 150)
 
-  // Check if this is the Tree Without a Tree event (static event with id === -1)
-  const isStaticEvent = event.id === -1
+  // Check if this is a static event (id === -1 or -2)
+  const isStaticEvent = event.id === -1 || event.id === -2
   const eventLink = isStaticEvent ? event.link : null
 
   return (
