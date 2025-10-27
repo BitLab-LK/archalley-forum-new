@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -13,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
-import { Calendar, ExternalLink, Search, Clock, Loader2 } from "lucide-react"
+import { Calendar, ExternalLink, Search, Loader2 } from "lucide-react"
 import { 
   getPostsByCategory,
   getAllCategories,
@@ -34,8 +33,45 @@ interface EventsPageClientProps {
   initialCategories?: WordPressCategory[]
 }
 
+// Static event for Tree Without a Tree competition
+const treeEvent: WordPressPost = {
+  id: -1, // Special ID to identify this static event
+  date: '2024-12-01T00:00:00',
+  title: {
+    rendered: 'Tree Without a Tree - 2024'
+  },
+  excerpt: {
+    rendered: 'Innovative Christmas Tree "Design, Make & Decorate" Competition - Explore alternative solutions for traditional methods of building Christmas trees.'
+  },
+  content: {
+    rendered: '<p>Tree Without a Tree was a competition designed to explore alternative solutions for traditional methods of building Christmas trees, beyond the conventional approach. During the Christmas season, we embraced the spirit of giving by expressing our love and concern for the environment, with an attempt to protect natural trees & reduce waste after use, ensuring a joyful and eco-friendly celebration.</p>'
+  },
+  slug: 'tree-without-a-tree',
+  link: '/events/tree-without-a-tree',
+  featured_media: 0,
+  categories: [],
+  _embedded: {
+    'wp:featuredmedia': [{
+      id: 0,
+      source_url: '/uploads/1749372032760-Tree_without_a_Tree_-_Thumbnail_for_Events_Page.webp',
+      alt_text: 'Tree Without a Tree Competition',
+      media_details: {
+        width: 800,
+        height: 600,
+        sizes: {
+          large: {
+            source_url: '/uploads/1749372032760-Tree_without_a_Tree_-_Thumbnail_for_Events_Page.webp',
+            width: 800,
+            height: 600
+          }
+        }
+      }
+    }]
+  }
+}
+
 export default function EventsPageClient({ initialEvents = [], initialCategories = [] }: EventsPageClientProps) {
-  const [events, setEvents] = useState<WordPressPost[]>(initialEvents)
+  const [events, setEvents] = useState<WordPressPost[]>([treeEvent, ...initialEvents])
   const [categories, setCategories] = useState<WordPressCategory[]>(initialCategories)
   const [searchTerm, setSearchTerm] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
@@ -92,7 +128,7 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
       if (eventsCategory) {
         // Fetch events posts
         const fetchedEvents = await getPostsByCategory(eventsCategory.id, 1, 20)
-        setEvents(fetchedEvents)
+        setEvents([treeEvent, ...fetchedEvents]) // Always prepend the static event
         setCurrentPage(1) // Reset to first page
         setHasMore(fetchedEvents.length === 20)
       } else {
@@ -140,10 +176,14 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
         if (moreEvents.length > 0) {
           console.log('Loaded', moreEvents.length, 'more events')
           // Deduplicate posts by ID to prevent duplicate keys
+          // Keep static event at the beginning if it exists
           setEvents(prev => {
+            const staticEvent = prev.find(e => e.id === -1)
+            const nonStaticEvents = prev.filter(e => e.id !== -1)
             const existingIds = new Set(prev.map(post => post.id))
             const newPosts = moreEvents.filter(post => !existingIds.has(post.id))
-            return [...prev, ...newPosts]
+            const updatedEvents = [...nonStaticEvents, ...newPosts]
+            return staticEvent ? [staticEvent, ...updatedEvents] : updatedEvents
           })
           setCurrentPage(nextPage)
           setHasMore(moreEvents.length === 10)
@@ -244,7 +284,7 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
 
         {/* Events Grid - Minimalistic Layout */}
         {filteredEvents.length > 0 && (
-          <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredEvents.map((item, index) => (
               <EventCard 
                 key={`event-${item.id}-${index}`} 
@@ -261,20 +301,15 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
 
         {/* Loading skeleton for additional content */}
         {isLoading && events.length > 0 && (
-          <div className="space-y-8 mt-8">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="animate-pulse bg-muted/30 border-0">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
-                  <div className="aspect-[16/10] md:aspect-[4/3] bg-muted/50"></div>
-                  <div className="md:col-span-2 p-8">
-                    <div className="h-4 bg-muted/50 rounded w-32 mb-4"></div>
-                    <div className="h-8 bg-muted/50 rounded w-3/4 mb-4"></div>
-                    <div className="space-y-2 mb-6">
-                      <div className="h-4 bg-muted/50 rounded w-full"></div>
-                      <div className="h-4 bg-muted/50 rounded w-2/3"></div>
-                    </div>
-                    <div className="h-4 bg-muted/50 rounded w-24"></div>
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="animate-pulse bg-muted/30 border-0 flex flex-col">
+                <div className="aspect-video bg-muted/50"></div>
+                <div className="p-6 flex flex-col">
+                  <div className="h-6 bg-muted/50 rounded w-3/4 mb-3"></div>
+                  <div className="h-4 bg-muted/50 rounded w-full mb-2"></div>
+                  <div className="h-4 bg-muted/50 rounded w-2/3 mb-6"></div>
+                  <div className="h-10 bg-muted/50 rounded"></div>
                 </div>
               </Card>
             ))}
@@ -497,68 +532,69 @@ function EventCard({
   const imageAlt = getFeaturedImageAlt(event)
   const title = stripHtml(event.title.rendered)
   const excerpt = getPostExcerpt(event, 150)
-  const formattedDate = formatDate(event.date)
 
-  // Calculate time ago for recent events feel
-  const publishDate = new Date(event.date)
-  const now = new Date()
-  const diffHours = Math.floor((now.getTime() - publishDate.getTime()) / (1000 * 60 * 60))
-  const timeAgo = diffHours < 24 ? `${diffHours}h ago` : diffHours < 48 ? '1 day ago' : formattedDate
+  // Check if this is the Tree Without a Tree event (static event with id === -1)
+  const isStaticEvent = event.id === -1
+  const eventLink = isStaticEvent ? event.link : null
 
   return (
     <Card 
-      className="group hover:shadow-lg transition-all duration-500 ease-in-out hover:-translate-y-1 bg-white/50 backdrop-blur-sm border-0 overflow-hidden animate-slide-in"
+      className="group hover:shadow-lg transition-all duration-500 ease-in-out hover:-translate-y-1 bg-white/50 backdrop-blur-sm border-0 overflow-hidden animate-slide-in flex flex-col"
       style={{
         animationDelay: `${Math.min(index * 150, 1000)}ms`, // Cap delay at 1000ms
       } as React.CSSProperties}
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
-        {/* Image */}
-        <div className="relative aspect-[16/10] md:aspect-[4/3] overflow-hidden">
-          <Image
-            src={imageUrl}
-            alt={imageAlt}
-            fill
-            className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, 33vw"
-          />
-          
-          {/* Time Badge */}
-          <div className="absolute top-4 right-4">
-            <Badge variant="secondary" className="bg-black/70 text-white border-0 backdrop-blur-sm">
-              <Clock className="h-3 w-3 mr-1" />
-              {timeAgo}
-            </Badge>
-          </div>
-        </div>
+      {/* Thumbnail */}
+      <div className="relative aspect-video overflow-hidden">
+        <Image
+          src={imageUrl}
+          alt={imageAlt}
+          fill
+          className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-105"
+          sizes="(max-width: 768px) 100vw, 400px"
+        />
+      </div>
 
-        {/* Content */}
-        <div className="md:col-span-2 p-8">
-          <div className="flex items-center text-sm text-muted-foreground mb-4">
-            <Calendar className="h-4 w-4 mr-2" />
-            {formattedDate}
-          </div>
+      {/* Content */}
+      <div className="p-6 flex flex-col flex-grow">
+        {/* Title */}
+        <h3 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-primary transition-colors duration-300 leading-tight">
+          {title}
+        </h3>
 
-          <h3 className="text-2xl font-bold mb-4 line-clamp-2 group-hover:text-primary transition-colors duration-300 leading-tight">
-            {title}
-          </h3>
+        {/* Description */}
+        <p className="text-muted-foreground mb-6 line-clamp-3 leading-relaxed text-sm flex-grow">
+          {excerpt}
+        </p>
 
-          <p className="text-muted-foreground mb-6 line-clamp-3 leading-relaxed text-base">
-            {excerpt}
-          </p>
-
+        {/* View Event Button */}
+        {isStaticEvent && eventLink ? (
           <Button 
-            variant="ghost" 
+            variant="default" 
+            size="sm" 
+            asChild
+            className="w-full"
+          >
+            <Link href={eventLink}>
+              <span className="inline-flex items-center">
+                View Event
+                <ExternalLink className="ml-2 h-4 w-4" />
+              </span>
+            </Link>
+          </Button>
+        ) : (
+          <Button 
+            variant="default" 
             size="sm" 
             onClick={() => onReadMore(event)}
-            className="p-0 h-auto text-primary hover:text-primary/80 font-medium group/link"
+            className="w-full"
           >
             <span className="inline-flex items-center">
-              Read More
-              <ExternalLink className="ml-2 h-4 w-4 transition-transform duration-200 group-hover/link:translate-x-1" />
+              View Event
+              <ExternalLink className="ml-2 h-4 w-4" />
             </span>
           </Button>
-        </div>
+        )}
       </div>
     </Card>
   )
