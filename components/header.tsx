@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Search, Moon, Sun, LogOut, User, Shield, Home, Crown, MessageCircle, ChevronDown, FolderOpen, Newspaper } from "lucide-react"
+import { Search, Moon, Sun, LogOut, User, Shield, Home, Crown, MessageCircle, ChevronDown, FolderOpen, Newspaper, ClipboardList } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/lib/auth-context"
 import NotificationDropdown from "@/components/notification-dropdown"
@@ -329,6 +329,12 @@ export default function Header() {
                         <span>Profile</span>
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile/registrations">
+                        <ClipboardList className="mr-2 h-4 w-4" />
+                        <span>My Registrations</span>
+                      </Link>
+                    </DropdownMenuItem>
                     {/* Settings - Temporarily Removed */}
                     {/* <DropdownMenuItem asChild>
                       <Link href="/settings">
@@ -337,12 +343,20 @@ export default function Header() {
                       </Link>
                     </DropdownMenuItem> */}
                     {(user?.role === "ADMIN" || user?.role === "SUPER_ADMIN" || user?.role === "MODERATOR") && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin">
-                          <Shield className="mr-2 h-4 w-4" />
-                          <span>Admin Panel</span>
-                        </Link>
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin">
+                            <Shield className="mr-2 h-4 w-4" />
+                            <span>Admin Panel</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/competitions/registrations">
+                            <ClipboardList className="mr-2 h-4 w-4" />
+                            <span>Manage Registrations</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
                     )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
@@ -411,6 +425,12 @@ export default function Header() {
                         <span>Profile</span>
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile/registrations">
+                        <ClipboardList className="mr-2 h-4 w-4" />
+                        <span>My Registrations</span>
+                      </Link>
+                    </DropdownMenuItem>
                     {/* Settings - Temporarily Removed */}
                     {/* <DropdownMenuItem asChild>
                       <Link href="/settings">
@@ -418,6 +438,23 @@ export default function Header() {
                         <span>Settings</span>
                       </Link>
                     </DropdownMenuItem> */}
+                    {(user?.role === "ADMIN" || user?.role === "SUPER_ADMIN" || user?.role === "MODERATOR") && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin">
+                            <Shield className="mr-2 h-4 w-4" />
+                            <span>Admin Panel</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/competitions/registrations">
+                            <ClipboardList className="mr-2 h-4 w-4" />
+                            <span>Manage Registrations</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
                     <DropdownMenuItem onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
                       <div className="mr-2 h-4 w-4 relative">
                         <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />

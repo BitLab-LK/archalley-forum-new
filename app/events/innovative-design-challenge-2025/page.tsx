@@ -320,12 +320,12 @@ export default function InnovativeDesignChallenge2025Page() {
             
             {/* Main Registration Button */}
             <div className="text-center">
-              <button
-                onClick={() => alert('Registration form will be integrated here. This will connect to your registration system.')}
-                className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-5 px-16 rounded-xl text-xl transform transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-2xl"
+              <Link
+                href="/events/innovative-design-challenge-2025/register"
+                className="inline-block bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-5 px-16 rounded-xl text-xl transform transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-2xl"
               >
                 Complete Registration
-              </button>
+              </Link>
               <p className="text-gray-400 text-sm mt-4">
                 Questions? Contact us at <a href="mailto:competitions@archalley.com" className="text-yellow-400 hover:underline">competitions@archalley.com</a>
               </p>

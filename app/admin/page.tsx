@@ -22,6 +22,7 @@ import { toast } from "sonner"
 import { checkSuperAdminPrivileges } from "@/lib/super-admin-utils"
 import { getRolePermissions, getAvailableTabs, getDefaultTab, getRoleInfo, type UserRole } from "@/lib/role-permissions"
 import AdsManagementSection from "@/components/ads-management-section"
+import CompetitionsManagementSection from "@/components/competitions-management-section"
 
 interface DashboardStats {
   totalUsers: number
@@ -1352,6 +1353,9 @@ function AdminDashboardContent() {
             {availableTabs.includes('posts') && (
               <TabsTrigger value="posts" className="text-sm font-medium">Posts</TabsTrigger>
             )}
+            {availableTabs.includes('competitions') && (
+              <TabsTrigger value="competitions" className="text-sm font-medium">Competitions</TabsTrigger>
+            )}
             {availableTabs.includes('ads') && (
               <TabsTrigger value="ads" className="text-sm font-medium">Advertisements</TabsTrigger>
             )}
@@ -2596,6 +2600,13 @@ function AdminDashboardContent() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
+
+          {/* Competitions Tab */}
+          {permissions.canViewCompetitions && (
+            <TabsContent value="competitions" className="space-y-6">
+              <CompetitionsManagementSection />
+            </TabsContent>
           )}
 
           {/* Advertisements Tab */}
