@@ -99,14 +99,17 @@ export async function GET() {
     };
 
     return NextResponse.json({
-      registrations,
-      competitions,
-      stats,
+      success: true,
+      data: {
+        registrations,
+        competitions,
+        stats,
+      },
     });
   } catch (error) {
     console.error('Error fetching competition registrations:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

@@ -2,10 +2,10 @@
 
 /**
  * Admin Registrations Client Component
- * Interactive dashboard for managing competition registrations
+ * Interactive dashboard for managing competition registrations with real-time updates
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   Search, 
   Download, 
@@ -15,12 +15,14 @@ import {
   Users,
   DollarSign,
   FileText,
-  MoreVertical,
   Eye,
   Trash2,
   Send,
+  RefreshCw,
+  X,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface Registration {
   id: string;
@@ -28,9 +30,14 @@ interface Registration {
   status: string;
   submissionStatus: string;
   country: string;
+  teamName: string | null;
+  companyName: string | null;
+  businessRegistrationNo: string | null;
   teamMembers: any;
   amountPaid: number;
   createdAt: string;
+  confirmedAt: string | null;
+  submittedAt: string | null;
   user: {
     id: string;
     name: string | null;
@@ -83,12 +90,49 @@ interface Props {
   stats: Stats;
 }
 
-export default function AdminRegistrationsClient({ registrations, competitions, stats }: Props) {
+export default function AdminRegistrationsClient({ registrations: initialRegistrations, competitions, stats: initialStats }: Props) {
+  const [registrations, setRegistrations] = useState<Registration[]>(initialRegistrations);
+  const [stats, setStats] = useState<Stats>(initialStats);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [competitionFilter, setCompetitionFilter] = useState<string>('ALL');
   const [submissionFilter, setSubmissionFilter] = useState<string>('ALL');
   const [selectedRegistrations, setSelectedRegistrations] = useState<string[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [viewingRegistration, setViewingRegistration] = useState<Registration | null>(null);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [emailRecipient, setEmailRecipient] = useState<{ email: string; name: string } | null>(null);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshData();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Manual refresh function
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      const response = await fetch('/api/admin/competitions/registrations');
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        setRegistrations(data.data.registrations);
+        setStats(data.data.stats);
+        toast.success('Data refreshed successfully');
+      } else {
+        throw new Error(data.error || 'Failed to fetch data');
+      }
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      toast.error('Failed to refresh data');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Filter registrations
   const filteredRegistrations = useMemo(() => {
@@ -183,8 +227,14 @@ export default function AdminRegistrationsClient({ registrations, competitions, 
     }
   };
 
+  // Handle send email
+  const handleSendEmail = (email: string, name: string) => {
+    setEmailRecipient({ email, name });
+    setIsEmailDialogOpen(true);
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="mx-auto px-4 py-8 max-w-[1600px]">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Competition Registrations</h1>
@@ -192,84 +242,73 @@ export default function AdminRegistrationsClient({ registrations, competitions, 
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <Users className="w-5 h-5 text-gray-600" />
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Registrations</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
-            </div>
-            <div className="bg-blue-100 p-3 rounded-full">
-              <Users className="w-6 h-6 text-blue-600" />
+              <p className="text-sm text-gray-600">Total</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.total}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-green-600" />
             <div>
-              <p className="text-sm font-medium text-gray-600">Confirmed</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">{stats.confirmed}</p>
-            </div>
-            <div className="bg-green-100 p-3 rounded-full">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+              <p className="text-sm text-gray-600">Confirmed</p>
+              <p className="text-2xl font-semibold text-green-600">{stats.confirmed}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <Clock className="w-5 h-5 text-orange-500" />
             <div>
-              <p className="text-sm font-medium text-gray-600">Pending Payment</p>
-              <p className="text-2xl font-bold text-yellow-600 mt-1">{stats.pending}</p>
-            </div>
-            <div className="bg-yellow-100 p-3 rounded-full">
-              <Clock className="w-6 h-6 text-yellow-600" />
+              <p className="text-sm text-gray-600">Pending</p>
+              <p className="text-2xl font-semibold text-orange-500">{stats.pending}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <FileText className="w-5 h-5 text-blue-600" />
             <div>
-              <p className="text-sm font-medium text-gray-600">Submitted</p>
-              <p className="text-2xl font-bold text-blue-600 mt-1">{stats.submitted}</p>
-            </div>
-            <div className="bg-blue-100 p-3 rounded-full">
-              <FileText className="w-6 h-6 text-blue-600" />
+              <p className="text-sm text-gray-600">Submitted</p>
+              <p className="text-2xl font-semibold text-blue-600">{stats.submitted}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <DollarSign className="w-5 h-5 text-orange-500" />
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-              <p className="text-2xl font-bold text-[#FACC15] mt-1">
+              <p className="text-sm text-gray-600">Revenue (LKR)</p>
+              <p className="text-2xl font-semibold text-gray-900">
                 {stats.totalRevenue.toLocaleString()}
               </p>
-              <p className="text-xs text-gray-500 mt-1">LKR</p>
-            </div>
-            <div className="bg-yellow-100 p-3 rounded-full">
-              <DollarSign className="w-6 h-6 text-[#FACC15]" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Filters and Actions */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex flex-col lg:flex-row gap-4 mb-4">
+      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+        <div className="flex flex-col lg:flex-row gap-3 mb-4">
           {/* Search */}
           <div className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search by registration number, user, competition..."
+                placeholder="Search registrations..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FACC15] focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
               />
             </div>
           </div>
@@ -277,39 +316,50 @@ export default function AdminRegistrationsClient({ registrations, competitions, 
           {/* Export Button */}
           <button
             onClick={handleExport}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#FACC15] text-black font-medium rounded-lg hover:bg-[#F59E0B] transition-colors"
+            disabled={filteredRegistrations.length === 0}
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-base font-medium bg-black text-white rounded-lg hover:bg-orange-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="w-5 h-5" />
-            Export CSV
+            Export
+          </button>
+
+          {/* Refresh Button */}
+          <button
+            onClick={refreshData}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-base font-medium bg-black text-white rounded-lg hover:bg-orange-500 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Registration Status
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Status
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FACC15] focus:border-transparent"
+              className="w-full px-3 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
             >
               <option value="ALL">All Statuses</option>
               <option value="CONFIRMED">Confirmed</option>
-              <option value="PENDING">Pending Payment</option>
+              <option value="PENDING">Pending</option>
               <option value="CANCELLED">Cancelled</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Competition
             </label>
             <select
               value={competitionFilter}
               onChange={(e) => setCompetitionFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FACC15] focus:border-transparent"
+              className="w-full px-3 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
             >
               <option value="ALL">All Competitions</option>
               {competitions.map(comp => (
@@ -321,15 +371,15 @@ export default function AdminRegistrationsClient({ registrations, competitions, 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Submission Status
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Submission
             </label>
             <select
               value={submissionFilter}
               onChange={(e) => setSubmissionFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FACC15] focus:border-transparent"
+              className="w-full px-3 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
             >
-              <option value="ALL">All Submissions</option>
+              <option value="ALL">All</option>
               <option value="NOT_SUBMITTED">Not Submitted</option>
               <option value="SUBMITTED">Submitted</option>
               <option value="UNDER_REVIEW">Under Review</option>
@@ -339,17 +389,31 @@ export default function AdminRegistrationsClient({ registrations, competitions, 
 
         {/* Selected Actions */}
         {selectedRegistrations.length > 0 && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="mt-3 p-4 bg-orange-50 rounded-lg border border-orange-200">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-blue-900">
-                {selectedRegistrations.length} registration(s) selected
+              <span className="text-base font-medium text-gray-900">
+                {selectedRegistrations.length} selected
               </span>
               <div className="flex gap-2">
-                <button className="inline-flex items-center gap-2 px-3 py-1.5 bg-white text-blue-700 text-sm font-medium rounded-md hover:bg-blue-50 border border-blue-300">
+                <button 
+                  onClick={() => {
+                    console.log('Send email to:', selectedRegistrations);
+                    toast.info('Email feature coming soon');
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-black text-white rounded-lg hover:bg-orange-500 transition-colors"
+                >
                   <Mail className="w-4 h-4" />
-                  Send Email
+                  Email
                 </button>
-                <button className="inline-flex items-center gap-2 px-3 py-1.5 bg-white text-red-700 text-sm font-medium rounded-md hover:bg-red-50 border border-red-300">
+                <button 
+                  onClick={() => {
+                    if (confirm(`Delete ${selectedRegistrations.length} registration(s)?`)) {
+                      console.log('Delete:', selectedRegistrations);
+                      toast.info('Delete feature coming soon');
+                    }
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
                   <Trash2 className="w-4 h-4" />
                   Delete
                 </button>
@@ -365,44 +429,38 @@ export default function AdminRegistrationsClient({ registrations, competitions, 
       </div>
 
       {/* Registrations Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full table-auto">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-4 py-3 text-left">
+                <th className="px-3 py-3 text-left w-10">
                   <input
                     type="checkbox"
                     checked={selectedRegistrations.length === filteredRegistrations.length && filteredRegistrations.length > 0}
                     onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-[#FACC15] focus:ring-[#FACC15]"
+                    className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
                   />
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Registration
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
                   User
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
                   Competition
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Submission
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
                   Amount
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-center text-sm font-medium text-gray-700 uppercase tracking-wider w-32">
                   Actions
                 </th>
               </tr>
@@ -410,7 +468,7 @@ export default function AdminRegistrationsClient({ registrations, competitions, 
             <tbody className="divide-y divide-gray-200">
               {filteredRegistrations.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
                     <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                     <p className="text-lg font-medium">No registrations found</p>
                     <p className="text-sm">Try adjusting your filters</p>
@@ -419,97 +477,102 @@ export default function AdminRegistrationsClient({ registrations, competitions, 
               ) : (
                 filteredRegistrations.map((reg) => (
                   <tr key={reg.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4">
+                    <td className="px-3 py-4">
                       <input
                         type="checkbox"
                         checked={selectedRegistrations.includes(reg.id)}
                         onChange={() => handleSelect(reg.id)}
-                        className="rounded border-gray-300 text-[#FACC15] focus:ring-[#FACC15]"
+                        className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
                       />
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="text-sm font-mono font-medium text-gray-900">
-                        {reg.registrationNumber}
-                      </div>
-                      <div className="text-xs text-gray-500">{reg.country}</div>
-                    </td>
-                    <td className="px-4 py-4">
+                    <td className="px-3 py-4">
                       <div className="flex items-center gap-3">
                         {reg.user.image ? (
                           <img
                             src={reg.user.image}
                             alt={reg.user.name || ''}
-                            className="w-8 h-8 rounded-full"
+                            className="w-10 h-10 rounded-full flex-shrink-0"
                           />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-xs font-medium text-gray-600">
+                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                            <span className="text-sm font-medium text-gray-600">
                               {reg.user.name?.charAt(0) || reg.user.email.charAt(0)}
                             </span>
                           </div>
                         )}
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">
                             {reg.user.name || 'N/A'}
                           </div>
-                          <div className="text-xs text-gray-500">{reg.user.email}</div>
+                          <div className="text-sm text-gray-500 truncate">{reg.user.email}</div>
+                          <div className="text-xs text-gray-400">{reg.country}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-3 py-4">
                       <div className="text-sm font-medium text-gray-900">
                         {reg.competition.title}
                       </div>
-                      <div className="text-xs text-gray-500">{reg.competition.year}</div>
+                      <div className="text-sm text-gray-500">{reg.competition.year}</div>
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-3 py-4">
                       <div className="text-sm text-gray-900">{reg.registrationType.name}</div>
+                      {reg.teamName && (
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          🏆 {reg.teamName}
+                        </div>
+                      )}
+                      {reg.companyName && (
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          🏢 {reg.companyName}
+                        </div>
+                      )}
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-3 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(reg.status)}`}>
                         {reg.status.replace('_', ' ')}
                       </span>
+                      <div className={`mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSubmissionStatusColor(reg.submissionStatus)}`}>
+                        {reg.submissionStatus.replace('_', ' ').substring(0, 10)}
+                      </div>
                     </td>
-                    <td className="px-4 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSubmissionStatusColor(reg.submissionStatus)}`}>
-                        {reg.submissionStatus.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
+                    <td className="px-3 py-4">
                       <div className="text-sm font-medium text-gray-900">
-                        LKR {reg.amountPaid.toLocaleString()}
+                        {reg.amountPaid.toLocaleString()}
                       </div>
                       {reg.payment && (
                         <div className="text-xs text-gray-500">{reg.payment.paymentMethod}</div>
                       )}
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-900">
+                    <td className="px-3 py-4">
+                      <div className="text-xs text-gray-700">
                         {format(new Date(reg.createdAt), 'MMM dd, yyyy')}
                       </div>
                       <div className="text-xs text-gray-500">
                         {format(new Date(reg.createdAt), 'HH:mm')}
                       </div>
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
+                    <td className="px-3 py-4">
+                      <div className="flex items-center justify-center gap-1">
                         <button
-                          className="p-1 text-gray-400 hover:text-[#FACC15] transition-colors"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setViewingRegistration(reg);
+                          }}
+                          className="p-2 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
                           title="View Details"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-5 h-5" />
                         </button>
                         <button
-                          className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleSendEmail(reg.user.email, reg.user.name || 'User');
+                          }}
+                          className="p-2 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
                           title="Send Email"
                         >
-                          <Send className="w-4 h-4" />
-                        </button>
-                        <button
-                          className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                          title="More Options"
-                        >
-                          <MoreVertical className="w-4 h-4" />
+                          <Send className="w-5 h-5" />
                         </button>
                       </div>
                     </td>
@@ -520,6 +583,279 @@ export default function AdminRegistrationsClient({ registrations, competitions, 
           </table>
         </div>
       </div>
+
+      {/* View Details Modal */}
+      {viewingRegistration && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Registration Details</h2>
+              <button
+                onClick={() => setViewingRegistration(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Registration Info */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Registration Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Registration Number</p>
+                    <p className="text-base font-medium text-gray-900">{viewingRegistration.registrationNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Country</p>
+                    <p className="text-base font-medium text-gray-900">{viewingRegistration.country}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Status</p>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(viewingRegistration.status)}`}>
+                      {viewingRegistration.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Submission Status</p>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getSubmissionStatusColor(viewingRegistration.submissionStatus)}`}>
+                      {viewingRegistration.submissionStatus.replace('_', ' ')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* User Info */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">User Information</h3>
+                <div className="flex items-center gap-4 mb-4">
+                  {viewingRegistration.user.image ? (
+                    <img src={viewingRegistration.user.image} alt={viewingRegistration.user.name || ''} className="w-16 h-16 rounded-full" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-xl font-medium text-gray-600">
+                        {viewingRegistration.user.name?.charAt(0) || viewingRegistration.user.email.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">{viewingRegistration.user.name || 'N/A'}</p>
+                    <p className="text-base text-gray-600">{viewingRegistration.user.email}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Competition Info */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Competition Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Competition</p>
+                    <p className="text-base font-medium text-gray-900">{viewingRegistration.competition.title}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Year</p>
+                    <p className="text-base font-medium text-gray-900">{viewingRegistration.competition.year}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Registration Type</p>
+                    <p className="text-base font-medium text-gray-900">{viewingRegistration.registrationType.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Fee</p>
+                    <p className="text-base font-medium text-gray-900">LKR {viewingRegistration.registrationType.fee.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Team/Company Info */}
+              {(viewingRegistration.teamName || viewingRegistration.companyName) && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                    {viewingRegistration.teamName ? 'Team Information' : 'Company Information'}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {viewingRegistration.teamName && (
+                      <>
+                        <div>
+                          <p className="text-sm text-gray-600">Team Name</p>
+                          <p className="text-base font-medium text-gray-900">🏆 {viewingRegistration.teamName}</p>
+                        </div>
+                        {viewingRegistration.teamMembers && Array.isArray(viewingRegistration.teamMembers) && (
+                          <div>
+                            <p className="text-sm text-gray-600">Team Members</p>
+                            <p className="text-base font-medium text-gray-900">{viewingRegistration.teamMembers.length} members</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {viewingRegistration.companyName && (
+                      <>
+                        <div>
+                          <p className="text-sm text-gray-600">Company Name</p>
+                          <p className="text-base font-medium text-gray-900">🏢 {viewingRegistration.companyName}</p>
+                        </div>
+                        {viewingRegistration.businessRegistrationNo && (
+                          <div>
+                            <p className="text-sm text-gray-600">Business Registration No</p>
+                            <p className="text-base font-medium text-gray-900">{viewingRegistration.businessRegistrationNo}</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Info */}
+              {viewingRegistration.payment && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Payment Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Amount Paid</p>
+                      <p className="text-base font-medium text-gray-900">LKR {viewingRegistration.amountPaid.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Payment Method</p>
+                      <p className="text-base font-medium text-gray-900">{viewingRegistration.payment.paymentMethod}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Order ID</p>
+                      <p className="text-base font-medium text-gray-900">{viewingRegistration.payment.orderId}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Payment Status</p>
+                      <p className="text-base font-medium text-gray-900">{viewingRegistration.payment.status}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Dates */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Important Dates</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Created At</p>
+                    <p className="text-base font-medium text-gray-900">
+                      {format(new Date(viewingRegistration.createdAt), 'MMM dd, yyyy HH:mm')}
+                    </p>
+                  </div>
+                  {viewingRegistration.confirmedAt && (
+                    <div>
+                      <p className="text-sm text-gray-600">Confirmed At</p>
+                      <p className="text-base font-medium text-green-600">
+                        {format(new Date(viewingRegistration.confirmedAt), 'MMM dd, yyyy HH:mm')}
+                      </p>
+                    </div>
+                  )}
+                  {viewingRegistration.submittedAt && (
+                    <div>
+                      <p className="text-sm text-gray-600">Submitted At</p>
+                      <p className="text-base font-medium text-blue-600">
+                        {format(new Date(viewingRegistration.submittedAt), 'MMM dd, yyyy HH:mm')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    handleSendEmail(viewingRegistration.user.email, viewingRegistration.user.name || 'User');
+                    setViewingRegistration(null);
+                  }}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-white rounded-lg hover:bg-orange-500 transition-colors"
+                >
+                  <Mail className="w-5 h-5" />
+                  Send Email
+                </button>
+                <button
+                  onClick={() => setViewingRegistration(null)}
+                  className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Dialog */}
+      {isEmailDialogOpen && emailRecipient && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+            <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Send Email</h2>
+              <button
+                onClick={() => {
+                  setIsEmailDialogOpen(false);
+                  setEmailRecipient(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">To</label>
+                <div className="px-4 py-2.5 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-base text-gray-900">{emailRecipient.name}</p>
+                  <p className="text-sm text-gray-600">{emailRecipient.email}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Subject</label>
+                <input
+                  type="text"
+                  placeholder="Email subject..."
+                  className="w-full px-4 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Message</label>
+                <textarea
+                  rows={8}
+                  placeholder="Write your message..."
+                  className="w-full px-4 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    toast.success(`Email sent to ${emailRecipient.email}`);
+                    setIsEmailDialogOpen(false);
+                    setEmailRecipient(null);
+                  }}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-white rounded-lg hover:bg-orange-500 transition-colors"
+                >
+                  <Send className="w-5 h-5" />
+                  Send Email
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEmailDialogOpen(false);
+                    setEmailRecipient(null);
+                  }}
+                  className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
