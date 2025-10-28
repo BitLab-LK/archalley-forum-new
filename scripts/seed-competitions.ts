@@ -24,10 +24,8 @@ async function main() {
         endDate: new Date('2025-08-15'),
         status: CompetitionStatus.REGISTRATION_OPEN,
         registrationFee: 2000, // Base fee in LKR
-        earlyBirdDiscount: 20, // 20% discount
         earlyBirdDeadline: new Date('2025-04-15'),
         registrationDeadline: new Date('2025-06-15'),
-        maxTeamSize: 4,
         totalPrizeFund: 500000,
         thumbnail: '/uploads/innovative-design-2025-thumb.svg',
         heroImage: '/uploads/innovative-design-2025-hero.svg',
@@ -153,7 +151,6 @@ async function main() {
         status: CompetitionStatus.COMPLETED,
         registrationFee: 1500,
         registrationDeadline: new Date('2024-11-30'),
-        maxTeamSize: 1,
         totalPrizeFund: 250000,
         thumbnail: '/uploads/tree-competition-thumb.jpg',
         prizes: {
