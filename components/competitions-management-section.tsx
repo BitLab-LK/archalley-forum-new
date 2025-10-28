@@ -15,9 +15,14 @@ interface Registration {
   status: string;
   submissionStatus: string;
   country: string;
+  teamName: string | null;
+  companyName: string | null;
+  businessRegistrationNo: string | null;
   teamMembers: any;
   amountPaid: number;
   createdAt: string;
+  confirmedAt: string | null;
+  submittedAt: string | null;
   user: {
     id: string;
     name: string | null;
