@@ -79,6 +79,17 @@ export interface MemberInfo {
   role?: string; // For teams: 'Lead', 'Designer', etc.
   studentId?: string; // For students
   institution?: string; // For students
+  courseOfStudy?: string; // For students - Course/Degree Program
+  dateOfBirth?: string; // For students
+  studentEmail?: string; // For students - University/School Email
+  idCardFile?: File | string; // For students - Student ID Card / National ID / Passport (local file)
+  idCardUrl?: string; // For students - Uploaded file URL from Vercel Blob
+  // For kids registration
+  parentFirstName?: string; // Parent/Guardian's First Name
+  parentLastName?: string; // Parent/Guardian's Last Name
+  parentEmail?: string; // Parent/Guardian's Email
+  parentPhone?: string; // Parent/Guardian's Contact Number
+  postalAddress?: string; // Postal Address (for gift delivery)
 }
 
 export interface AgreementData {

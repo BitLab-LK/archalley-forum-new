@@ -25,9 +25,11 @@ export async function GET(
   _request: NextRequest
 ): Promise<NextResponse<ApiResponse<CartResponse>>> {
   try {
+    console.log('=== CART GET API CALLED ===');
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
+      console.error('❌ Unauthorized - No session');
       return NextResponse.json(
         {
           success: false,
@@ -37,7 +39,10 @@ export async function GET(
       );
     }
 
+    console.log('✅ User authenticated:', session.user.email);
+
     // Find or create active cart for user
+    console.log('🔍 Looking for active cart...');
     let cart = await prisma.registrationCart.findFirst({
       where: {
         userId: session.user.id,
@@ -53,9 +58,22 @@ export async function GET(
       },
     });
 
+    if (cart) {
+      console.log('✅ Found cart:', cart.id, 'with', cart.items.length, 'items');
+      console.log('Cart items:', JSON.stringify(cart.items.map(i => ({
+        id: i.id,
+        competition: i.competition.title,
+        type: i.registrationType.name,
+        memberCount: Array.isArray(i.members) ? i.members.length : 0
+      })), null, 2));
+    } else {
+      console.log('⚠️ No active cart found');
+    }
+
     // Create new cart if none exists or if cart is expired
     if (!cart || isCartExpired(cart.expiresAt)) {
       if (cart && isCartExpired(cart.expiresAt)) {
+        console.log('⏰ Cart expired, marking as EXPIRED');
         // Mark expired cart as expired
         await prisma.registrationCart.update({
           where: { id: cart.id },
@@ -63,6 +81,7 @@ export async function GET(
         });
       }
 
+      console.log('📝 Creating new empty cart');
       // Create new cart
       cart = await prisma.registrationCart.create({
         data: {
@@ -79,9 +98,11 @@ export async function GET(
           },
         },
       });
+      console.log('✅ New cart created:', cart.id);
     }
 
     // Calculate cart summary
+    console.log('📊 Calculating cart summary...');
     const summary: CartSummary = {
       itemCount: cart.items.length,
       subtotal: cart.items.reduce((sum, item) => sum + item.subtotal, 0),
@@ -99,7 +120,9 @@ export async function GET(
     };
 
     summary.total = calculateCartTotal(summary.subtotal, summary.discount);
+    console.log('✅ Summary:', summary);
 
+    console.log('=== RETURNING CART RESPONSE ===');
     return NextResponse.json({
       success: true,
       data: {

@@ -127,6 +127,10 @@ export async function POST(
           subtotal: item.subtotal,
         })),
         customerDetails: body.customerInfo,
+        metadata: {
+          cartId: cart.id,
+          itemIds: cart.items.map((item) => item.id),
+        },
       },
     });
 

@@ -18,56 +18,65 @@ interface Props {
   };
   registrationTypes: CompetitionRegistrationType[];
   isOpen: boolean;
-  user: any;
 }
 
 export default function RegistrationClient({
   competition,
   registrationTypes,
   isOpen,
-  user,
 }: Props) {
   const router = useRouter();
   const [cartKey, setCartKey] = useState(0);
+  const [editingItem, setEditingItem] = useState<any | null>(null);
 
   const handleCartUpdate = () => {
     setCartKey((prev) => prev + 1);
   };
 
+  const handleEditItem = (item: any) => {
+    setEditingItem(item);
+  };
+
+  const handleEditComplete = () => {
+    setEditingItem(null);
+  };
+
   const daysRemaining = getDaysRemaining(new Date(competition.registrationDeadline));
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-400 to-orange-500">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="bg-black border-b border-orange-500">
+        <div className="max-w-7xl mx-auto px-4 py-6">
           <button
             onClick={() => router.push(`/events/${competition.slug}`)}
-            className="text-white mb-4 flex items-center gap-2 hover:underline"
+            className="text-white/80 mb-6 flex items-center gap-2 hover:text-orange-500 transition-colors text-sm"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Competition
           </button>
           
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-1">
             {competition.title}
           </h1>
-          <p className="text-white text-lg">
+          <p className="text-orange-500 text-sm font-medium">
             Archalley Competitions {competition.year}
           </p>
           
           {isOpen && (
-            <div className="mt-4 bg-white/20 backdrop-blur-sm rounded-lg p-4 inline-block">
-              <p className="text-white font-semibold">
-                Registration Deadline: {formatDate(competition.registrationDeadline)}
-              </p>
-              <p className="text-white text-sm">
+            <div className="mt-6 flex items-center gap-4 text-sm">
+              <div className="text-white/60">
+                <span className="text-white/80 font-medium">Deadline: </span>
+                {formatDate(competition.registrationDeadline)}
+              </div>
+              <div className="h-4 w-px bg-white/20"></div>
+              <div className="text-orange-500 font-medium">
                 {daysRemaining > 0
                   ? `${daysRemaining} days remaining`
                   : 'Deadline passed'}
-              </p>
+              </div>
             </div>
           )}
         </div>
@@ -76,16 +85,16 @@ export default function RegistrationClient({
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {!isOpen ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <h2 className="text-2xl font-bold text-red-800 mb-2">
+          <div className="bg-white border-2 border-orange-500 rounded-lg p-6 text-center shadow-lg">
+            <h2 className="text-2xl font-bold text-black mb-2">
               Registration Closed
             </h2>
-            <p className="text-red-600">
+            <p className="text-gray-700">
               Registration for this competition has ended or is not yet open.
             </p>
             <button
               onClick={() => router.push('/events')}
-              className="mt-4 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
+              className="mt-4 bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors font-medium"
             >
               View Other Events
             </button>
@@ -98,7 +107,8 @@ export default function RegistrationClient({
                 competition={competition}
                 registrationTypes={registrationTypes}
                 onCartUpdate={handleCartUpdate}
-                user={user}
+                editingItem={editingItem}
+                onEditComplete={handleEditComplete}
               />
             </div>
 
@@ -108,6 +118,7 @@ export default function RegistrationClient({
                 <RegistrationCartSidebar
                   refreshKey={cartKey}
                   onCartUpdate={handleCartUpdate}
+                  onEditItem={handleEditItem}
                 />
               </div>
             </div>

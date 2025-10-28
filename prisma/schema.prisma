@@ -607,33 +607,36 @@ enum AdPriority {
 // COMPETITION REGISTRATION SYSTEM
 // ============================================
 
+// Main Competition Model
 model Competition {
   id                    String   @id @default(cuid())
-  slug                  String   @unique // e.g., "innovative-design-challenge-2025"
+  slug                  String   @unique
   title                 String
   description           String   @db.Text
   year                  Int
+  status                CompetitionStatus @default(UPCOMING)
+  
+  // Important dates
   startDate             DateTime
   endDate               DateTime
-  status                CompetitionStatus @default(UPCOMING)
+  registrationDeadline  DateTime
+  earlyBirdDeadline     DateTime?
   
   // Registration settings
   registrationFee       Float    // Base fee in LKR
-  earlyBirdDiscount     Float?   // Optional early bird discount percentage
-  earlyBirdDeadline     DateTime?
-  registrationDeadline  DateTime
-  maxTeamSize           Int      @default(1)
   
   // Prize information
   totalPrizeFund        Float
-  prizes                Json     // Store prize structure as JSON
+  prizes                Json     // Prize structure as JSON
   
-  // Additional info
-  thumbnail             String?  // Event thumbnail image
-  heroImage             String?  // Hero banner image
+  // Media
+  thumbnail             String?
+  heroImage             String?
+  
+  // Additional information (JSON for flexibility)
   requirements          Json?    // Competition requirements
   judgePanel            Json?    // Judge information
-  timeline              Json?    // Competition timeline
+  timeline              Json?    // Competition timeline/milestones
   
   // Relations
   registrationTypes     CompetitionRegistrationType[]
@@ -641,6 +644,7 @@ model Competition {
   cartItems             RegistrationCartItem[]
   payments              CompetitionPayment[]
   
+  // Timestamps
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   
@@ -660,25 +664,28 @@ enum CompetitionStatus {
   CANCELLED
 }
 
+// Registration Type Configuration
 model CompetitionRegistrationType {
   id                String   @id @default(cuid())
   competitionId     String
   competition       Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   
-  type              RegistrationType // INDIVIDUAL, TEAM, COMPANY, STUDENT, KIDS
-  name              String           // Display name
+  // Type configuration
+  type              RegistrationType
+  name              String
   description       String?          @db.Text
-  fee               Float            // Fee in LKR for this type
-  maxMembers        Int              @default(1) // 1 for individual, 4 for team, etc.
-  minAge            Int?             // For kids category
-  maxAge            Int?             // For kids category
+  fee               Float            // Fee in LKR
+  maxMembers        Int              @default(1)
+  minAge            Int?             // For age restrictions (e.g., KIDS)
+  maxAge            Int?             // For age restrictions (e.g., KIDS, STUDENT)
   isActive          Boolean          @default(true)
-  displayOrder      Int              @default(0) // For sorting in UI
+  displayOrder      Int              @default(0)
   
   // Relations
   cartItems         RegistrationCartItem[]
   registrations     CompetitionRegistration[]
   
+  // Timestamps
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   
@@ -695,24 +702,24 @@ enum RegistrationType {
   KIDS
 }
 
+// Shopping Cart for Registration
 model RegistrationCart {
   id                String   @id @default(cuid())
   userId            String
   user              users    @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  sessionId         String?  @unique // For guest sessions (future use)
   status            CartStatus @default(ACTIVE)
+  expiresAt         DateTime   // Auto-expire after 30 minutes
   
   // Relations
   items             RegistrationCartItem[]
   
+  // Timestamps
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-  expiresAt         DateTime // Auto-expire after 30 minutes
   
   @@index([userId])
   @@index([status])
-  @@index([sessionId])
   @@index([expiresAt])
   @@index([userId, status])
 }
@@ -728,25 +735,32 @@ model RegistrationCartItem {
   registrationTypeId    String
   registrationType      CompetitionRegistrationType @relation(fields: [registrationTypeId], references: [id], onDelete: Cascade)
   
-  // Registration details
+  // Basic registration details
   country               String
   participantType       RegistrationType
-  referralSource        String?          // Where did you hear about us
+  referralSource        String?
   
-  // Team/Member information (JSON for flexibility)
-  members               Json             // Array of {name, email, role, phone, etc.}
+  // Type-specific fields
+  teamName              String?          // TEAM
+  companyName           String?          // COMPANY
+  businessRegistrationNo String?         // COMPANY
+  teamMembers           Json?            // TEAM: Array of team member names
+  
+  // Member information (JSON for all types)
+  // Structure varies by type: INDIVIDUAL, STUDENT, TEAM (representative), COMPANY (representative), KIDS (child + parent)
+  members               Json
   
   // Pricing
-  unitPrice             Float            // Price at time of adding to cart
-  quantity              Int              @default(1)
-  subtotal              Float            // unitPrice * quantity
+  unitPrice             Float
+  subtotal              Float
   
   // Agreement tracking
-  agreedToTerms         Boolean @default(false)
-  agreedToWebsiteTerms  Boolean @default(false)
-  agreedToPrivacyPolicy Boolean @default(false)
-  agreedToRefundPolicy  Boolean @default(false)
+  agreedToTerms         Boolean          @default(false)
+  agreedToWebsiteTerms  Boolean          @default(false)
+  agreedToPrivacyPolicy Boolean          @default(false)
+  agreedToRefundPolicy  Boolean          @default(false)
   
+  // Timestamps
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   
@@ -762,9 +776,10 @@ enum CartStatus {
   ABANDONED
 }
 
+// Final Registration Record (after payment)
 model CompetitionRegistration {
   id                    String   @id @default(cuid())
-  registrationNumber    String   @unique // e.g., "AC2025-IND-00001"
+  registrationNumber    String   @unique // Format: AC{YEAR}-{TYPE}-{SEQUENCE}
   
   userId                String
   user                  users    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -778,40 +793,50 @@ model CompetitionRegistration {
   paymentId             String?
   payment               CompetitionPayment? @relation(fields: [paymentId], references: [id])
   
-  // Registration details
+  // Basic registration details
   country               String
   participantType       RegistrationType
   referralSource        String?
-  members               Json             // Array of member details
+  
+  // Type-specific fields
+  teamName              String?          // TEAM
+  companyName           String?          // COMPANY
+  businessRegistrationNo String?         // COMPANY
+  teamMembers           Json?            // TEAM: Array of team member names
+  
+  // Member information (JSON for all types)
+  // Structure varies by type: INDIVIDUAL, STUDENT, TEAM (representative), COMPANY (representative), KIDS (child + parent)
+  members               Json
   
   // Status tracking
-  status                RegistrationStatus @default(PENDING)
-  submissionStatus      SubmissionStatus   @default(NOT_SUBMITTED)
+  status                RegistrationStatus   @default(PENDING)
+  submissionStatus      SubmissionStatus     @default(NOT_SUBMITTED)
   
   // Pricing
   amountPaid            Float
-  currency              String @default("LKR")
+  currency              String               @default("LKR")
   
   // Important dates
-  registeredAt          DateTime @default(now())
+  registeredAt          DateTime             @default(now())
   confirmedAt           DateTime?
   submittedAt           DateTime?
   
   // Submission tracking
-  submissionFiles       Json?    // Array of file references
-  submissionNotes       String?  @db.Text
-  submissionUrl         String?  // External submission URL
+  submissionFiles       Json?                // Array of file references
+  submissionNotes       String?              @db.Text
+  submissionUrl         String?
   
-  // Judging (for future use)
+  // Judging & Awards
   score                 Float?
-  judgeComments         Json?    // Array of judge comments
+  judgeComments         Json?                // Array of judge comments
   rank                  Int?
-  award                 String?  // FIRST_PRIZE, SECOND_PRIZE, etc.
-  certificateUrl        String?  // Generated certificate URL
+  award                 String?              // FIRST_PRIZE, SECOND_PRIZE, etc.
+  certificateUrl        String?
   
-  // Metadata
-  metadata              Json?    // Additional flexible data
+  // Additional data
+  metadata              Json?
   
+  // Timestamps
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   
@@ -845,9 +870,10 @@ enum SubmissionStatus {
   REJECTED
 }
 
+// Payment Processing
 model CompetitionPayment {
   id                String   @id @default(cuid())
-  orderId           String   @unique // e.g., "ORDER-AC2025-00001"
+  orderId           String   @unique
   
   userId            String
   user              users    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -858,33 +884,28 @@ model CompetitionPayment {
   // Payment details
   amount            Float
   currency          String   @default("LKR")
-  
-  // PayHere specific fields
-  merchantId        String
-  merchantSecret    String?  // Hashed, not plain text
-  paymentId         String?  // PayHere payment ID
-  statusCode        String?  // PayHere status code
-  md5sig            String?  // PayHere signature for verification
-  
-  // Payment method
-  paymentMethod     String?  // VISA, MASTER, AMEX, etc.
-  cardHolderName    String?
-  cardNo            String?  // Last 4 digits only
-  
-  // Status
   status            PaymentStatus @default(PENDING)
   
-  // Metadata
-  items             Json     // Array of registration items
-  customerDetails   Json?    // Customer information
-  metadata          Json?    // Additional payment data
+  // PayHere integration fields
+  merchantId        String
+  paymentId         String?
+  statusCode        String?
+  md5sig            String?              // Signature verification
   
-  // Response data
-  responseData      Json?    // Full PayHere response
+  // Payment method details
+  paymentMethod     String?
+  cardHolderName    String?
+  cardNo            String?              // Last 4 digits only
+  
+  // Transaction data
+  items             Json                 // Array of registration items
+  customerDetails   Json?
+  responseData      Json?                // Full PayHere response
   errorMessage      String?
   errorCode         String?
+  metadata          Json?
   
-  // Timestamps
+  // Important dates
   initiatedAt       DateTime @default(now())
   completedAt       DateTime?
   cancelledAt       DateTime?
@@ -893,6 +914,7 @@ model CompetitionPayment {
   // Relations
   registrations     CompetitionRegistration[]
   
+  // Timestamps
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   

@@ -244,7 +244,8 @@ export function isValidPhone(phone: string): boolean {
  */
 export function validateMemberInfo(
   member: any,
-  isStudent: boolean = false
+  isStudent: boolean = false,
+  isKids: boolean = false
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   
@@ -252,23 +253,58 @@ export function validateMemberInfo(
     errors.push('Name must be at least 2 characters');
   }
   
-  if (!member.email || !isValidEmail(member.email)) {
-    errors.push('Valid email is required');
-  }
-  
-  // Phone is now required
-  if (!member.phone || member.phone.trim().length === 0) {
-    errors.push('Phone number is required');
-  } else if (!isValidPhone(member.phone)) {
-    errors.push('Invalid phone number format (use format: +94771234567 or 0771234567)');
-  }
-  
-  if (isStudent) {
-    if (!member.studentId || member.studentId.trim().length === 0) {
-      errors.push('Student ID is required for student registrations');
+  // For kids, validate parent email; for students, validate studentEmail; for others, validate email
+  if (isKids) {
+    if (!member.parentEmail || !isValidEmail(member.parentEmail)) {
+      errors.push("Valid parent/guardian email is required");
+    }
+    if (!member.parentPhone || member.parentPhone.trim().length === 0) {
+      errors.push("Parent/guardian phone number is required");
+    } else if (!isValidPhone(member.parentPhone)) {
+      errors.push('Invalid phone number format (use format: +94771234567 or 0771234567)');
+    }
+    if (!member.parentFirstName || member.parentFirstName.trim().length === 0) {
+      errors.push("Parent/guardian first name is required");
+    }
+    if (!member.parentLastName || member.parentLastName.trim().length === 0) {
+      errors.push("Parent/guardian last name is required");
+    }
+    if (!member.dateOfBirth || member.dateOfBirth.trim().length === 0) {
+      errors.push("Child's date of birth is required");
+    }
+    if (!member.postalAddress || member.postalAddress.trim().length === 0) {
+      errors.push('Postal address is required for kids registrations');
+    }
+  } else if (isStudent) {
+    if (!member.studentEmail || !isValidEmail(member.studentEmail)) {
+      errors.push('Valid student email is required');
+    }
+    if (!member.phone || member.phone.trim().length === 0) {
+      errors.push('Phone number is required');
+    } else if (!isValidPhone(member.phone)) {
+      errors.push('Invalid phone number format (use format: +94771234567 or 0771234567)');
     }
     if (!member.institution || member.institution.trim().length === 0) {
       errors.push('Institution name is required for student registrations');
+    }
+    if (!member.courseOfStudy || member.courseOfStudy.trim().length === 0) {
+      errors.push('Course of study is required for student registrations');
+    }
+    if (!member.dateOfBirth || member.dateOfBirth.trim().length === 0) {
+      errors.push('Date of birth is required for student registrations');
+    }
+    if (!member.idCardUrl || member.idCardUrl.trim().length === 0) {
+      errors.push('Student ID card upload is required for student registrations');
+    }
+  } else {
+    // For individual, team, and company registrations
+    if (!member.email || !isValidEmail(member.email)) {
+      errors.push('Valid email is required');
+    }
+    if (!member.phone || member.phone.trim().length === 0) {
+      errors.push('Phone number is required');
+    } else if (!isValidPhone(member.phone)) {
+      errors.push('Invalid phone number format (use format: +94771234567 or 0771234567)');
     }
   }
   
@@ -340,4 +376,73 @@ export function formatCurrency(amount: number, currency: string = 'LKR'): string
  */
 export function formatCurrencySimple(amount: number, currency: string = 'LKR'): string {
   return `${amount.toLocaleString('en-US')} ${currency}`;
+}
+
+// ============================================
+// REGISTRATION STATUS UTILITIES
+// ============================================
+
+/**
+ * Update registration status with automatic timestamp updates
+ */
+export async function updateRegistrationStatus(
+  prisma: any,
+  registrationId: string,
+  status: 'PENDING' | 'CONFIRMED' | 'SUBMITTED' | 'UNDER_REVIEW' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED',
+  additionalData?: Record<string, any>
+) {
+  const updateData: any = {
+    status,
+    updatedAt: new Date(),
+    ...additionalData,
+  };
+
+  // Automatically set timestamps based on status
+  if (status === 'CONFIRMED' && !additionalData?.confirmedAt) {
+    updateData.confirmedAt = new Date();
+  }
+
+  if (status === 'SUBMITTED' && !additionalData?.submittedAt) {
+    updateData.submittedAt = new Date();
+    updateData.submissionStatus = 'SUBMITTED';
+  }
+
+  return await prisma.competitionRegistration.update({
+    where: { id: registrationId },
+    data: updateData,
+  });
+}
+
+/**
+ * Update submission status with automatic timestamp
+ */
+export async function updateSubmissionStatus(
+  prisma: any,
+  registrationId: string,
+  submissionStatus: 'NOT_SUBMITTED' | 'DRAFT' | 'IN_PROGRESS' | 'SUBMITTED' | 'RESUBMITTED' | 'ACCEPTED' | 'REJECTED',
+  additionalData?: Record<string, any>
+) {
+  const updateData: any = {
+    submissionStatus,
+    updatedAt: new Date(),
+    ...additionalData,
+  };
+
+  // Set submittedAt when status changes to SUBMITTED or RESUBMITTED
+  if (['SUBMITTED', 'RESUBMITTED'].includes(submissionStatus) && !additionalData?.submittedAt) {
+    updateData.submittedAt = new Date();
+    // Also update main status to SUBMITTED if it's CONFIRMED
+    const registration = await prisma.competitionRegistration.findUnique({
+      where: { id: registrationId },
+      select: { status: true },
+    });
+    if (registration?.status === 'CONFIRMED') {
+      updateData.status = 'SUBMITTED';
+    }
+  }
+
+  return await prisma.competitionRegistration.update({
+    where: { id: registrationId },
+    data: updateData,
+  });
 }
