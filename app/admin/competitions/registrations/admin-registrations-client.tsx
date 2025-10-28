@@ -100,8 +100,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
   const [selectedRegistrations, setSelectedRegistrations] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [viewingRegistration, setViewingRegistration] = useState<Registration | null>(null);
-  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
-  const [emailRecipient, setEmailRecipient] = useState<{ email: string; name: string } | null>(null);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -227,10 +226,48 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
     }
   };
 
-  // Handle send email
-  const handleSendEmail = (email: string, name: string) => {
-    setEmailRecipient({ email, name });
-    setIsEmailDialogOpen(true);
+  // Handle send email - sends automatic templated email
+  const handleSendEmail = async (registration: Registration) => {
+    setIsSendingEmail(true);
+    try {
+      console.log('📧 Sending email to:', registration.user.email);
+      
+      const response = await fetch('/api/admin/send-registration-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: registration.user.email,
+          name: registration.user.name || 'User',
+          registrationNumber: registration.registrationNumber,
+          competitionTitle: registration.competition.title,
+          status: registration.status,
+          submissionStatus: registration.submissionStatus,
+        }),
+      });
+
+      console.log('📬 Response status:', response.status);
+      
+      const data = await response.json();
+      console.log('📬 Response data:', data);
+
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
+
+      if (data.success) {
+        toast.success(`Email sent successfully to ${registration.user.email}`);
+      } else {
+        throw new Error(data.error || 'Failed to send email');
+      }
+    } catch (error) {
+      console.error('❌ Error sending email:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send email';
+      toast.error(`Failed to send email: ${errorMessage}`);
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   return (
@@ -567,12 +604,13 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                         <button
                           onClick={(e) => {
                             e.preventDefault();
-                            handleSendEmail(reg.user.email, reg.user.name || 'User');
+                            handleSendEmail(reg);
                           }}
-                          className="p-2 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
+                          disabled={isSendingEmail}
+                          className="p-2 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Send Email"
                         >
-                          <Send className="w-5 h-5" />
+                          <Send className={`w-5 h-5 ${isSendingEmail ? 'animate-pulse' : ''}`} />
                         </button>
                       </div>
                     </td>
@@ -765,14 +803,15 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
               {/* Actions */}
               <div className="flex gap-3">
                 <button
-                  onClick={() => {
-                    handleSendEmail(viewingRegistration.user.email, viewingRegistration.user.name || 'User');
+                  onClick={async () => {
+                    await handleSendEmail(viewingRegistration);
                     setViewingRegistration(null);
                   }}
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-white rounded-lg hover:bg-orange-500 transition-colors"
+                  disabled={isSendingEmail}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-white rounded-lg hover:bg-orange-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Mail className="w-5 h-5" />
-                  Send Email
+                  <Mail className={`w-5 h-5 ${isSendingEmail ? 'animate-pulse' : ''}`} />
+                  {isSendingEmail ? 'Sending...' : 'Send Email'}
                 </button>
                 <button
                   onClick={() => setViewingRegistration(null)}
@@ -786,76 +825,6 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
         </div>
       )}
 
-      {/* Email Dialog */}
-      {isEmailDialogOpen && emailRecipient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full">
-            <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Send Email</h2>
-              <button
-                onClick={() => {
-                  setIsEmailDialogOpen(false);
-                  setEmailRecipient(null);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">To</label>
-                <div className="px-4 py-2.5 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-base text-gray-900">{emailRecipient.name}</p>
-                  <p className="text-sm text-gray-600">{emailRecipient.email}</p>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Subject</label>
-                <input
-                  type="text"
-                  placeholder="Email subject..."
-                  className="w-full px-4 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Message</label>
-                <textarea
-                  rows={8}
-                  placeholder="Write your message..."
-                  className="w-full px-4 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500 resize-none"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => {
-                    toast.success(`Email sent to ${emailRecipient.email}`);
-                    setIsEmailDialogOpen(false);
-                    setEmailRecipient(null);
-                  }}
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-white rounded-lg hover:bg-orange-500 transition-colors"
-                >
-                  <Send className="w-5 h-5" />
-                  Send Email
-                </button>
-                <button
-                  onClick={() => {
-                    setIsEmailDialogOpen(false);
-                    setEmailRecipient(null);
-                  }}
-                  className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
