@@ -67,7 +67,6 @@ export default async function RegistrationPage({ params }: PageProps) {
       competition={competition}
       registrationTypes={competition.registrationTypes}
       isOpen={isOpen}
-      user={session.user}
     />
   );
 }
