@@ -9,6 +9,7 @@ import {
   verifyPayHereSignature,
   generateRegistrationNumber,
   getNextSequenceNumber,
+  generateUniqueDisplayCode,
 } from '@/lib/competition-utils';
 import { getPayHereConfig } from '@/lib/payhere-config';
 import { PayHereResponse } from '@/types/competition';
@@ -187,10 +188,19 @@ async function handleSuccessfulPayment(
           item.competition.year
         );
 
+        // Generate unique anonymous display code for public entry display
+        const displayCode = await generateUniqueDisplayCode(
+          prisma,
+          item.competition.year
+        );
+
+        console.log(`✅ Generated display code for ${registrationNumber}: ${displayCode}`);
+
         // Create registration
         return prisma.competitionRegistration.create({
           data: {
             registrationNumber,
+            displayCode, // Anonymous code for public display
             userId: payment.userId,
             competitionId: item.competitionId,
             registrationTypeId: item.registrationTypeId,

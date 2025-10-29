@@ -101,6 +101,62 @@ export async function getNextOrderSequence(prisma: any): Promise<number> {
 }
 
 // ============================================
+// ANONYMOUS DISPLAY CODE GENERATION
+// ============================================
+
+/**
+ * Generate a unique anonymous display code for public entry display
+ * Format: ARC{YEAR}-{RANDOM_6_CHARS}
+ * Example: ARC2025-X7K9M2
+ * 
+ * This code is used to display participant entries publicly without revealing their identity.
+ * Uses cryptographically secure random generation to prevent reverse engineering.
+ */
+export function generateDisplayCode(year?: number): string {
+  const currentYear = year || new Date().getFullYear();
+  const prefix = `ARC${currentYear}`;
+  
+  // Generate 6 random alphanumeric characters (excluding similar-looking chars: 0, O, I, l, 1)
+  const chars = '2345679ABCDEFGHJKLMNPQRSTUVWXYZ'; // 30 characters
+  const randomBytes = crypto.randomBytes(6);
+  
+  let randomCode = '';
+  for (let i = 0; i < 6; i++) {
+    randomCode += chars[randomBytes[i] % chars.length];
+  }
+  
+  return `${prefix}-${randomCode}`;
+}
+
+/**
+ * Generate a unique display code and verify it doesn't exist in database
+ * Retries up to 10 times if collision occurs
+ */
+export async function generateUniqueDisplayCode(
+  prisma: any,
+  year?: number,
+  maxRetries: number = 10
+): Promise<string> {
+  for (let i = 0; i < maxRetries; i++) {
+    const displayCode = generateDisplayCode(year);
+    
+    // Check if code already exists
+    const existing = await prisma.competitionRegistration.findUnique({
+      where: { displayCode },
+    });
+    
+    if (!existing) {
+      return displayCode;
+    }
+    
+    // If exists, try again
+    console.log(`Display code collision detected: ${displayCode}, retrying...`);
+  }
+  
+  throw new Error('Failed to generate unique display code after multiple attempts');
+}
+
+// ============================================
 // PAYHERE UTILITIES
 // ============================================
 

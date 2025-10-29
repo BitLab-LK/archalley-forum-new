@@ -295,40 +295,84 @@ export default function CheckoutClient({ user }: Props) {
         {/* Main Content Card */}
         <div className="bg-white rounded-b-lg border border-gray-200 border-t-0 p-6">
           {/* Order Summary Section */}
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-black mb-4">Order Summary</h2>
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-black mb-5">Order Summary</h2>
             
-            <div className="border border-gray-200 rounded p-4 mb-4">
-              <div className="flex justify-between items-center mb-3 pb-3 border-b border-gray-200">
-                <span className="font-medium text-black text-sm">Registration Details</span>
-                <span className="font-medium text-black text-sm">Amount</span>
-              </div>
+            <div className="border-2 border-gray-200 rounded-lg overflow-hidden shadow-sm">
+              {/* Table */}
+              <table className="w-full table-fixed">
+                <thead>
+                  <tr className="bg-gray-100 border-b-2 border-gray-200">
+                    <th className="w-2/5 px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">
+                      Item
+                    </th>
+                    <th className="w-1/5 px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">
+                      Price
+                    </th>
+                    <th className="w-1/5 px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wide">
+                      Qty
+                    </th>
+                    <th className="w-1/5 px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white">
+                  {/* Group items by registration type */}
+                  {(() => {
+                    // Group items by registrationTypeId
+                    const groupedItems = cart.items.reduce((acc, item) => {
+                      const key = item.registrationTypeId;
+                      if (!acc[key]) {
+                        acc[key] = {
+                          registrationType: item.registrationType,
+                          count: 0,
+                          totalAmount: 0,
+                        };
+                      }
+                      acc[key].count += 1;
+                      acc[key].totalAmount += item.subtotal;
+                      return acc;
+                    }, {} as Record<string, { registrationType: any; count: number; totalAmount: number }>);
 
-              {cart.items.map((item) => {
-                const memberCount = Array.isArray(item.members) ? item.members.length : 1;
-                return (
-                  <div key={item.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-                    <div>
-                      <span className="font-medium text-black text-sm">{item.registrationType.name}</span>
-                      <span className="text-gray-500 text-xs"> × {memberCount}</span>
-                    </div>
-                    <span className="font-medium text-black text-sm">
-                      {item.registrationType.fee.toLocaleString()} × {memberCount} = {item.subtotal.toLocaleString()} LKR
-                    </span>
-                  </div>
-                );
-              })}
+                    return Object.values(groupedItems).map((group, index) => (
+                      <tr key={index} className="border-b border-gray-150 hover:bg-gray-50 transition-colors duration-150">
+                        <td className="px-6 py-5 text-sm font-semibold text-gray-900">
+                          {group.registrationType.name}
+                        </td>
+                        <td className="px-6 py-5 text-sm text-gray-700 text-right font-medium tabular-nums">
+                          {group.registrationType.fee.toLocaleString()} LKR
+                        </td>
+                        <td className="px-6 py-5 text-center">
+                          <span className="inline-flex items-center justify-center w-8 h-8 text-sm font-bold text-gray-900 bg-gray-100 rounded">
+                            {group.count}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-sm font-bold text-gray-900 text-right tabular-nums">
+                          {group.totalAmount.toLocaleString()} LKR
+                        </td>
+                      </tr>
+                    ));
+                  })()}
+                </tbody>
+              </table>
 
-              <div className="mt-4 pt-3 border-t border-gray-300">
-                <div className="flex justify-between items-center">
-                  <span className="text-base font-bold text-black">Total Amount</span>
-                  <span className="text-xl font-bold text-orange-500">{totalAmount.toLocaleString()} LKR</span>
+              {/* Total Amount Section */}
+              <div className="bg-gray-50 border-t-2 border-gray-300">
+                <div className="px-6 py-5 flex items-center justify-between">
+                  <span className="text-lg font-bold text-gray-900 uppercase tracking-wide">
+                    Total Amount
+                  </span>
+                  <span className="text-2xl font-bold text-orange-500 tabular-nums">
+                    {totalAmount.toLocaleString()} LKR
+                  </span>
                 </div>
               </div>
 
-              <div className="mt-3 bg-orange-50 border border-orange-200 rounded p-2">
-                <p className="text-xs text-orange-600 text-center font-medium">
-                  {cart.items.length} competition entry included
+              {/* Entry count info */}
+              <div className="bg-orange-50 border-t border-orange-200 px-6 py-3">
+                <p className="text-sm text-orange-600 text-center font-semibold">
+                  {cart.items.length} competition {cart.items.length === 1 ? 'entry' : 'entries'} included
                 </p>
               </div>
             </div>

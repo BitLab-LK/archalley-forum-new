@@ -780,6 +780,7 @@ enum CartStatus {
 model CompetitionRegistration {
   id                    String   @id @default(cuid())
   registrationNumber    String   @unique // Format: AC{YEAR}-{TYPE}-{SEQUENCE}
+  displayCode           String?  @unique // Anonymous code for public display (e.g., ARC2025-X7K9M2)
   
   userId                String
   user                  users    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -843,6 +844,7 @@ model CompetitionRegistration {
   @@index([userId])
   @@index([competitionId])
   @@index([registrationNumber])
+  @@index([displayCode])
   @@index([status])
   @@index([registrationTypeId])
   @@index([paymentId])

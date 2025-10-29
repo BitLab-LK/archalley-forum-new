@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { generateUniqueDisplayCode } from '@/lib/competition-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -67,6 +68,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (approve) {
+      // Generate unique display code if not already present
+      let displayCode = registration.displayCode;
+      if (!displayCode) {
+        displayCode = await generateUniqueDisplayCode(
+          prisma,
+          registration.competition.year
+        );
+        console.log(`✅ Generated display code for ${registration.registrationNumber}: ${displayCode}`);
+      }
+
       // Approve payment
       await prisma.competitionPayment.update({
         where: { id: paymentId },
@@ -76,12 +87,13 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Update registration status to CONFIRMED if not already
+      // Update registration status to CONFIRMED with display code
       await prisma.competitionRegistration.update({
         where: { id: registrationId },
         data: {
           status: 'CONFIRMED',
           confirmedAt: new Date(),
+          displayCode: displayCode, // Ensure display code is set
         },
       });
 
