@@ -38,6 +38,8 @@ export async function POST(
 
     const body: CheckoutData = await request.json();
 
+    const paymentMethod = body.paymentMethod || 'card'; // Default to card payment
+
     // Validate customer info
     if (
       !body.customerInfo ||
@@ -107,7 +109,100 @@ export async function POST(
     // Get PayHere configuration
     const payHereConfig = getPayHereConfig();
 
-    // Create payment record
+    // Handle Bank Transfer Payment
+    if (paymentMethod === 'bank') {
+      // Create payment record with PENDING status for manual verification
+      const payment = await prisma.competitionPayment.create({
+        data: {
+          orderId,
+          userId: session.user.id,
+          competitionId: cart.items[0].competitionId,
+          amount: totalAmount,
+          currency: 'LKR',
+          merchantId: payHereConfig.merchantId!,
+          status: 'PENDING',
+          paymentMethod: 'BANK_TRANSFER',
+          items: cart.items.map((item) => ({
+            id: item.id,
+            competitionTitle: item.competition.title,
+            registrationType: item.registrationType.name,
+            country: item.country,
+            memberCount: Array.isArray(item.members) ? (item.members as any[]).length : 0,
+            unitPrice: item.unitPrice,
+            subtotal: item.subtotal,
+          })),
+          customerDetails: body.customerInfo,
+          metadata: {
+            cartId: cart.id,
+            itemIds: cart.items.map((item) => item.id),
+            bankSlipUrl: body.bankSlipUrl,
+            bankSlipFileName: body.bankSlipFileName,
+            paymentMethod: 'bank',
+          },
+        },
+      });
+
+      // Create registration records with PENDING status
+      const registrations = await Promise.all(
+        cart.items.map(async (item) => {
+          const regNumber = `REG-${orderId}-${item.id.slice(-6)}`;
+          
+          return prisma.competitionRegistration.create({
+            data: {
+              userId: session.user.id,
+              competitionId: item.competitionId,
+              registrationTypeId: item.registrationTypeId,
+              registrationNumber: regNumber,
+              country: item.country,
+              members: item.members as any,
+              teamName: item.teamName,
+              companyName: item.companyName,
+              participantType: (item.registrationType.name.toUpperCase() as any) || 'INDIVIDUAL',
+              amountPaid: item.subtotal,
+              status: 'CONFIRMED',
+              paymentId: payment.id,
+            },
+          });
+        })
+      );
+
+      // Update cart status
+      await prisma.registrationCart.update({
+        where: { id: cart.id },
+        data: { status: 'COMPLETED' },
+      });
+
+      // Send confirmation email (bank transfer pending)
+      try {
+        await fetch(`${request.nextUrl.origin}/api/admin/send-registration-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: body.customerInfo.email,
+            name: `${body.customerInfo.firstName} ${body.customerInfo.lastName}`,
+            registrationNumber: registrations[0].registrationNumber,
+            competitionTitle: cart.items[0].competition.title,
+            template: 'BANK_TRANSFER_PENDING',
+          }),
+        });
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+        // Don't fail the request if email fails
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          orderId,
+          registrationNumber: registrations[0].registrationNumber,
+          paymentData: null as any,
+          paymentUrl: '',
+        },
+        message: 'Bank transfer details submitted. Awaiting verification.',
+      });
+    }
+
+    // Handle Card Payment (PayHere)
     const payment = await prisma.competitionPayment.create({
       data: {
         orderId,

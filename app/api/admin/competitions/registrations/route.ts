@@ -66,6 +66,7 @@ export async function GET() {
             amount: true,
             paymentMethod: true,
             completedAt: true,
+            metadata: true,
           },
         },
       },

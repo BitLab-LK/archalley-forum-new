@@ -45,6 +45,8 @@ export default function RegistrationForm({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editItemId, setEditItemId] = useState<string | null>(editingItem?.id || null);
+  const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
+  const [showErrors, setShowErrors] = useState(false);
 
   // Update form when editingItem changes - only run when editingItem.id changes
   useEffect(() => {
@@ -174,28 +176,39 @@ export default function RegistrationForm({
   const isCompanyRegistration = selectedType?.type === 'COMPANY';
   const isKidsRegistration = selectedType?.type === 'KIDS';
 
+  // Email validation
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Phone validation
+  const validatePhone = (phone: string): boolean => {
+    // Check if phone includes country code (starts with +)
+    const phoneRegex = /^\+\d{1,3}\s?\d{1,4}\s?\d{1,4}\s?\d{1,4}$/;
+    return phoneRegex.test(phone) || phone.length >= 10;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Clear previous errors
+    setFieldErrors({});
+    setShowErrors(true);
+    const errors: {[key: string]: string} = {};
 
     if (!selectedType) {
       toast.error('Please select a registration type');
-      return;
-    }
-
-    // Validate all agreements
-    if (
-      !agreements.agreedToTerms ||
-      !agreements.agreedToWebsiteTerms ||
-      !agreements.agreedToPrivacyPolicy ||
-      !agreements.agreedToRefundPolicy
-    ) {
-      toast.error('Please agree to all terms and conditions');
+      errors['registrationType'] = 'Please select a registration type';
+      setFieldErrors(errors);
       return;
     }
 
     // Validate referral source is required
     if (!referralSource || referralSource.trim() === '') {
       toast.error('Please select where you heard about us');
+      errors['referralSource'] = 'Please select where you heard about us';
+      setFieldErrors(errors);
       return;
     }
 
@@ -204,6 +217,8 @@ export default function RegistrationForm({
       // Validate team name
       if (!teamName || !teamName.trim()) {
         toast.error('Please enter team name');
+        errors['teamName'] = 'Team name is required';
+        setFieldErrors(errors);
         return;
       }
 
@@ -211,18 +226,38 @@ export default function RegistrationForm({
       const representative = members[0];
       if (!representative.firstName || !representative.firstName.trim()) {
         toast.error('Please enter team representative first name');
+        errors['rep_firstName'] = 'First name is required';
+        setFieldErrors(errors);
         return;
       }
       if (!representative.lastName || !representative.lastName.trim()) {
         toast.error('Please enter team representative last name');
+        errors['rep_lastName'] = 'Last name is required';
+        setFieldErrors(errors);
         return;
       }
       if (!representative.email || !representative.email.trim()) {
         toast.error('Please enter team representative email');
+        errors['rep_email'] = 'Email is required';
+        setFieldErrors(errors);
+        return;
+      }
+      if (!validateEmail(representative.email)) {
+        toast.error('Please enter a valid email address');
+        errors['rep_email'] = 'Invalid email format (example: user@email.com)';
+        setFieldErrors(errors);
         return;
       }
       if (!representative.phone || !representative.phone.trim()) {
         toast.error('Please enter team representative contact number');
+        errors['rep_phone'] = 'Phone number is required';
+        setFieldErrors(errors);
+        return;
+      }
+      if (!validatePhone(representative.phone)) {
+        toast.error('Please enter a valid phone number with country code');
+        errors['rep_phone'] = 'Invalid format. Use: +94 71 234 5678';
+        setFieldErrors(errors);
         return;
       }
 
@@ -230,6 +265,8 @@ export default function RegistrationForm({
       for (let i = 0; i < teamMembers.length; i++) {
         if (!teamMembers[i] || !teamMembers[i].trim()) {
           toast.error(`Please enter name for team member ${i + 1}`);
+          errors[`teamMember_${i}`] = 'Member name is required';
+          setFieldErrors(errors);
           return;
         }
       }
@@ -237,12 +274,16 @@ export default function RegistrationForm({
       // Validate company name
       if (!companyName || !companyName.trim()) {
         toast.error('Please enter company name');
+        errors['companyName'] = 'Company name is required';
+        setFieldErrors(errors);
         return;
       }
 
       // Validate business registration number
       if (!businessRegistrationNo || !businessRegistrationNo.trim()) {
         toast.error('Please enter business registration number');
+        errors['businessRegistrationNo'] = 'Business registration number is required';
+        setFieldErrors(errors);
         return;
       }
 
@@ -250,18 +291,38 @@ export default function RegistrationForm({
       const representative = members[0];
       if (!representative.firstName || !representative.firstName.trim()) {
         toast.error('Please enter company representative first name');
+        errors['comp_rep_firstName'] = 'First name is required';
+        setFieldErrors(errors);
         return;
       }
       if (!representative.lastName || !representative.lastName.trim()) {
         toast.error('Please enter company representative last name');
+        errors['comp_rep_lastName'] = 'Last name is required';
+        setFieldErrors(errors);
         return;
       }
       if (!representative.email || !representative.email.trim()) {
         toast.error('Please enter company representative email');
+        errors['comp_rep_email'] = 'Email is required';
+        setFieldErrors(errors);
+        return;
+      }
+      if (!validateEmail(representative.email)) {
+        toast.error('Please enter a valid email address');
+        errors['comp_rep_email'] = 'Invalid email format (example: user@email.com)';
+        setFieldErrors(errors);
         return;
       }
       if (!representative.phone || !representative.phone.trim()) {
         toast.error('Please enter company representative contact number');
+        errors['comp_rep_phone'] = 'Contact number is required';
+        setFieldErrors(errors);
+        return;
+      }
+      if (!validatePhone(representative.phone)) {
+        toast.error('Please enter a valid phone number with country code');
+        errors['comp_rep_phone'] = 'Invalid format. Use: +94 71 234 5678';
+        setFieldErrors(errors);
         return;
       }
     } else if (isKidsRegistration) {
@@ -271,84 +332,159 @@ export default function RegistrationForm({
       // Validate child info
       if (!child.firstName || !child.firstName.trim()) {
         toast.error("Please enter child's first name");
+        errors['child_firstName'] = 'First name is required';
+        setFieldErrors(errors);
         return;
       }
       if (!child.lastName || !child.lastName.trim()) {
         toast.error("Please enter child's last name");
+        errors['child_lastName'] = 'Last name is required';
+        setFieldErrors(errors);
         return;
       }
       if (!child.dateOfBirth || !child.dateOfBirth.trim()) {
         toast.error("Please enter child's date of birth");
+        errors['child_dateOfBirth'] = 'Date of birth is required';
+        setFieldErrors(errors);
         return;
       }
       
       // Validate parent/guardian info
       if (!child.parentFirstName || !child.parentFirstName.trim()) {
         toast.error("Please enter parent/guardian's first name");
+        errors['parent_firstName'] = 'Parent/Guardian first name is required';
+        setFieldErrors(errors);
         return;
       }
       if (!child.parentLastName || !child.parentLastName.trim()) {
         toast.error("Please enter parent/guardian's last name");
+        errors['parent_lastName'] = 'Parent/Guardian last name is required';
+        setFieldErrors(errors);
         return;
       }
       if (!child.parentEmail || !child.parentEmail.trim()) {
         toast.error("Please enter parent/guardian's email");
+        errors['parent_email'] = 'Parent/Guardian email is required';
+        setFieldErrors(errors);
+        return;
+      }
+      if (!validateEmail(child.parentEmail)) {
+        toast.error('Please enter a valid email address');
+        errors['parent_email'] = 'Invalid email format (example: user@email.com)';
+        setFieldErrors(errors);
         return;
       }
       if (!child.parentPhone || !child.parentPhone.trim()) {
         toast.error("Please enter parent/guardian's contact number");
+        errors['parent_phone'] = 'Parent/Guardian contact number is required';
+        setFieldErrors(errors);
+        return;
+      }
+      if (!validatePhone(child.parentPhone)) {
+        toast.error('Please enter a valid phone number with country code');
+        errors['parent_phone'] = 'Invalid format. Use: +94 71 234 5678';
+        setFieldErrors(errors);
         return;
       }
       if (!child.postalAddress || !child.postalAddress.trim()) {
         toast.error('Please enter postal address');
+        errors['postalAddress'] = 'Postal address is required';
+        setFieldErrors(errors);
         return;
       }
     } else {
       // Validate members for individual/student
-      for (const member of members) {
+      for (let i = 0; i < members.length; i++) {
+        const member = members[i];
+        const memberPrefix = members.length > 1 ? `member_${i}_` : '';
+        
         if (!member.firstName || !member.firstName.trim()) {
-          toast.error('Please enter first name for all members');
+          toast.error(`Please enter first name ${members.length > 1 ? `for member ${i + 1}` : ''}`);
+          errors[`${memberPrefix}firstName`] = 'First name is required';
+          setFieldErrors(errors);
           return;
         }
         if (!member.lastName || !member.lastName.trim()) {
-          toast.error('Please enter last name for all members');
+          toast.error(`Please enter last name ${members.length > 1 ? `for member ${i + 1}` : ''}`);
+          errors[`${memberPrefix}lastName`] = 'Last name is required';
+          setFieldErrors(errors);
           return;
         }
         
         // Validate student fields if student type
         if (selectedType.type === 'STUDENT') {
           if (!member.phone || !member.phone.trim()) {
-            toast.error('Please enter mobile number for all members');
+            toast.error(`Please enter mobile number ${members.length > 1 ? `for member ${i + 1}` : ''}`);
+            errors[`${memberPrefix}phone`] = 'Mobile number is required';
+            setFieldErrors(errors);
+            return;
+          }
+          if (!validatePhone(member.phone)) {
+            toast.error('Please enter a valid phone number with country code');
+            errors[`${memberPrefix}phone`] = 'Invalid format. Use: +94 71 234 5678';
+            setFieldErrors(errors);
             return;
           }
           if (!member.institution || !member.institution.trim()) {
-            toast.error('Please enter institution for all members');
+            toast.error(`Please enter institution ${members.length > 1 ? `for member ${i + 1}` : ''}`);
+            errors[`${memberPrefix}institution`] = 'Institution is required';
+            setFieldErrors(errors);
             return;
           }
           if (!member.courseOfStudy || !member.courseOfStudy.trim()) {
-            toast.error('Please enter course of study for all members');
+            toast.error(`Please enter course of study ${members.length > 1 ? `for member ${i + 1}` : ''}`);
+            errors[`${memberPrefix}courseOfStudy`] = 'Course of study is required';
+            setFieldErrors(errors);
             return;
           }
           if (!member.dateOfBirth || !member.dateOfBirth.trim()) {
-            toast.error('Please enter date of birth for all members');
+            toast.error(`Please enter date of birth ${members.length > 1 ? `for member ${i + 1}` : ''}`);
+            errors[`${memberPrefix}dateOfBirth`] = 'Date of birth is required';
+            setFieldErrors(errors);
             return;
           }
           if (!member.studentEmail || !member.studentEmail.trim()) {
-            toast.error('Please enter student email for all members');
+            toast.error(`Please enter student email ${members.length > 1 ? `for member ${i + 1}` : ''}`);
+            errors[`${memberPrefix}studentEmail`] = 'Student email is required';
+            setFieldErrors(errors);
+            return;
+          }
+          if (!validateEmail(member.studentEmail)) {
+            toast.error('Please enter a valid student email address');
+            errors[`${memberPrefix}studentEmail`] = 'Invalid email format (example: user@email.com)';
+            setFieldErrors(errors);
             return;
           }
           if (!member.idCardUrl) {
-            toast.error('Please upload ID card for all members');
+            toast.error(`Please upload ID card ${members.length > 1 ? `for member ${i + 1}` : ''}`);
+            errors[`${memberPrefix}idCard`] = 'ID card upload is required';
+            setFieldErrors(errors);
             return;
           }
         } else {
           // For non-students (INDIVIDUAL), validate email and phone
           if (!member.email || !member.email.trim()) {
-            toast.error('Please enter email for all members');
+            toast.error(`Please enter email ${members.length > 1 ? `for member ${i + 1}` : ''}`);
+            errors[`${memberPrefix}email`] = 'Email is required';
+            setFieldErrors(errors);
+            return;
+          }
+          if (!validateEmail(member.email)) {
+            toast.error('Please enter a valid email address');
+            errors[`${memberPrefix}email`] = 'Invalid email format (example: user@email.com)';
+            setFieldErrors(errors);
             return;
           }
           if (!member.phone || !member.phone.trim()) {
-            toast.error('Please enter mobile number for all members');
+            toast.error(`Please enter mobile number ${members.length > 1 ? `for member ${i + 1}` : ''}`);
+            errors[`${memberPrefix}phone`] = 'Mobile number is required';
+            setFieldErrors(errors);
+            return;
+          }
+          if (!validatePhone(member.phone)) {
+            toast.error('Please enter a valid phone number with country code');
+            errors[`${memberPrefix}phone`] = 'Invalid format. Use: +94 71 234 5678';
+            setFieldErrors(errors);
             return;
           }
         }
@@ -658,9 +794,19 @@ export default function RegistrationForm({
                     type="text"
                     value={teamName}
                     onChange={(e) => setTeamName(e.target.value)}
-                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className={`w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                      showErrors && fieldErrors['teamName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    }`}
                     required
                   />
+                  {showErrors && fieldErrors['teamName'] && (
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {fieldErrors['teamName']}
+                    </p>
+                  )}
                 </div>
 
                 {/* Team Representative Information */}
@@ -686,9 +832,14 @@ export default function RegistrationForm({
                           };
                           setMembers(newMembers);
                         }}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['rep_firstName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
+                      {showErrors && fieldErrors['rep_firstName'] && (
+                        <p className="text-xs text-red-600 mt-1">{fieldErrors['rep_firstName']}</p>
+                      )}
                     </div>
 
                     <div>
@@ -708,9 +859,14 @@ export default function RegistrationForm({
                           };
                           setMembers(newMembers);
                         }}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['rep_lastName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
+                      {showErrors && fieldErrors['rep_lastName'] && (
+                        <p className="text-xs text-red-600 mt-1">{fieldErrors['rep_lastName']}</p>
+                      )}
                     </div>
 
                     <div>
@@ -721,9 +877,17 @@ export default function RegistrationForm({
                         type="email"
                         value={members[0]?.email || ''}
                         onChange={(e) => handleMemberChange(0, 'email', e.target.value)}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        placeholder="example@email.com"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['rep_email'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
+                      {showErrors && fieldErrors['rep_email'] ? (
+                        <p className="text-xs text-red-600 mt-1">{fieldErrors['rep_email']}</p>
+                      ) : (
+                        <p className="text-xs text-gray-500 mt-1">Valid email format required</p>
+                      )}
                     </div>
 
                     <div>
@@ -734,9 +898,17 @@ export default function RegistrationForm({
                         type="tel"
                         value={members[0]?.phone || ''}
                         onChange={(e) => handleMemberChange(0, 'phone', e.target.value)}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        placeholder="+94 71 234 5678"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['rep_phone'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
+                      {showErrors && fieldErrors['rep_phone'] ? (
+                        <p className="text-xs text-red-600 mt-1">{fieldErrors['rep_phone']}</p>
+                      ) : (
+                        <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +94 for Sri Lanka)</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -748,25 +920,32 @@ export default function RegistrationForm({
                   </label>
                   <div className="space-y-3">
                     {teamMembers.map((memberName, index) => (
-                      <div key={index} className="flex gap-2">
-                        <input
-                          type="text"
-                          value={memberName}
-                          onChange={(e) => handleTeamMemberChange(index, e.target.value)}
-                          placeholder={`Team Member ${index + 1} Name`}
-                          className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                        />
-                        {teamMembers.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveTeamMember(index)}
-                            className="px-3 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            Remove
-                          </button>
-                      )}
-                    </div>
-                  ))}
+                      <div key={index}>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={memberName}
+                            onChange={(e) => handleTeamMemberChange(index, e.target.value)}
+                            placeholder={`Team Member ${index + 1} Name`}
+                            className={`flex-1 px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                              showErrors && fieldErrors[`teamMember_${index}`] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                            }`}
+                          />
+                          {teamMembers.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTeamMember(index)}
+                              className="px-3 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                        {showErrors && fieldErrors[`teamMember_${index}`] && (
+                          <p className="text-xs text-red-600 mt-1">{fieldErrors[`teamMember_${index}`]}</p>
+                        )}
+                      </div>
+                    ))}
                   </div>
                   {teamMembers.length < 10 && (
                     <button
@@ -794,9 +973,14 @@ export default function RegistrationForm({
                     type="text"
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
-                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className={`w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                      showErrors && fieldErrors['companyName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    }`}
                     required
                   />
+                  {showErrors && fieldErrors['companyName'] && (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors['companyName']}</p>
+                  )}
                 </div>
 
                 {/* Company Representative Information */}
@@ -822,9 +1006,14 @@ export default function RegistrationForm({
                           };
                           setMembers(newMembers);
                         }}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['comp_rep_firstName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
+                      {showErrors && fieldErrors['comp_rep_firstName'] && (
+                        <p className="text-xs text-red-600 mt-1">{fieldErrors['comp_rep_firstName']}</p>
+                      )}
                     </div>
 
                     <div>
@@ -844,9 +1033,14 @@ export default function RegistrationForm({
                           };
                           setMembers(newMembers);
                         }}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['comp_rep_lastName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
+                      {showErrors && fieldErrors['comp_rep_lastName'] && (
+                        <p className="text-xs text-red-600 mt-1">{fieldErrors['comp_rep_lastName']}</p>
+                      )}
                     </div>
 
                     <div>
@@ -857,9 +1051,17 @@ export default function RegistrationForm({
                         type="email"
                         value={members[0]?.email || ''}
                         onChange={(e) => handleMemberChange(0, 'email', e.target.value)}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        placeholder="example@company.com"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['comp_rep_email'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
+                      {showErrors && fieldErrors['comp_rep_email'] ? (
+                        <p className="text-xs text-red-600 mt-1">{fieldErrors['comp_rep_email']}</p>
+                      ) : (
+                        <p className="text-xs text-gray-500 mt-1">Valid email format required</p>
+                      )}
                     </div>
 
                     <div>
@@ -870,9 +1072,17 @@ export default function RegistrationForm({
                         type="tel"
                         value={members[0]?.phone || ''}
                         onChange={(e) => handleMemberChange(0, 'phone', e.target.value)}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        placeholder="+94 11 234 5678"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['comp_rep_phone'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
+                      {showErrors && fieldErrors['comp_rep_phone'] ? (
+                        <p className="text-xs text-red-600 mt-1">{fieldErrors['comp_rep_phone']}</p>
+                      ) : (
+                        <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +94 for Sri Lanka)</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -886,9 +1096,17 @@ export default function RegistrationForm({
                     type="text"
                     value={businessRegistrationNo}
                     onChange={(e) => setBusinessRegistrationNo(e.target.value)}
-                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="PV12345 or BR/2023/12345"
+                    className={`w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                      showErrors && fieldErrors['businessRegistrationNo'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    }`}
                     required
                   />
+                  {showErrors && fieldErrors['businessRegistrationNo'] ? (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors['businessRegistrationNo']}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500 mt-1">Enter your official business registration number</p>
+                  )}
                 </div>
               </>
             ) : isKidsRegistration ? (
@@ -1000,9 +1218,11 @@ export default function RegistrationForm({
                         type="email"
                         value={members[0]?.parentEmail || ''}
                         onChange={(e) => handleMemberChange(0, 'parentEmail', e.target.value)}
+                        placeholder="parent@email.com"
                         className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                         required
                       />
+                      <p className="text-xs text-gray-500 mt-1">Valid email format required</p>
                     </div>
 
                     <div>
@@ -1013,9 +1233,11 @@ export default function RegistrationForm({
                         type="tel"
                         value={members[0]?.parentPhone || ''}
                         onChange={(e) => handleMemberChange(0, 'parentPhone', e.target.value)}
+                        placeholder="+94 71 234 5678"
                         className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                         required
                       />
+                      <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +94 for Sri Lanka)</p>
                     </div>
 
                     <div className="md:col-span-2">
@@ -1125,9 +1347,11 @@ export default function RegistrationForm({
                               type="tel"
                               value={member.phone || ''}
                               onChange={(e) => handleMemberChange(index, 'phone', e.target.value)}
+                              placeholder="+94 70 123 4567"
                               className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               required
                             />
+                            <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +94 for Sri Lanka)</p>
                           </div>
 
                           <div>
@@ -1138,6 +1362,7 @@ export default function RegistrationForm({
                               type="text"
                               value={member.institution || ''}
                               onChange={(e) => handleMemberChange(index, 'institution', e.target.value)}
+                              placeholder="University of Moratuwa"
                               className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               required
                             />
@@ -1151,6 +1376,7 @@ export default function RegistrationForm({
                               type="text"
                               value={member.courseOfStudy || ''}
                               onChange={(e) => handleMemberChange(index, 'courseOfStudy', e.target.value)}
+                              placeholder="B.Sc. in Computer Science"
                               className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               required
                             />
@@ -1164,10 +1390,11 @@ export default function RegistrationForm({
                               type="date"
                               value={member.dateOfBirth || ''}
                               onChange={(e) => handleMemberChange(index, 'dateOfBirth', e.target.value)}
+                              max={new Date(new Date().setFullYear(new Date().getFullYear() - 16)).toISOString().split('T')[0]}
                               className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                              placeholder="mm/dd/yyyy"
                               required
                             />
+                            <p className="text-xs text-gray-500 mt-1">Student category is for individuals below 25 years</p>
                           </div>
 
                           <div>
@@ -1178,9 +1405,11 @@ export default function RegistrationForm({
                               type="email"
                               value={member.studentEmail || ''}
                               onChange={(e) => handleMemberChange(index, 'studentEmail', e.target.value)}
+                              placeholder="student@university.ac.lk"
                               className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               required
                             />
+                            <p className="text-xs text-gray-500 mt-1">Use your official university/school email address</p>
                           </div>
 
                           <div>
@@ -1286,9 +1515,11 @@ export default function RegistrationForm({
                               type="email"
                               value={member.email || ''}
                               onChange={(e) => handleMemberChange(index, 'email', e.target.value)}
+                              placeholder="your.email@example.com"
                               className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               required
                             />
+                            <p className="text-xs text-gray-500 mt-1">Valid email format required</p>
                           </div>
 
                           <div>
@@ -1299,9 +1530,11 @@ export default function RegistrationForm({
                               type="tel"
                               value={member.phone || ''}
                               onChange={(e) => handleMemberChange(index, 'phone', e.target.value)}
+                              placeholder="+94 70 123 4567"
                               className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               required
                             />
+                            <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +94 for Sri Lanka)</p>
                           </div>
                         </>
                       )}
@@ -1332,33 +1565,6 @@ export default function RegistrationForm({
                 <option value="Email">Email</option>
                 <option value="Friend or Family">Friend or Family</option>
               </select>
-            </div>
-
-            {/* Agreements */}
-            <div className="space-y-2 bg-gray-50 p-4 rounded border border-gray-200">
-              <p className="text-sm font-medium text-black mb-2">
-                Please check the boxes below to proceed <span className="text-orange-500">*</span>
-              </p>
-
-              {[
-                { key: 'agreedToTerms', label: 'I agree to the Competition Terms and Conditions' },
-                { key: 'agreedToWebsiteTerms', label: "I agree to the Website's Terms and Conditions" },
-                { key: 'agreedToPrivacyPolicy', label: "I agree to the Website's Privacy Policy" },
-                { key: 'agreedToRefundPolicy', label: 'I agree to the Refund Policy' },
-              ].map(({ key, label }) => (
-                <label key={key} className="flex items-start gap-2 cursor-pointer hover:bg-white p-1.5 rounded transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={agreements[key as keyof AgreementData]}
-                    onChange={(e) =>
-                      setAgreements({ ...agreements, [key]: e.target.checked })
-                    }
-                    className="mt-0.5 w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
-                    required
-                  />
-                  <span className="text-xs text-black">{label}</span>
-                </label>
-              ))}
             </div>
 
             {/* Submit Button */}

@@ -11,14 +11,15 @@ import { prisma } from '@/lib/prisma';
 import RegistrationClient from './registration-client';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
   const competition = await prisma.competition.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
   });
 
   if (!competition) {
@@ -34,16 +35,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function RegistrationPage({ params }: PageProps) {
+  const { slug } = await params;
   const session = await getServerSession(authOptions);
 
   // Redirect to sign in if not authenticated
   if (!session?.user) {
-    redirect(`/auth/signin?callbackUrl=/events/${params.slug}/register`);
+    redirect(`/auth/signin?callbackUrl=/events/${slug}/register`);
   }
 
   // Fetch competition data
   const competition = await prisma.competition.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     include: {
       registrationTypes: {
         where: { isActive: true },

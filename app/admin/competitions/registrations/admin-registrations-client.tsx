@@ -20,6 +20,7 @@ import {
   Send,
   RefreshCw,
   X,
+  AlertCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -66,6 +67,7 @@ interface Registration {
     amount: number;
     paymentMethod: string;
     completedAt: string | null;
+    metadata?: any;
   } | null;
 }
 
@@ -101,6 +103,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [viewingRegistration, setViewingRegistration] = useState<Registration | null>(null);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -270,6 +273,46 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
     }
   };
 
+  // Verify bank transfer payment
+  const handleVerifyPayment = async (registration: Registration, approve: boolean) => {
+    if (!registration.payment) {
+      toast.error('No payment information found');
+      return;
+    }
+
+    setIsVerifyingPayment(true);
+    try {
+      const response = await fetch('/api/admin/competitions/verify-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentId: registration.payment.id,
+          registrationId: registration.id,
+          approve,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(approve ? 'Payment verified successfully!' : 'Payment rejected');
+        
+        // Refresh data
+        await refreshData();
+        
+        // Close modal
+        setViewingRegistration(null);
+      } else {
+        toast.error(data.error || 'Failed to verify payment');
+      }
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      toast.error('Failed to verify payment');
+    } finally {
+      setIsVerifyingPayment(false);
+    }
+  };
+
   return (
     <div className="mx-auto px-4 py-8 max-w-[1600px]">
       {/* Header */}
@@ -279,7 +322,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-3">
             <Users className="w-5 h-5 text-gray-600" />
@@ -306,6 +349,21 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
             <div>
               <p className="text-sm text-gray-600">Pending</p>
               <p className="text-2xl font-semibold text-orange-500">{stats.pending}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-500" />
+            <div>
+              <p className="text-sm text-gray-600">Bank Transfers</p>
+              <p className="text-2xl font-semibold text-yellow-600">
+                {registrations.filter(r => 
+                  r.payment?.paymentMethod === 'BANK_TRANSFER' && 
+                  r.payment?.status === 'PENDING'
+                ).length}
+              </p>
             </div>
           </div>
         </div>
@@ -765,9 +823,101 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Payment Status</p>
-                      <p className="text-base font-medium text-gray-900">{viewingRegistration.payment.status}</p>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        viewingRegistration.payment.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                        viewingRegistration.payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {viewingRegistration.payment.status}
+                      </span>
                     </div>
                   </div>
+
+                  {/* Bank Transfer Section */}
+                  {viewingRegistration.payment.paymentMethod === 'BANK_TRANSFER' && 
+                   viewingRegistration.payment.metadata && 
+                   typeof viewingRegistration.payment.metadata === 'object' && 
+                   'bankSlipUrl' in viewingRegistration.payment.metadata && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-base font-semibold text-gray-900">Bank Transfer Slip</h4>
+                        {viewingRegistration.payment.status === 'PENDING' && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            Awaiting Verification
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Bank Slip Image */}
+                      <div className="mb-4">
+                        <a 
+                          href={(viewingRegistration.payment.metadata as any).bankSlipUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="block border-2 border-gray-200 rounded-lg overflow-hidden hover:border-orange-500 transition-colors"
+                        >
+                          <img 
+                            src={(viewingRegistration.payment.metadata as any).bankSlipUrl} 
+                            alt="Bank Transfer Slip" 
+                            className="w-full h-auto max-h-96 object-contain bg-gray-50"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = `
+                                  <div class="flex flex-col items-center justify-center p-8 bg-gray-50">
+                                    <svg class="w-16 h-16 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                    <p class="text-sm text-gray-600">Click to view document</p>
+                                  </div>
+                                `;
+                              }
+                            }}
+                          />
+                        </a>
+                        <p className="text-xs text-gray-500 mt-2">
+                          File: {(viewingRegistration.payment.metadata as any).bankSlipFileName || 'bank-slip'}
+                        </p>
+                      </div>
+
+                      {/* Verification Buttons */}
+                      {viewingRegistration.payment.status === 'PENDING' && (
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => handleVerifyPayment(viewingRegistration, true)}
+                            disabled={isVerifyingPayment}
+                            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <CheckCircle className={`w-5 h-5 ${isVerifyingPayment ? 'animate-pulse' : ''}`} />
+                            {isVerifyingPayment ? 'Verifying...' : 'Approve Payment'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm('Are you sure you want to reject this payment?')) {
+                                handleVerifyPayment(viewingRegistration, false);
+                              }
+                            }}
+                            disabled={isVerifyingPayment}
+                            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <X className="w-5 h-5" />
+                            Reject Payment
+                          </button>
+                        </div>
+                      )}
+
+                      {viewingRegistration.payment.status === 'COMPLETED' && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                          <div className="flex items-center gap-2 text-green-800">
+                            <CheckCircle className="w-5 h-5" />
+                            <span className="text-sm font-medium">Payment Verified and Approved</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

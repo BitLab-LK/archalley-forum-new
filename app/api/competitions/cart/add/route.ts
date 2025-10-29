@@ -104,22 +104,6 @@ export async function POST(
       );
     }
 
-    // Validate all agreements
-    if (
-      !body.agreements.agreedToTerms ||
-      !body.agreements.agreedToWebsiteTerms ||
-      !body.agreements.agreedToPrivacyPolicy ||
-      !body.agreements.agreedToRefundPolicy
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'You must agree to all terms and conditions',
-        },
-        { status: 400 }
-      );
-    }
-
     // Validate member information
     const isStudent = body.participantType === 'STUDENT';
     const isKids = body.participantType === 'KIDS';
@@ -275,10 +259,10 @@ export async function POST(
         members: sanitizedMembers,
         unitPrice,
         subtotal,
-        agreedToTerms: body.agreements.agreedToTerms,
-        agreedToWebsiteTerms: body.agreements.agreedToWebsiteTerms,
-        agreedToPrivacyPolicy: body.agreements.agreedToPrivacyPolicy,
-        agreedToRefundPolicy: body.agreements.agreedToRefundPolicy,
+        agreedToTerms: body.agreements?.agreedToTerms || true,
+        agreedToWebsiteTerms: body.agreements?.agreedToWebsiteTerms || true,
+        agreedToPrivacyPolicy: body.agreements?.agreedToPrivacyPolicy || true,
+        agreedToRefundPolicy: body.agreements?.agreedToRefundPolicy || true,
       },
     });
     console.log('✅ Cart item created successfully:', cartItem.id);

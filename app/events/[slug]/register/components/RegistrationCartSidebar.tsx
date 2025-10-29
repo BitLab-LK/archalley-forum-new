@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { CartWithItems } from '@/types/competition';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { useCountdown } from '@/hooks/useCountdown';
 
 interface Props {
   onCartUpdate: () => void;
@@ -21,7 +22,11 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
   const [isLoading, setIsLoading] = useState(true);
   const [isRemoving, setIsRemoving] = useState<string | null>(null);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [agreedToAll, setAgreedToAll] = useState(false);
   const router = useRouter();
+
+  // Countdown timer for cart expiration
+  const countdown = useCountdown(cart?.expiresAt || null);
 
   useEffect(() => {
     console.log('🔄 Cart refreshKey changed to:', refreshKey);
@@ -32,6 +37,15 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
     
     return () => clearTimeout(timer);
   }, [refreshKey]);
+
+  // Auto-refresh cart when expired
+  useEffect(() => {
+    if (countdown.isExpired && cart) {
+      toast.error('Your cart has expired. Items have been removed.');
+      fetchCart();
+      onCartUpdate();
+    }
+  }, [countdown.isExpired, cart, onCartUpdate]);
 
   const fetchCart = async () => {
     try {
@@ -159,6 +173,11 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
       return;
     }
 
+    if (!agreedToAll) {
+      toast.error('Please agree to the Terms & Conditions to proceed');
+      return;
+    }
+
     setIsCheckingOut(true);
     router.push('/events/checkout');
   };
@@ -248,12 +267,35 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
             </div>
 
             <div className="space-y-0.5 mb-2">
-              {Array.isArray(item.members) && item.members.map((member: any, idx: number) => (
-                <p key={idx} className="text-xs text-gray-600">
-                  {idx === 0 ? '👤 ' : '   '}
-                  {member.name}
+              {/* Display name based on registration type */}
+              {item.registrationType.type === 'TEAM' && item.teamName && (
+                <p className="text-xs text-gray-600">
+                  👥 Team: <span className="font-medium">{item.teamName}</span>
                 </p>
-              ))}
+              )}
+              {item.registrationType.type === 'COMPANY' && item.companyName && (
+                <p className="text-xs text-gray-600">
+                  🏢 Company: <span className="font-medium">{item.companyName}</span>
+                </p>
+              )}
+              {(item.registrationType.type === 'INDIVIDUAL' || item.registrationType.type === 'STUDENT' || item.registrationType.type === 'KIDS') && Array.isArray(item.members) && item.members[0] && typeof item.members[0] === 'object' && 'name' in item.members[0] && (
+                <p className="text-xs text-gray-600">
+                  {item.registrationType.type === 'INDIVIDUAL' && '👤 Individual: '}
+                  {item.registrationType.type === 'STUDENT' && '🎓 Student: '}
+                  {item.registrationType.type === 'KIDS' && '👶 Kid: '}
+                  <span className="font-medium">{String((item.members[0] as any).name)}</span>
+                </p>
+              )}
+              {/* Show additional team members for TEAM type */}
+              {item.registrationType.type === 'TEAM' && Array.isArray(item.members) && item.members.length > 0 && (
+                <div className="mt-1 pl-4 border-l-2 border-gray-200">
+                  {item.members.map((member: any, idx: number) => (
+                    <p key={idx} className="text-xs text-gray-500">
+                      • {member.name || 'N/A'}
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-between items-center pt-2 border-t border-gray-100">
@@ -277,17 +319,55 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
         </div>
       </div>
 
+      {/* Terms & Conditions Agreement */}
+      <div className="mb-4 p-3 bg-gray-50 rounded border border-gray-200">
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={agreedToAll}
+            onChange={(e) => setAgreedToAll(e.target.checked)}
+            className="mt-0.5 w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer"
+          />
+          <span className="text-xs text-gray-700 leading-tight">
+            I agree to all{' '}
+            <a href="/terms-conditions" target="_blank" className="text-orange-500 hover:underline font-medium">
+              Terms & Conditions
+            </a>
+            ,{' '}
+            <a href="/privacy-policy" target="_blank" className="text-orange-500 hover:underline font-medium">
+              Privacy Policy
+            </a>
+            , and{' '}
+            <a href="/refund-policy" target="_blank" className="text-orange-500 hover:underline font-medium">
+              Refund Policy
+            </a>
+          </span>
+        </label>
+      </div>
+
       <button
         onClick={handleCheckout}
-        disabled={isCheckingOut}
+        disabled={isCheckingOut || !agreedToAll}
         className="w-full bg-black hover:bg-orange-500 text-white font-medium py-2.5 px-6 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
       >
         {isCheckingOut ? 'Processing...' : 'Proceed to Checkout →'}
       </button>
 
-      <p className="text-xs text-gray-500 mt-3 text-center">
-        Cart expires in {Math.floor((new Date(cart.expiresAt).getTime() - Date.now()) / 60000)} minutes
-      </p>
+      {/* Timer Display Under Checkout Button */}
+      {cart?.expiresAt && !countdown.isExpired && (
+        <div className="mt-3 text-center">
+          <p className="text-xs text-gray-500 mb-1">Time Remaining</p>
+          <p className={`text-lg font-bold tabular-nums ${
+            countdown.minutes < 5 
+              ? 'text-red-600' 
+              : countdown.minutes < 15 
+              ? 'text-orange-600' 
+              : 'text-blue-600'
+          }`}>
+            {String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

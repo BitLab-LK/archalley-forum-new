@@ -181,6 +181,9 @@ export interface CheckoutData {
     city?: string;
     country: string;
   };
+  paymentMethod?: 'card' | 'bank';
+  bankSlipUrl?: string;
+  bankSlipFileName?: string;
 }
 
 // ============================================

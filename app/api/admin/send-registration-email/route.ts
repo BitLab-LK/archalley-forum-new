@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
       registrationNumber, 
       competitionTitle, 
       status, 
-      submissionStatus 
+      submissionStatus,
+      template 
     } = body;
 
     // Validate required fields
@@ -81,7 +82,122 @@ export async function POST(request: NextRequest) {
     let subject = '';
     let message = '';
     
-    if (status === 'CONFIRMED' && submissionStatus === 'NOT_SUBMITTED') {
+    if (template === 'BANK_TRANSFER_PENDING') {
+      subject = `Payment Pending - ${competitionTitle}`;
+      message = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #000000 0%, #f97316 100%); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0;">Archalley Forum</h1>
+          </div>
+          
+          <div style="padding: 30px; background: #ffffff;">
+            <h2 style="color: #000000;">Thank You, ${name}!</h2>
+            
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              Your bank transfer details for <strong>${competitionTitle}</strong> have been successfully submitted.
+            </p>
+            
+            <div style="background: #fff7ed; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f97316;">
+              <p style="margin: 5px 0;"><strong>Registration Number:</strong> ${registrationNumber}</p>
+              <p style="margin: 5px 0;"><strong>Status:</strong> Payment Verification Pending</p>
+            </div>
+
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #000000; margin-top: 0;">What happens next?</h3>
+              <ol style="color: #666; line-height: 1.8; padding-left: 20px;">
+                <li>Our admin team will review your bank transfer slip within 24-48 hours</li>
+                <li>Once verified, your payment status will be updated to "Confirmed"</li>
+                <li>You'll receive another email confirming your registration</li>
+              </ol>
+            </div>
+
+            <div style="background: #dbeafe; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p style="color: #1e40af; margin: 5px 0; font-size: 14px;">
+                <strong>📧 Important:</strong> Please check your email regularly for updates.<br>
+                <strong>📱 Questions?</strong> Contact us via WhatsApp: <a href="https://wa.me/94711942194" style="color: #f97316;">0711942194</a>
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.NEXTAUTH_URL}/profile" 
+                 style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                View Registration Status
+              </a>
+            </div>
+            
+            <p style="color: #999; font-size: 14px; margin-top: 30px;">
+              Thank you for registering with Archalley Forum!
+            </p>
+          </div>
+          
+          <div style="background: #f3f4f6; padding: 20px; text-align: center;">
+            <p style="color: #666; font-size: 12px; margin: 0;">
+              © 2025 Archalley Forum. All rights reserved.
+            </p>
+          </div>
+        </div>
+      `;
+    } else if (template === 'PAYMENT_VERIFIED') {
+      subject = `Payment Confirmed - ${competitionTitle}`;
+      message = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #000000 0%, #10b981 100%); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0;">Archalley Forum</h1>
+          </div>
+          
+          <div style="padding: 30px; background: #ffffff;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <div style="display: inline-block; width: 60px; height: 60px; background: #d1fae5; border-radius: 50%; line-height: 60px;">
+                <span style="font-size: 30px;">✓</span>
+              </div>
+            </div>
+
+            <h2 style="color: #000000; text-align: center;">Payment Verified!</h2>
+            
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              Great news, ${name}! Your bank transfer has been verified and your registration for <strong>${competitionTitle}</strong> is now confirmed.
+            </p>
+            
+            <div style="background: #d1fae5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+              <p style="margin: 5px 0;"><strong>Registration Number:</strong> ${registrationNumber}</p>
+              <p style="margin: 5px 0;"><strong>Competition:</strong> ${competitionTitle}</p>
+              <p style="margin: 5px 0;"><strong>Status:</strong> ✓ Payment Confirmed</p>
+            </div>
+
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #000000; margin-top: 0;">Next Steps:</h3>
+              <ol style="color: #666; line-height: 1.8; padding-left: 20px;">
+                <li>Review the competition guidelines carefully</li>
+                <li>Prepare your submission according to the requirements</li>
+                <li>Submit your entry before the deadline</li>
+                <li>Check your profile regularly for updates</li>
+              </ol>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.NEXTAUTH_URL}/profile" 
+                 style="background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; margin-right: 10px;">
+                View My Registrations
+              </a>
+              <a href="${process.env.NEXTAUTH_URL}/events" 
+                 style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                Browse Events
+              </a>
+            </div>
+            
+            <p style="color: #999; font-size: 14px; margin-top: 30px;">
+              We're excited to see your submission. Good luck!
+            </p>
+          </div>
+          
+          <div style="background: #f3f4f6; padding: 20px; text-align: center;">
+            <p style="color: #666; font-size: 12px; margin: 0;">
+              © 2025 Archalley Forum. All rights reserved.
+            </p>
+          </div>
+        </div>
+      `;
+    } else if (status === 'CONFIRMED' && submissionStatus === 'NOT_SUBMITTED') {
       subject = `Reminder: Submit Your Entry - ${competitionTitle}`;
       message = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
