@@ -97,14 +97,23 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Send payment verified email
+      // Extract customer email from payment.customerDetails (competition registration email)
+      const customerDetails = payment.customerDetails as any;
+      const customerEmail = customerDetails?.email || registration.user.email;
+      const customerName = customerDetails?.firstName && customerDetails?.lastName
+        ? `${customerDetails.firstName} ${customerDetails.lastName}`
+        : registration.user.name || 'User';
+
+      console.log(`📧 Sending verification email to competition registration email: ${customerEmail}`);
+
+      // Send payment verified email to the email used during competition registration
       try {
         await fetch(`${request.nextUrl.origin}/api/admin/send-registration-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: registration.user.email,
-            name: registration.user.name || 'User',
+            email: customerEmail, // ✅ Use competition registration email, not main account email
+            name: customerName,   // ✅ Use name from competition registration
             registrationNumber: registration.registrationNumber,
             competitionTitle: registration.competition.title,
             template: 'PAYMENT_VERIFIED',

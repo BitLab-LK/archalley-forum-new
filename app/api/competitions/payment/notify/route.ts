@@ -247,6 +247,15 @@ async function handleSuccessfulPayment(
     // Send confirmation emails for each registration
     console.log('Sending confirmation emails for registrations:', registrations.map(r => r.registrationNumber));
     
+    // Extract customer details from payment (competition registration info)
+    const customerDetails = payment.customerDetails as any;
+    const customerEmail = customerDetails?.email || payment.user.email;
+    const customerName = customerDetails?.firstName && customerDetails?.lastName
+      ? `${customerDetails.firstName} ${customerDetails.lastName}`
+      : payment.user.name || 'Participant';
+    
+    console.log(`📧 Sending emails to competition registration email: ${customerEmail}`);
+    
     for (const registration of registrations) {
       try {
         const item = cartItems.find(i => i.competitionId === registration.competitionId);
@@ -256,8 +265,8 @@ async function handleSuccessfulPayment(
           registration,
           competition: item.competition,
           registrationType: item.registrationType,
-          userName: payment.user.name || 'Participant',
-          userEmail: payment.user.email,
+          userName: customerName,      // ✅ Use name from competition registration
+          userEmail: customerEmail,    // ✅ Use email from competition registration, not main account
           members: (item.members as any) || [],
           paymentOrderId: payment.orderId,
         };
