@@ -426,15 +426,60 @@ export default function RegistrationForm({
         setFieldErrors(errors);
         return;
       }
+      if (child.firstName.trim().length < 2) {
+        toast.error("Child's first name must be at least 2 characters");
+        errors['child_firstName'] = 'First name must be at least 2 characters';
+        setFieldErrors(errors);
+        return;
+      }
+      if (child.firstName.trim().length > 100) {
+        toast.error("Child's first name must be less than 100 characters");
+        errors['child_firstName'] = 'First name must be less than 100 characters';
+        setFieldErrors(errors);
+        return;
+      }
+      
       if (!child.lastName || !child.lastName.trim()) {
         toast.error("Please enter child's last name");
         errors['child_lastName'] = 'Last name is required';
         setFieldErrors(errors);
         return;
       }
+      if (child.lastName.trim().length < 2) {
+        toast.error("Child's last name must be at least 2 characters");
+        errors['child_lastName'] = 'Last name must be at least 2 characters';
+        setFieldErrors(errors);
+        return;
+      }
+      if (child.lastName.trim().length > 100) {
+        toast.error("Child's last name must be less than 100 characters");
+        errors['child_lastName'] = 'Last name must be less than 100 characters';
+        setFieldErrors(errors);
+        return;
+      }
+      
       if (!child.dateOfBirth || !child.dateOfBirth.trim()) {
         toast.error("Please enter child's date of birth");
         errors['child_dateOfBirth'] = 'Date of birth is required';
+        setFieldErrors(errors);
+        return;
+      }
+      // Validate age (5-17 years)
+      const birthDate = new Date(child.dateOfBirth);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      const adjustedAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) ? age - 1 : age;
+      
+      if (adjustedAge < 5) {
+        toast.error('Child must be at least 5 years old');
+        errors['child_dateOfBirth'] = 'Child must be at least 5 years old';
+        setFieldErrors(errors);
+        return;
+      }
+      if (adjustedAge > 17) {
+        toast.error('Kids category is for children 5-17 years old');
+        errors['child_dateOfBirth'] = 'Kids category is for children 5-17 years old';
         setFieldErrors(errors);
         return;
       }
@@ -446,12 +491,38 @@ export default function RegistrationForm({
         setFieldErrors(errors);
         return;
       }
+      if (child.parentFirstName.trim().length < 2) {
+        toast.error("Parent/Guardian first name must be at least 2 characters");
+        errors['parent_firstName'] = 'First name must be at least 2 characters';
+        setFieldErrors(errors);
+        return;
+      }
+      if (child.parentFirstName.trim().length > 100) {
+        toast.error("Parent/Guardian first name must be less than 100 characters");
+        errors['parent_firstName'] = 'First name must be less than 100 characters';
+        setFieldErrors(errors);
+        return;
+      }
+      
       if (!child.parentLastName || !child.parentLastName.trim()) {
         toast.error("Please enter parent/guardian's last name");
         errors['parent_lastName'] = 'Parent/Guardian last name is required';
         setFieldErrors(errors);
         return;
       }
+      if (child.parentLastName.trim().length < 2) {
+        toast.error("Parent/Guardian last name must be at least 2 characters");
+        errors['parent_lastName'] = 'Last name must be at least 2 characters';
+        setFieldErrors(errors);
+        return;
+      }
+      if (child.parentLastName.trim().length > 100) {
+        toast.error("Parent/Guardian last name must be less than 100 characters");
+        errors['parent_lastName'] = 'Last name must be less than 100 characters';
+        setFieldErrors(errors);
+        return;
+      }
+      
       if (!child.parentEmail || !child.parentEmail.trim()) {
         toast.error("Please enter parent/guardian's email");
         errors['parent_email'] = 'Parent/Guardian email is required';
@@ -460,25 +531,41 @@ export default function RegistrationForm({
       }
       if (!validateEmail(child.parentEmail)) {
         toast.error('Please enter a valid email address');
-        errors['parent_email'] = 'Invalid email format (example: user@email.com)';
+        errors['parent_email'] = 'Invalid email format (example: parent@email.com)';
         setFieldErrors(errors);
         return;
       }
+      
       if (!child.parentPhone || !child.parentPhone.trim()) {
         toast.error("Please enter parent/guardian's contact number");
         errors['parent_phone'] = 'Parent/Guardian contact number is required';
         setFieldErrors(errors);
         return;
       }
-      if (!validatePhone(child.parentPhone)) {
+      // Strict validation: MUST start with + and country code
+      const strictPhoneRegex = /^\+\d{1,3}\d{9,14}$/;
+      if (!strictPhoneRegex.test(child.parentPhone.replace(/\s/g, ''))) {
         toast.error('Please enter a valid phone number with country code');
-        errors['parent_phone'] = 'Invalid format. Use: +94 71 234 5678';
+        errors['parent_phone'] = 'Phone number must include country code (e.g., +94771234567)';
         setFieldErrors(errors);
         return;
       }
+      
       if (!child.postalAddress || !child.postalAddress.trim()) {
         toast.error('Please enter postal address');
         errors['postalAddress'] = 'Postal address is required';
+        setFieldErrors(errors);
+        return;
+      }
+      if (child.postalAddress.trim().length < 10) {
+        toast.error('Postal address must be at least 10 characters');
+        errors['postalAddress'] = 'Address must be at least 10 characters';
+        setFieldErrors(errors);
+        return;
+      }
+      if (child.postalAddress.trim().length > 500) {
+        toast.error('Postal address must be less than 500 characters');
+        errors['postalAddress'] = 'Address must be less than 500 characters';
         setFieldErrors(errors);
         return;
       }
@@ -1605,10 +1692,41 @@ export default function RegistrationForm({
                             name: `${newFirstName} ${members[0]?.lastName || ''}`.trim()
                           };
                           setMembers(newMembers);
+                          // Clear error when valid
+                          const value = newFirstName.trim();
+                          if (fieldErrors['child_firstName'] && value.length >= 2 && value.length <= 100) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['child_firstName'];
+                            setFieldErrors(newErrors);
+                          }
                         }}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        onBlur={(e) => {
+                          const value = e.target.value.trim();
+                          if (!value) {
+                            setFieldErrors({ ...fieldErrors, child_firstName: 'First name is required' });
+                            setShowErrors(true);
+                          } else if (value.length < 2) {
+                            setFieldErrors({ ...fieldErrors, child_firstName: 'First name must be at least 2 characters' });
+                            setShowErrors(true);
+                          } else if (value.length > 100) {
+                            setFieldErrors({ ...fieldErrors, child_firstName: 'First name must be less than 100 characters' });
+                            setShowErrors(true);
+                          }
+                        }}
+                        placeholder="Enter child's first name"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['child_firstName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
+                      {showErrors && fieldErrors['child_firstName'] && (
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['child_firstName']}
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -1627,10 +1745,41 @@ export default function RegistrationForm({
                             name: `${members[0]?.firstName || ''} ${newLastName}`.trim()
                           };
                           setMembers(newMembers);
+                          // Clear error when valid
+                          const value = newLastName.trim();
+                          if (fieldErrors['child_lastName'] && value.length >= 2 && value.length <= 100) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['child_lastName'];
+                            setFieldErrors(newErrors);
+                          }
                         }}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        onBlur={(e) => {
+                          const value = e.target.value.trim();
+                          if (!value) {
+                            setFieldErrors({ ...fieldErrors, child_lastName: 'Last name is required' });
+                            setShowErrors(true);
+                          } else if (value.length < 2) {
+                            setFieldErrors({ ...fieldErrors, child_lastName: 'Last name must be at least 2 characters' });
+                            setShowErrors(true);
+                          } else if (value.length > 100) {
+                            setFieldErrors({ ...fieldErrors, child_lastName: 'Last name must be less than 100 characters' });
+                            setShowErrors(true);
+                          }
+                        }}
+                        placeholder="Enter child's last name"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['child_lastName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
+                      {showErrors && fieldErrors['child_lastName'] && (
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['child_lastName']}
+                        </p>
+                      )}
                     </div>
 
                     <div className="md:col-span-2">
@@ -1640,11 +1789,74 @@ export default function RegistrationForm({
                       <input
                         type="date"
                         value={members[0]?.dateOfBirth || ''}
-                        onChange={(e) => handleMemberChange(0, 'dateOfBirth', e.target.value)}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        onChange={(e) => {
+                          handleMemberChange(0, 'dateOfBirth', e.target.value);
+                          // Clear error when valid
+                          if (fieldErrors['child_dateOfBirth'] && e.target.value) {
+                            // Validate age
+                            const birthDate = new Date(e.target.value);
+                            const today = new Date();
+                            const age = today.getFullYear() - birthDate.getFullYear();
+                            const monthDiff = today.getMonth() - birthDate.getMonth();
+                            const adjustedAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) ? age - 1 : age;
+                            
+                            if (adjustedAge >= 5 && adjustedAge <= 17) {
+                              const newErrors = { ...fieldErrors };
+                              delete newErrors['child_dateOfBirth'];
+                              setFieldErrors(newErrors);
+                            }
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = e.target.value.trim();
+                          if (!value) {
+                            setFieldErrors({ ...fieldErrors, child_dateOfBirth: 'Date of birth is required' });
+                            setShowErrors(true);
+                          } else {
+                            // Validate age (5-17 years)
+                            const birthDate = new Date(value);
+                            const today = new Date();
+                            const age = today.getFullYear() - birthDate.getFullYear();
+                            const monthDiff = today.getMonth() - birthDate.getMonth();
+                            const adjustedAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) ? age - 1 : age;
+                            
+                            if (adjustedAge < 5) {
+                              setFieldErrors({ ...fieldErrors, child_dateOfBirth: 'Child must be at least 5 years old' });
+                              setShowErrors(true);
+                            } else if (adjustedAge > 17) {
+                              setFieldErrors({ ...fieldErrors, child_dateOfBirth: 'Kids category is for children 5-17 years old' });
+                              setShowErrors(true);
+                            }
+                          }
+                        }}
+                        max={new Date().toISOString().split('T')[0]}
                         placeholder="mm/dd/yyyy"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['child_dateOfBirth'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
+                      {showErrors && fieldErrors['child_dateOfBirth'] ? (
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['child_dateOfBirth']}
+                        </p>
+                      ) : members[0]?.dateOfBirth ? (
+                        (() => {
+                          const birthDate = new Date(members[0].dateOfBirth);
+                          const today = new Date();
+                          const age = today.getFullYear() - birthDate.getFullYear();
+                          const monthDiff = today.getMonth() - birthDate.getMonth();
+                          const adjustedAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) ? age - 1 : age;
+                          return (
+                            <p className="text-xs text-gray-600 mt-1">Age: {adjustedAge} years</p>
+                          );
+                        })()
+                      ) : (
+                        <p className="text-xs text-gray-500 mt-1">Kids category is for children 5-17 years old</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1662,10 +1874,43 @@ export default function RegistrationForm({
                       <input
                         type="text"
                         value={members[0]?.parentFirstName || ''}
-                        onChange={(e) => handleMemberChange(0, 'parentFirstName', e.target.value)}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        onChange={(e) => {
+                          handleMemberChange(0, 'parentFirstName', e.target.value);
+                          // Clear error when valid
+                          const value = e.target.value.trim();
+                          if (fieldErrors['parent_firstName'] && value.length >= 2 && value.length <= 100) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['parent_firstName'];
+                            setFieldErrors(newErrors);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = e.target.value.trim();
+                          if (!value) {
+                            setFieldErrors({ ...fieldErrors, parent_firstName: 'Parent/Guardian first name is required' });
+                            setShowErrors(true);
+                          } else if (value.length < 2) {
+                            setFieldErrors({ ...fieldErrors, parent_firstName: 'First name must be at least 2 characters' });
+                            setShowErrors(true);
+                          } else if (value.length > 100) {
+                            setFieldErrors({ ...fieldErrors, parent_firstName: 'First name must be less than 100 characters' });
+                            setShowErrors(true);
+                          }
+                        }}
+                        placeholder="Enter parent/guardian's first name"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['parent_firstName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
+                      {showErrors && fieldErrors['parent_firstName'] && (
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['parent_firstName']}
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -1675,10 +1920,43 @@ export default function RegistrationForm({
                       <input
                         type="text"
                         value={members[0]?.parentLastName || ''}
-                        onChange={(e) => handleMemberChange(0, 'parentLastName', e.target.value)}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        onChange={(e) => {
+                          handleMemberChange(0, 'parentLastName', e.target.value);
+                          // Clear error when valid
+                          const value = e.target.value.trim();
+                          if (fieldErrors['parent_lastName'] && value.length >= 2 && value.length <= 100) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['parent_lastName'];
+                            setFieldErrors(newErrors);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = e.target.value.trim();
+                          if (!value) {
+                            setFieldErrors({ ...fieldErrors, parent_lastName: 'Parent/Guardian last name is required' });
+                            setShowErrors(true);
+                          } else if (value.length < 2) {
+                            setFieldErrors({ ...fieldErrors, parent_lastName: 'Last name must be at least 2 characters' });
+                            setShowErrors(true);
+                          } else if (value.length > 100) {
+                            setFieldErrors({ ...fieldErrors, parent_lastName: 'Last name must be less than 100 characters' });
+                            setShowErrors(true);
+                          }
+                        }}
+                        placeholder="Enter parent/guardian's last name"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['parent_lastName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
+                      {showErrors && fieldErrors['parent_lastName'] && (
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['parent_lastName']}
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -1688,12 +1966,41 @@ export default function RegistrationForm({
                       <input
                         type="email"
                         value={members[0]?.parentEmail || ''}
-                        onChange={(e) => handleMemberChange(0, 'parentEmail', e.target.value)}
+                        onChange={(e) => {
+                          handleMemberChange(0, 'parentEmail', e.target.value);
+                          // Clear error when valid
+                          if (fieldErrors['parent_email'] && validateEmail(e.target.value)) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['parent_email'];
+                            setFieldErrors(newErrors);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = e.target.value.trim();
+                          if (!value) {
+                            setFieldErrors({ ...fieldErrors, parent_email: 'Parent/Guardian email is required' });
+                            setShowErrors(true);
+                          } else if (!validateEmail(value)) {
+                            setFieldErrors({ ...fieldErrors, parent_email: 'Invalid email format (example: parent@email.com)' });
+                            setShowErrors(true);
+                          }
+                        }}
                         placeholder="parent@email.com"
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['parent_email'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
-                      <p className="text-xs text-gray-500 mt-1">Valid email format required</p>
+                      {showErrors && fieldErrors['parent_email'] ? (
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['parent_email']}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-500 mt-1">Valid email format required</p>
+                      )}
                     </div>
 
                     <div>
@@ -1703,12 +2010,53 @@ export default function RegistrationForm({
                       <input
                         type="tel"
                         value={members[0]?.parentPhone || ''}
-                        onChange={(e) => handleMemberChange(0, 'parentPhone', e.target.value)}
+                        onChange={(e) => {
+                          const rawPhone = e.target.value;
+                          handleMemberChange(0, 'parentPhone', rawPhone);
+                          // Clear error when valid
+                          const strictPhoneRegex = /^\+\d{1,3}\d{9,14}$/;
+                          if (fieldErrors['parent_phone'] && strictPhoneRegex.test(rawPhone.replace(/\s/g, ''))) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['parent_phone'];
+                            setFieldErrors(newErrors);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = e.target.value.replace(/\s/g, '');
+                          const strictPhoneRegex = /^\+\d{1,3}\d{9,14}$/;
+                          if (!value) {
+                            setFieldErrors({ ...fieldErrors, parent_phone: 'Parent/Guardian contact number is required' });
+                            setShowErrors(true);
+                          } else if (!strictPhoneRegex.test(value)) {
+                            setFieldErrors({ ...fieldErrors, parent_phone: 'Phone number must include country code (e.g., +94771234567)' });
+                            setShowErrors(true);
+                          } else {
+                            // Auto-format on blur
+                            const formatted = formatPhoneNumber(value);
+                            const newMembers = [...members];
+                            newMembers[0] = {
+                              ...newMembers[0],
+                              parentPhone: formatted
+                            };
+                            setMembers(newMembers);
+                          }
+                        }}
                         placeholder="+94 71 234 5678"
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['parent_phone'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         required
                       />
-                      <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +94 for Sri Lanka)</p>
+                      {showErrors && fieldErrors['parent_phone'] ? (
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['parent_phone']}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +94 for Sri Lanka)</p>
+                      )}
                     </div>
 
                     <div className="md:col-span-2">
@@ -1717,11 +2065,46 @@ export default function RegistrationForm({
                       </label>
                       <textarea
                         value={members[0]?.postalAddress || ''}
-                        onChange={(e) => handleMemberChange(0, 'postalAddress', e.target.value)}
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        onChange={(e) => {
+                          handleMemberChange(0, 'postalAddress', e.target.value);
+                          // Clear error when valid
+                          const value = e.target.value.trim();
+                          if (fieldErrors['postalAddress'] && value.length >= 10 && value.length <= 500) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['postalAddress'];
+                            setFieldErrors(newErrors);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = e.target.value.trim();
+                          if (!value) {
+                            setFieldErrors({ ...fieldErrors, postalAddress: 'Postal address is required' });
+                            setShowErrors(true);
+                          } else if (value.length < 10) {
+                            setFieldErrors({ ...fieldErrors, postalAddress: 'Address must be at least 10 characters' });
+                            setShowErrors(true);
+                          } else if (value.length > 500) {
+                            setFieldErrors({ ...fieldErrors, postalAddress: 'Address must be less than 500 characters' });
+                            setShowErrors(true);
+                          }
+                        }}
+                        placeholder="Enter full postal address including street, city, and postal code"
+                        className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          showErrors && fieldErrors['postalAddress'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                         rows={3}
                         required
                       />
+                      {showErrors && fieldErrors['postalAddress'] ? (
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['postalAddress']}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-500 mt-1">{members[0]?.postalAddress?.length || 0}/500 characters • Full address for gift delivery</p>
+                      )}
                     </div>
                   </div>
                 </div>
