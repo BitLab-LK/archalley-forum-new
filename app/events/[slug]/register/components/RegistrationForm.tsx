@@ -339,11 +339,37 @@ export default function RegistrationForm({
         setFieldErrors(errors);
         return;
       }
+      // Validate company name length
+      if (companyName.trim().length < 2) {
+        toast.error('Company name must be at least 2 characters');
+        errors['companyName'] = 'Company name must be at least 2 characters';
+        setFieldErrors(errors);
+        return;
+      }
+      if (companyName.trim().length > 200) {
+        toast.error('Company name must be less than 200 characters');
+        errors['companyName'] = 'Company name must be less than 200 characters';
+        setFieldErrors(errors);
+        return;
+      }
 
       // Validate business registration number
       if (!businessRegistrationNo || !businessRegistrationNo.trim()) {
         toast.error('Please enter business registration number');
         errors['businessRegistrationNo'] = 'Business registration number is required';
+        setFieldErrors(errors);
+        return;
+      }
+      // Validate business registration number length
+      if (businessRegistrationNo.trim().length < 3) {
+        toast.error('Business registration number must be at least 3 characters');
+        errors['businessRegistrationNo'] = 'Business registration number must be at least 3 characters';
+        setFieldErrors(errors);
+        return;
+      }
+      if (businessRegistrationNo.trim().length > 50) {
+        toast.error('Business registration number must be less than 50 characters');
+        errors['businessRegistrationNo'] = 'Business registration number must be less than 50 characters';
         setFieldErrors(errors);
         return;
       }
@@ -380,9 +406,11 @@ export default function RegistrationForm({
         setFieldErrors(errors);
         return;
       }
-      if (!validatePhone(representative.phone)) {
+      // Strict validation: MUST start with + and country code
+      const strictPhoneRegex = /^\+\d{1,3}\d{9,14}$/;
+      if (!strictPhoneRegex.test(representative.phone.replace(/\s/g, ''))) {
         toast.error('Please enter a valid phone number with country code');
-        errors['comp_rep_phone'] = 'Invalid format. Use: +94 71 234 5678';
+        errors['comp_rep_phone'] = 'Must include country code. Format: +94 11 234 5678';
         setFieldErrors(errors);
         return;
       }
@@ -1169,14 +1197,44 @@ export default function RegistrationForm({
                   <input
                     type="text"
                     value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
+                    onChange={(e) => {
+                      setCompanyName(e.target.value);
+                      // Clear error when user types valid name
+                      const value = e.target.value.trim();
+                      if (fieldErrors['companyName'] && value.length >= 2 && value.length <= 200) {
+                        const newErrors = { ...fieldErrors };
+                        delete newErrors['companyName'];
+                        setFieldErrors(newErrors);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const value = e.target.value.trim();
+                      if (!value) {
+                        setFieldErrors({ ...fieldErrors, companyName: 'Company name is required' });
+                        setShowErrors(true);
+                      } else if (value.length < 2) {
+                        setFieldErrors({ ...fieldErrors, companyName: 'Company name must be at least 2 characters' });
+                        setShowErrors(true);
+                      } else if (value.length > 200) {
+                        setFieldErrors({ ...fieldErrors, companyName: 'Company name must be less than 200 characters' });
+                        setShowErrors(true);
+                      }
+                    }}
+                    placeholder="Enter your company name"
                     className={`w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
                       showErrors && fieldErrors['companyName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
                     }`}
                     required
                   />
-                  {showErrors && fieldErrors['companyName'] && (
-                    <p className="text-xs text-red-600 mt-1">{fieldErrors['companyName']}</p>
+                  {showErrors && fieldErrors['companyName'] ? (
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {fieldErrors['companyName']}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500 mt-1">{companyName.length}/200 characters</p>
                   )}
                 </div>
 
@@ -1202,15 +1260,41 @@ export default function RegistrationForm({
                             name: `${newFirstName} ${members[0]?.lastName || ''}`.trim()
                           };
                           setMembers(newMembers);
+                          // Clear error when valid
+                          const value = newFirstName.trim();
+                          if (fieldErrors['comp_rep_firstName'] && value.length >= 2 && value.length <= 100) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['comp_rep_firstName'];
+                            setFieldErrors(newErrors);
+                          }
                         }}
+                        onBlur={(e) => {
+                          const value = e.target.value.trim();
+                          if (!value) {
+                            setFieldErrors({ ...fieldErrors, comp_rep_firstName: 'First name is required' });
+                            setShowErrors(true);
+                          } else if (value.length < 2) {
+                            setFieldErrors({ ...fieldErrors, comp_rep_firstName: 'First name must be at least 2 characters' });
+                            setShowErrors(true);
+                          } else if (value.length > 100) {
+                            setFieldErrors({ ...fieldErrors, comp_rep_firstName: 'First name must be less than 100 characters' });
+                            setShowErrors(true);
+                          }
+                        }}
+                        placeholder="Enter first name"
                         className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
                           showErrors && fieldErrors['comp_rep_firstName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
                         }`}
                         required
                       />
-                      {showErrors && fieldErrors['comp_rep_firstName'] && (
-                        <p className="text-xs text-red-600 mt-1">{fieldErrors['comp_rep_firstName']}</p>
-                      )}
+                      {showErrors && fieldErrors['comp_rep_firstName'] ? (
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['comp_rep_firstName']}
+                        </p>
+                      ) : null}
                     </div>
 
                     <div>
@@ -1229,15 +1313,41 @@ export default function RegistrationForm({
                             name: `${members[0]?.firstName || ''} ${newLastName}`.trim()
                           };
                           setMembers(newMembers);
+                          // Clear error when valid
+                          const value = newLastName.trim();
+                          if (fieldErrors['comp_rep_lastName'] && value.length >= 2 && value.length <= 100) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['comp_rep_lastName'];
+                            setFieldErrors(newErrors);
+                          }
                         }}
+                        onBlur={(e) => {
+                          const value = e.target.value.trim();
+                          if (!value) {
+                            setFieldErrors({ ...fieldErrors, comp_rep_lastName: 'Last name is required' });
+                            setShowErrors(true);
+                          } else if (value.length < 2) {
+                            setFieldErrors({ ...fieldErrors, comp_rep_lastName: 'Last name must be at least 2 characters' });
+                            setShowErrors(true);
+                          } else if (value.length > 100) {
+                            setFieldErrors({ ...fieldErrors, comp_rep_lastName: 'Last name must be less than 100 characters' });
+                            setShowErrors(true);
+                          }
+                        }}
+                        placeholder="Enter last name"
                         className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
                           showErrors && fieldErrors['comp_rep_lastName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
                         }`}
                         required
                       />
-                      {showErrors && fieldErrors['comp_rep_lastName'] && (
-                        <p className="text-xs text-red-600 mt-1">{fieldErrors['comp_rep_lastName']}</p>
-                      )}
+                      {showErrors && fieldErrors['comp_rep_lastName'] ? (
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['comp_rep_lastName']}
+                        </p>
+                      ) : null}
                     </div>
 
                     <div>
@@ -1247,7 +1357,25 @@ export default function RegistrationForm({
                       <input
                         type="email"
                         value={members[0]?.email || ''}
-                        onChange={(e) => handleMemberChange(0, 'email', e.target.value)}
+                        onChange={(e) => {
+                          handleMemberChange(0, 'email', e.target.value);
+                          // Clear error when valid email
+                          if (fieldErrors['comp_rep_email'] && validateEmail(e.target.value)) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['comp_rep_email'];
+                            setFieldErrors(newErrors);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = e.target.value.trim();
+                          if (!value) {
+                            setFieldErrors({ ...fieldErrors, comp_rep_email: 'Email is required' });
+                            setShowErrors(true);
+                          } else if (!validateEmail(value)) {
+                            setFieldErrors({ ...fieldErrors, comp_rep_email: 'Please enter a valid email address' });
+                            setShowErrors(true);
+                          }
+                        }}
                         placeholder="example@company.com"
                         className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
                           showErrors && fieldErrors['comp_rep_email'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
@@ -1255,7 +1383,12 @@ export default function RegistrationForm({
                         required
                       />
                       {showErrors && fieldErrors['comp_rep_email'] ? (
-                        <p className="text-xs text-red-600 mt-1">{fieldErrors['comp_rep_email']}</p>
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['comp_rep_email']}
+                        </p>
                       ) : (
                         <p className="text-xs text-gray-500 mt-1">Valid email format required</p>
                       )}
@@ -1268,7 +1401,28 @@ export default function RegistrationForm({
                       <input
                         type="tel"
                         value={members[0]?.phone || ''}
-                        onChange={(e) => handleMemberChange(0, 'phone', e.target.value)}
+                        onChange={(e) => {
+                          const formattedPhone = formatPhoneNumber(e.target.value);
+                          handleMemberChange(0, 'phone', formattedPhone);
+                          // Clear error when valid phone
+                          const strictPhoneRegex = /^\+\d{1,3}\d{9,14}$/;
+                          if (fieldErrors['comp_rep_phone'] && strictPhoneRegex.test(formattedPhone.replace(/\s/g, ''))) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['comp_rep_phone'];
+                            setFieldErrors(newErrors);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = e.target.value.replace(/\s/g, '');
+                          const strictPhoneRegex = /^\+\d{1,3}\d{9,14}$/;
+                          if (!value) {
+                            setFieldErrors({ ...fieldErrors, comp_rep_phone: 'Phone number is required' });
+                            setShowErrors(true);
+                          } else if (!strictPhoneRegex.test(value)) {
+                            setFieldErrors({ ...fieldErrors, comp_rep_phone: 'Phone number must include country code (e.g., +94771234567)' });
+                            setShowErrors(true);
+                          }
+                        }}
                         placeholder="+94 11 234 5678"
                         className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
                           showErrors && fieldErrors['comp_rep_phone'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
@@ -1276,7 +1430,12 @@ export default function RegistrationForm({
                         required
                       />
                       {showErrors && fieldErrors['comp_rep_phone'] ? (
-                        <p className="text-xs text-red-600 mt-1">{fieldErrors['comp_rep_phone']}</p>
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['comp_rep_phone']}
+                        </p>
                       ) : (
                         <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +94 for Sri Lanka)</p>
                       )}
@@ -1292,7 +1451,29 @@ export default function RegistrationForm({
                   <input
                     type="text"
                     value={businessRegistrationNo}
-                    onChange={(e) => setBusinessRegistrationNo(e.target.value)}
+                    onChange={(e) => {
+                      setBusinessRegistrationNo(e.target.value);
+                      // Clear error when user types valid registration number
+                      const value = e.target.value.trim();
+                      if (fieldErrors['businessRegistrationNo'] && value.length >= 3 && value.length <= 50) {
+                        const newErrors = { ...fieldErrors };
+                        delete newErrors['businessRegistrationNo'];
+                        setFieldErrors(newErrors);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const value = e.target.value.trim();
+                      if (!value) {
+                        setFieldErrors({ ...fieldErrors, businessRegistrationNo: 'Business registration number is required' });
+                        setShowErrors(true);
+                      } else if (value.length < 3) {
+                        setFieldErrors({ ...fieldErrors, businessRegistrationNo: 'Registration number must be at least 3 characters' });
+                        setShowErrors(true);
+                      } else if (value.length > 50) {
+                        setFieldErrors({ ...fieldErrors, businessRegistrationNo: 'Registration number must be less than 50 characters' });
+                        setShowErrors(true);
+                      }
+                    }}
                     placeholder="PV12345 or BR/2023/12345"
                     className={`w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
                       showErrors && fieldErrors['businessRegistrationNo'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
@@ -1300,9 +1481,14 @@ export default function RegistrationForm({
                     required
                   />
                   {showErrors && fieldErrors['businessRegistrationNo'] ? (
-                    <p className="text-xs text-red-600 mt-1">{fieldErrors['businessRegistrationNo']}</p>
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {fieldErrors['businessRegistrationNo']}
+                    </p>
                   ) : (
-                    <p className="text-xs text-gray-500 mt-1">Enter your official business registration number</p>
+                    <p className="text-xs text-gray-500 mt-1">{businessRegistrationNo.length}/50 characters • Enter your official business registration number</p>
                   )}
                 </div>
               </>
