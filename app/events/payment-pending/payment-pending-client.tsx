@@ -145,7 +145,7 @@ export default function PaymentPendingClient({ user }: PaymentPendingClientProps
             </li>
             <li className="flex items-start">
               <span className="mr-2">•</span>
-              <span>Contact us via WhatsApp (0711942194) if you have questions</span>
+              <span>Contact us via WhatsApp ({process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+94 71 194 2194'}) if you have questions</span>
             </li>
           </ul>
         </div>
