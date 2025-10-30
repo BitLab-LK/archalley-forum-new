@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 interface Registration {
   id: string;
   registrationNumber: string;
+  displayCode: string | null; // Anonymous code for public display
   status: string;
   submissionStatus: string;
   country: string;
@@ -183,6 +184,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
   const handleExport = () => {
     const csvData = filteredRegistrations.map(reg => ({
       'Registration Number': reg.registrationNumber,
+      'Display Code': reg.displayCode || 'N/A',
       'User Name': reg.user.name || 'N/A',
       'User Email': reg.user.email,
       'Competition': reg.competition.title,
@@ -701,7 +703,22 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">Registration Number</p>
-                    <p className="text-base font-medium text-gray-900">{viewingRegistration.registrationNumber}</p>
+                    <p className="text-base font-medium text-gray-900 font-mono">{viewingRegistration.registrationNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Display Code (Public/Anonymous)</p>
+                    {viewingRegistration.displayCode ? (
+                      <div className="flex items-center gap-2">
+                        <p className="text-base font-bold text-orange-600 font-mono bg-orange-50 px-3 py-1 rounded border border-orange-200">
+                          {viewingRegistration.displayCode}
+                        </p>
+                        <span className="text-xs text-gray-500" title="This code is used for anonymous public display">
+                          🔒
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">Not generated yet</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Country</p>
