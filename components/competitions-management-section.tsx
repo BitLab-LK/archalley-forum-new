@@ -12,6 +12,7 @@ import AdminRegistrationsClient from '@/app/admin/competitions/registrations/adm
 interface Registration {
   id: string;
   registrationNumber: string;
+  displayCode: string;
   status: string;
   submissionStatus: string;
   country: string;
@@ -19,10 +20,21 @@ interface Registration {
   companyName: string | null;
   businessRegistrationNo: string | null;
   teamMembers: any;
+  participantType: string;
+  referralSource: string | null;
+  members: any;
+  currency: string;
   amountPaid: number;
   createdAt: string;
   confirmedAt: string | null;
   submittedAt: string | null;
+  registeredAt: string | null;
+  submissionFiles: any;
+  submissionNotes: string | null;
+  submissionUrl: string | null;
+  score: number | null;
+  rank: number | null;
+  award: string | null;
   user: {
     id: string;
     name: string | null;
@@ -51,6 +63,7 @@ interface Registration {
     amount: number;
     paymentMethod: string;
     completedAt: string | null;
+    metadata: any;
   } | null;
 }
 

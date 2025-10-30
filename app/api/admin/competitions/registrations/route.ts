@@ -30,7 +30,33 @@ export async function GET() {
 
     // Fetch all registrations with related data
     const registrations = await prisma.competitionRegistration.findMany({
-      include: {
+      select: {
+        id: true,
+        registrationNumber: true,
+        displayCode: true,
+        status: true,
+        submissionStatus: true,
+        country: true,
+        participantType: true,
+        referralSource: true,
+        teamName: true,
+        companyName: true,
+        businessRegistrationNo: true,
+        teamMembers: true,
+        members: true, // CRITICAL: User-filled data (emails, phones, names, parent info, etc.)
+        amountPaid: true,
+        currency: true,
+        registeredAt: true,
+        confirmedAt: true,
+        submittedAt: true,
+        submissionFiles: true,
+        submissionNotes: true,
+        submissionUrl: true,
+        score: true,
+        rank: true,
+        award: true,
+        createdAt: true,
+        updatedAt: true,
         user: {
           select: {
             id: true,

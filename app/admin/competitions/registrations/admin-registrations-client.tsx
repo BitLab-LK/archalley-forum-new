@@ -32,14 +32,25 @@ interface Registration {
   status: string;
   submissionStatus: string;
   country: string;
+  participantType: string; // INDIVIDUAL, TEAM, COMPANY, STUDENT, KIDS
+  referralSource: string | null;
   teamName: string | null;
   companyName: string | null;
   businessRegistrationNo: string | null;
-  teamMembers: any;
+  teamMembers: any; // Team member names array
+  members: any; // CRITICAL: All user-filled data (emails, phones, addresses, parent info)
   amountPaid: number;
+  currency: string;
+  registeredAt: string | null;
   createdAt: string;
   confirmedAt: string | null;
   submittedAt: string | null;
+  submissionFiles: any;
+  submissionNotes: string | null;
+  submissionUrl: string | null;
+  score: number | null;
+  rank: number | null;
+  award: string | null;
   user: {
     id: string;
     name: string | null;
@@ -821,6 +832,144 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                 </div>
               )}
 
+              {/* CRITICAL: Member Details - All User-Filled Data */}
+              {viewingRegistration.members && (
+                <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <span>📋 Participant Details</span>
+                    <span className="text-xs font-normal text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                      {viewingRegistration.participantType}
+                    </span>
+                  </h3>
+                  
+                  {(() => {
+                    const members = Array.isArray(viewingRegistration.members) ? viewingRegistration.members : [];
+                    
+                    return members.map((member: any, index: number) => (
+                      <div key={index} className="bg-white rounded-lg p-4 mb-3 last:mb-0">
+                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          {viewingRegistration.participantType === 'KIDS' ? '👶 Child Information' : 
+                           viewingRegistration.participantType === 'TEAM' && index === 0 ? '👤 Team Leader' :
+                           viewingRegistration.participantType === 'COMPANY' && index === 0 ? '👤 Company Representative' :
+                           `👤 Member ${index + 1}`}
+                        </h4>
+                        
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          {/* Name */}
+                          {member.name && (
+                            <div>
+                              <p className="text-gray-600">Full Name</p>
+                              <p className="font-medium text-gray-900">{member.name}</p>
+                            </div>
+                          )}
+                          {member.firstName && (
+                            <>
+                              <div>
+                                <p className="text-gray-600">First Name</p>
+                                <p className="font-medium text-gray-900">{member.firstName}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-600">Last Name</p>
+                                <p className="font-medium text-gray-900">{member.lastName || 'N/A'}</p>
+                              </div>
+                            </>
+                          )}
+                          
+                          {/* Contact Info */}
+                          {member.email && (
+                            <div>
+                              <p className="text-gray-600">📧 Email</p>
+                              <p className="font-medium text-gray-900">{member.email}</p>
+                            </div>
+                          )}
+                          {member.phone && (
+                            <div>
+                              <p className="text-gray-600">📱 Phone</p>
+                              <p className="font-medium text-gray-900">{member.phone}</p>
+                            </div>
+                          )}
+                          
+                          {/* Student Specific */}
+                          {member.dateOfBirth && (
+                            <div>
+                              <p className="text-gray-600">🎂 Date of Birth</p>
+                              <p className="font-medium text-gray-900">{member.dateOfBirth}</p>
+                            </div>
+                          )}
+                          {member.age && (
+                            <div>
+                              <p className="text-gray-600">Age</p>
+                              <p className="font-medium text-gray-900">{member.age} years</p>
+                            </div>
+                          )}
+                          {member.university && (
+                            <div>
+                              <p className="text-gray-600">🎓 University</p>
+                              <p className="font-medium text-gray-900">{member.university}</p>
+                            </div>
+                          )}
+                          {member.studentId && (
+                            <div>
+                              <p className="text-gray-600">Student ID</p>
+                              <p className="font-medium text-gray-900">{member.studentId}</p>
+                            </div>
+                          )}
+                          {member.studentIdCard && (
+                            <div className="col-span-2">
+                              <p className="text-gray-600 mb-1">Student ID Card</p>
+                              <a href={member.studentIdCard} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 text-xs">
+                                📎 View Uploaded Document
+                              </a>
+                            </div>
+                          )}
+                          {member.parentConsent !== undefined && (
+                            <div>
+                              <p className="text-gray-600">Parent Consent</p>
+                              <p className={`font-medium ${member.parentConsent ? 'text-green-600' : 'text-red-600'}`}>
+                                {member.parentConsent ? '✅ Provided' : '❌ Not Provided'}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {/* Kids Specific - Parent Information */}
+                          {member.parentFirstName && (
+                            <>
+                              <div className="col-span-2 mt-3 pt-3 border-t border-gray-200">
+                                <h5 className="font-semibold text-gray-900 mb-2">👨‍👩‍👧 Parent/Guardian Information</h5>
+                              </div>
+                              <div>
+                                <p className="text-gray-600">Parent First Name</p>
+                                <p className="font-medium text-gray-900">{member.parentFirstName}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-600">Parent Last Name</p>
+                                <p className="font-medium text-gray-900">{member.parentLastName || 'N/A'}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-600">📧 Parent Email</p>
+                                <p className="font-medium text-gray-900">{member.parentEmail}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-600">📱 Parent Phone</p>
+                                <p className="font-medium text-gray-900">{member.parentPhone}</p>
+                              </div>
+                            </>
+                          )}
+                          
+                          {/* Address */}
+                          {member.postalAddress && (
+                            <div className="col-span-2">
+                              <p className="text-gray-600">📍 Postal Address</p>
+                              <p className="font-medium text-gray-900">{member.postalAddress}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
+
               {/* Payment Info */}
               {viewingRegistration.payment && (
                 <div className="bg-gray-50 rounded-lg p-4">
@@ -850,14 +999,135 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                     </div>
                   </div>
 
+                  {/* Customer Details from Payment Metadata */}
+                  {viewingRegistration.payment.metadata && 
+                   typeof viewingRegistration.payment.metadata === 'object' && 
+                   'customerDetails' in viewingRegistration.payment.metadata && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <h4 className="text-base font-semibold text-gray-900 mb-3">Customer Contact Details</h4>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        {(viewingRegistration.payment.metadata as any).customerDetails.name && (
+                          <div>
+                            <p className="text-gray-600">Name</p>
+                            <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).customerDetails.name}</p>
+                          </div>
+                        )}
+                        {(viewingRegistration.payment.metadata as any).customerDetails.email && (
+                          <div>
+                            <p className="text-gray-600">📧 Email</p>
+                            <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).customerDetails.email}</p>
+                          </div>
+                        )}
+                        {(viewingRegistration.payment.metadata as any).customerDetails.phone && (
+                          <div>
+                            <p className="text-gray-600">📱 Phone</p>
+                            <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).customerDetails.phone}</p>
+                          </div>
+                        )}
+                        {(viewingRegistration.payment.metadata as any).customerDetails.address && (
+                          <div>
+                            <p className="text-gray-600">📍 Address</p>
+                            <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).customerDetails.address}</p>
+                          </div>
+                        )}
+                        {(viewingRegistration.payment.metadata as any).customerDetails.country && (
+                          <div>
+                            <p className="text-gray-600">🌍 Country</p>
+                            <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).customerDetails.country}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Bank Transfer Section */}
                   {viewingRegistration.payment.paymentMethod === 'BANK_TRANSFER' && 
                    viewingRegistration.payment.metadata && 
-                   typeof viewingRegistration.payment.metadata === 'object' && 
-                   'bankSlipUrl' in viewingRegistration.payment.metadata && (
+                   typeof viewingRegistration.payment.metadata === 'object' && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-base font-semibold text-gray-900">Bank Transfer Slip</h4>
+                      {/* WhatsApp-Only (No Upload) - Most Prominent */}
+                      {(viewingRegistration.payment.metadata as any).willSendViaWhatsApp && 
+                       !('bankSlipUrl' in viewingRegistration.payment.metadata) && (
+                        <div className="mb-3 bg-amber-50 border-2 border-amber-400 rounded-lg p-4">
+                          <div className="flex items-start gap-3">
+                            <span className="text-3xl">⚠️</span>
+                            <div className="flex-1">
+                              <h4 className="text-lg font-bold text-amber-900 mb-2 flex items-center gap-2">
+                                <span>NO BANK SLIP UPLOADED</span>
+                                <span className="text-xs font-medium bg-amber-200 text-amber-800 px-2 py-1 rounded">WhatsApp Only</span>
+                              </h4>
+                              <div className="space-y-2 text-sm">
+                                <p className="text-amber-900 font-medium text-base">
+                                  ⚠️ Customer chose to send bank slip via WhatsApp instead of uploading
+                                </p>
+                                <div className="bg-white border border-amber-300 rounded p-3 mt-3">
+                                  <p className="text-amber-900 font-semibold mb-2">📱 Contact Details:</p>
+                                  {(viewingRegistration.payment.metadata as any).customerDetails?.phone && (
+                                    <p className="text-amber-900 mb-1">
+                                      <span className="font-medium">Phone:</span>{' '}
+                                      <a 
+                                        href={`https://wa.me/${(viewingRegistration.payment.metadata as any).customerDetails.phone.replace(/[^0-9]/g, '')}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-green-600 hover:text-green-700 underline font-bold"
+                                      >
+                                        {(viewingRegistration.payment.metadata as any).customerDetails.phone} (Click to open WhatsApp)
+                                      </a>
+                                    </p>
+                                  )}
+                                  {(viewingRegistration.payment.metadata as any).customerDetails?.email && (
+                                    <p className="text-amber-900">
+                                      <span className="font-medium">Email:</span>{' '}
+                                      <a 
+                                        href={`mailto:${(viewingRegistration.payment.metadata as any).customerDetails.email}`}
+                                        className="text-blue-600 hover:text-blue-700 underline"
+                                      >
+                                        {(viewingRegistration.payment.metadata as any).customerDetails.email}
+                                      </a>
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="bg-green-100 border border-green-300 rounded p-3 mt-2">
+                                  <p className="text-green-900 font-semibold mb-1">✅ Action Required:</p>
+                                  <p className="text-green-800">Check your WhatsApp messages for the bank slip from this customer</p>
+                                  {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER && (
+                                    <p className="text-green-900 mt-2">
+                                      <span className="font-medium">Your WhatsApp:</span>{' '}
+                                      <a 
+                                        href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER.replace(/[^0-9]/g, '')}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-green-600 hover:text-green-700 underline font-bold"
+                                      >
+                                        {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER} (Click to open)
+                                      </a>
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* WhatsApp + Upload (Both methods) */}
+                      {(viewingRegistration.payment.metadata as any).willSendViaWhatsApp && 
+                       'bankSlipUrl' in viewingRegistration.payment.metadata && (
+                        <div className="mb-3 bg-blue-50 border-2 border-blue-300 rounded-lg p-3">
+                          <div className="flex items-center gap-2 text-blue-800">
+                            <span className="text-lg">💬</span>
+                            <span className="text-sm font-medium">
+                              Customer uploaded slip below AND will also send via WhatsApp
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Bank Slip if uploaded */}
+                      {'bankSlipUrl' in viewingRegistration.payment.metadata && (
+                        <>
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-base font-semibold text-gray-900">Bank Transfer Slip</h4>
                         {viewingRegistration.payment.status === 'PENDING' && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                             Awaiting Verification
@@ -932,6 +1202,8 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                             <span className="text-sm font-medium">Payment Verified and Approved</span>
                           </div>
                         </div>
+                      )}
+                        </>
                       )}
                     </div>
                   )}
