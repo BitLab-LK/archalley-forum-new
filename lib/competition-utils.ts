@@ -282,15 +282,16 @@ export function isValidEmail(email: string): boolean {
 }
 
 /**
- * Validate phone number (Sri Lankan format)
+ * Validate phone number (International format with country code required)
  */
 export function isValidPhone(phone: string): boolean {
   // Remove all spaces, dashes, and parentheses
   const cleaned = phone.replace(/[\s\-\(\)]/g, '');
   
-  // Accept international format (+country code + number) or local format
-  // Must be at least 9 digits, max 15 digits (E.164 standard)
-  const phoneRegex = /^(\+\d{1,3})?\d{9,14}$/;
+  // REQUIRE international format with + prefix and country code
+  // Format: +[1-3 digits country code][9-14 digits phone number]
+  // Examples: +94771234567, +1 234 567 8900, +44 20 1234 5678
+  const phoneRegex = /^\+\d{1,3}\d{9,14}$/;
   
   return phoneRegex.test(cleaned);
 }

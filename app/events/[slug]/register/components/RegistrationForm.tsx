@@ -189,6 +189,41 @@ export default function RegistrationForm({
     return phoneRegex.test(phone) || phone.length >= 10;
   };
 
+  // Phone number auto-formatting
+  const formatPhoneNumber = (value: string): string => {
+    // Remove all non-numeric characters except +
+    const cleaned = value.replace(/[^\d+]/g, '');
+    
+    // Don't format if empty or just +
+    if (cleaned.length <= 1) return cleaned;
+    
+    // Ensure it starts with +
+    if (!cleaned.startsWith('+')) {
+      return cleaned;
+    }
+    
+    // Extract country code (1-3 digits after +)
+    const match = cleaned.match(/^\+(\d{1,3})(\d*)/);
+    if (!match) return cleaned;
+    
+    const countryCode = match[1];
+    const rest = match[2];
+    
+    // Format based on length
+    // +XX XXX XXXX XXXX (common international format)
+    if (rest.length === 0) {
+      return `+${countryCode}`;
+    } else if (rest.length <= 2) {
+      return `+${countryCode} ${rest}`;
+    } else if (rest.length <= 5) {
+      return `+${countryCode} ${rest.slice(0, 2)} ${rest.slice(2)}`;
+    } else if (rest.length <= 9) {
+      return `+${countryCode} ${rest.slice(0, 2)} ${rest.slice(2, 5)} ${rest.slice(5)}`;
+    } else {
+      return `+${countryCode} ${rest.slice(0, 2)} ${rest.slice(2, 5)} ${rest.slice(5, 9)}`;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -1479,10 +1514,37 @@ export default function RegistrationForm({
                                   name: `${newFirstName} ${member.lastName || ''}`.trim()
                                 };
                                 setMembers(newMembers);
+                                // Clear error when user types
+                                const fieldKey = `${members.length > 1 ? `member_${index}_` : ''}firstName`;
+                                if (fieldErrors[fieldKey] && newFirstName.trim()) {
+                                  const newErrors = { ...fieldErrors };
+                                  delete newErrors[fieldKey];
+                                  setFieldErrors(newErrors);
+                                }
                               }}
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              onBlur={(e) => {
+                                const value = e.target.value;
+                                const fieldKey = `${members.length > 1 ? `member_${index}_` : ''}firstName`;
+                                if (!value || !value.trim()) {
+                                  setFieldErrors({ ...fieldErrors, [fieldKey]: 'First name is required' });
+                                  setShowErrors(true);
+                                }
+                              }}
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                                showErrors && fieldErrors[`${members.length > 1 ? `member_${index}_` : ''}firstName`] 
+                                  ? 'border-red-500 bg-red-50' 
+                                  : 'border-gray-300'
+                              }`}
                               required
                             />
+                            {showErrors && fieldErrors[`${members.length > 1 ? `member_${index}_` : ''}firstName`] && (
+                              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                {fieldErrors[`${members.length > 1 ? `member_${index}_` : ''}firstName`]}
+                              </p>
+                            )}
                           </div>
 
                           <div>
@@ -1501,10 +1563,37 @@ export default function RegistrationForm({
                                   name: `${member.firstName || ''} ${newLastName}`.trim()
                                 };
                                 setMembers(newMembers);
+                                // Clear error when user types
+                                const fieldKey = `${members.length > 1 ? `member_${index}_` : ''}lastName`;
+                                if (fieldErrors[fieldKey] && newLastName.trim()) {
+                                  const newErrors = { ...fieldErrors };
+                                  delete newErrors[fieldKey];
+                                  setFieldErrors(newErrors);
+                                }
                               }}
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              onBlur={(e) => {
+                                const value = e.target.value;
+                                const fieldKey = `${members.length > 1 ? `member_${index}_` : ''}lastName`;
+                                if (!value || !value.trim()) {
+                                  setFieldErrors({ ...fieldErrors, [fieldKey]: 'Last name is required' });
+                                  setShowErrors(true);
+                                }
+                              }}
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                                showErrors && fieldErrors[`${members.length > 1 ? `member_${index}_` : ''}lastName`] 
+                                  ? 'border-red-500 bg-red-50' 
+                                  : 'border-gray-300'
+                              }`}
                               required
                             />
+                            {showErrors && fieldErrors[`${members.length > 1 ? `member_${index}_` : ''}lastName`] && (
+                              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                {fieldErrors[`${members.length > 1 ? `member_${index}_` : ''}lastName`]}
+                              </p>
+                            )}
                           </div>
 
                           <div>
@@ -1514,12 +1603,45 @@ export default function RegistrationForm({
                             <input
                               type="email"
                               value={member.email || ''}
-                              onChange={(e) => handleMemberChange(index, 'email', e.target.value)}
+                              onChange={(e) => {
+                                handleMemberChange(index, 'email', e.target.value);
+                                // Clear error when user types and email is valid
+                                const fieldKey = `${members.length > 1 ? `member_${index}_` : ''}email`;
+                                if (fieldErrors[fieldKey] && validateEmail(e.target.value)) {
+                                  const newErrors = { ...fieldErrors };
+                                  delete newErrors[fieldKey];
+                                  setFieldErrors(newErrors);
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const value = e.target.value;
+                                const fieldKey = `${members.length > 1 ? `member_${index}_` : ''}email`;
+                                if (!value || !value.trim()) {
+                                  setFieldErrors({ ...fieldErrors, [fieldKey]: 'Email is required' });
+                                  setShowErrors(true);
+                                } else if (!validateEmail(value)) {
+                                  setFieldErrors({ ...fieldErrors, [fieldKey]: 'Invalid email format (example: user@email.com)' });
+                                  setShowErrors(true);
+                                }
+                              }}
                               placeholder="your.email@example.com"
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                                showErrors && fieldErrors[`${members.length > 1 ? `member_${index}_` : ''}email`] 
+                                  ? 'border-red-500 bg-red-50' 
+                                  : 'border-gray-300'
+                              }`}
                               required
                             />
-                            <p className="text-xs text-gray-500 mt-1">Valid email format required</p>
+                            {showErrors && fieldErrors[`${members.length > 1 ? `member_${index}_` : ''}email`] ? (
+                              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                {fieldErrors[`${members.length > 1 ? `member_${index}_` : ''}email`]}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-gray-500 mt-1">Valid email format required</p>
+                            )}
                           </div>
 
                           <div>
@@ -1529,12 +1651,46 @@ export default function RegistrationForm({
                             <input
                               type="tel"
                               value={member.phone || ''}
-                              onChange={(e) => handleMemberChange(index, 'phone', e.target.value)}
+                              onChange={(e) => {
+                                const formattedPhone = formatPhoneNumber(e.target.value);
+                                handleMemberChange(index, 'phone', formattedPhone);
+                                // Clear error when user types and phone is valid
+                                const fieldKey = `${members.length > 1 ? `member_${index}_` : ''}phone`;
+                                if (fieldErrors[fieldKey] && validatePhone(formattedPhone)) {
+                                  const newErrors = { ...fieldErrors };
+                                  delete newErrors[fieldKey];
+                                  setFieldErrors(newErrors);
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const value = e.target.value;
+                                const fieldKey = `${members.length > 1 ? `member_${index}_` : ''}phone`;
+                                if (!value || !value.trim()) {
+                                  setFieldErrors({ ...fieldErrors, [fieldKey]: 'Mobile number is required' });
+                                  setShowErrors(true);
+                                } else if (!validatePhone(value)) {
+                                  setFieldErrors({ ...fieldErrors, [fieldKey]: 'Invalid format. Use: +94 71 234 5678' });
+                                  setShowErrors(true);
+                                }
+                              }}
                               placeholder="+94 70 123 4567"
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                                showErrors && fieldErrors[`${members.length > 1 ? `member_${index}_` : ''}phone`] 
+                                  ? 'border-red-500 bg-red-50' 
+                                  : 'border-gray-300'
+                              }`}
                               required
                             />
-                            <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +94 for Sri Lanka)</p>
+                            {showErrors && fieldErrors[`${members.length > 1 ? `member_${index}_` : ''}phone`] ? (
+                              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                {fieldErrors[`${members.length > 1 ? `member_${index}_` : ''}phone`]}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-gray-500 mt-1">Must include country code (e.g., +94 for Sri Lanka)</p>
+                            )}
                           </div>
                         </>
                       )}
@@ -1552,7 +1708,9 @@ export default function RegistrationForm({
               <select
                 value={referralSource}
                 onChange={(e) => setReferralSource(e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-black"
+                className={`w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-black ${
+                  showErrors && fieldErrors['referralSource'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                }`}
                 required
               >
                 <option value="">Select an option</option>
@@ -1565,6 +1723,14 @@ export default function RegistrationForm({
                 <option value="Email">Email</option>
                 <option value="Friend or Family">Friend or Family</option>
               </select>
+              {showErrors && fieldErrors['referralSource'] && (
+                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {fieldErrors['referralSource']}
+                </p>
+              )}
             </div>
 
             {/* Submit Button */}
