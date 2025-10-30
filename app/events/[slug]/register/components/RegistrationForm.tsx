@@ -289,9 +289,11 @@ export default function RegistrationForm({
         setFieldErrors(errors);
         return;
       }
-      if (!validatePhone(representative.phone)) {
+      // Strict validation: MUST start with + and country code
+      const strictPhoneRegex = /^\+\d{1,3}\d{9,14}$/;
+      if (!strictPhoneRegex.test(representative.phone.replace(/\s/g, ''))) {
         toast.error('Please enter a valid phone number with country code');
-        errors['rep_phone'] = 'Invalid format. Use: +94 71 234 5678';
+        errors['rep_phone'] = 'Must include country code. Format: +94 71 234 5678';
         setFieldErrors(errors);
         return;
       }
@@ -304,6 +306,30 @@ export default function RegistrationForm({
           setFieldErrors(errors);
           return;
         }
+        // Validate name length
+        const memberName = teamMembers[i].trim();
+        if (memberName.length < 2) {
+          toast.error(`Team member ${i + 1} name must be at least 2 characters`);
+          errors[`teamMember_${i}`] = 'Name must be at least 2 characters';
+          setFieldErrors(errors);
+          return;
+        }
+        if (memberName.length > 100) {
+          toast.error(`Team member ${i + 1} name must be less than 100 characters`);
+          errors[`teamMember_${i}`] = 'Name must be less than 100 characters';
+          setFieldErrors(errors);
+          return;
+        }
+      }
+      
+      // Check for duplicate team member names
+      const memberNames = teamMembers.map(name => name.trim().toLowerCase());
+      const duplicates = memberNames.filter((name, index) => memberNames.indexOf(name) !== index);
+      if (duplicates.length > 0) {
+        toast.error('Duplicate team member names are not allowed');
+        errors['teamMembers'] = 'Each team member must have a unique name';
+        setFieldErrors(errors);
+        return;
       }
     } else if (isCompanyRegistration) {
       // Validate company name
@@ -828,7 +854,23 @@ export default function RegistrationForm({
                   <input
                     type="text"
                     value={teamName}
-                    onChange={(e) => setTeamName(e.target.value)}
+                    onChange={(e) => {
+                      setTeamName(e.target.value);
+                      // Clear error when user types
+                      if (fieldErrors['teamName'] && e.target.value.trim()) {
+                        const newErrors = { ...fieldErrors };
+                        delete newErrors['teamName'];
+                        setFieldErrors(newErrors);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const value = e.target.value;
+                      if (!value || !value.trim()) {
+                        setFieldErrors({ ...fieldErrors, teamName: 'Team name is required' });
+                        setShowErrors(true);
+                      }
+                    }}
+                    placeholder="Enter your team name"
                     className={`w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
                       showErrors && fieldErrors['teamName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
                     }`}
@@ -866,6 +908,19 @@ export default function RegistrationForm({
                             name: `${newFirstName} ${members[0]?.lastName || ''}`.trim()
                           };
                           setMembers(newMembers);
+                          // Clear error when user types
+                          if (fieldErrors['rep_firstName'] && newFirstName.trim()) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['rep_firstName'];
+                            setFieldErrors(newErrors);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = e.target.value;
+                          if (!value || !value.trim()) {
+                            setFieldErrors({ ...fieldErrors, rep_firstName: 'First name is required' });
+                            setShowErrors(true);
+                          }
                         }}
                         className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
                           showErrors && fieldErrors['rep_firstName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
@@ -873,7 +928,12 @@ export default function RegistrationForm({
                         required
                       />
                       {showErrors && fieldErrors['rep_firstName'] && (
-                        <p className="text-xs text-red-600 mt-1">{fieldErrors['rep_firstName']}</p>
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['rep_firstName']}
+                        </p>
                       )}
                     </div>
 
@@ -893,6 +953,19 @@ export default function RegistrationForm({
                             name: `${members[0]?.firstName || ''} ${newLastName}`.trim()
                           };
                           setMembers(newMembers);
+                          // Clear error when user types
+                          if (fieldErrors['rep_lastName'] && newLastName.trim()) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['rep_lastName'];
+                            setFieldErrors(newErrors);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = e.target.value;
+                          if (!value || !value.trim()) {
+                            setFieldErrors({ ...fieldErrors, rep_lastName: 'Last name is required' });
+                            setShowErrors(true);
+                          }
                         }}
                         className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
                           showErrors && fieldErrors['rep_lastName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
@@ -900,7 +973,12 @@ export default function RegistrationForm({
                         required
                       />
                       {showErrors && fieldErrors['rep_lastName'] && (
-                        <p className="text-xs text-red-600 mt-1">{fieldErrors['rep_lastName']}</p>
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['rep_lastName']}
+                        </p>
                       )}
                     </div>
 
@@ -911,7 +989,25 @@ export default function RegistrationForm({
                       <input
                         type="email"
                         value={members[0]?.email || ''}
-                        onChange={(e) => handleMemberChange(0, 'email', e.target.value)}
+                        onChange={(e) => {
+                          handleMemberChange(0, 'email', e.target.value);
+                          // Clear error when user types and email is valid
+                          if (fieldErrors['rep_email'] && validateEmail(e.target.value)) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['rep_email'];
+                            setFieldErrors(newErrors);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = e.target.value;
+                          if (!value || !value.trim()) {
+                            setFieldErrors({ ...fieldErrors, rep_email: 'Email is required' });
+                            setShowErrors(true);
+                          } else if (!validateEmail(value)) {
+                            setFieldErrors({ ...fieldErrors, rep_email: 'Invalid email format (example: user@email.com)' });
+                            setShowErrors(true);
+                          }
+                        }}
                         placeholder="example@email.com"
                         className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
                           showErrors && fieldErrors['rep_email'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
@@ -919,7 +1015,12 @@ export default function RegistrationForm({
                         required
                       />
                       {showErrors && fieldErrors['rep_email'] ? (
-                        <p className="text-xs text-red-600 mt-1">{fieldErrors['rep_email']}</p>
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['rep_email']}
+                        </p>
                       ) : (
                         <p className="text-xs text-gray-500 mt-1">Valid email format required</p>
                       )}
@@ -932,7 +1033,28 @@ export default function RegistrationForm({
                       <input
                         type="tel"
                         value={members[0]?.phone || ''}
-                        onChange={(e) => handleMemberChange(0, 'phone', e.target.value)}
+                        onChange={(e) => {
+                          const formattedPhone = formatPhoneNumber(e.target.value);
+                          handleMemberChange(0, 'phone', formattedPhone);
+                          // Clear error when user types and phone is valid
+                          const strictPhoneRegex = /^\+\d{1,3}\d{9,14}$/;
+                          if (fieldErrors['rep_phone'] && strictPhoneRegex.test(formattedPhone.replace(/\s/g, ''))) {
+                            const newErrors = { ...fieldErrors };
+                            delete newErrors['rep_phone'];
+                            setFieldErrors(newErrors);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = e.target.value;
+                          const strictPhoneRegex = /^\+\d{1,3}\d{9,14}$/;
+                          if (!value || !value.trim()) {
+                            setFieldErrors({ ...fieldErrors, rep_phone: 'Phone number is required' });
+                            setShowErrors(true);
+                          } else if (!strictPhoneRegex.test(value.replace(/\s/g, ''))) {
+                            setFieldErrors({ ...fieldErrors, rep_phone: 'Must include country code. Format: +94 71 234 5678' });
+                            setShowErrors(true);
+                          }
+                        }}
                         placeholder="+94 71 234 5678"
                         className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
                           showErrors && fieldErrors['rep_phone'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
@@ -940,9 +1062,14 @@ export default function RegistrationForm({
                         required
                       />
                       {showErrors && fieldErrors['rep_phone'] ? (
-                        <p className="text-xs text-red-600 mt-1">{fieldErrors['rep_phone']}</p>
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {fieldErrors['rep_phone']}
+                        </p>
                       ) : (
-                        <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +94 for Sri Lanka)</p>
+                        <p className="text-xs text-gray-500 mt-1">Must include country code (e.g., +94 for Sri Lanka)</p>
                       )}
                     </div>
                   </div>
@@ -951,7 +1078,7 @@ export default function RegistrationForm({
                 {/* Team Members */}
                 <div>
                   <label className="block text-sm font-semibold text-black mb-2">
-                    Team Members (up to 10 members)
+                    Team Members ({teamMembers.filter(m => m.trim()).length}/10 members)
                   </label>
                   <div className="space-y-3">
                     {teamMembers.map((memberName, index) => (
@@ -960,7 +1087,29 @@ export default function RegistrationForm({
                           <input
                             type="text"
                             value={memberName}
-                            onChange={(e) => handleTeamMemberChange(index, e.target.value)}
+                            onChange={(e) => {
+                              handleTeamMemberChange(index, e.target.value);
+                              // Clear error when user types valid name
+                              const value = e.target.value.trim();
+                              if (fieldErrors[`teamMember_${index}`] && value.length >= 2 && value.length <= 100) {
+                                const newErrors = { ...fieldErrors };
+                                delete newErrors[`teamMember_${index}`];
+                                setFieldErrors(newErrors);
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const value = e.target.value.trim();
+                              if (!value) {
+                                setFieldErrors({ ...fieldErrors, [`teamMember_${index}`]: 'Member name is required' });
+                                setShowErrors(true);
+                              } else if (value.length < 2) {
+                                setFieldErrors({ ...fieldErrors, [`teamMember_${index}`]: 'Name must be at least 2 characters' });
+                                setShowErrors(true);
+                              } else if (value.length > 100) {
+                                setFieldErrors({ ...fieldErrors, [`teamMember_${index}`]: 'Name must be less than 100 characters' });
+                                setShowErrors(true);
+                              }
+                            }}
                             placeholder={`Team Member ${index + 1} Name`}
                             className={`flex-1 px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
                               showErrors && fieldErrors[`teamMember_${index}`] ? 'border-red-500 bg-red-50' : 'border-gray-300'
@@ -977,7 +1126,12 @@ export default function RegistrationForm({
                           )}
                         </div>
                         {showErrors && fieldErrors[`teamMember_${index}`] && (
-                          <p className="text-xs text-red-600 mt-1">{fieldErrors[`teamMember_${index}`]}</p>
+                          <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            {fieldErrors[`teamMember_${index}`]}
+                          </p>
                         )}
                       </div>
                     ))}
@@ -993,6 +1147,14 @@ export default function RegistrationForm({
                       </svg>
                       Add Team Member
                     </button>
+                  )}
+                  {showErrors && fieldErrors['teamMembers'] && (
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {fieldErrors['teamMembers']}
+                    </p>
                   )}
                 </div>
               </>

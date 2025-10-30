@@ -26,6 +26,8 @@ interface AddToCartRequest {
   teamMembers?: string[];
   members: Array<{
     name: string;
+    firstName?: string;
+    lastName?: string;
     email?: string;
     phone?: string;
     role?: string;
@@ -217,6 +219,8 @@ export async function POST(
     console.log('🧹 Sanitizing member data...');
     const sanitizedMembers = body.members.map((member) => ({
       name: sanitizeInput(member.name),
+      firstName: member.firstName ? sanitizeInput(member.firstName) : undefined,
+      lastName: member.lastName ? sanitizeInput(member.lastName) : undefined,
       email: member.email ? sanitizeInput(member.email) : undefined,
       phone: member.phone ? sanitizeInput(member.phone) : undefined,
       role: member.role ? sanitizeInput(member.role) : undefined,
