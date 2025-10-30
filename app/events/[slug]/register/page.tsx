@@ -38,9 +38,9 @@ export default async function RegistrationPage({ params }: PageProps) {
   const { slug } = await params;
   const session = await getServerSession(authOptions);
 
-  // Redirect to sign in if not authenticated
+  // Redirect to login if not authenticated
   if (!session?.user) {
-    redirect(`/auth/signin?callbackUrl=/events/${slug}/register`);
+    redirect(`/auth/login?callbackUrl=/events/${slug}/register`);
   }
 
   // Fetch competition data
