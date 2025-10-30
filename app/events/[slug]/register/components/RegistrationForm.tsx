@@ -47,6 +47,7 @@ export default function RegistrationForm({
   const [editItemId, setEditItemId] = useState<string | null>(editingItem?.id || null);
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [showErrors, setShowErrors] = useState(false);
+  const [studentConsent, setStudentConsent] = useState(false);
 
   // Update form when editingItem changes - only run when editingItem.id changes
   useEffect(() => {
@@ -502,51 +503,136 @@ export default function RegistrationForm({
         
         // Validate student fields if student type
         if (selectedType.type === 'STUDENT') {
+          // Check student consent
+          if (!studentConsent) {
+            toast.error('Please accept the student category consent');
+            errors['student_consent'] = 'You must accept the consent to register as a student';
+            setFieldErrors(errors);
+            return;
+          }
+          
+          // Validate first name length
+          if (member.firstName.trim().length < 2) {
+            toast.error('First name must be at least 2 characters');
+            errors['student_firstName'] = 'First name must be at least 2 characters';
+            setFieldErrors(errors);
+            return;
+          }
+          if (member.firstName.trim().length > 100) {
+            toast.error('First name must be less than 100 characters');
+            errors['student_firstName'] = 'First name must be less than 100 characters';
+            setFieldErrors(errors);
+            return;
+          }
+          
+          // Validate last name length
+          if (member.lastName.trim().length < 2) {
+            toast.error('Last name must be at least 2 characters');
+            errors['student_lastName'] = 'Last name must be at least 2 characters';
+            setFieldErrors(errors);
+            return;
+          }
+          if (member.lastName.trim().length > 100) {
+            toast.error('Last name must be less than 100 characters');
+            errors['student_lastName'] = 'Last name must be less than 100 characters';
+            setFieldErrors(errors);
+            return;
+          }
+          
           if (!member.phone || !member.phone.trim()) {
             toast.error(`Please enter mobile number ${members.length > 1 ? `for member ${i + 1}` : ''}`);
-            errors[`${memberPrefix}phone`] = 'Mobile number is required';
+            errors['student_phone'] = 'Mobile number is required';
             setFieldErrors(errors);
             return;
           }
-          if (!validatePhone(member.phone)) {
+          // Strict validation: MUST start with + and country code
+          const strictPhoneRegex = /^\+\d{1,3}\d{9,14}$/;
+          if (!strictPhoneRegex.test(member.phone.replace(/\s/g, ''))) {
             toast.error('Please enter a valid phone number with country code');
-            errors[`${memberPrefix}phone`] = 'Invalid format. Use: +94 71 234 5678';
+            errors['student_phone'] = 'Phone number must include country code (e.g., +94771234567)';
             setFieldErrors(errors);
             return;
           }
+          
           if (!member.institution || !member.institution.trim()) {
             toast.error(`Please enter institution ${members.length > 1 ? `for member ${i + 1}` : ''}`);
-            errors[`${memberPrefix}institution`] = 'Institution is required';
+            errors['student_institution'] = 'Institution is required';
             setFieldErrors(errors);
             return;
           }
+          if (member.institution.trim().length < 5) {
+            toast.error('Institution name must be at least 5 characters');
+            errors['student_institution'] = 'Institution name must be at least 5 characters';
+            setFieldErrors(errors);
+            return;
+          }
+          if (member.institution.trim().length > 200) {
+            toast.error('Institution name must be less than 200 characters');
+            errors['student_institution'] = 'Institution name must be less than 200 characters';
+            setFieldErrors(errors);
+            return;
+          }
+          
           if (!member.courseOfStudy || !member.courseOfStudy.trim()) {
             toast.error(`Please enter course of study ${members.length > 1 ? `for member ${i + 1}` : ''}`);
-            errors[`${memberPrefix}courseOfStudy`] = 'Course of study is required';
+            errors['student_course'] = 'Course of study is required';
             setFieldErrors(errors);
             return;
           }
+          if (member.courseOfStudy.trim().length < 3) {
+            toast.error('Course name must be at least 3 characters');
+            errors['student_course'] = 'Course name must be at least 3 characters';
+            setFieldErrors(errors);
+            return;
+          }
+          if (member.courseOfStudy.trim().length > 150) {
+            toast.error('Course name must be less than 150 characters');
+            errors['student_course'] = 'Course name must be less than 150 characters';
+            setFieldErrors(errors);
+            return;
+          }
+          
           if (!member.dateOfBirth || !member.dateOfBirth.trim()) {
             toast.error(`Please enter date of birth ${members.length > 1 ? `for member ${i + 1}` : ''}`);
-            errors[`${memberPrefix}dateOfBirth`] = 'Date of birth is required';
+            errors['student_dob'] = 'Date of birth is required';
             setFieldErrors(errors);
             return;
           }
+          // Validate age (16-25 years)
+          const birthDate = new Date(member.dateOfBirth);
+          const today = new Date();
+          const age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          const adjustedAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) ? age - 1 : age;
+          
+          if (adjustedAge < 16) {
+            toast.error('You must be at least 16 years old');
+            errors['student_dob'] = 'You must be at least 16 years old';
+            setFieldErrors(errors);
+            return;
+          }
+          if (adjustedAge > 25) {
+            toast.error('Student category is for individuals below 25 years');
+            errors['student_dob'] = 'Student category is for individuals below 25 years';
+            setFieldErrors(errors);
+            return;
+          }
+          
           if (!member.studentEmail || !member.studentEmail.trim()) {
             toast.error(`Please enter student email ${members.length > 1 ? `for member ${i + 1}` : ''}`);
-            errors[`${memberPrefix}studentEmail`] = 'Student email is required';
+            errors['student_email'] = 'Student email is required';
             setFieldErrors(errors);
             return;
           }
           if (!validateEmail(member.studentEmail)) {
             toast.error('Please enter a valid student email address');
-            errors[`${memberPrefix}studentEmail`] = 'Invalid email format (example: user@email.com)';
+            errors['student_email'] = 'Invalid email format (example: user@email.com)';
             setFieldErrors(errors);
             return;
           }
           if (!member.idCardUrl) {
             toast.error(`Please upload ID card ${members.length > 1 ? `for member ${i + 1}` : ''}`);
-            errors[`${memberPrefix}idCard`] = 'ID card upload is required';
+            errors['student_idCard'] = 'ID card upload is required';
             setFieldErrors(errors);
             return;
           }
@@ -746,6 +832,7 @@ export default function RegistrationForm({
           agreedToPrivacyPolicy: false,
           agreedToRefundPolicy: false,
         });
+        setStudentConsent(false);
         setReferralSource('');
         setCountry('Sri Lanka');
       } else {
@@ -789,6 +876,7 @@ export default function RegistrationForm({
                   agreedToPrivacyPolicy: false,
                   agreedToRefundPolicy: false,
                 });
+                setStudentConsent(false);
                 setReferralSource('');
                 setCountry('Sri Lanka');
                 toast.info('Edit cancelled');
@@ -1663,11 +1751,22 @@ export default function RegistrationForm({
                         <>
                           {/* Consent Message */}
                           <div className="md:col-span-2">
-                            <div className="bg-yellow-50 border-l-4 border-orange-500 p-4 mb-4">
+                            <div className={`border-l-4 p-4 mb-4 ${
+                              showErrors && !studentConsent ? 'bg-red-50 border-red-500' : 'bg-yellow-50 border-orange-500'
+                            }`}>
                               <div className="flex items-start">
                                 <input
                                   type="checkbox"
                                   id={`consent-${index}`}
+                                  checked={studentConsent}
+                                  onChange={(e) => {
+                                    setStudentConsent(e.target.checked);
+                                    if (e.target.checked && fieldErrors['student_consent']) {
+                                      const newErrors = { ...fieldErrors };
+                                      delete newErrors['student_consent'];
+                                      setFieldErrors(newErrors);
+                                    }
+                                  }}
                                   className="mt-1 w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
                                   required
                                 />
@@ -1675,6 +1774,14 @@ export default function RegistrationForm({
                                   <span className="font-semibold">Consent:</span> If you are selecting the Student category, designated for individuals below 25 years of age, please ensure the accuracy of the information provided. Any misrepresentation may result in disqualification or subject your application to further verification.
                                 </label>
                               </div>
+                              {showErrors && fieldErrors['student_consent'] && (
+                                <p className="text-xs text-red-600 mt-2 ml-7 flex items-center gap-1">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                  </svg>
+                                  {fieldErrors['student_consent']}
+                                </p>
+                              )}
                             </div>
                           </div>
 
@@ -1694,10 +1801,41 @@ export default function RegistrationForm({
                                   name: `${newFirstName} ${member.lastName || ''}`.trim()
                                 };
                                 setMembers(newMembers);
+                                // Clear error when valid
+                                const value = newFirstName.trim();
+                                if (fieldErrors['student_firstName'] && value.length >= 2 && value.length <= 100) {
+                                  const newErrors = { ...fieldErrors };
+                                  delete newErrors['student_firstName'];
+                                  setFieldErrors(newErrors);
+                                }
                               }}
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              onBlur={(e) => {
+                                const value = e.target.value.trim();
+                                if (!value) {
+                                  setFieldErrors({ ...fieldErrors, student_firstName: 'First name is required' });
+                                  setShowErrors(true);
+                                } else if (value.length < 2) {
+                                  setFieldErrors({ ...fieldErrors, student_firstName: 'First name must be at least 2 characters' });
+                                  setShowErrors(true);
+                                } else if (value.length > 100) {
+                                  setFieldErrors({ ...fieldErrors, student_firstName: 'First name must be less than 100 characters' });
+                                  setShowErrors(true);
+                                }
+                              }}
+                              placeholder="Enter your first name"
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                                showErrors && fieldErrors['student_firstName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                              }`}
                               required
                             />
+                            {showErrors && fieldErrors['student_firstName'] && (
+                              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                {fieldErrors['student_firstName']}
+                              </p>
+                            )}
                           </div>
 
                           <div>
@@ -1716,10 +1854,41 @@ export default function RegistrationForm({
                                   name: `${member.firstName || ''} ${newLastName}`.trim()
                                 };
                                 setMembers(newMembers);
+                                // Clear error when valid
+                                const value = newLastName.trim();
+                                if (fieldErrors['student_lastName'] && value.length >= 2 && value.length <= 100) {
+                                  const newErrors = { ...fieldErrors };
+                                  delete newErrors['student_lastName'];
+                                  setFieldErrors(newErrors);
+                                }
                               }}
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              onBlur={(e) => {
+                                const value = e.target.value.trim();
+                                if (!value) {
+                                  setFieldErrors({ ...fieldErrors, student_lastName: 'Last name is required' });
+                                  setShowErrors(true);
+                                } else if (value.length < 2) {
+                                  setFieldErrors({ ...fieldErrors, student_lastName: 'Last name must be at least 2 characters' });
+                                  setShowErrors(true);
+                                } else if (value.length > 100) {
+                                  setFieldErrors({ ...fieldErrors, student_lastName: 'Last name must be less than 100 characters' });
+                                  setShowErrors(true);
+                                }
+                              }}
+                              placeholder="Enter your last name"
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                                showErrors && fieldErrors['student_lastName'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                              }`}
                               required
                             />
+                            {showErrors && fieldErrors['student_lastName'] && (
+                              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                {fieldErrors['student_lastName']}
+                              </p>
+                            )}
                           </div>
 
                           <div>
@@ -1729,12 +1898,44 @@ export default function RegistrationForm({
                             <input
                               type="tel"
                               value={member.phone || ''}
-                              onChange={(e) => handleMemberChange(index, 'phone', e.target.value)}
+                              onChange={(e) => {
+                                const formattedPhone = formatPhoneNumber(e.target.value);
+                                handleMemberChange(index, 'phone', formattedPhone);
+                                // Clear error when valid phone
+                                const strictPhoneRegex = /^\+\d{1,3}\d{9,14}$/;
+                                if (fieldErrors['student_phone'] && strictPhoneRegex.test(formattedPhone.replace(/\s/g, ''))) {
+                                  const newErrors = { ...fieldErrors };
+                                  delete newErrors['student_phone'];
+                                  setFieldErrors(newErrors);
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const value = e.target.value.replace(/\s/g, '');
+                                const strictPhoneRegex = /^\+\d{1,3}\d{9,14}$/;
+                                if (!value) {
+                                  setFieldErrors({ ...fieldErrors, student_phone: 'Phone number is required' });
+                                  setShowErrors(true);
+                                } else if (!strictPhoneRegex.test(value)) {
+                                  setFieldErrors({ ...fieldErrors, student_phone: 'Phone number must include country code (e.g., +94771234567)' });
+                                  setShowErrors(true);
+                                }
+                              }}
                               placeholder="+94 70 123 4567"
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                                showErrors && fieldErrors['student_phone'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                              }`}
                               required
                             />
-                            <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +94 for Sri Lanka)</p>
+                            {showErrors && fieldErrors['student_phone'] ? (
+                              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                {fieldErrors['student_phone']}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +94 for Sri Lanka)</p>
+                            )}
                           </div>
 
                           <div>
@@ -1744,11 +1945,45 @@ export default function RegistrationForm({
                             <input
                               type="text"
                               value={member.institution || ''}
-                              onChange={(e) => handleMemberChange(index, 'institution', e.target.value)}
+                              onChange={(e) => {
+                                handleMemberChange(index, 'institution', e.target.value);
+                                // Clear error when valid
+                                const value = e.target.value.trim();
+                                if (fieldErrors['student_institution'] && value.length >= 5 && value.length <= 200) {
+                                  const newErrors = { ...fieldErrors };
+                                  delete newErrors['student_institution'];
+                                  setFieldErrors(newErrors);
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const value = e.target.value.trim();
+                                if (!value) {
+                                  setFieldErrors({ ...fieldErrors, student_institution: 'Institution name is required' });
+                                  setShowErrors(true);
+                                } else if (value.length < 5) {
+                                  setFieldErrors({ ...fieldErrors, student_institution: 'Institution name must be at least 5 characters' });
+                                  setShowErrors(true);
+                                } else if (value.length > 200) {
+                                  setFieldErrors({ ...fieldErrors, student_institution: 'Institution name must be less than 200 characters' });
+                                  setShowErrors(true);
+                                }
+                              }}
                               placeholder="University of Moratuwa"
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                                showErrors && fieldErrors['student_institution'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                              }`}
                               required
                             />
+                            {showErrors && fieldErrors['student_institution'] ? (
+                              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                {fieldErrors['student_institution']}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-gray-500 mt-1">{(member.institution || '').length}/200 characters</p>
+                            )}
                           </div>
 
                           <div>
@@ -1758,11 +1993,45 @@ export default function RegistrationForm({
                             <input
                               type="text"
                               value={member.courseOfStudy || ''}
-                              onChange={(e) => handleMemberChange(index, 'courseOfStudy', e.target.value)}
+                              onChange={(e) => {
+                                handleMemberChange(index, 'courseOfStudy', e.target.value);
+                                // Clear error when valid
+                                const value = e.target.value.trim();
+                                if (fieldErrors['student_course'] && value.length >= 3 && value.length <= 150) {
+                                  const newErrors = { ...fieldErrors };
+                                  delete newErrors['student_course'];
+                                  setFieldErrors(newErrors);
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const value = e.target.value.trim();
+                                if (!value) {
+                                  setFieldErrors({ ...fieldErrors, student_course: 'Course of study is required' });
+                                  setShowErrors(true);
+                                } else if (value.length < 3) {
+                                  setFieldErrors({ ...fieldErrors, student_course: 'Course name must be at least 3 characters' });
+                                  setShowErrors(true);
+                                } else if (value.length > 150) {
+                                  setFieldErrors({ ...fieldErrors, student_course: 'Course name must be less than 150 characters' });
+                                  setShowErrors(true);
+                                }
+                              }}
                               placeholder="B.Sc. in Computer Science"
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                                showErrors && fieldErrors['student_course'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                              }`}
                               required
                             />
+                            {showErrors && fieldErrors['student_course'] ? (
+                              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                {fieldErrors['student_course']}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-gray-500 mt-1">{(member.courseOfStudy || '').length}/150 characters</p>
+                            )}
                           </div>
 
                           <div>
@@ -1772,12 +2041,60 @@ export default function RegistrationForm({
                             <input
                               type="date"
                               value={member.dateOfBirth || ''}
-                              onChange={(e) => handleMemberChange(index, 'dateOfBirth', e.target.value)}
+                              onChange={(e) => {
+                                handleMemberChange(index, 'dateOfBirth', e.target.value);
+                                // Clear error when valid
+                                if (fieldErrors['student_dob'] && e.target.value) {
+                                  const birthDate = new Date(e.target.value);
+                                  const today = new Date();
+                                  const age = today.getFullYear() - birthDate.getFullYear();
+                                  const monthDiff = today.getMonth() - birthDate.getMonth();
+                                  const adjustedAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) ? age - 1 : age;
+                                  
+                                  if (adjustedAge >= 16 && adjustedAge <= 25) {
+                                    const newErrors = { ...fieldErrors };
+                                    delete newErrors['student_dob'];
+                                    setFieldErrors(newErrors);
+                                  }
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const value = e.target.value;
+                                if (!value) {
+                                  setFieldErrors({ ...fieldErrors, student_dob: 'Date of birth is required' });
+                                  setShowErrors(true);
+                                } else {
+                                  const birthDate = new Date(value);
+                                  const today = new Date();
+                                  const age = today.getFullYear() - birthDate.getFullYear();
+                                  const monthDiff = today.getMonth() - birthDate.getMonth();
+                                  const adjustedAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) ? age - 1 : age;
+                                  
+                                  if (adjustedAge < 16) {
+                                    setFieldErrors({ ...fieldErrors, student_dob: 'You must be at least 16 years old' });
+                                    setShowErrors(true);
+                                  } else if (adjustedAge > 25) {
+                                    setFieldErrors({ ...fieldErrors, student_dob: 'Student category is for individuals below 25 years' });
+                                    setShowErrors(true);
+                                  }
+                                }
+                              }}
                               max={new Date(new Date().setFullYear(new Date().getFullYear() - 16)).toISOString().split('T')[0]}
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                                showErrors && fieldErrors['student_dob'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                              }`}
                               required
                             />
-                            <p className="text-xs text-gray-500 mt-1">Student category is for individuals below 25 years</p>
+                            {showErrors && fieldErrors['student_dob'] ? (
+                              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                {fieldErrors['student_dob']}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-gray-500 mt-1">Must be between 16-25 years old for student category</p>
+                            )}
                           </div>
 
                           <div>
@@ -1787,19 +2104,69 @@ export default function RegistrationForm({
                             <input
                               type="email"
                               value={member.studentEmail || ''}
-                              onChange={(e) => handleMemberChange(index, 'studentEmail', e.target.value)}
+                              onChange={(e) => {
+                                handleMemberChange(index, 'studentEmail', e.target.value);
+                                // Clear error when valid email
+                                if (fieldErrors['student_email'] && validateEmail(e.target.value)) {
+                                  const newErrors = { ...fieldErrors };
+                                  delete newErrors['student_email'];
+                                  setFieldErrors(newErrors);
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const value = e.target.value.trim();
+                                if (!value) {
+                                  setFieldErrors({ ...fieldErrors, student_email: 'Student email is required' });
+                                  setShowErrors(true);
+                                } else if (!validateEmail(value)) {
+                                  setFieldErrors({ ...fieldErrors, student_email: 'Please enter a valid email address' });
+                                  setShowErrors(true);
+                                } else {
+                                  // Check if it's an educational email (optional warning, not blocking)
+                                  const eduDomains = ['.edu', '.ac.', '.school'];
+                                  const hasEduDomain = eduDomains.some(domain => value.toLowerCase().includes(domain));
+                                  if (!hasEduDomain) {
+                                    // Just show hint, don't block submission
+                                    setFieldErrors({ ...fieldErrors, student_email_hint: 'Tip: Use your official university/school email (e.g., .edu, .ac.lk)' });
+                                  } else if (fieldErrors['student_email_hint']) {
+                                    const newErrors = { ...fieldErrors };
+                                    delete newErrors['student_email_hint'];
+                                    setFieldErrors(newErrors);
+                                  }
+                                }
+                              }}
                               placeholder="student@university.ac.lk"
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                                showErrors && fieldErrors['student_email'] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                              }`}
                               required
                             />
-                            <p className="text-xs text-gray-500 mt-1">Use your official university/school email address</p>
+                            {showErrors && fieldErrors['student_email'] ? (
+                              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                {fieldErrors['student_email']}
+                              </p>
+                            ) : fieldErrors['student_email_hint'] ? (
+                              <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                                {fieldErrors['student_email_hint']}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-gray-500 mt-1">Use your official university/school email address</p>
+                            )}
                           </div>
 
                           <div>
                             <label className="block text-sm text-gray-700 mb-1">
                               Student ID Card / National ID Card / Passport <span className="text-orange-500">*</span>
                             </label>
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-orange-500 transition-colors cursor-pointer">
+                            <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer ${
+                              showErrors && fieldErrors['student_idCard'] ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-orange-500'
+                            }`}>
                               <input
                                 type="file"
                                 id={`id-card-${index}`}
@@ -1807,6 +2174,20 @@ export default function RegistrationForm({
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
                                   if (file) {
+                                    // Check file size (5MB limit)
+                                    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+                                    if (file.size > maxSize) {
+                                      setFieldErrors({ ...fieldErrors, student_idCard: 'File size must be less than 5MB' });
+                                      setShowErrors(true);
+                                      e.target.value = ''; // Clear the input
+                                      return;
+                                    }
+                                    // Clear error and proceed with upload
+                                    if (fieldErrors['student_idCard']) {
+                                      const newErrors = { ...fieldErrors };
+                                      delete newErrors['student_idCard'];
+                                      setFieldErrors(newErrors);
+                                    }
                                     handleFileUpload(index, file);
                                   }
                                 }}
@@ -1842,6 +2223,16 @@ export default function RegistrationForm({
                                 )}
                               </label>
                             </div>
+                            {showErrors && fieldErrors['student_idCard'] ? (
+                              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                {fieldErrors['student_idCard']}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-gray-500 mt-1">Max file size: 5MB • Accepted: Images (JPG, PNG) or PDF</p>
+                            )}
                           </div>
                         </>
                       ) : (
