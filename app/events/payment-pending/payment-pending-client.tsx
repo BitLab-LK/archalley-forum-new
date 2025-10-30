@@ -15,23 +15,21 @@ export default function PaymentPendingClient({ user }: PaymentPendingClientProps
   const router = useRouter();
   const searchParams = useSearchParams();
   const registrationNumber = searchParams.get('registrationNumber');
-  const [countdown, setCountdown] = useState(10);
+  const [countdown, setCountdown] = useState(30);
 
   useEffect(() => {
-    // Redirect to profile after 10 seconds
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          router.push('/profile');
-          return 0;
-        }
-        return prev - 1;
-      });
+    // Redirect to events page after 30 seconds
+    if (countdown === 0) {
+      router.push('/events');
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCountdown((prev) => prev - 1);
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [router]);
+    return () => clearTimeout(timer);
+  }, [countdown, router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12 px-4 sm:px-6 lg:px-8">
@@ -153,25 +151,19 @@ export default function PaymentPendingClient({ user }: PaymentPendingClientProps
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button
-            onClick={() => router.push('/profile')}
-            className="inline-flex items-center justify-center px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition-colors"
-          >
-            View My Registrations
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </button>
+        <div className="flex justify-center">
           <button
             onClick={() => router.push('/events')}
-            className="inline-flex items-center justify-center px-6 py-3 bg-white text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center justify-center px-8 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition-colors"
           >
             Browse More Events
+            <ArrowRight className="w-4 h-4 ml-2" />
           </button>
         </div>
 
         {/* Auto-redirect notice */}
         <p className="text-center text-sm text-gray-500 mt-6">
-          Redirecting to your profile in {countdown} seconds...
+          Redirecting to events page in {countdown} seconds...
         </p>
       </div>
     </div>

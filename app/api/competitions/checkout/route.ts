@@ -17,6 +17,8 @@ import {
   getNextOrderSequence,
   generatePayHereHash,
   isCartExpired,
+  generateRegistrationNumber,
+  getNextSequenceNumber,
 } from '@/lib/competition-utils';
 import { getPayHereConfig } from '@/lib/payhere-config';
 
@@ -111,12 +113,15 @@ export async function POST(
 
     // Handle Bank Transfer Payment
     if (paymentMethod === 'bank') {
+      // Get all unique competition IDs from cart
+      const competitionIds = [...new Set(cart.items.map((item) => item.competitionId))];
+      
       // Create payment record with PENDING status for manual verification
       const payment = await prisma.competitionPayment.create({
         data: {
           orderId,
           userId: session.user.id,
-          competitionId: cart.items[0].competitionId,
+          competitionId: cart.items[0].competitionId, // Primary competition for compatibility
           amount: totalAmount,
           currency: 'LKR',
           merchantId: payHereConfig.merchantId!,
@@ -135,6 +140,7 @@ export async function POST(
           metadata: {
             cartId: cart.id,
             itemIds: cart.items.map((item) => item.id),
+            competitionIds: competitionIds, // Track all competitions
             bankSlipUrl: body.bankSlipUrl,
             bankSlipFileName: body.bankSlipFileName,
             paymentMethod: 'bank',
@@ -142,10 +148,22 @@ export async function POST(
         },
       });
 
-      // Create registration records with PENDING status
+      // Create registration records with PENDING status (awaiting bank transfer verification)
       const registrations = await Promise.all(
         cart.items.map(async (item) => {
-          const regNumber = `REG-${orderId}-${item.id.slice(-6)}`;
+          // Get next sequence number for this competition and type
+          const sequence = await getNextSequenceNumber(
+            prisma,
+            item.competitionId,
+            (item.registrationType.name.toUpperCase() as any) || 'INDIVIDUAL'
+          );
+
+          // Generate proper registration number using standard format
+          const regNumber = generateRegistrationNumber(
+            (item.registrationType.name.toUpperCase() as any) || 'INDIVIDUAL',
+            sequence,
+            item.competition.year
+          );
           
           return prisma.competitionRegistration.create({
             data: {
@@ -159,7 +177,7 @@ export async function POST(
               companyName: item.companyName,
               participantType: (item.registrationType.name.toUpperCase() as any) || 'INDIVIDUAL',
               amountPaid: item.subtotal,
-              status: 'CONFIRMED',
+              status: 'PENDING',
               paymentId: payment.id,
             },
           });
@@ -203,11 +221,14 @@ export async function POST(
     }
 
     // Handle Card Payment (PayHere)
+    // Get all unique competition IDs from cart
+    const competitionIds = [...new Set(cart.items.map((item) => item.competitionId))];
+    
     const payment = await prisma.competitionPayment.create({
       data: {
         orderId,
         userId: session.user.id,
-        competitionId: cart.items[0].competitionId, // Primary competition
+        competitionId: cart.items[0].competitionId, // Primary competition for compatibility
         amount: totalAmount,
         currency: 'LKR',
         merchantId: payHereConfig.merchantId!,
@@ -225,6 +246,7 @@ export async function POST(
         metadata: {
           cartId: cart.id,
           itemIds: cart.items.map((item) => item.id),
+          competitionIds: competitionIds, // Track all competitions
         },
       },
     });
