@@ -131,17 +131,8 @@ export async function POST(request: NextRequest) {
             <!-- Contact Info -->
             <div style="border-top: 1px solid #e5e5e5; padding-top: 20px; margin-top: 30px;">
               <p style="color: #666; font-size: 13px; line-height: 1.6; margin: 0;">
-                <strong style="color: #000;">Important:</strong> Please check your email regularly for updates.<br>
-                <strong style="color: #000;">Questions?</strong> Contact us via WhatsApp: <a href="https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '94711942194'}" style="color: #f97316; text-decoration: none;">${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '0711942194'}</a>
+                <strong style="color: #000;">Important:</strong> Please check your email regularly for updates.
               </p>
-            </div>
-            
-            <!-- CTA Button -->
-            <div style="text-align: center; margin: 35px 0 0 0;">
-              <a href="${process.env.NEXTAUTH_URL}/profile" 
-                 style="background: #000000; color: #ffffff; padding: 14px 35px; text-decoration: none; display: inline-block; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; border: 2px solid #000000;">
-                VIEW REGISTRATION STATUS
-              </a>
             </div>
           </div>
           
@@ -256,18 +247,6 @@ export async function POST(request: NextRequest) {
                 <li style="margin-bottom: 8px;">Contact us directly for assistance</li>
               </ol>
             </div>
-            
-            <!-- CTA Buttons -->
-            <div style="text-align: center; margin: 35px 0 0 0;">
-              <a href="${process.env.NEXTAUTH_URL}/events" 
-                 style="background: #000000; color: #ffffff; padding: 14px 35px; text-decoration: none; display: inline-block; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; border: 2px solid #000000; margin-right: 10px;">
-                TRY AGAIN
-              </a>
-              <a href="mailto:${process.env.SMTP_FROM || 'support@archalley.com'}" 
-                 style="background: #ffffff; color: #000000; padding: 14px 35px; text-decoration: none; display: inline-block; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; border: 2px solid #000000;">
-                CONTACT SUPPORT
-              </a>
-            </div>
 
             <p style="color: #999; font-size: 13px; margin: 30px 0 0 0; text-align: center;">
               If you believe this is an error, please contact us with your payment proof.
@@ -278,16 +257,10 @@ export async function POST(request: NextRequest) {
           <div style="background: #f9f9f9; padding: 30px 25px; border-top: 1px solid #e5e5e5;">
             <!-- Contact Information -->
             <div style="text-align: center; margin-bottom: 20px;">
-              <h3 style="color: #000; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">CONTACT US</h3>
+              <h3 style="color: #000; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">VISIT US</h3>
               <div style="display: inline-block; text-align: left;">
                 <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   Email: <a href="mailto:${process.env.SMTP_FROM || 'support@archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.SMTP_FROM || 'support@archalley.com'}</a>
-                </p>
-                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   WhatsApp: <a href="https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, '') || '94711942194'}" style="color: #25D366; text-decoration: none;">${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+94 71 194 2194'}</a>
-                </p>
-                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   Website: <a href="${process.env.NEXTAUTH_URL || 'https://archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.NEXTAUTH_URL?.replace('https://', '').replace('http://', '') || 'archalley.com'}</a>
+                   Website: <a href="https://archalley.com/" style="color: #f97316; text-decoration: none;">archalley.com</a>
                 </p>
               </div>
             </div>
@@ -298,9 +271,11 @@ export async function POST(request: NextRequest) {
               <div style="display: inline-block;">
                 <a href="https://facebook.com/archalley" style="display: inline-block; margin: 0 8px; color: #1877f2; text-decoration: none; font-size: 13px;">Facebook</a>
                 <span style="color: #ddd;">|</span>
-                <a href="https://instagram.com/archalley" style="display: inline-block; margin: 0 8px; color: #e4405f; text-decoration: none; font-size: 13px;">Instagram</a>
+                <a href="https://www.instagram.com/archalley_insta/" style="display: inline-block; margin: 0 8px; color: #e4405f; text-decoration: none; font-size: 13px;">Instagram</a>
                 <span style="color: #ddd;">|</span>
-                <a href="https://linkedin.com/company/archalley" style="display: inline-block; margin: 0 8px; color: #0a66c2; text-decoration: none; font-size: 13px;">LinkedIn</a>
+                <a href="https://www.linkedin.com/company/archalleypage/" style="display: inline-block; margin: 0 8px; color: #0a66c2; text-decoration: none; font-size: 13px;">LinkedIn</a>
+                <span style="color: #ddd;">|</span>
+                <a href="https://www.youtube.com/@archalleytube" style="display: inline-block; margin: 0 8px; color: #ff0000; text-decoration: none; font-size: 13px;">YouTube</a>
               </div>
             </div>
 
@@ -386,16 +361,10 @@ export async function POST(request: NextRequest) {
           <div style="background: #f9f9f9; padding: 30px 25px; border-top: 1px solid #e5e5e5;">
             <!-- Contact Information -->
             <div style="text-align: center; margin-bottom: 20px;">
-              <h3 style="color: #000; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">CONTACT US</h3>
+              <h3 style="color: #000; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">VISIT US</h3>
               <div style="display: inline-block; text-align: left;">
                 <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   Email: <a href="mailto:${process.env.SMTP_FROM || 'support@archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.SMTP_FROM || 'support@archalley.com'}</a>
-                </p>
-                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   WhatsApp: <a href="https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, '') || '94711942194'}" style="color: #25D366; text-decoration: none;">${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+94 71 194 2194'}</a>
-                </p>
-                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   Website: <a href="${process.env.NEXTAUTH_URL || 'https://archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.NEXTAUTH_URL?.replace('https://', '').replace('http://', '') || 'archalley.com'}</a>
+                   Website: <a href="https://archalley.com/" style="color: #f97316; text-decoration: none;">archalley.com</a>
                 </p>
               </div>
             </div>
@@ -406,9 +375,11 @@ export async function POST(request: NextRequest) {
               <div style="display: inline-block;">
                 <a href="https://facebook.com/archalley" style="display: inline-block; margin: 0 8px; color: #1877f2; text-decoration: none; font-size: 13px;">Facebook</a>
                 <span style="color: #ddd;">|</span>
-                <a href="https://instagram.com/archalley" style="display: inline-block; margin: 0 8px; color: #e4405f; text-decoration: none; font-size: 13px;">Instagram</a>
+                <a href="https://www.instagram.com/archalley_insta/" style="display: inline-block; margin: 0 8px; color: #e4405f; text-decoration: none; font-size: 13px;">Instagram</a>
                 <span style="color: #ddd;">|</span>
-                <a href="https://linkedin.com/company/archalley" style="display: inline-block; margin: 0 8px; color: #0a66c2; text-decoration: none; font-size: 13px;">LinkedIn</a>
+                <a href="https://www.linkedin.com/company/archalleypage/" style="display: inline-block; margin: 0 8px; color: #0a66c2; text-decoration: none; font-size: 13px;">LinkedIn</a>
+                <span style="color: #ddd;">|</span>
+                <a href="https://www.youtube.com/@archalleytube" style="display: inline-block; margin: 0 8px; color: #ff0000; text-decoration: none; font-size: 13px;">YouTube</a>
               </div>
             </div>
 
@@ -461,30 +432,16 @@ export async function POST(request: NextRequest) {
             <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
               Please check your registration details and ensure everything is in order.
             </p>
-            
-            <!-- CTA Button -->
-            <div style="text-align: center; margin: 35px 0 0 0;">
-              <a href="${process.env.NEXTAUTH_URL}/profile/competitions" 
-                 style="background: #000000; color: #ffffff; padding: 14px 35px; text-decoration: none; display: inline-block; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; border: 2px solid #000000;">
-                VIEW MY REGISTRATIONS
-              </a>
-            </div>
           </div>
           
           <!-- Footer -->
           <div style="background: #f9f9f9; padding: 30px 25px; border-top: 1px solid #e5e5e5;">
             <!-- Contact Information -->
             <div style="text-align: center; margin-bottom: 20px;">
-              <h3 style="color: #000; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">CONTACT US</h3>
+              <h3 style="color: #000; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">VISIT US</h3>
               <div style="display: inline-block; text-align: left;">
                 <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   Email: <a href="mailto:${process.env.SMTP_FROM || 'support@archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.SMTP_FROM || 'support@archalley.com'}</a>
-                </p>
-                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   WhatsApp: <a href="https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, '') || '94711942194'}" style="color: #25D366; text-decoration: none;">${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+94 71 194 2194'}</a>
-                </p>
-                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   Website: <a href="${process.env.NEXTAUTH_URL || 'https://archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.NEXTAUTH_URL?.replace('https://', '').replace('http://', '') || 'archalley.com'}</a>
+                   Website: <a href="https://archalley.com/" style="color: #f97316; text-decoration: none;">archalley.com</a>
                 </p>
               </div>
             </div>
@@ -495,9 +452,11 @@ export async function POST(request: NextRequest) {
               <div style="display: inline-block;">
                 <a href="https://facebook.com/archalley" style="display: inline-block; margin: 0 8px; color: #1877f2; text-decoration: none; font-size: 13px;">Facebook</a>
                 <span style="color: #ddd;">|</span>
-                <a href="https://instagram.com/archalley" style="display: inline-block; margin: 0 8px; color: #e4405f; text-decoration: none; font-size: 13px;">Instagram</a>
+                <a href="https://www.instagram.com/archalley_insta/" style="display: inline-block; margin: 0 8px; color: #e4405f; text-decoration: none; font-size: 13px;">Instagram</a>
                 <span style="color: #ddd;">|</span>
-                <a href="https://linkedin.com/company/archalley" style="display: inline-block; margin: 0 8px; color: #0a66c2; text-decoration: none; font-size: 13px;">LinkedIn</a>
+                <a href="https://www.linkedin.com/company/archalleypage/" style="display: inline-block; margin: 0 8px; color: #0a66c2; text-decoration: none; font-size: 13px;">LinkedIn</a>
+                <span style="color: #ddd;">|</span>
+                <a href="https://www.youtube.com/@archalleytube" style="display: inline-block; margin: 0 8px; color: #ff0000; text-decoration: none; font-size: 13px;">YouTube</a>
               </div>
             </div>
 
