@@ -21,13 +21,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user is admin
-    const user = await prisma.users.findUnique({
+    // Check if user is admin and get admin details for audit trail
+    const adminUser = await prisma.users.findUnique({
       where: { email: session.user.email },
-      select: { role: true },
+      select: { 
+        id: true,
+        role: true, 
+        name: true,
+        email: true,
+      },
     });
 
-    if (user?.role !== 'ADMIN') {
+    if (adminUser?.role !== 'ADMIN') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }
@@ -35,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { paymentId, registrationId, approve } = body;
+    const { paymentId, registrationId, approve, rejectReason } = body;
 
     if (!paymentId || !registrationId || typeof approve !== 'boolean') {
       return NextResponse.json(
@@ -78,12 +83,19 @@ export async function POST(request: NextRequest) {
         console.log(`✅ Generated display code for ${registration.registrationNumber}: ${displayCode}`);
       }
 
-      // Approve payment
+      // Approve payment with audit trail
       await prisma.competitionPayment.update({
         where: { id: paymentId },
         data: {
           status: 'COMPLETED',
           completedAt: new Date(),
+          metadata: {
+            ...(payment.metadata as any || {}),
+            verifiedBy: adminUser.email,
+            verifiedByName: adminUser.name || adminUser.email,
+            verifiedAt: new Date().toISOString(),
+            action: 'APPROVED',
+          },
         },
       });
 
@@ -129,11 +141,19 @@ export async function POST(request: NextRequest) {
         message: 'Payment approved and user notified',
       });
     } else {
-      // Reject payment
+      // Reject payment with audit trail
       await prisma.competitionPayment.update({
         where: { id: paymentId },
         data: {
           status: 'FAILED',
+          metadata: {
+            ...(payment.metadata as any || {}),
+            verifiedBy: adminUser.email,
+            verifiedByName: adminUser.name || adminUser.email,
+            verifiedAt: new Date().toISOString(),
+            action: 'REJECTED',
+            rejectReason: rejectReason || 'Payment could not be verified',
+          },
         },
       });
 
@@ -145,9 +165,38 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Extract customer email from payment.customerDetails
+      const customerDetails = payment.customerDetails as any;
+      const customerEmail = customerDetails?.email || registration.user.email;
+      const customerName = customerDetails?.firstName && customerDetails?.lastName
+        ? `${customerDetails.firstName} ${customerDetails.lastName}`
+        : registration.user.name || 'User';
+
+      console.log(`📧 Sending rejection email to: ${customerEmail}`);
+
+      // Send payment rejected email with admin's reject reason
+      try {
+        await fetch(`${request.nextUrl.origin}/api/admin/send-registration-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: customerEmail,
+            name: customerName,
+            registrationNumber: registration.registrationNumber,
+            competitionTitle: registration.competition.title,
+            template: 'PAYMENT_REJECTED',
+            rejectReason: rejectReason, // ✅ FIXED: Pass admin's specific rejection reason
+          }),
+        });
+        console.log('✅ Rejection email sent with reason:', rejectReason);
+      } catch (emailError) {
+        console.error('Failed to send rejection email:', emailError);
+        // Don't fail the request if email fails
+      }
+
       return NextResponse.json({
         success: true,
-        message: 'Payment rejected',
+        message: 'Payment rejected and user notified',
       });
     }
   } catch (error) {

@@ -143,6 +143,7 @@ export async function POST(
             competitionIds: competitionIds, // Track all competitions
             bankSlipUrl: body.bankSlipUrl,
             bankSlipFileName: body.bankSlipFileName,
+            willSendViaWhatsApp: body.willSendViaWhatsApp,
             paymentMethod: 'bank',
           },
         },

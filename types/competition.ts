@@ -184,6 +184,7 @@ export interface CheckoutData {
   paymentMethod?: 'card' | 'bank';
   bankSlipUrl?: string;
   bankSlipFileName?: string;
+  willSendViaWhatsApp?: boolean;
 }
 
 // ============================================

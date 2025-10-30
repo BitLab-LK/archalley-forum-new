@@ -24,6 +24,9 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { RevertPaymentDialog } from '@/components/ui/revert-payment-dialog';
+import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
+import { RejectPaymentDialog } from '@/components/ui/reject-payment-dialog';
 
 interface Registration {
   id: string;
@@ -116,6 +119,13 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
   const [viewingRegistration, setViewingRegistration] = useState<Registration | null>(null);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const [isRevertingPayment, setIsRevertingPayment] = useState(false);
+  
+  // Dialog states
+  const [showRevertDialog, setShowRevertDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{ type: string; registration: Registration | null }>({ type: '', registration: null });
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -286,9 +296,20 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
     }
   };
 
-  // Verify bank transfer payment
-  const handleVerifyPayment = async (registration: Registration, approve: boolean) => {
+  // Open reject dialog
+  const openRejectDialog = (registration: Registration) => {
     if (!registration.payment) {
+      toast.error('No payment information found');
+      return;
+    }
+    setPendingAction({ type: 'reject', registration });
+    setShowRejectDialog(true);
+  };
+
+  // Verify bank transfer payment
+  const handleVerifyPayment = async (approve: boolean, reason?: string) => {
+    const registration = pendingAction.registration;
+    if (!registration || !registration.payment) {
       toast.error('No payment information found');
       return;
     }
@@ -302,19 +323,22 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
           paymentId: registration.payment.id,
           registrationId: registration.id,
           approve,
+          rejectReason: !approve ? reason : undefined,
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success(approve ? 'Payment verified successfully!' : 'Payment rejected');
+        toast.success(approve ? 'Payment verified successfully!' : 'Payment rejected and user notified');
         
         // Refresh data
         await refreshData();
         
-        // Close modal
+        // Close modal and dialog
         setViewingRegistration(null);
+        setShowRejectDialog(false);
+        setPendingAction({ type: '', registration: null });
       } else {
         toast.error(data.error || 'Failed to verify payment');
       }
@@ -323,6 +347,90 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
       toast.error('Failed to verify payment');
     } finally {
       setIsVerifyingPayment(false);
+    }
+  };
+
+  // Validate and format phone number for WhatsApp
+  const formatPhoneForWhatsApp = (phone: string): string | null => {
+    if (!phone) return null;
+    
+    // Remove all non-digits
+    let cleaned = phone.replace(/\D/g, '');
+    
+    // Check if it's a valid length (7-15 digits for international numbers)
+    if (cleaned.length < 7 || cleaned.length > 15) {
+      console.warn('Invalid phone number length:', phone);
+      return null;
+    }
+    
+    // If doesn't start with country code, assume Sri Lanka (+94)
+    if (!cleaned.startsWith('94') && cleaned.length === 10) {
+      cleaned = '94' + cleaned;
+    }
+    
+    // Remove leading zeros after country code
+    if (cleaned.startsWith('940')) {
+      cleaned = '94' + cleaned.substring(3);
+    }
+    
+    return cleaned;
+  };
+
+  // Bulk delete registrations
+  const handleBulkDelete = async () => {
+    console.log('Delete:', selectedRegistrations);
+    toast.info('Delete feature coming soon');
+    setShowDeleteDialog(false);
+    // TODO: Implement bulk delete API endpoint
+  };
+
+  // Open revert dialog
+  const openRevertDialog = (registration: Registration) => {
+    if (!registration.payment) {
+      toast.error('No payment information found');
+      return;
+    }
+    setPendingAction({ type: 'revert', registration });
+    setShowRevertDialog(true);
+  };
+
+  // Revert payment to PENDING
+  const handleRevertPayment = async (reason: string) => {
+    const registration = pendingAction.registration;
+    if (!registration) return;
+
+    setIsRevertingPayment(true);
+    try {
+      const response = await fetch('/api/admin/competitions/revert-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentId: registration.payment?.id,
+          registrationId: registration.id,
+          revertReason: reason || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Payment reverted to PENDING successfully!');
+        
+        // Refresh data
+        await refreshData();
+        
+        // Close modal and dialog
+        setViewingRegistration(null);
+        setShowRevertDialog(false);
+        setPendingAction({ type: '', registration: null });
+      } else {
+        toast.error(data.error || 'Failed to revert payment');
+      }
+    } catch (error) {
+      console.error('Error reverting payment:', error);
+      toast.error('Failed to revert payment');
+    } finally {
+      setIsRevertingPayment(false);
     }
   };
 
@@ -480,7 +588,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Submission
+              Project Status
             </label>
             <select
               value={submissionFilter}
@@ -514,12 +622,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                   Email
                 </button>
                 <button 
-                  onClick={() => {
-                    if (confirm(`Delete ${selectedRegistrations.length} registration(s)?`)) {
-                      console.log('Delete:', selectedRegistrations);
-                      toast.info('Delete feature coming soon');
-                    }
-                  }}
+                  onClick={() => setShowDeleteDialog(true)}
                   className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -560,7 +663,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                   Type
                 </th>
                 <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
-                  Status
+                  Payment Status
                 </th>
                 <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
                   Amount
@@ -640,9 +743,6 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(reg.status)}`}>
                         {reg.status.replace('_', ' ')}
                       </span>
-                      <div className={`mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSubmissionStatusColor(reg.submissionStatus)}`}>
-                        {reg.submissionStatus.replace('_', ' ').substring(0, 10)}
-                      </div>
                     </td>
                     <td className="px-3 py-4">
                       <div className="text-sm font-medium text-gray-900">
@@ -1014,26 +1114,108 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                         )}
                         {(viewingRegistration.payment.metadata as any).customerDetails.email && (
                           <div>
-                            <p className="text-gray-600">📧 Email</p>
+                            <p className="text-gray-600"> Email</p>
                             <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).customerDetails.email}</p>
                           </div>
                         )}
                         {(viewingRegistration.payment.metadata as any).customerDetails.phone && (
                           <div>
-                            <p className="text-gray-600">📱 Phone</p>
+                            <p className="text-gray-600"> Phone</p>
                             <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).customerDetails.phone}</p>
                           </div>
                         )}
                         {(viewingRegistration.payment.metadata as any).customerDetails.address && (
                           <div>
-                            <p className="text-gray-600">📍 Address</p>
+                            <p className="text-gray-600"> Address</p>
                             <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).customerDetails.address}</p>
                           </div>
                         )}
                         {(viewingRegistration.payment.metadata as any).customerDetails.country && (
                           <div>
-                            <p className="text-gray-600">🌍 Country</p>
+                            <p className="text-gray-600"> Country</p>
                             <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).customerDetails.country}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Audit Trail - Show verification/rejection history */}
+                  {viewingRegistration.payment.metadata && 
+                   ((viewingRegistration.payment.metadata as any).verifiedBy || 
+                    (viewingRegistration.payment.metadata as any).revertedBy) && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <h4 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Audit Trail
+                      </h4>
+                      <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+                        {/* Verification Info */}
+                        {(viewingRegistration.payment.metadata as any).verifiedBy && (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              {(viewingRegistration.payment.metadata as any).action === 'APPROVED' ? (
+                                <CheckCircle className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <X className="w-4 h-4 text-red-600" />
+                              )}
+                              <span className="font-semibold text-gray-900">
+                                {(viewingRegistration.payment.metadata as any).action === 'APPROVED' ? 'Approved' : 'Rejected'} by:
+                              </span>
+                              <span className="text-gray-700">
+                                {(viewingRegistration.payment.metadata as any).verifiedByName || 'Unknown'}
+                              </span>
+                            </div>
+                            <p className="text-gray-600 ml-6">
+                              📧 {(viewingRegistration.payment.metadata as any).verifiedBy}
+                            </p>
+                            {(viewingRegistration.payment.metadata as any).verifiedAt && (
+                              <p className="text-gray-600 ml-6">
+                                🕒 {format(new Date((viewingRegistration.payment.metadata as any).verifiedAt), 'MMM dd, yyyy HH:mm:ss')}
+                              </p>
+                            )}
+                            {(viewingRegistration.payment.metadata as any).rejectReason && (
+                              <div className="ml-6 mt-2 bg-red-50 border border-red-200 rounded p-2">
+                                <p className="text-xs font-medium text-red-900 mb-1">Rejection Reason:</p>
+                                <p className="text-sm text-red-800">{(viewingRegistration.payment.metadata as any).rejectReason}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Revert Info */}
+                        {(viewingRegistration.payment.metadata as any).revertedBy && (
+                          <div className="space-y-1 mt-3 pt-3 border-t border-gray-300">
+                            <div className="flex items-center gap-2">
+                              <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4z" />
+                              </svg>
+                              <span className="font-semibold text-gray-900">Reverted by:</span>
+                              <span className="text-gray-700">
+                                {(viewingRegistration.payment.metadata as any).revertedByName || 'Unknown'}
+                              </span>
+                            </div>
+                            <p className="text-gray-600 ml-6">
+                              📧 {(viewingRegistration.payment.metadata as any).revertedBy}
+                            </p>
+                            {(viewingRegistration.payment.metadata as any).revertedAt && (
+                              <p className="text-gray-600 ml-6">
+                                🕒 {format(new Date((viewingRegistration.payment.metadata as any).revertedAt), 'MMM dd, yyyy HH:mm:ss')}
+                              </p>
+                            )}
+                            {(viewingRegistration.payment.metadata as any).previousStatus && (
+                              <p className="text-gray-600 ml-6">
+                                📝 Previous Status: <span className="font-medium">{(viewingRegistration.payment.metadata as any).previousStatus}</span>
+                              </p>
+                            )}
+                            {(viewingRegistration.payment.metadata as any).revertReason && (
+                              <div className="ml-6 mt-2 bg-amber-50 border border-amber-200 rounded p-2">
+                                <p className="text-xs font-medium text-amber-900 mb-1">Revert Reason:</p>
+                                <p className="text-sm text-amber-800">{(viewingRegistration.payment.metadata as any).revertReason}</p>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1062,19 +1244,29 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                                 </p>
                                 <div className="bg-white border border-amber-300 rounded p-3 mt-3">
                                   <p className="text-amber-900 font-semibold mb-2">📱 Contact Details:</p>
-                                  {(viewingRegistration.payment.metadata as any).customerDetails?.phone && (
-                                    <p className="text-amber-900 mb-1">
-                                      <span className="font-medium">Phone:</span>{' '}
-                                      <a 
-                                        href={`https://wa.me/${(viewingRegistration.payment.metadata as any).customerDetails.phone.replace(/[^0-9]/g, '')}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-green-600 hover:text-green-700 underline font-bold"
-                                      >
-                                        {(viewingRegistration.payment.metadata as any).customerDetails.phone} (Click to open WhatsApp)
-                                      </a>
-                                    </p>
-                                  )}
+                                  {(viewingRegistration.payment.metadata as any).customerDetails?.phone && (() => {
+                                    const rawPhone = (viewingRegistration.payment.metadata as any).customerDetails.phone;
+                                    const formattedPhone = formatPhoneForWhatsApp(rawPhone);
+                                    return (
+                                      <p className="text-amber-900 mb-1">
+                                        <span className="font-medium">Phone:</span>{' '}
+                                        {formattedPhone ? (
+                                          <a 
+                                            href={`https://wa.me/${formattedPhone}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-green-600 hover:text-green-700 underline font-bold"
+                                          >
+                                            {rawPhone} (Click to open WhatsApp)
+                                          </a>
+                                        ) : (
+                                          <span className="text-gray-700">
+                                            {rawPhone} <span className="text-xs text-red-600">(Invalid phone format)</span>
+                                          </span>
+                                        )}
+                                      </p>
+                                    );
+                                  })()}
                                   {(viewingRegistration.payment.metadata as any).customerDetails?.email && (
                                     <p className="text-amber-900">
                                       <span className="font-medium">Email:</span>{' '}
@@ -1090,19 +1282,29 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                                 <div className="bg-green-100 border border-green-300 rounded p-3 mt-2">
                                   <p className="text-green-900 font-semibold mb-1">✅ Action Required:</p>
                                   <p className="text-green-800">Check your WhatsApp messages for the bank slip from this customer</p>
-                                  {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER && (
-                                    <p className="text-green-900 mt-2">
-                                      <span className="font-medium">Your WhatsApp:</span>{' '}
-                                      <a 
-                                        href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER.replace(/[^0-9]/g, '')}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-green-600 hover:text-green-700 underline font-bold"
-                                      >
-                                        {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER} (Click to open)
-                                      </a>
-                                    </p>
-                                  )}
+                                  {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER && (() => {
+                                    const adminPhone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
+                                    const formattedAdminPhone = formatPhoneForWhatsApp(adminPhone);
+                                    return (
+                                      <p className="text-green-900 mt-2">
+                                        <span className="font-medium">Your WhatsApp:</span>{' '}
+                                        {formattedAdminPhone ? (
+                                          <a 
+                                            href={`https://wa.me/${formattedAdminPhone}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-green-600 hover:text-green-700 underline font-bold"
+                                          >
+                                            {adminPhone} (Click to open)
+                                          </a>
+                                        ) : (
+                                          <span className="text-gray-700">
+                                            {adminPhone} <span className="text-xs text-red-600">(Invalid phone format)</span>
+                                          </span>
+                                        )}
+                                      </p>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             </div>
@@ -1112,19 +1314,67 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
 
                       {/* WhatsApp + Upload (Both methods) */}
                       {(viewingRegistration.payment.metadata as any).willSendViaWhatsApp && 
-                       'bankSlipUrl' in viewingRegistration.payment.metadata && (
-                        <div className="mb-3 bg-blue-50 border-2 border-blue-300 rounded-lg p-3">
-                          <div className="flex items-center gap-2 text-blue-800">
-                            <span className="text-lg">💬</span>
-                            <span className="text-sm font-medium">
-                              Customer uploaded slip below AND will also send via WhatsApp
-                            </span>
+                       (viewingRegistration.payment.metadata as any).bankSlipUrl && (
+                        <div className="mb-3 bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">💬</span>
+                            <div className="flex-1">
+                              <h4 className="text-base font-semibold text-blue-900 mb-1">Slip Uploaded + WhatsApp</h4>
+                              <p className="text-blue-800 text-sm">
+                                Customer uploaded slip below AND will also send via WhatsApp
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* No Slip Uploaded at All (not WhatsApp-only, just nothing) */}
+                      {!(viewingRegistration.payment.metadata as any).bankSlipUrl && 
+                       !(viewingRegistration.payment.metadata as any).willSendViaWhatsApp && (
+                        <div className="mb-3 bg-red-50 border-2 border-red-400 rounded-lg p-4">
+                          <div className="flex items-start gap-3">
+                            <span className="text-3xl">❌</span>
+                            <div className="flex-1">
+                              <h4 className="text-lg font-bold text-red-900 mb-2">NO BANK SLIP UPLOADED</h4>
+                              <p className="text-red-800 font-medium">
+                                ⚠️ Customer has not uploaded bank slip and did not select WhatsApp option
+                              </p>
+                              <div className="bg-white border border-red-300 rounded p-3 mt-3">
+                                <p className="text-red-900 font-semibold mb-2">🔍 Possible Actions:</p>
+                                <ul className="list-disc list-inside text-sm text-red-800 space-y-1">
+                                  <li>Contact customer via phone/email to request bank slip</li>
+                                  <li>Check if slip was sent through other channels</li>
+                                  <li>Verify payment received in bank account before approving</li>
+                                </ul>
+                                {(viewingRegistration.payment.metadata as any).customerDetails?.phone && (
+                                  <div className="mt-2 pt-2 border-t border-red-200">
+                                    <p className="text-red-900 text-sm">
+                                      <span className="font-medium">📱 Phone:</span>{' '}
+                                      {(viewingRegistration.payment.metadata as any).customerDetails.phone}
+                                    </p>
+                                  </div>
+                                )}
+                                {(viewingRegistration.payment.metadata as any).customerDetails?.email && (
+                                  <div className="mt-1">
+                                    <p className="text-red-900 text-sm">
+                                      <span className="font-medium">📧 Email:</span>{' '}
+                                      <a 
+                                        href={`mailto:${(viewingRegistration.payment.metadata as any).customerDetails.email}`}
+                                        className="text-blue-600 hover:text-blue-700 underline"
+                                      >
+                                        {(viewingRegistration.payment.metadata as any).customerDetails.email}
+                                      </a>
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
 
                       {/* Bank Slip if uploaded */}
-                      {'bankSlipUrl' in viewingRegistration.payment.metadata && (
+                      {(viewingRegistration.payment.metadata as any).bankSlipUrl && (
                         <>
                           <div className="flex items-center justify-between mb-3">
                             <h4 className="text-base font-semibold text-gray-900">Bank Transfer Slip</h4>
@@ -1173,7 +1423,10 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       {viewingRegistration.payment.status === 'PENDING' && (
                         <div className="flex gap-3">
                           <button
-                            onClick={() => handleVerifyPayment(viewingRegistration, true)}
+                            onClick={() => {
+                              setPendingAction({ type: 'approve', registration: viewingRegistration });
+                              handleVerifyPayment(true);
+                            }}
                             disabled={isVerifyingPayment}
                             className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
@@ -1181,11 +1434,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                             {isVerifyingPayment ? 'Verifying...' : 'Approve Payment'}
                           </button>
                           <button
-                            onClick={() => {
-                              if (confirm('Are you sure you want to reject this payment?')) {
-                                handleVerifyPayment(viewingRegistration, false);
-                              }
-                            }}
+                            onClick={() => openRejectDialog(viewingRegistration)}
                             disabled={isVerifyingPayment}
                             className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
@@ -1196,11 +1445,44 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       )}
 
                       {viewingRegistration.payment.status === 'COMPLETED' && (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                          <div className="flex items-center gap-2 text-green-800">
-                            <CheckCircle className="w-5 h-5" />
-                            <span className="text-sm font-medium">Payment Verified and Approved</span>
+                        <div className="space-y-3">
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <div className="flex items-center gap-2 text-green-800">
+                              <CheckCircle className="w-5 h-5" />
+                              <span className="text-sm font-medium">Payment Verified and Approved</span>
+                            </div>
                           </div>
+                          <button
+                            onClick={() => openRevertDialog(viewingRegistration)}
+                            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                          >
+                            <RefreshCw className="w-5 h-5" />
+                            Revert to Pending
+                          </button>
+                          <p className="text-xs text-amber-700 text-center">
+                            ⚠️ This will undo the approval and reset payment to pending status. Display code will be kept for tracking.
+                          </p>
+                        </div>
+                      )}
+
+                      {viewingRegistration.payment.status === 'FAILED' && (
+                        <div className="space-y-3">
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <div className="flex items-center gap-2 text-red-800">
+                              <X className="w-5 h-5" />
+                              <span className="text-sm font-medium">Payment Rejected</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => openRevertDialog(viewingRegistration)}
+                            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                          >
+                            <RefreshCw className="w-5 h-5" />
+                            Revert to Pending
+                          </button>
+                          <p className="text-xs text-amber-700 text-center">
+                            ⚠️ This will allow the customer to resubmit their payment. Previous rejection will be recorded in audit trail.
+                          </p>
                         </div>
                       )}
                         </>
@@ -1263,6 +1545,39 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
           </div>
         </div>
       )}
+
+      {/* Revert Payment Dialog */}
+      <RevertPaymentDialog
+        isOpen={showRevertDialog}
+        onClose={() => {
+          setShowRevertDialog(false);
+          setPendingAction({ type: '', registration: null });
+        }}
+        onConfirm={handleRevertPayment}
+        isLoading={isRevertingPayment}
+        registrationNumber={pendingAction.registration?.registrationNumber}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleBulkDelete}
+        count={selectedRegistrations.length}
+      />
+
+      {/* Reject Payment Dialog */}
+      <RejectPaymentDialog
+        isOpen={showRejectDialog}
+        onClose={() => {
+          setShowRejectDialog(false);
+          setPendingAction({ type: '', registration: null });
+        }}
+        onConfirm={(reason) => handleVerifyPayment(false, reason)}
+        isLoading={isVerifyingPayment}
+        registrationNumber={pendingAction.registration?.registrationNumber}
+        customerName={pendingAction.registration?.user?.name || 'Customer'}
+      />
 
     </div>
   );

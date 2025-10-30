@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
       registrationNumber, 
       competitionTitle, 
       status, 
-      submissionStatus,
-      template 
+      template,
+      rejectReason // NEW: Accept reject reason from verify-payment API
     } = body;
 
     // Validate required fields
@@ -82,207 +82,344 @@ export async function POST(request: NextRequest) {
     let subject = '';
     let message = '';
     
+    console.log('📧 [EMAIL API] Template:', template);
+    console.log('📧 [EMAIL API] Reject Reason:', rejectReason || 'N/A');
+    
     if (template === 'BANK_TRANSFER_PENDING') {
       subject = `Payment Pending - ${competitionTitle}`;
       message = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #000000 0%, #f97316 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">Archalley Forum</h1>
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+          <!-- Header with Logo -->
+          <div style="background: #000000; padding: 30px; text-align: center; border-bottom: 3px solid #f97316;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 2px;">ARCHALLEY</h1>
           </div>
           
-          <div style="padding: 30px; background: #ffffff;">
-            <h2 style="color: #000000;">Thank You, ${name}!</h2>
+          <!-- Main Content -->
+          <div style="padding: 40px 30px; background: #ffffff;">
+            <h2 style="color: #000000; margin: 0 0 20px 0; font-size: 24px; font-weight: 400;">Payment Pending</h2>
             
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">
-              Your bank transfer details for <strong>${competitionTitle}</strong> have been successfully submitted.
+            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+              Dear ${name},
             </p>
             
-            <div style="background: #fff7ed; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f97316;">
-              <p style="margin: 5px 0;"><strong>Registration Number:</strong> ${registrationNumber}</p>
-              <p style="margin: 5px 0;"><strong>Status:</strong> Payment Verification Pending</p>
-            </div>
+            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+              Your bank transfer details for <strong>${competitionTitle}</strong> have been successfully submitted and are awaiting verification.
+            </p>
+            
+            <!-- Registration Info Box -->
+            <table style="width: 100%; border-collapse: collapse; margin: 25px 0; border: 1px solid #e5e5e5;">
+              <tr style="background: #f9f9f9;">
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px; width: 40%;">Registration Number</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #000; font-size: 14px; font-weight: 500;">${registrationNumber}</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 15px; color: #666; font-size: 14px;">Status</td>
+                <td style="padding: 12px 15px; color: #f97316; font-size: 14px; font-weight: 500;">Payment Verification Pending</td>
+              </tr>
+            </table>
 
-            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #000000; margin-top: 0;">What happens next?</h3>
-              <ol style="color: #666; line-height: 1.8; padding-left: 20px;">
-                <li>Our admin team will review your bank transfer slip within 24-48 hours</li>
-                <li>Once verified, your payment status will be updated to "Confirmed"</li>
-                <li>You'll receive another email confirming your registration</li>
+            <!-- Next Steps -->
+            <div style="margin: 30px 0;">
+              <h3 style="color: #000000; margin: 0 0 15px 0; font-size: 16px; font-weight: 500;">What happens next</h3>
+              <ol style="color: #4a4a4a; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
+                <li style="margin-bottom: 8px;">Our admin team will review your bank transfer slip within 24-48 hours</li>
+                <li style="margin-bottom: 8px;">Once verified, your payment status will be updated to "Confirmed"</li>
+                <li style="margin-bottom: 8px;">You will receive another email confirming your registration</li>
               </ol>
             </div>
 
-            <div style="background: #dbeafe; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <p style="color: #1e40af; margin: 5px 0; font-size: 14px;">
-                <strong>📧 Important:</strong> Please check your email regularly for updates.<br>
-                <strong>📱 Questions?</strong> Contact us via WhatsApp: <a href="https://wa.me/94711942194" style="color: #f97316;">0711942194</a>
+            <!-- Contact Info -->
+            <div style="border-top: 1px solid #e5e5e5; padding-top: 20px; margin-top: 30px;">
+              <p style="color: #666; font-size: 13px; line-height: 1.6; margin: 0;">
+                <strong style="color: #000;">Important:</strong> Please check your email regularly for updates.<br>
+                <strong style="color: #000;">Questions?</strong> Contact us via WhatsApp: <a href="https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '94711942194'}" style="color: #f97316; text-decoration: none;">${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '0711942194'}</a>
               </p>
             </div>
             
-            <div style="text-align: center; margin: 30px 0;">
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 35px 0 0 0;">
               <a href="${process.env.NEXTAUTH_URL}/profile" 
-                 style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                View Registration Status
+                 style="background: #000000; color: #ffffff; padding: 14px 35px; text-decoration: none; display: inline-block; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; border: 2px solid #000000;">
+                VIEW REGISTRATION STATUS
               </a>
             </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="background: #f9f9f9; padding: 30px 25px; border-top: 1px solid #e5e5e5;">
+            <!-- Contact Information -->
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h3 style="color: #000; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">CONTACT US</h3>
+              <div style="display: inline-block; text-align: left;">
+                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
+                   Email: <a href="mailto:${process.env.SMTP_FROM || 'support@archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.SMTP_FROM || 'support@archalley.com'}</a>
+                </p>
+                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
+                   WhatsApp: <a href="https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, '') || '94711942194'}" style="color: #25D366; text-decoration: none;">${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+94 71 194 2194'}</a>
+                </p>
+                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
+                   Website: <a href="${process.env.NEXTAUTH_URL || 'https://archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.NEXTAUTH_URL?.replace('https://', '').replace('http://', '') || 'archalley.com'}</a>
+                </p>
+              </div>
+            </div>
+
+            <!-- Social Media Links -->
+            <div style="text-align: center; margin: 20px 0; padding: 15px 0; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5;">
+              <p style="color: #666; font-size: 12px; margin: 0 0 10px 0; font-weight: 600;">FOLLOW US</p>
+              <div style="display: inline-block;">
+                <a href="https://facebook.com/archalley" style="display: inline-block; margin: 0 8px; color: #1877f2; text-decoration: none; font-size: 13px;">Facebook</a>
+                <span style="color: #ddd;">|</span>
+                <a href="https://instagram.com/archalley" style="display: inline-block; margin: 0 8px; color: #e4405f; text-decoration: none; font-size: 13px;">Instagram</a>
+                <span style="color: #ddd;">|</span>
+                <a href="https://linkedin.com/company/archalley" style="display: inline-block; margin: 0 8px; color: #0a66c2; text-decoration: none; font-size: 13px;">LinkedIn</a>
+              </div>
+            </div>
+
+            <!-- Legal & Disclaimer -->
+            <div style="text-align: center;">
+              <p style="color: #999; font-size: 11px; margin: 0 0 8px 0; line-height: 1.6;">
+                © ${new Date().getFullYear()} <strong style="color: #000;">Archalley Forum</strong>. All rights reserved.
+              </p>
+              <p style="color: #999; font-size: 11px; margin: 0; line-height: 1.6;">
+                This is an automated message, please do not reply to this email.<br>
+                For support inquiries, please use the contact information above.
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (template === 'PAYMENT_REJECTED') {
+      subject = `Payment Issue - ${competitionTitle}`;
+      message = `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+          <!-- Header with Logo -->
+          <div style="background: #000000; padding: 30px; text-align: center; border-bottom: 3px solid #dc2626;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 2px;">ARCHALLEY</h1>
+          </div>
+          
+          <!-- Main Content -->
+          <div style="padding: 40px 30px; background: #ffffff;">
+            <h2 style="color: #dc2626; margin: 0 0 20px 0; font-size: 24px; font-weight: 400;">Payment Not Verified</h2>
             
-            <p style="color: #999; font-size: 14px; margin-top: 30px;">
-              Thank you for registering with Archalley Forum!
+            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+              Dear ${name},
+            </p>
+
+            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+              We regret to inform you that we were unable to verify your bank transfer payment for <strong>${competitionTitle}</strong>.
+            </p>
+            
+            <!-- Registration Info Box -->
+            <table style="width: 100%; border-collapse: collapse; margin: 25px 0; border: 1px solid #e5e5e5;">
+              <tr style="background: #f9f9f9;">
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px; width: 40%;">Registration Number</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #000; font-size: 14px; font-weight: 500;">${registrationNumber}</td>
+              </tr>
+              <tr style="background: #f9f9f9;">
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px;">Competition</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #000; font-size: 14px; font-weight: 500;">${competitionTitle}</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 15px; color: #666; font-size: 14px;">Status</td>
+                <td style="padding: 12px 15px; color: #dc2626; font-size: 14px; font-weight: 500;">Payment Rejected</td>
+              </tr>
+            </table>
+
+            ${rejectReason ? `
+              <!-- Admin's Note -->
+              <div style="border: 2px solid #f59e0b; padding: 20px; margin: 25px 0; background: #fffbeb;">
+                <h3 style="color: #000000; margin: 0 0 12px 0; font-size: 16px; font-weight: 500;">Admin's Note</h3>
+                <p style="margin: 0; color: #4a4a4a; font-size: 14px; line-height: 1.6;">
+                  ${rejectReason}
+                </p>
+              </div>
+            ` : ''}
+
+            <!-- Common Reasons -->
+            <div style="margin: 30px 0;">
+              <h3 style="color: #000000; margin: 0 0 15px 0; font-size: 16px; font-weight: 500;">Common reasons for payment issues</h3>
+              <ul style="color: #4a4a4a; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
+                <li style="margin-bottom: 8px;">Bank slip image was unclear or unreadable</li>
+                <li style="margin-bottom: 8px;">Payment details do not match our records</li>
+                <li style="margin-bottom: 8px;">Incorrect amount transferred</li>
+                <li style="margin-bottom: 8px;">Payment was not received in our account</li>
+              </ul>
+            </div>
+
+            <!-- What to Do -->
+            <div style="margin: 30px 0;">
+              <h3 style="color: #000000; margin: 0 0 15px 0; font-size: 16px; font-weight: 500;">What you can do</h3>
+              <ol style="color: #4a4a4a; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
+                <li style="margin-bottom: 8px;">Verify the payment was made to the correct account</li>
+                <li style="margin-bottom: 8px;">Check if the correct amount was transferred</li>
+                <li style="margin-bottom: 8px;">Upload a clearer image of your bank slip</li>
+                <li style="margin-bottom: 8px;">Contact us directly for assistance</li>
+              </ol>
+            </div>
+            
+            <!-- CTA Buttons -->
+            <div style="text-align: center; margin: 35px 0 0 0;">
+              <a href="${process.env.NEXTAUTH_URL}/events" 
+                 style="background: #000000; color: #ffffff; padding: 14px 35px; text-decoration: none; display: inline-block; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; border: 2px solid #000000; margin-right: 10px;">
+                TRY AGAIN
+              </a>
+              <a href="mailto:${process.env.SMTP_FROM || 'support@archalley.com'}" 
+                 style="background: #ffffff; color: #000000; padding: 14px 35px; text-decoration: none; display: inline-block; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; border: 2px solid #000000;">
+                CONTACT SUPPORT
+              </a>
+            </div>
+
+            <p style="color: #999; font-size: 13px; margin: 30px 0 0 0; text-align: center;">
+              If you believe this is an error, please contact us with your payment proof.
             </p>
           </div>
           
-          <div style="background: #f3f4f6; padding: 20px; text-align: center;">
-            <p style="color: #666; font-size: 12px; margin: 0;">
-              © 2025 Archalley Forum. All rights reserved.
-            </p>
+          <!-- Footer -->
+          <div style="background: #f9f9f9; padding: 30px 25px; border-top: 1px solid #e5e5e5;">
+            <!-- Contact Information -->
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h3 style="color: #000; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">CONTACT US</h3>
+              <div style="display: inline-block; text-align: left;">
+                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
+                   Email: <a href="mailto:${process.env.SMTP_FROM || 'support@archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.SMTP_FROM || 'support@archalley.com'}</a>
+                </p>
+                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
+                   WhatsApp: <a href="https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, '') || '94711942194'}" style="color: #25D366; text-decoration: none;">${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+94 71 194 2194'}</a>
+                </p>
+                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
+                   Website: <a href="${process.env.NEXTAUTH_URL || 'https://archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.NEXTAUTH_URL?.replace('https://', '').replace('http://', '') || 'archalley.com'}</a>
+                </p>
+              </div>
+            </div>
+
+            <!-- Social Media Links -->
+            <div style="text-align: center; margin: 20px 0; padding: 15px 0; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5;">
+              <p style="color: #666; font-size: 12px; margin: 0 0 10px 0; font-weight: 600;">FOLLOW US</p>
+              <div style="display: inline-block;">
+                <a href="https://facebook.com/archalley" style="display: inline-block; margin: 0 8px; color: #1877f2; text-decoration: none; font-size: 13px;">Facebook</a>
+                <span style="color: #ddd;">|</span>
+                <a href="https://instagram.com/archalley" style="display: inline-block; margin: 0 8px; color: #e4405f; text-decoration: none; font-size: 13px;">Instagram</a>
+                <span style="color: #ddd;">|</span>
+                <a href="https://linkedin.com/company/archalley" style="display: inline-block; margin: 0 8px; color: #0a66c2; text-decoration: none; font-size: 13px;">LinkedIn</a>
+              </div>
+            </div>
+
+            <!-- Legal & Disclaimer -->
+            <div style="text-align: center;">
+              <p style="color: #999; font-size: 11px; margin: 0 0 8px 0; line-height: 1.6;">
+                © ${new Date().getFullYear()} <strong style="color: #000;">Archalley Forum</strong>. All rights reserved.
+              </p>
+              <p style="color: #999; font-size: 11px; margin: 0; line-height: 1.6;">
+                This is an automated message, please do not reply to this email.<br>
+                For support inquiries, please use the contact information above.
+              </p>
+            </div>
           </div>
         </div>
       `;
     } else if (template === 'PAYMENT_VERIFIED') {
       subject = `Payment Confirmed - ${competitionTitle}`;
       message = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #000000 0%, #10b981 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">Archalley Forum</h1>
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+          <!-- Header with Logo -->
+          <div style="background: #000000; padding: 30px; text-align: center; border-bottom: 3px solid #10b981;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 2px;">ARCHALLEY</h1>
           </div>
           
-          <div style="padding: 30px; background: #ffffff;">
-            <div style="text-align: center; margin-bottom: 20px;">
-              <div style="display: inline-block; width: 60px; height: 60px; background: #d1fae5; border-radius: 50%; line-height: 60px;">
-                <span style="font-size: 30px;">✓</span>
-              </div>
-            </div>
-
-            <h2 style="color: #000000; text-align: center;">Payment Verified!</h2>
+          <!-- Main Content -->
+          <div style="padding: 40px 30px; background: #ffffff;">
+            <h2 style="color: #10b981; margin: 0 0 20px 0; font-size: 24px; font-weight: 400;">Payment Confirmed</h2>
             
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">
-              Great news, ${name}! Your bank transfer has been verified and your registration for <strong>${competitionTitle}</strong> is now confirmed.
+            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+              Dear ${name},
             </p>
             
-            <div style="background: #d1fae5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
-              <p style="margin: 5px 0;"><strong>Registration Number:</strong> ${registrationNumber}</p>
-              <p style="margin: 5px 0;"><strong>Competition:</strong> ${competitionTitle}</p>
-              <p style="margin: 5px 0;"><strong>Status:</strong> ✓ Payment Confirmed</p>
-            </div>
+            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+              Great news! Your bank transfer has been verified and your registration for <strong>${competitionTitle}</strong> is now confirmed.
+            </p>
+            
+            <!-- Registration Info Box -->
+            <table style="width: 100%; border-collapse: collapse; margin: 25px 0; border: 1px solid #e5e5e5;">
+              <tr style="background: #f9f9f9;">
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px; width: 40%;">Registration Number</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #000; font-size: 14px; font-weight: 500;">${registrationNumber}</td>
+              </tr>
+              <tr style="background: #f9f9f9;">
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px;">Competition</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #000; font-size: 14px; font-weight: 500;">${competitionTitle}</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 15px; color: #666; font-size: 14px;">Status</td>
+                <td style="padding: 12px 15px; color: #10b981; font-size: 14px; font-weight: 500;">Payment Confirmed</td>
+              </tr>
+            </table>
 
-            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #000000; margin-top: 0;">Next Steps:</h3>
-              <ol style="color: #666; line-height: 1.8; padding-left: 20px;">
-                <li>Review the competition guidelines carefully</li>
-                <li>Prepare your submission according to the requirements</li>
-                <li>Submit your entry before the deadline</li>
-                <li>Check your profile regularly for updates</li>
+            <!-- Next Steps -->
+            <div style="margin: 30px 0;">
+              <h3 style="color: #000000; margin: 0 0 15px 0; font-size: 16px; font-weight: 500;">Next steps</h3>
+              <ol style="color: #4a4a4a; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
+                <li style="margin-bottom: 8px;">Review the competition guidelines carefully</li>
+                <li style="margin-bottom: 8px;">Prepare your submission according to the requirements</li>
+                <li style="margin-bottom: 8px;">Submit your entry before the deadline</li>
+                <li style="margin-bottom: 8px;">Check your profile regularly for updates</li>
               </ol>
             </div>
             
-            <div style="text-align: center; margin: 30px 0;">
+            <!-- CTA Buttons -->
+            <div style="text-align: center; margin: 35px 0 0 0;">
               <a href="${process.env.NEXTAUTH_URL}/profile" 
-                 style="background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; margin-right: 10px;">
-                View My Registrations
+                 style="background: #000000; color: #ffffff; padding: 14px 35px; text-decoration: none; display: inline-block; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; border: 2px solid #000000; margin-right: 10px;">
+                VIEW MY REGISTRATIONS
               </a>
               <a href="${process.env.NEXTAUTH_URL}/events" 
-                 style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                Browse Events
+                 style="background: #ffffff; color: #000000; padding: 14px 35px; text-decoration: none; display: inline-block; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; border: 2px solid #000000;">
+                BROWSE EVENTS
               </a>
             </div>
-            
-            <p style="color: #999; font-size: 14px; margin-top: 30px;">
-              We're excited to see your submission. Good luck!
+
+            <p style="color: #999; font-size: 13px; margin: 30px 0 0 0; text-align: center;">
+              We look forward to seeing your submission. Good luck!
             </p>
           </div>
           
-          <div style="background: #f3f4f6; padding: 20px; text-align: center;">
-            <p style="color: #666; font-size: 12px; margin: 0;">
-              © 2025 Archalley Forum. All rights reserved.
-            </p>
-          </div>
-        </div>
-      `;
-    } else if (status === 'CONFIRMED' && submissionStatus === 'NOT_SUBMITTED') {
-      subject = `Reminder: Submit Your Entry - ${competitionTitle}`;
-      message = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #000000 0%, #f97316 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">Archalley Forum</h1>
-          </div>
-          
-          <div style="padding: 30px; background: #ffffff;">
-            <h2 style="color: #000000;">Hello ${name},</h2>
-            
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">
-              This is a friendly reminder about your registration for <strong>${competitionTitle}</strong>.
-            </p>
-            
-            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 5px 0;"><strong>Registration Number:</strong> ${registrationNumber}</p>
-              <p style="margin: 5px 0;"><strong>Competition:</strong> ${competitionTitle}</p>
-              <p style="margin: 5px 0;"><strong>Status:</strong> ${status.replace('_', ' ')}</p>
-              <p style="margin: 5px 0;"><strong>Submission Status:</strong> ${submissionStatus.replace('_', ' ')}</p>
+          <!-- Footer -->
+          <div style="background: #f9f9f9; padding: 30px 25px; border-top: 1px solid #e5e5e5;">
+            <!-- Contact Information -->
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h3 style="color: #000; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">CONTACT US</h3>
+              <div style="display: inline-block; text-align: left;">
+                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
+                   Email: <a href="mailto:${process.env.SMTP_FROM || 'support@archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.SMTP_FROM || 'support@archalley.com'}</a>
+                </p>
+                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
+                   WhatsApp: <a href="https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, '') || '94711942194'}" style="color: #25D366; text-decoration: none;">${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+94 71 194 2194'}</a>
+                </p>
+                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
+                   Website: <a href="${process.env.NEXTAUTH_URL || 'https://archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.NEXTAUTH_URL?.replace('https://', '').replace('http://', '') || 'archalley.com'}</a>
+                </p>
+              </div>
             </div>
-            
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">
-              We noticed you haven't submitted your entry yet. Please make sure to submit before the deadline.
-            </p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXTAUTH_URL}/profile/competitions" 
-                 style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                View My Registrations
-              </a>
+
+            <!-- Social Media Links -->
+            <div style="text-align: center; margin: 20px 0; padding: 15px 0; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5;">
+              <p style="color: #666; font-size: 12px; margin: 0 0 10px 0; font-weight: 600;">FOLLOW US</p>
+              <div style="display: inline-block;">
+                <a href="https://facebook.com/archalley" style="display: inline-block; margin: 0 8px; color: #1877f2; text-decoration: none; font-size: 13px;">Facebook</a>
+                <span style="color: #ddd;">|</span>
+                <a href="https://instagram.com/archalley" style="display: inline-block; margin: 0 8px; color: #e4405f; text-decoration: none; font-size: 13px;">Instagram</a>
+                <span style="color: #ddd;">|</span>
+                <a href="https://linkedin.com/company/archalley" style="display: inline-block; margin: 0 8px; color: #0a66c2; text-decoration: none; font-size: 13px;">LinkedIn</a>
+              </div>
             </div>
-            
-            <p style="color: #999; font-size: 14px; margin-top: 30px;">
-              If you have any questions, please don't hesitate to contact us.
-            </p>
-          </div>
-          
-          <div style="background: #f3f4f6; padding: 20px; text-align: center;">
-            <p style="color: #666; font-size: 12px; margin: 0;">
-              © 2025 Archalley Forum. All rights reserved.
-            </p>
-          </div>
-        </div>
-      `;
-    } else if (status === 'CONFIRMED' && submissionStatus === 'SUBMITTED') {
-      subject = `Thank You for Your Submission - ${competitionTitle}`;
-      message = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #000000 0%, #f97316 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">Archalley Forum</h1>
-          </div>
-          
-          <div style="padding: 30px; background: #ffffff;">
-            <h2 style="color: #000000;">Hello ${name},</h2>
-            
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">
-              Thank you for submitting your entry for <strong>${competitionTitle}</strong>!
-            </p>
-            
-            <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #22c55e;">
-              <p style="margin: 5px 0;"><strong>Registration Number:</strong> ${registrationNumber}</p>
-              <p style="margin: 5px 0;"><strong>Competition:</strong> ${competitionTitle}</p>
-              <p style="margin: 5px 0;"><strong>Status:</strong> ✅ ${status.replace('_', ' ')}</p>
-              <p style="margin: 5px 0;"><strong>Submission Status:</strong> ✅ ${submissionStatus.replace('_', ' ')}</p>
-            </div>
-            
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">
-              Your submission is now under review by our team. We'll notify you about the results soon.
-            </p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXTAUTH_URL}/profile/competitions" 
-                 style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                View Submission Details
-              </a>
-            </div>
-            
-            <p style="color: #999; font-size: 14px; margin-top: 30px;">
-              Good luck with your submission!
-            </p>
-          </div>
-          
-          <div style="background: #f3f4f6; padding: 20px; text-align: center;">
-            <p style="color: #666; font-size: 12px; margin: 0;">
-              © 2025 Archalley Forum. All rights reserved.
+
+            <!-- Legal & Disclaimer -->
+            <div style="text-align: center;">
+              <p style="color: #999; font-size: 11px; margin: 0 0 8px 0; line-height: 1.6;">
+                © ${new Date().getFullYear()} <strong style="color: #000;">Archalley Forum</strong>. All rights reserved.
+              </p>
+              <p style="color: #999; font-size: 11px; margin: 0; line-height: 1.6;">
+                This is an automated message, please do not reply to this email.<br>
+                For support inquiries, please use the contact information above.
             </p>
           </div>
         </div>
@@ -291,41 +428,89 @@ export async function POST(request: NextRequest) {
       // Generic message for other statuses
       subject = `Update on Your Registration - ${competitionTitle}`;
       message = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #000000 0%, #f97316 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">Archalley Forum</h1>
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+          <!-- Header with Logo -->
+          <div style="background: #000000; padding: 30px; text-align: center; border-bottom: 3px solid #f97316;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 2px;">ARCHALLEY</h1>
           </div>
           
-          <div style="padding: 30px; background: #ffffff;">
-            <h2 style="color: #000000;">Hello ${name},</h2>
+          <!-- Main Content -->
+          <div style="padding: 40px 30px; background: #ffffff;">
+            <h2 style="color: #000000; margin: 0 0 20px 0; font-size: 24px; font-weight: 400;">Registration Update</h2>
             
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">
-              We're reaching out regarding your registration for <strong>${competitionTitle}</strong>.
+            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+              Dear ${name},
             </p>
             
-            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 5px 0;"><strong>Registration Number:</strong> ${registrationNumber}</p>
-              <p style="margin: 5px 0;"><strong>Competition:</strong> ${competitionTitle}</p>
-              <p style="margin: 5px 0;"><strong>Status:</strong> ${status.replace('_', ' ')}</p>
-              <p style="margin: 5px 0;"><strong>Submission Status:</strong> ${submissionStatus.replace('_', ' ')}</p>
-            </div>
+            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+              We are reaching out regarding your registration for <strong>${competitionTitle}</strong>.
+            </p>
             
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+            <!-- Registration Info Box -->
+            <table style="width: 100%; border-collapse: collapse; margin: 25px 0; border: 1px solid #e5e5e5;">
+              <tr style="background: #f9f9f9;">
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px; width: 40%;">Registration Number</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #000; font-size: 14px; font-weight: 500;">${registrationNumber}</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 15px; color: #666; font-size: 14px;">Payment Status</td>
+                <td style="padding: 12px 15px; color: #000; font-size: 14px; font-weight: 500;">${status.replace('_', ' ')}</td>
+              </tr>
+            </table>
+            
+            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
               Please check your registration details and ensure everything is in order.
             </p>
             
-            <div style="text-align: center; margin: 30px 0;">
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 35px 0 0 0;">
               <a href="${process.env.NEXTAUTH_URL}/profile/competitions" 
-                 style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                View My Registrations
+                 style="background: #000000; color: #ffffff; padding: 14px 35px; text-decoration: none; display: inline-block; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; border: 2px solid #000000;">
+                VIEW MY REGISTRATIONS
               </a>
             </div>
           </div>
           
-          <div style="background: #f3f4f6; padding: 20px; text-align: center;">
-            <p style="color: #666; font-size: 12px; margin: 0;">
-              © 2025 Archalley Forum. All rights reserved.
-            </p>
+          <!-- Footer -->
+          <div style="background: #f9f9f9; padding: 30px 25px; border-top: 1px solid #e5e5e5;">
+            <!-- Contact Information -->
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h3 style="color: #000; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">CONTACT US</h3>
+              <div style="display: inline-block; text-align: left;">
+                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
+                   Email: <a href="mailto:${process.env.SMTP_FROM || 'support@archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.SMTP_FROM || 'support@archalley.com'}</a>
+                </p>
+                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
+                   WhatsApp: <a href="https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, '') || '94711942194'}" style="color: #25D366; text-decoration: none;">${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+94 71 194 2194'}</a>
+                </p>
+                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
+                   Website: <a href="${process.env.NEXTAUTH_URL || 'https://archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.NEXTAUTH_URL?.replace('https://', '').replace('http://', '') || 'archalley.com'}</a>
+                </p>
+              </div>
+            </div>
+
+            <!-- Social Media Links -->
+            <div style="text-align: center; margin: 20px 0; padding: 15px 0; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5;">
+              <p style="color: #666; font-size: 12px; margin: 0 0 10px 0; font-weight: 600;">FOLLOW US</p>
+              <div style="display: inline-block;">
+                <a href="https://facebook.com/archalley" style="display: inline-block; margin: 0 8px; color: #1877f2; text-decoration: none; font-size: 13px;">Facebook</a>
+                <span style="color: #ddd;">|</span>
+                <a href="https://instagram.com/archalley" style="display: inline-block; margin: 0 8px; color: #e4405f; text-decoration: none; font-size: 13px;">Instagram</a>
+                <span style="color: #ddd;">|</span>
+                <a href="https://linkedin.com/company/archalley" style="display: inline-block; margin: 0 8px; color: #0a66c2; text-decoration: none; font-size: 13px;">LinkedIn</a>
+              </div>
+            </div>
+
+            <!-- Legal & Disclaimer -->
+            <div style="text-align: center;">
+              <p style="color: #999; font-size: 11px; margin: 0 0 8px 0; line-height: 1.6;">
+                © ${new Date().getFullYear()} <strong style="color: #000;">Archalley Forum</strong>. All rights reserved.
+              </p>
+              <p style="color: #999; font-size: 11px; margin: 0; line-height: 1.6;">
+                This is an automated message, please do not reply to this email.<br>
+                For support inquiries, please use the contact information above.
+              </p>
+            </div>
           </div>
         </div>
       `;
