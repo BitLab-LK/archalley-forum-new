@@ -67,6 +67,8 @@ const getWordCountStatus = (text: string, limit: number = 150) => {
 export default function SimplifiedEnhancedRegisterPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const callbackUrl = searchParams.get('callbackUrl') || '/'
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState("register")
   const [createMemberProfile, setCreateMemberProfile] = useState(false)
 
@@ -633,7 +635,7 @@ export default function SimplifiedEnhancedRegisterPage() {
       
       // For social logins, let NextAuth handle the redirect automatically
       await signIn(provider, { 
-        callbackUrl: "/",
+        callbackUrl,
         redirect: true // Let NextAuth handle the redirect
       })
     } catch (error) {
@@ -662,7 +664,7 @@ export default function SimplifiedEnhancedRegisterPage() {
       if (result?.error) {
         setError("Invalid email or password")
       } else if (result?.ok) {
-        router.push("/")
+        router.push(callbackUrl)
         router.refresh()
       }
     } catch (error) {
