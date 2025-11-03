@@ -68,7 +68,6 @@ export default function SimplifiedEnhancedRegisterPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const callbackUrl = searchParams.get('callbackUrl') || '/'
-  const router = useRouter()
   const [activeTab, setActiveTab] = useState("register")
   const [createMemberProfile, setCreateMemberProfile] = useState(false)
 
