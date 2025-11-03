@@ -131,7 +131,7 @@ export default function BlogCarousel({ initialPosts = [] }: BlogCarouselProps) {
 
               return (
                 <div key={post.id} className="flex-shrink-0 px-2" style={{ width: `${100 / visiblePosts}%` }}>
-                  <Link href={`/post/${post.slug}`} className="block group">
+                  <Link href={`/${post.slug}`} className="block group">
                     <div className="relative h-[375px] w-full overflow-hidden">
                       <Image
                         src={imageUrl || "/placeholder.svg"}

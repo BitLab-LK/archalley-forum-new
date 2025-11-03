@@ -104,7 +104,7 @@ function ArticleCard({ article }: { article: WordPressPost }) {
 
   return (
     <div className="flex flex-col h-full border-b border-gray-200 pb-6">
-      <Link href={`/post/${article.slug}`}>
+      <Link href={`/${article.slug}`}>
         <div className="relative h-48 w-full overflow-hidden rounded mb-4">
           <Image
             src={imageUrl || "/placeholder.svg"}
@@ -116,7 +116,7 @@ function ArticleCard({ article }: { article: WordPressPost }) {
       </Link>
 
       <div className="flex-grow">
-        <Link href={`/post/${article.slug}`} className="block group">
+        <Link href={`/${article.slug}`} className="block group">
           <h3 className="text-lg font-semibold group-hover:text-yellow-600">{title}</h3>
         </Link>
         <div className="text-sm text-gray-500 mb-2">{date}</div>
@@ -124,7 +124,7 @@ function ArticleCard({ article }: { article: WordPressPost }) {
       </div>
 
       <Link
-        href={`/post/${article.slug}`}
+        href={`/${article.slug}`}
         className="inline-flex items-center text-sm font-medium text-yellow-600 hover:text-yellow-800 mt-auto"
       >
         Read More <ArrowRight size={16} className="ml-1" />

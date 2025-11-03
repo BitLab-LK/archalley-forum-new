@@ -86,7 +86,7 @@ function TrendingCard({ post }: { post: WordPressPost }) {
 
   return (
     <div className="flex gap-3">
-      <Link href={`/post/${post.slug}`} className="flex-shrink-0">
+      <Link href={`/${post.slug}`} className="flex-shrink-0">
         <div className="relative h-20 w-20 overflow-hidden rounded">
           <Image 
             src={imageUrl || "/placeholder.svg"} 
@@ -98,7 +98,7 @@ function TrendingCard({ post }: { post: WordPressPost }) {
       </Link>
 
       <div>
-        <Link href={`/post/${post.slug}`} className="block group">
+        <Link href={`/${post.slug}`} className="block group">
           <h3 className="font-medium text-sm group-hover:text-yellow-600 line-clamp-2">{title}</h3>
         </Link>
         <div className="text-xs text-gray-500 mt-1">{date}</div>

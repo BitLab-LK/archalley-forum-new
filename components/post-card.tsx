@@ -42,6 +42,7 @@
 "use client"
 
 import { useState, useCallback, useMemo, memo, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -63,7 +64,6 @@ import { hasPermission } from "@/lib/role-permissions"
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
 import { useToast } from "@/hooks/use-toast"
 import PostImage from "@/components/post-image"
-import PostModal from "./post-modal"
 import { PostBadges } from "./post-badges"
 import ShareDropdown from "./share-dropdown"
 import { ReportPostModal } from "./report-post-modal"
@@ -237,6 +237,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   // HOOKS AND CONTEXT
   // ========================================================================
   
+  const router = useRouter()
   const { user } = useAuth()
   const { confirm } = useConfirmDialog()
   const { toast } = useToast()
@@ -302,9 +303,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     // Currently handles basic synchronization for real-time updates
   }, [])
   
-  // Modal state for post expansion and image viewing
-  const [modalOpen, setModalOpen] = useState(false)
-  const [modalImageIndex, setModalImageIndex] = useState(0)
+  // Modal state for report modal
   const [isDeleting, setIsDeleting] = useState(false)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
 
@@ -504,15 +503,13 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   }, [syncCommentCount, onCommentCountChange, post.id])
 
   /**
-   * Opens the post modal for detailed view
-   * Supports opening at specific image index for gallery navigation
+   * Navigates to post detail page
    * 
    * @param imgIdx - Index of image to display first (default: 0)
    */
   const openModal = useCallback((imgIdx: number = 0) => {
-    setModalImageIndex(imgIdx)
-    setModalOpen(true)
-  }, [])
+    router.push(`/${post.id}`)
+  }, [router, post.id])
 
   /**
    * Handles top comment vote changes from modal interactions
@@ -1074,24 +1071,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
       </Card>
       </div>
       
-      {/* Facebook-style Post Popup Modal */}
-      <PostModal 
-        open={modalOpen} 
-        onClose={() => setModalOpen(false)} 
-        post={{
-          ...post,
-          upvotes: upvotes,        // Current global state, not original props
-          downvotes: downvotes,    // Current global state, not original props  
-          userVote: userVote,      // Current global state, not original props
-          comments: commentCount,
-          topComment: topComment   // Use local state for top comment
-        }} 
-        initialImage={modalImageIndex} 
-        onCommentAdded={handleCommentAdded}
-        onCommentCountUpdate={handleCommentCountUpdate}
-        onTopCommentVoteChange={handleTopCommentVoteChange}
-      />
-
       {/* Report Post Modal */}
       <ReportPostModal
         isOpen={isReportModalOpen}

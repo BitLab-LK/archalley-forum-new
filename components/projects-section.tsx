@@ -119,7 +119,7 @@ function ProjectCard({ project }: { project: WordPressPost }) {
   return (
     <div className="flex flex-col md:flex-row gap-4 border-b border-gray-200 pb-6">
       <div className="md:w-1/3">
-        <Link href={`/post/${project.slug}`}>
+        <Link href={`/${project.slug}`}>
           <div className="relative h-48 w-full overflow-hidden rounded">
             <Image
               src={imageUrl || "/placeholder.svg"}
@@ -132,13 +132,13 @@ function ProjectCard({ project }: { project: WordPressPost }) {
       </div>
 
       <div className="md:w-2/3">
-        <Link href={`/post/${project.slug}`} className="block group">
+        <Link href={`/${project.slug}`} className="block group">
           <h3 className="text-xl font-semibold group-hover:text-yellow-600">{title}</h3>
         </Link>
         <div className="text-sm text-gray-500 mb-2">{date}</div>
         <p className="text-gray-700 mb-3">{excerpt.substring(0, 150)}...</p>
         <Link
-          href={`/post/${project.slug}`}
+          href={`/${project.slug}`}
           className="inline-flex items-center text-sm font-medium text-yellow-600 hover:text-yellow-800"
         >
           Read More <ArrowRight size={16} className="ml-1" />

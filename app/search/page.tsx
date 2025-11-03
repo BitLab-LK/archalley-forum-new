@@ -408,7 +408,7 @@ function SearchContent() {
                                     ) : null}
                                   </div>
                                   
-                                  <Link href={`/posts/${post.id}`} className="group">
+                                  <Link href={`/${post.id}`} className="group">
                                     <h3 className="text-lg font-semibold group-hover:text-primary transition-colors mb-2">
                                       {highlightText(post.content?.substring(0, 80) + '...' || 'No content', searchQuery)}
                                     </h3>

@@ -184,7 +184,7 @@ export default function SinglePostPage({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             {previousPost && (
               <Link 
-                href={`/post/${previousPost.slug}`}
+                href={`/${previousPost.slug}`}
                 className="group p-4 border rounded-lg hover:border-primary transition-colors"
               >
                 <div className="flex items-center gap-2 text-muted-foreground mb-2">
@@ -198,7 +198,7 @@ export default function SinglePostPage({
             )}
             {nextPost && (
               <Link 
-                href={`/post/${nextPost.slug}`}
+                href={`/${nextPost.slug}`}
                 className="group p-4 border rounded-lg hover:border-primary transition-colors"
               >
                 <div className="flex items-center justify-end gap-2 text-muted-foreground mb-2">
@@ -220,7 +220,7 @@ export default function SinglePostPage({
                 {relatedPosts.map((relatedPost) => (
                   <Link
                     key={relatedPost.id}
-                    href={`/post/${relatedPost.slug}`}
+                    href={`/${relatedPost.slug}`}
                     className="group"
                   >
                     <div className="relative aspect-video mb-3 rounded-lg overflow-hidden">
