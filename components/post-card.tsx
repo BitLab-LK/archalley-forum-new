@@ -479,30 +479,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     }
   }, [onDelete, post.id, confirm, toast])  
   /**
-   * Handles new comment addition with immediate UI updates
-   * Provides optimistic updates for better user experience
-   * 
-   * @fires onCommentCountChange - Notifies parent of count change
-   */
-  const handleCommentAdded = useCallback(() => {
-    const newCount = commentCount + 1
-    syncCommentCount()
-    onCommentCountChange?.(post.id, newCount)
-  }, [commentCount, syncCommentCount, onCommentCountChange, post.id])
-
-  /**
-   * Handles comment count updates from external sources
-   * Ensures synchronization across all components
-   * 
-   * @param newCount - Updated comment count from server or other source
-   * @fires onCommentCountChange - Notifies parent of count change
-   */
-  const handleCommentCountUpdate = useCallback((newCount: number) => {
-    syncCommentCount()
-    onCommentCountChange?.(post.id, newCount)
-  }, [syncCommentCount, onCommentCountChange, post.id])
-
-  /**
    * Navigates to post detail page
    * 
    * @param imgIdx - Index of image to display first (default: 0)
