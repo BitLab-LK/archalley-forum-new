@@ -298,10 +298,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   
   // Comment count management - uses original prop value with sync capabilities
   const commentCount = post.comments
-  const syncCommentCount = useCallback(() => {
-    // Comment count syncing functionality can be enhanced here
-    // Currently handles basic synchronization for real-time updates
-  }, [])
   
   // Modal state for report modal
   const [isDeleting, setIsDeleting] = useState(false)
