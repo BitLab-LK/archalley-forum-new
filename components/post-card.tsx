@@ -155,15 +155,6 @@ interface PostCardProps {
   post: Post
   onDelete?: () => void | Promise<void>
   onCommentCountChange?: (postId: string, newCount: number) => void
-  onTopCommentVoteChange?: (postId: string, topComment: { 
-    id: string; 
-    author: { name: string; image?: string }; 
-    content: string; 
-    upvotes: number; 
-    downvotes: number; 
-    isBestAnswer: boolean; 
-    userVote?: "up" | "down" 
-  } | null) => void
 }
 
 // ============================================================================
@@ -231,7 +222,7 @@ const getTextSizeClass = (content: string): string => {
  * @param props - PostCard component props
  * @returns Memoized PostCard component
  */
-const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, onTopCommentVoteChange }: PostCardProps) {
+const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }: PostCardProps) {
   
   // ========================================================================
   // HOOKS AND CONTEXT
@@ -292,9 +283,8 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   const { upvotes, downvotes, userVote } = voteState
   const [isVoting, setIsVoting] = useState(false)
   
-  // Local state for top comment with real-time updates
-  // Allows for independent comment updates without full post refresh
-  const [topComment, setTopComment] = useState(post.topComment)
+  // Local state for top comment
+  const [topComment] = useState(post.topComment)
   
   // Comment count management - uses original prop value with sync capabilities
   const commentCount = post.comments
@@ -476,35 +466,10 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   }, [onDelete, post.id, confirm, toast])  
   /**
    * Navigates to post detail page
-   * 
-   * @param imgIdx - Index of image to display first (default: 0)
    */
-  const openModal = useCallback((imgIdx: number = 0) => {
+  const openModal = useCallback(() => {
     router.push(`/${post.id}`)
   }, [router, post.id])
-
-  /**
-   * Handles top comment vote changes from modal interactions
-   * Updates local state and forwards changes to parent component
-   * Enables real-time synchronization between post card and modal
-   * 
-   * @param postId - ID of the post being updated
-   * @param newTopComment - Updated top comment data or null if removed
-   */
-  const handleTopCommentVoteChange = useCallback((postId: string, newTopComment: { id: string, author: { name: string, image?: string }, content: string, upvotes: number, downvotes: number, isBestAnswer: boolean } | null) => {
-    if (postId === post.id) {
-      if (newTopComment === null) {
-        // No top comment anymore - clear local state
-        setTopComment(undefined)
-      } else {
-        // Update with new top comment data for immediate display
-        setTopComment(newTopComment)
-      }
-      
-      // Forward to parent component for global state management
-      onTopCommentVoteChange?.(postId, newTopComment)
-    }
-  }, [post.id, onTopCommentVoteChange])
 
   // ========================================================================
   // VOTING SYSTEM
@@ -658,7 +623,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
             fill
             sizes={sizes}
             priority={index === 0}
-            onClick={() => openModal(index)}
+            onClick={() => openModal()}
             enableDownload={true}
           />
         </>
@@ -950,7 +915,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => openModal(0)}
+                onClick={() => openModal()}
                 className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 py-2 sm:px-3 flex-shrink-0 mobile-touch-target"
               >
                 <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
