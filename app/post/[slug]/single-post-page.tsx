@@ -37,10 +37,6 @@ export default function SinglePostPage({
   const categories = post._embedded?.['wp:term']?.[0]?.filter(term => term.taxonomy === 'category') || []
   const tags = post._embedded?.['wp:term']?.[0]?.filter(term => term.taxonomy === 'post_tag') || []
 
-  // Get featured image URL
-  const featuredImageUrl = getFeaturedImageUrl(post, 'large')
-  const featuredImageAlt = getFeaturedImageAlt(post)
-
   // Create share object for ShareDropdown
   const sharePost = {
     id: post.id.toString(),
@@ -105,20 +101,6 @@ export default function SinglePostPage({
               showLabel={true}
             />
           </div>
-
-          {/* Featured Image */}
-          {featuredImageUrl && (
-            <div className="relative w-full aspect-video mb-8 rounded-lg overflow-hidden">
-              <Image
-                src={featuredImageUrl}
-                alt={featuredImageAlt}
-                fill
-                className="object-cover"
-                priority
-                sizes="(max-width: 768px) 100vw, 75vw"
-              />
-            </div>
-          )}
 
           {/* Post Content */}
           <div 
@@ -216,8 +198,8 @@ export default function SinglePostPage({
           {relatedPosts.length > 0 && (
             <div>
               <h3 className="text-2xl font-bold mb-6">Related Posts</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {relatedPosts.map((relatedPost) => (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {relatedPosts.slice(0, 6).map((relatedPost) => (
                   <Link
                     key={relatedPost.id}
                     href={`/${relatedPost.slug}`}
@@ -229,7 +211,7 @@ export default function SinglePostPage({
                         alt={getFeaturedImageAlt(relatedPost)}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        sizes="(max-width: 768px) 100vw, 50vw"
+                        sizes="(max-width: 768px) 100vw, 33vw"
                       />
                     </div>
                     <h4 className="font-semibold group-hover:text-primary transition-colors line-clamp-2">

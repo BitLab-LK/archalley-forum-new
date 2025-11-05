@@ -51,6 +51,12 @@ const nextConfig = {
         port: '',
         pathname: '/wp-content/uploads/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'wp.archalley.com',
+        port: '',
+        pathname: '/wp-content/uploads/**',
+      },
       // Removed Supabase hostname - migrated to Azure PostgreSQL
       // {
       //   protocol: 'https',
