@@ -1,12 +1,5 @@
-import { Suspense } from "react"
 import { Metadata } from "next"
-import ReligiousProjectsClient from "./religious-projects-client"
-import { 
-  getAllCategories, 
-  getReligiousProjects,
-  type WordPressCategory, 
-  type WordPressPost 
-} from '@/lib/wordpress-api'
+import CategoryListing from "@/components/category-listing"
 
 export const metadata: Metadata = {
   title: "Religious Architecture Projects | Sacred Spaces & Places of Worship",
@@ -14,36 +7,7 @@ export const metadata: Metadata = {
   keywords: ["religious architecture", "sacred spaces", "churches", "temples", "mosques", "places of worship", "cathedral design", "chapel architecture"],
 }
 
-export default async function ReligiousProjectsPage() {
-  // Try to fetch religious architecture projects from WordPress
-  let initialProjects: WordPressPost[] = []
-  let initialCategories: WordPressCategory[] = []
-  
-  try {
-    // Use the new enhanced religious projects fetcher
-    initialProjects = await getReligiousProjects(1, 20)
-    
-    // Get all categories for filtering
-    initialCategories = await getAllCategories()
-    
-    console.log(`Fetched ${initialProjects.length} religious architecture projects from WordPress`)
-  } catch (error) {
-    console.error('Error fetching religious architecture projects:', error)
-    // Will use fallback data in client component
-  }
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Suspense fallback={
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-        </div>
-      }>
-        <ReligiousProjectsClient 
-          initialProjects={initialProjects}
-          initialCategories={initialCategories}
-        />
-      </Suspense>
-    </div>
-  )
+export default async function ReligiousProjectsPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
+  const pageParam = typeof searchParams?.page === 'string' ? searchParams?.page : Array.isArray(searchParams?.page) ? searchParams?.page[0] : null
+  return <CategoryListing categoryId={53} title="Religious Architecture" basePath="/projects/religious" pageParam={pageParam} />
 }

@@ -1,12 +1,5 @@
-import { Suspense } from "react"
 import { Metadata } from "next"
-import IndustrialProjectsClient from "./industrial-projects-client"
-import { 
-  getAllCategories, 
-  getIndustrialProjects,
-  type WordPressCategory, 
-  type WordPressPost 
-} from '@/lib/wordpress-api'
+import CategoryListing from "@/components/category-listing"
 
 export const metadata: Metadata = {
   title: "Industrial & Infrastructure Projects | Manufacturing & Facilities",
@@ -14,36 +7,7 @@ export const metadata: Metadata = {
   keywords: ["industrial architecture", "infrastructure projects", "factory design", "warehouse design", "manufacturing facilities", "industrial buildings", "logistics centers"],
 }
 
-export default async function IndustrialProjectsPage() {
-  // Try to fetch industrial projects from WordPress
-  let initialProjects: WordPressPost[] = []
-  let initialCategories: WordPressCategory[] = []
-  
-  try {
-    // Use the new enhanced industrial projects fetcher
-    initialProjects = await getIndustrialProjects(1, 20)
-    
-    // Get all categories for filtering
-    initialCategories = await getAllCategories()
-    
-    console.log(`Fetched ${initialProjects.length} industrial projects from WordPress`)
-  } catch (error) {
-    console.error('Error fetching industrial projects:', error)
-    // Will use fallback data in client component
-  }
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Suspense fallback={
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-        </div>
-      }>
-        <IndustrialProjectsClient 
-          initialProjects={initialProjects}
-          initialCategories={initialCategories}
-        />
-      </Suspense>
-    </div>
-  )
+export default async function IndustrialProjectsPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
+  const pageParam = typeof searchParams?.page === 'string' ? searchParams?.page : Array.isArray(searchParams?.page) ? searchParams?.page[0] : null
+  return <CategoryListing categoryId={54} title="Industrial & Infrastructure" basePath="/projects/industrial" pageParam={pageParam} />
 }

@@ -8,7 +8,7 @@ import {
   getPostsByCategory,
   getAllCategories,
   getFeaturedImageUrl, 
-  stripHtml, 
+  cleanText,
   formatDate, 
   type WordPressPost,
   type WordPressCategory
@@ -98,8 +98,8 @@ export default function NewsSection({ initialNews = [], initialCategories = [] }
 
 function NewsCard({ news }: { news: WordPressPost }) {
   const imageUrl = getFeaturedImageUrl(news, 'large')
-  const title = stripHtml(news.title.rendered)
-  const excerpt = stripHtml(news.excerpt.rendered)
+  const title = cleanText(news.title.rendered)
+  const excerpt = cleanText(news.excerpt.rendered)
   const date = formatDate(news.date)
 
   return (

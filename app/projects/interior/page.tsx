@@ -1,12 +1,5 @@
-import { Suspense } from "react"
 import { Metadata } from "next"
-import InteriorProjectsClient from "./interior-projects-client"
-import { 
-  getAllCategories, 
-  getInteriorProjects,
-  type WordPressCategory, 
-  type WordPressPost 
-} from '@/lib/wordpress-api'
+import CategoryListing from "@/components/category-listing"
 
 export const metadata: Metadata = {
   title: "Interior Design Projects | Residential & Commercial Interiors",
@@ -14,36 +7,7 @@ export const metadata: Metadata = {
   keywords: ["interior design", "interior architecture", "residential interiors", "commercial interiors", "interior spaces", "furniture design", "spatial design"],
 }
 
-export default async function InteriorProjectsPage() {
-  // Try to fetch interior design projects from WordPress
-  let initialProjects: WordPressPost[] = []
-  let initialCategories: WordPressCategory[] = []
-  
-  try {
-    // Use the new enhanced interior projects fetcher
-    initialProjects = await getInteriorProjects(1, 20)
-    
-    // Get all categories for filtering
-    initialCategories = await getAllCategories()
-    
-    console.log(`Fetched ${initialProjects.length} interior design projects from WordPress`)
-  } catch (error) {
-    console.error('Error fetching interior design projects:', error)
-    // Will use fallback data in client component
-  }
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Suspense fallback={
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-        </div>
-      }>
-        <InteriorProjectsClient 
-          initialProjects={initialProjects}
-          initialCategories={initialCategories}
-        />
-      </Suspense>
-    </div>
-  )
+export default async function InteriorProjectsPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
+  const pageParam = typeof searchParams?.page === 'string' ? searchParams?.page : Array.isArray(searchParams?.page) ? searchParams?.page[0] : null
+  return <CategoryListing categoryId={48} title="Interior Design" basePath="/projects/interior" pageParam={pageParam} />
 }

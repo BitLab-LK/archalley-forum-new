@@ -1,6 +1,5 @@
 import { Metadata } from "next"
-import { getAllCategories, getNewsPosts } from "@/lib/wordpress-api"
-import NewsPageClient from "./news-page-client"
+import CategoryListing from "@/components/category-listing"
 
 // Force dynamic rendering to avoid build timeouts
 export const dynamic = 'force-dynamic'
@@ -12,17 +11,8 @@ export const metadata: Metadata = {
   keywords: "architecture news, design trends, building regulations, construction news, architectural projects, industry updates, sustainable architecture, urban planning",
 }
 
-export default async function NewsPage() {
-  try {
-    // Fetch news posts from category ID 42
-    const news = await getNewsPosts(1, 20)
-    const categories = await getAllCategories()
-    
-    console.log(`✅ News page: Fetched ${news.length} news posts from WordPress`)
-    return <NewsPageClient initialNews={news} initialCategories={categories} />
-  } catch (error) {
-    console.error('❌ News page: Error fetching news:', error)
-    // Fall back to client-side fetching
-    return <NewsPageClient />
-  }
+export default async function NewsPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
+  const pageParam = typeof searchParams?.page === 'string' ? searchParams?.page : Array.isArray(searchParams?.page) ? searchParams?.page[0] : null
+  // New standardized category listing (News = categoryId 42)
+  return <CategoryListing categoryId={42} title="News" basePath="/news" pageParam={pageParam} />
 }

@@ -19,7 +19,7 @@ import {
   getAllCategories,
   getFeaturedImageUrl, 
   getFeaturedImageAlt, 
-  stripHtml, 
+  cleanText,
   formatDate, 
   getPostExcerpt,
   type WordPressPost,
@@ -116,8 +116,8 @@ export default function NewsPageClient({ initialNews = [], initialCategories = [
   // Filter news based on search term
   const filteredNews = news.filter(item => {
     const matchesSearch = searchTerm === "" || 
-      stripHtml(item.title.rendered).toLowerCase().includes(searchTerm.toLowerCase()) ||
-      stripHtml(item.excerpt.rendered).toLowerCase().includes(searchTerm.toLowerCase())
+      cleanText(item.title.rendered).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cleanText(item.excerpt.rendered).toLowerCase().includes(searchTerm.toLowerCase())
     
     return matchesSearch
   })
@@ -328,7 +328,7 @@ export default function NewsPageClient({ initialNews = [], initialCategories = [
           {selectedNews && (
             <>
               <DialogHeader className="sr-only">
-                <DialogTitle>{stripHtml(selectedNews.title.rendered)}</DialogTitle>
+                <DialogTitle>{cleanText(selectedNews.title.rendered)}</DialogTitle>
               </DialogHeader>
               <div className="overflow-y-auto max-h-[85vh] modal-content">
                 {/* Featured Image */}
@@ -348,7 +348,7 @@ export default function NewsPageClient({ initialNews = [], initialCategories = [
               <div className="p-6 lg:p-8">
                 {/* Title */}
                 <h1 className="text-2xl lg:text-3xl font-bold mb-4 leading-tight text-foreground">
-                  {stripHtml(selectedNews.title.rendered)}
+                  {cleanText(selectedNews.title.rendered)}
                 </h1>
 
                 {/* Meta Info */}
@@ -449,7 +449,7 @@ function NewsCard({
 }) {
   const imageUrl = getFeaturedImageUrl(news, 'large')
   const imageAlt = getFeaturedImageAlt(news)
-  const title = stripHtml(news.title.rendered)
+  const title = cleanText(news.title.rendered)
   const excerpt = getPostExcerpt(news, 150)
   const formattedDate = formatDate(news.date)
 

@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Search, MessageSquare, ThumbsUp, User, MapPin, Building, CheckCircle, Loader2 } from 'lucide-react'
 import { HorizontalAd } from '@/components/ad-banner'
+import { decodeHtmlEntities } from '@/lib/wordpress-api'
 
 interface SearchPost {
   id: string
@@ -397,13 +398,13 @@ function SearchContent() {
                                       // Show all categories
                                       post.allCategories.map((category: any) => (
                                         <Badge key={category.id} variant="secondary" className="text-xs mr-1">
-                                          {category.name}
+                                          {decodeHtmlEntities(category.name)}
                                         </Badge>
                                       ))
                                     ) : post.categories ? (
                                       // Fallback to single category
                                       <Badge variant="secondary" className="text-xs">
-                                        {post.categories.name}
+                                        {decodeHtmlEntities(post.categories.name)}
                                       </Badge>
                                     ) : null}
                                   </div>
@@ -580,13 +581,13 @@ function SearchContent() {
                                   // Show all categories
                                   post.allCategories.map((category: any) => (
                                     <Badge key={category.id} variant="secondary" className="text-xs mr-1">
-                                      {category.name}
+                                      {decodeHtmlEntities(category.name)}
                                     </Badge>
                                   ))
                                 ) : post.categories ? (
                                   // Fallback to single category
                                   <Badge variant="secondary" className="text-xs">
-                                    {post.categories.name}
+                                    {decodeHtmlEntities(post.categories.name)}
                                   </Badge>
                                 ) : null}
                               </div>

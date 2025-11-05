@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Calendar, ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
-import { WordPressPost, getFeaturedImageUrl, getFeaturedImageAlt, stripHtml, formatDate } from '@/lib/wordpress-api'
+import { WordPressPost, getFeaturedImageUrl, getFeaturedImageAlt, cleanText, formatDate, decodeHtmlEntities } from '@/lib/wordpress-api'
 import WordPressBreadcrumb from '@/components/wordpress-breadcrumb'
 import ArchAlleySidebar from '@/components/archalley-sidebar'
 import { ImageGallery } from '@/components/image-gallery'
@@ -40,14 +40,14 @@ export default function SinglePostPage({
   // Create share object for ShareDropdown
   const sharePost = {
     id: post.id.toString(),
-    title: stripHtml(post.title.rendered),
-    content: stripHtml(post.excerpt.rendered),
+    title: cleanText(post.title.rendered),
+    content: cleanText(post.excerpt.rendered),
     link: typeof window !== 'undefined' ? window.location.href : post.link
   }
 
   // Build breadcrumb items
   const breadcrumbItems = categories.slice(0, 1).map(cat => ({
-    label: cat.name,
+    label: decodeHtmlEntities(cat.name),
     href: `/categories/${cat.slug}`
   }))
 
@@ -59,7 +59,7 @@ export default function SinglePostPage({
           {/* Breadcrumb */}
           <WordPressBreadcrumb 
             items={breadcrumbItems}
-            currentTitle={stripHtml(post.title.rendered)}
+            currentTitle={cleanText(post.title.rendered)}
           />
 
           {/* Post Title */}
@@ -84,7 +84,7 @@ export default function SinglePostPage({
                       href={`/categories/${cat.slug}`}
                       className="hover:text-primary transition-colors"
                     >
-                      {cat.name}
+                      {decodeHtmlEntities(cat.name)}
                     </Link>
                     {idx < categories.length - 1 && ','}
                   </span>
@@ -119,7 +119,7 @@ export default function SinglePostPage({
                     href={`/tags/${tag.slug}`}
                     className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm hover:bg-secondary/80 transition-colors"
                   >
-                    #{tag.name}
+                    #{decodeHtmlEntities(tag.name)}
                   </Link>
                 ))}
               </div>
@@ -174,7 +174,7 @@ export default function SinglePostPage({
                   <span className="text-sm">Previous Post</span>
                 </div>
                 <h4 className="font-semibold group-hover:text-primary transition-colors line-clamp-2">
-                  {stripHtml(previousPost.title.rendered)}
+                  {cleanText(previousPost.title.rendered)}
                 </h4>
               </Link>
             )}
@@ -188,7 +188,7 @@ export default function SinglePostPage({
                   <ChevronRight className="h-4 w-4" />
                 </div>
                 <h4 className="font-semibold text-right group-hover:text-primary transition-colors line-clamp-2">
-                  {stripHtml(nextPost.title.rendered)}
+                  {cleanText(nextPost.title.rendered)}
                 </h4>
               </Link>
             )}
@@ -215,7 +215,7 @@ export default function SinglePostPage({
                       />
                     </div>
                     <h4 className="font-semibold group-hover:text-primary transition-colors line-clamp-2">
-                      {stripHtml(relatedPost.title.rendered)}
+                      {cleanText(relatedPost.title.rendered)}
                     </h4>
                     <p className="text-sm text-muted-foreground mt-2">
                       {formatDate(relatedPost.date)}

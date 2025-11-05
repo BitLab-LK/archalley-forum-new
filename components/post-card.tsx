@@ -52,6 +52,7 @@ import { cn } from "@/lib/utils"
 import { useGlobalVoteState } from "@/lib/vote-sync"
 import { activityEventManager } from "@/lib/activity-events"
 import { generateCategoryStyles } from "@/lib/color-utils"
+import { decodeHtmlEntities } from "@/lib/wordpress-api"
 import { useSocket } from "@/lib/socket-context"
 import {
   DropdownMenu,
@@ -767,7 +768,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }
                           backgroundColor: styles.lightBackground
                         }}
                       >
-                        {category.name}
+                        {decodeHtmlEntities(category.name)}
                       </Badge>
                     )
                   })
@@ -783,7 +784,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }
                           backgroundColor: styles.lightBackground
                         }}
                       >
-                        {post.categories.name}
+                        {decodeHtmlEntities(post.categories.name)}
                       </Badge>
                     )
                   })()

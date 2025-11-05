@@ -11,7 +11,7 @@ import {
   getFeaturedImageUrl, 
   getFeaturedImageAlt, 
   getPostCategory,
-  stripHtml, 
+  cleanText,
   formatDate,
   type WordPressPost
 } from "@/lib/wordpress-api"
@@ -233,7 +233,7 @@ function TrendingCard({ post, index }: { post: WordPressPost; index: number }) {
   const category = getPostCategory(post)
   const imageUrl = getFeaturedImageUrl(post, 'medium')
   const imageAlt = getFeaturedImageAlt(post)
-  const title = stripHtml(post.title.rendered)
+  const title = cleanText(post.title.rendered)
   const formattedDate = formatDate(post.date)
 
   // Truncate title for card display

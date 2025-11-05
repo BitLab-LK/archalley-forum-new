@@ -136,6 +136,38 @@ export function stripHtml(html: string): string {
 }
 
 /**
+ * Decode common HTML entities (including numeric) to plain text
+ */
+export function decodeHtmlEntities(input: string): string {
+  if (!input) return ''
+  // Basic named entities
+  const named = input
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+  // Numeric decimal entities: &#8211;
+  const numericDec = named.replace(/&#(\d+);/g, (_, dec) => {
+    const code = parseInt(dec, 10)
+    return Number.isFinite(code) ? String.fromCharCode(code) : _
+  })
+  // Numeric hex entities: &#x2013;
+  const numericHex = numericDec.replace(/&#x([\da-fA-F]+);/g, (_, hex) => {
+    const code = parseInt(hex, 16)
+    return Number.isFinite(code) ? String.fromCharCode(code) : _
+  })
+  return numericHex
+}
+
+/**
+ * Convenience: strip HTML tags and decode entities
+ */
+export function cleanText(html: string): string {
+  return decodeHtmlEntities(stripHtml(html))
+}
+
+/**
  * Format WordPress date to readable format
  * @param dateString - WordPress date string
  * @returns Formatted date
@@ -156,7 +188,7 @@ export function formatDate(dateString: string): string {
  * @returns Clean excerpt
  */
 export function getPostExcerpt(post: WordPressPost, maxLength: number = 150): string {
-  const excerpt = stripHtml(post.excerpt.rendered)
+  const excerpt = cleanText(post.excerpt.rendered)
   return excerpt.length > maxLength 
     ? excerpt.substring(0, maxLength) + '...'
     : excerpt
@@ -484,21 +516,104 @@ export async function searchPosts(searchTerm: string, page: number = 1, perPage:
  */
 export async function getProjectBySlug(slug: string): Promise<WordPressPost | null> {
   try {
+    // URL encode the slug to handle special characters
+    const encodedSlug = encodeURIComponent(slug)
+    
+    // Try the standard REST API endpoint first
     const response = await fetch(
-      `${WORDPRESS_API_URL}/posts?_embed=wp:featuredmedia,wp:term&slug=${slug}&status=publish&acf_format=standard`,
+      `${WORDPRESS_API_URL}/posts?_embed=wp:featuredmedia,wp:term&slug=${encodedSlug}&status=publish&acf_format=standard`,
       {
         next: { revalidate: 300 },
       }
     )
     
     if (!response.ok) {
-      throw new Error(`WordPress API error: ${response.status}`)
+      console.error(`WordPress API error for slug "${slug}": ${response.status} ${response.statusText}`)
+      return null
+    }
+    
+    // Check if response is actually JSON before parsing
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error(`WordPress API returned non-JSON response for slug "${slug}": ${contentType}`)
+      
+      // Try alternative: fetch all posts and filter by slug (fallback)
+      return await getProjectBySlugFallback(slug)
     }
     
     const posts: WordPressPost[] = await response.json()
-    return posts.length > 0 ? posts[0] : null
+    if (posts.length > 0) {
+      return posts[0]
+    }
+    
+    // If no results, try fallback method
+    return await getProjectBySlugFallback(slug)
   } catch (error) {
-    console.error('Error fetching project by slug:', error)
+    console.error(`Error fetching project by slug "${slug}":`, error)
+    // Try fallback method
+    return await getProjectBySlugFallback(slug)
+  }
+}
+
+/**
+ * Fallback method: Fetch recent posts and find by slug
+ */
+async function getProjectBySlugFallback(slug: string): Promise<WordPressPost | null> {
+  try {
+    console.log(`Attempting fallback fetch for slug: "${slug}"`)
+    
+    // Fetch a larger batch of recent posts and search for the slug
+    const response = await fetch(
+      `${WORDPRESS_API_URL}/posts?_embed=wp:featuredmedia,wp:term&per_page=100&status=publish&orderby=date&order=desc`,
+      {
+        next: { revalidate: 300 },
+      }
+    )
+    
+    if (!response.ok) {
+      console.error(`Fallback fetch failed with status: ${response.status}`)
+      return null
+    }
+    
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error(`Fallback fetch returned non-JSON: ${contentType}`)
+      return null
+    }
+    
+    const posts: WordPressPost[] = await response.json()
+    console.log(`Fallback: Fetched ${posts.length} posts, searching for slug: "${slug}"`)
+    
+    // Try exact match first (case-insensitive)
+    let post = posts.find(p => p.slug.toLowerCase() === slug.toLowerCase())
+    
+    // If not found, try partial match (in case slug has extra characters)
+    if (!post) {
+      post = posts.find(p => p.slug.toLowerCase().includes(slug.toLowerCase()) || slug.toLowerCase().includes(p.slug.toLowerCase()))
+    }
+    
+    // If still not found, try matching against the link/permalink
+    if (!post) {
+      const normalizedSlug = slug.replace(/\/$/, '') // Remove trailing slash
+      post = posts.find(p => {
+        const linkSlug = p.link.split('/').filter(Boolean).pop()?.replace(/\/$/, '')
+        return linkSlug?.toLowerCase() === normalizedSlug.toLowerCase()
+      })
+    }
+    
+    if (post) {
+      console.log(`Fallback: Found post with slug "${post.slug}" (matched against "${slug}")`)
+    } else {
+      console.log(`Fallback: No post found matching slug "${slug}"`)
+      // Log available slugs for debugging
+      if (posts.length > 0) {
+        console.log(`Available slugs (first 10): ${posts.slice(0, 10).map(p => p.slug).join(', ')}`)
+      }
+    }
+    
+    return post || null
+  } catch (error) {
+    console.error(`Error in fallback fetch for slug "${slug}":`, error)
     return null
   }
 }

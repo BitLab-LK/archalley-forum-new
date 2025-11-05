@@ -1,6 +1,5 @@
 import { Metadata } from 'next'
-import { getStudentProjects } from '@/lib/wordpress-api'
-import StudentProjectsClient from './student-projects-client'
+import CategoryListing from '@/components/category-listing'
 
 export const metadata: Metadata = {
   title: 'Student Projects | Archalley',
@@ -8,9 +7,7 @@ export const metadata: Metadata = {
   keywords: 'student projects, architecture students, design portfolio, coursework, thesis projects, academic work, capstone projects',
 }
 
-export default async function StudentProjectsPage() {
-  // Fetch student projects from WordPress
-  const posts = await getStudentProjects(1, 100) // Fetch more for better client-side filtering
-  
-  return <StudentProjectsClient initialProjects={posts} />
+export default async function StudentProjectsPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
+  const pageParam = typeof searchParams?.page === 'string' ? searchParams?.page : Array.isArray(searchParams?.page) ? searchParams?.page[0] : null
+  return <CategoryListing categoryId={59} title="Student Projects" basePath="/academic/student-projects" pageParam={pageParam} />
 }

@@ -19,7 +19,7 @@ import {
   getAllCategories,
   getFeaturedImageUrl, 
   getFeaturedImageAlt, 
-  stripHtml, 
+  cleanText,
   formatDate, 
   getPostExcerpt,
   type WordPressPost,
@@ -165,8 +165,8 @@ export default function ArticlesPageClient({ initialArticles = [], initialCatego
   // Filter articles based on search term
   const filteredArticles = articles.filter(item => {
     const matchesSearch = searchTerm === "" || 
-      stripHtml(item.title.rendered).toLowerCase().includes(searchTerm.toLowerCase()) ||
-      stripHtml(item.excerpt.rendered).toLowerCase().includes(searchTerm.toLowerCase())
+      cleanText(item.title.rendered).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cleanText(item.excerpt.rendered).toLowerCase().includes(searchTerm.toLowerCase())
     
     return matchesSearch
   })
@@ -362,7 +362,7 @@ export default function ArticlesPageClient({ initialArticles = [], initialCatego
           {selectedArticle && (
             <>
               <DialogHeader className="sr-only">
-                <DialogTitle>{stripHtml(selectedArticle.title.rendered)}</DialogTitle>
+                <DialogTitle>{cleanText(selectedArticle.title.rendered)}</DialogTitle>
               </DialogHeader>
               <div className="overflow-y-auto max-h-[85vh] modal-content">
                 {/* Featured Image */}
@@ -382,7 +382,7 @@ export default function ArticlesPageClient({ initialArticles = [], initialCatego
               <div className="p-6 lg:p-8">
                 {/* Title */}
                 <h1 className="text-2xl lg:text-3xl font-bold mb-4 leading-tight text-foreground">
-                  {stripHtml(selectedArticle.title.rendered)}
+                  {cleanText(selectedArticle.title.rendered)}
                 </h1>
 
                 {/* Meta Info */}
@@ -495,7 +495,7 @@ function ArticleCard({
 }) {
   const imageUrl = getFeaturedImageUrl(article, 'large')
   const imageAlt = getFeaturedImageAlt(article)
-  const title = stripHtml(article.title.rendered)
+  const title = cleanText(article.title.rendered)
   const excerpt = getPostExcerpt(article, 150)
   const formattedDate = formatDate(article.date)
 

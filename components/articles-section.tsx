@@ -8,7 +8,7 @@ import {
   getPostsByCategory,
   getAllCategories,
   getFeaturedImageUrl, 
-  stripHtml, 
+  cleanText,
   formatDate, 
   type WordPressPost,
   type WordPressCategory
@@ -98,8 +98,8 @@ export default function ArticlesSection({ initialArticles = [], initialCategorie
 
 function ArticleCard({ article }: { article: WordPressPost }) {
   const imageUrl = getFeaturedImageUrl(article, 'large')
-  const title = stripHtml(article.title.rendered)
-  const excerpt = stripHtml(article.excerpt.rendered)
+  const title = cleanText(article.title.rendered)
+  const excerpt = cleanText(article.excerpt.rendered)
   const date = formatDate(article.date)
 
   return (

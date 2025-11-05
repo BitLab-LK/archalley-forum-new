@@ -1,9 +1,5 @@
 import { Metadata } from 'next'
-import { 
-  getAllCategories,
-  getArticlesPosts
-} from '@/lib/wordpress-api'
-import ArticlesPageClient from './articles-page-client'
+import CategoryListing from "@/components/category-listing"
 
 // Force dynamic rendering to avoid build timeouts
 export const dynamic = 'force-dynamic'
@@ -14,17 +10,8 @@ export const metadata: Metadata = {
   description: 'Discover in-depth articles, research papers, and expert insights on architecture, design theory, and construction technology.',
 }
 
-export default async function ArticlesPage() {
-  try {
-    // Fetch articles from category ID 41
-    const articles = await getArticlesPosts(1, 20)
-    const categories = await getAllCategories()
-    
-    console.log(`✅ Articles page: Fetched ${articles.length} articles from WordPress`)
-    return <ArticlesPageClient initialArticles={articles} initialCategories={categories} />
-  } catch (error) {
-    console.error('❌ Articles page: Error fetching articles:', error)
-    // Fall back to client-side fetching
-    return <ArticlesPageClient />
-  }
+export default async function ArticlesPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
+  const pageParam = typeof searchParams?.page === 'string' ? searchParams?.page : Array.isArray(searchParams?.page) ? searchParams?.page[0] : null
+  // New standardized category listing (Articles = categoryId 41)
+  return <CategoryListing categoryId={41} title="Articles" basePath="/articles" pageParam={pageParam} />
 }

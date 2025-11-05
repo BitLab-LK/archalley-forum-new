@@ -6,7 +6,7 @@ import Link from "next/link"
 import { 
   getAllPosts,
   getFeaturedImageUrl, 
-  stripHtml, 
+  cleanText,
   formatDate,
   type WordPressPost
 } from "@/lib/wordpress-api"
@@ -81,7 +81,7 @@ export default function TrendingSection({ initialPosts = [] }: TrendingSectionPr
 
 function TrendingCard({ post }: { post: WordPressPost }) {
   const imageUrl = getFeaturedImageUrl(post, 'thumbnail')
-  const title = stripHtml(post.title.rendered)
+  const title = cleanText(post.title.rendered)
   const date = formatDate(post.date)
 
   return (

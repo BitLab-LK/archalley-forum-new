@@ -9,7 +9,8 @@ import {
   getFeaturedImageUrl, 
   getPostCategory, 
   stripHtml, 
-  formatDate, 
+  formatDate,
+  decodeHtmlEntities,
   type WordPressPost 
 } from "@/lib/wordpress-api"
 
@@ -140,7 +141,7 @@ export default function BlogCarousel({ initialPosts = [] }: BlogCarouselProps) {
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 text-white">
-                        <div className="text-yellow-400 text-sm">{category.name}</div>
+                        <div className="text-yellow-400 text-sm">{decodeHtmlEntities(category.name)}</div>
                         <h3 className="font-bold text-lg line-clamp-2">{title}</h3>
                         <div className="text-sm text-gray-300 mt-1">{date}</div>
                       </div>

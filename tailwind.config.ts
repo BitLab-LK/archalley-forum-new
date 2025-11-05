@@ -12,7 +12,7 @@ const config: Config = {
   theme: {
     // Use default container settings - DO NOT add custom max-width overrides
     extend: {
-      typography: ({ theme }) => ({
+      typography: ({ theme }: { theme: any }) => ({
         DEFAULT: {
           css: {
             lineHeight: '1.75',

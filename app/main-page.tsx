@@ -2,12 +2,10 @@ import ServerBlogCarousel from "@/components/server-blog-carousel"
 import ServerProjectsSection from "@/components/server-projects-section"
 import ServerArticlesSection from "@/components/server-articles-section"
 import ServerNewsSection from "@/components/server-news-section"
-import ServerTrendingSection from "@/components/server-trending-section"
 import ServerInstagramSlider from "@/components/server-instagram-slider"
 import AdBannerComponent from "@/components/ad-banner"
 import { AdSessionManager } from "@/components/ad-session-manager"
-import SidebarYouTube from "@/components/sidebar-youtube"
-import SidebarFacebook from "@/components/sidebar-facebook"
+import SiteLayout from "@/components/site-layout"
 import { getAllPosts, getPostsByCategory, type WordPressPost } from "@/lib/wordpress-api"
 
 export default async function MainPage() {
@@ -54,49 +52,26 @@ export default async function MainPage() {
       {/* Featured Blog Carousel - Hero Section */}
       <ServerBlogCarousel />
 
-      {/* Main Content Layout - Grid with Sidebar */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Main Content Column (75%) */}
-          <div className="w-full lg:w-3/4">
-            {/* Projects Section */}
-            <ServerProjectsSection />
-            
-            {/* Ad Banner between Projects and Articles */}
-            <div className="my-8">
-              <AdBannerComponent 
-                size="680x180" 
-                className="w-full rounded-lg overflow-hidden" 
-                positionId="projects-articles-horizontal"
-                autoRotate={true}
-                rotationInterval={45}
-                showLabel={false}
-              />
-            </div>
-            
-            {/* Articles Section */}
-            <ServerArticlesSection />
-          </div>
-
-          {/* Sidebar Column (25%) */}
-          <div className="w-full lg:w-1/4">
-            {/* Ad Banner in sidebar */}
-            <div className="mb-8">
-              <AdBannerComponent 
-                size="350x350" 
-                className="w-full rounded-lg overflow-hidden" 
-                positionId="sidebar-ad"
-                autoRotate={true}
-                rotationInterval={45}
-                showLabel={false}
-              />
-            </div>
-            
-            {/* Trending Section */}
-            <ServerTrendingSection />
-          </div>
+      {/* Main Content Layout - Standardized with SiteLayout */}
+      <SiteLayout>
+        {/* Projects Section */}
+        <ServerProjectsSection />
+        
+        {/* Ad Banner between Projects and Articles */}
+        <div className="my-8">
+          <AdBannerComponent 
+            size="680x180" 
+            className="w-full rounded-lg overflow-hidden" 
+            positionId="projects-articles-horizontal"
+            autoRotate={true}
+            rotationInterval={45}
+            showLabel={false}
+          />
         </div>
-      </div>
+        
+        {/* Articles Section */}
+        <ServerArticlesSection />
+      </SiteLayout>
 
       {/* Horizontal Ad Banner */}
       <div className="container mx-auto px-4 py-8">
@@ -111,25 +86,9 @@ export default async function MainPage() {
       </div>
 
       {/* News Section */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Main Content Column (75%) */}
-          <div className="w-full lg:w-3/4">
-            <ServerNewsSection />
-          </div>
-
-          {/* Sidebar Column (25%) */}
-          <div className="w-full lg:w-1/4">
-            <div className="space-y-8">
-              {/* YouTube Section */}
-              <SidebarYouTube />
-
-              {/* Facebook Section */}
-              <SidebarFacebook />
-            </div>
-          </div>
-        </div>
-      </div>
+      <SiteLayout>
+        <ServerNewsSection />
+      </SiteLayout>
 
       {/* Horizontal Ad Banner */}
       <div className="container mx-auto px-4 py-8">

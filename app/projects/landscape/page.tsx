@@ -1,12 +1,5 @@
-import { Suspense } from "react"
 import { Metadata } from "next"
-import LandscapeProjectsClient from "./landscape-projects-client"
-import { 
-  getAllCategories, 
-  getLandscapeProjects,
-  type WordPressCategory, 
-  type WordPressPost 
-} from '@/lib/wordpress-api'
+import CategoryListing from "@/components/category-listing"
 
 export const metadata: Metadata = {
   title: "Landscape & Urbanism Projects | Urban Planning & Design",
@@ -14,36 +7,7 @@ export const metadata: Metadata = {
   keywords: ["landscape architecture", "urbanism", "urban planning", "urban design", "landscape design", "public spaces", "parks", "gardens", "streetscape"],
 }
 
-export default async function LandscapeProjectsPage() {
-  // Try to fetch landscape projects from WordPress
-  let initialProjects: WordPressPost[] = []
-  let initialCategories: WordPressCategory[] = []
-  
-  try {
-    // Use the new enhanced landscape projects fetcher
-    initialProjects = await getLandscapeProjects(1, 20)
-    
-    // Get all categories for filtering
-    initialCategories = await getAllCategories()
-    
-    console.log(`Fetched ${initialProjects.length} landscape projects from WordPress`)
-  } catch (error) {
-    console.error('Error fetching landscape projects:', error)
-    // Will use fallback data in client component
-  }
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Suspense fallback={
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-        </div>
-      }>
-        <LandscapeProjectsClient 
-          initialProjects={initialProjects}
-          initialCategories={initialCategories}
-        />
-      </Suspense>
-    </div>
-  )
+export default async function LandscapeProjectsPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
+  const pageParam = typeof searchParams?.page === 'string' ? searchParams?.page : Array.isArray(searchParams?.page) ? searchParams?.page[0] : null
+  return <CategoryListing categoryId={55} title="Landscape & Urbanism" basePath="/projects/landscape" pageParam={pageParam} />
 }

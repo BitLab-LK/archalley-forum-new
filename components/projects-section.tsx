@@ -8,7 +8,7 @@ import {
   getPostsByCategory,
   getAllCategories,
   getFeaturedImageUrl, 
-  stripHtml, 
+  cleanText,
   formatDate, 
   type WordPressPost,
   type WordPressCategory
@@ -112,8 +112,8 @@ export default function ProjectsSection({ initialProjects = [], initialCategorie
 
 function ProjectCard({ project }: { project: WordPressPost }) {
   const imageUrl = getFeaturedImageUrl(project, 'large')
-  const title = stripHtml(project.title.rendered)
-  const excerpt = stripHtml(project.excerpt.rendered)
+  const title = cleanText(project.title.rendered)
+  const excerpt = cleanText(project.excerpt.rendered)
   const date = formatDate(project.date)
 
   return (
