@@ -12,6 +12,72 @@ const config: Config = {
   theme: {
     // Use default container settings - DO NOT add custom max-width overrides
     extend: {
+      typography: ({ theme }) => ({
+        DEFAULT: {
+          css: {
+            lineHeight: '1.75',
+            p: {
+              marginTop: theme('spacing.5'),
+              marginBottom: theme('spacing.5'),
+              textAlign: 'justify',
+            },
+            img: { display: 'block', width: '100%', height: 'auto' },
+            'picture > img': { display: 'block', width: '100%', height: 'auto' },
+            hr: {
+              marginTop: '1em',
+              marginBottom: '1em',
+            },
+          },
+        },
+        sm: {
+          css: {
+            lineHeight: '1.7',
+            p: {
+              marginTop: theme('spacing.4'),
+              marginBottom: theme('spacing.4'),
+              textAlign: 'justify',
+            },
+            img: { display: 'block', width: '100%', height: 'auto' },
+            'picture > img': { display: 'block', width: '100%', height: 'auto' },
+            hr: {
+              marginTop: '1em',
+              marginBottom: '1em',
+            },
+          },
+        },
+        base: {
+          css: {
+            lineHeight: '1.75',
+            p: {
+              marginTop: theme('spacing.5'),
+              marginBottom: theme('spacing.5'),
+              textAlign: 'justify',
+            },
+            img: { display: 'block', width: '100%', height: 'auto' },
+            'picture > img': { display: 'block', width: '100%', height: 'auto' },
+            hr: {
+              marginTop: '1em',
+              marginBottom: '1em',
+            },
+          },
+        },
+        lg: {
+          css: {
+            lineHeight: '1.8',
+            p: {
+              marginTop: theme('spacing.6'),
+              marginBottom: theme('spacing.6'),
+              textAlign: 'justify',
+            },
+            img: { display: 'block', width: '100%', height: 'auto' },
+            'picture > img': { display: 'block', width: '100%', height: 'auto' },
+            hr: {
+              marginTop: '1em',
+              marginBottom: '1em',
+            },
+          },
+        },
+      }),
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -79,7 +145,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config
 
 export default config
