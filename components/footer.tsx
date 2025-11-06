@@ -1,32 +1,54 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Facebook, Twitter, Instagram, Linkedin, Youtube } from "lucide-react"
+import { SOCIAL_MEDIA } from "@/lib/constants"
 
 export default function Footer() {
   return (
     <footer className="bg-black text-white">
       {/* Social Media Links */}
       <div className="container mx-auto px-4 py-8 border-b border-gray-800">
-        <div className="flex flex-wrap justify-center gap-6">
-          <Link href="#" className="hover:text-orange-400 flex items-center gap-2 transition-colors">
-            <Facebook className="w-5 h-5" />
+        <div className="flex flex-wrap justify-center gap-10">
+          <Link href={SOCIAL_MEDIA.facebook} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3">
+            <span className="rounded-full bg-[#282828] group-hover:bg-[#FFA000] w-9 h-9 flex items-center justify-center transition-colors">
+              <i className="lni lni-facebook text-white text-base"></i>
+            </span>
             <span>Facebook</span>
           </Link>
-          <Link href="#" className="hover:text-orange-400 flex items-center gap-2 transition-colors">
-            <Instagram className="w-5 h-5" />
+          <Link href={SOCIAL_MEDIA.instagram} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3">
+            <span className="rounded-full bg-[#282828] group-hover:bg-[#FFA000] w-9 h-9 flex items-center justify-center transition-colors">
+              <i className="lni lni-instagram text-white text-base"></i>
+            </span>
             <span>Instagram</span>
           </Link>
-          <Link href="#" className="hover:text-orange-400 flex items-center gap-2 transition-colors">
-            <Youtube className="w-5 h-5" />
+          <Link href={SOCIAL_MEDIA.youtube.channelUrl} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3">
+            <span className="rounded-full bg-[#282828] group-hover:bg-[#FFA000] w-9 h-9 flex items-center justify-center transition-colors">
+              <i className="lni lni-youtube text-white text-base"></i>
+            </span>
             <span>Youtube</span>
           </Link>
-          <Link href="#" className="hover:text-orange-400 flex items-center gap-2 transition-colors">
-            <Linkedin className="w-5 h-5" />
+          <Link href={SOCIAL_MEDIA.tiktok} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3">
+            <span className="rounded-full bg-[#282828] group-hover:bg-[#FFA000] w-9 h-9 flex items-center justify-center transition-colors">
+              <i className="lni lni-tiktok text-white text-base"></i>
+            </span>
+            <span>TikTok</span>
+          </Link>
+          <Link href={SOCIAL_MEDIA.pinterest} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3">
+            <span className="rounded-full bg-[#282828] group-hover:bg-[#FFA000] w-9 h-9 flex items-center justify-center transition-colors">
+              <i className="lni lni-pinterest text-white text-base"></i>
+            </span>
+            <span>Pinterest</span>
+          </Link>
+          <Link href={SOCIAL_MEDIA.linkedin} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3">
+            <span className="rounded-full bg-[#282828] group-hover:bg-[#FFA000] w-9 h-9 flex items-center justify-center transition-colors">
+              <i className="lni lni-linkedin text-white text-base"></i>
+            </span>
             <span>LinkedIn</span>
           </Link>
-          <Link href="#" className="hover:text-orange-400 flex items-center gap-2 transition-colors">
-            <Twitter className="w-5 h-5" />
-            <span>Twitter</span>
+          <Link href={SOCIAL_MEDIA.twitter} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3">
+            <span className="rounded-full bg-[#282828] group-hover:bg-[#FFA000] w-9 h-9 flex items-center justify-center transition-colors">
+              <i className="lni lni-x text-white text-base"></i>
+            </span>
+            <span>Twitter / X</span>
           </Link>
         </div>
       </div>
@@ -52,22 +74,22 @@ export default function Footer() {
             </p>
 
             <div className="flex flex-wrap gap-4 mb-6">
-              <Link href="/" className="text-sm hover:text-orange-400 transition-colors">
+              <Link href="/" className="text-sm hover:text-[#FFA000] transition-colors">
                 Home
               </Link>
-              <Link href="/about" className="text-sm hover:text-orange-400 transition-colors">
+              <Link href="/about" className="text-sm hover:text-[#FFA000] transition-colors">
                 About
               </Link>
-              <Link href="/contact" className="text-sm hover:text-orange-400 transition-colors">
+              <Link href="/contact" className="text-sm hover:text-[#FFA000] transition-colors">
                 Contact
               </Link>
-              <Link href="/privacy-policy" className="text-sm hover:text-orange-400 transition-colors">
+              <Link href="/privacy-policy" className="text-sm hover:text-[#FFA000] transition-colors">
                 Privacy Policy
               </Link>
-              <Link href="/terms-conditions" className="text-sm hover:text-orange-400 transition-colors">
+              <Link href="/terms-conditions" className="text-sm hover:text-[#FFA000] transition-colors">
                 Terms & Conditions
               </Link>
-              <Link href="/refund-policy" className="text-sm hover:text-orange-400 transition-colors">
+              <Link href="/refund-policy" className="text-sm hover:text-[#FFA000] transition-colors">
                 Refund Policy
               </Link>
             </div>
@@ -81,17 +103,17 @@ export default function Footer() {
               <div>
                 <ul className="space-y-2">
                   <li>
-                    <Link href="/projects/commercial" className="text-sm text-gray-400 hover:text-orange-400 transition-colors">
+                    <Link href="/projects/commercial" className="text-sm text-gray-400 hover:text-[#FFA000] transition-colors">
                       Commercial & Offices
                     </Link>
                   </li>
                   <li>
-                    <Link href="/projects/hospitality" className="text-sm text-gray-400 hover:text-orange-400 transition-colors">
+                    <Link href="/projects/hospitality" className="text-sm text-gray-400 hover:text-[#FFA000] transition-colors">
                       Hospitality Architecture
                     </Link>
                   </li>
                   <li>
-                    <Link href="/projects/industrial" className="text-sm text-gray-400 hover:text-orange-400 transition-colors">
+                    <Link href="/projects/industrial" className="text-sm text-gray-400 hover:text-[#FFA000] transition-colors">
                       Industrial & Infrastructure
                     </Link>
                   </li>
@@ -102,17 +124,17 @@ export default function Footer() {
               <div>
                 <ul className="space-y-2">
                   <li>
-                    <Link href="/projects/interior" className="text-sm text-gray-400 hover:text-orange-400 transition-colors">
+                    <Link href="/projects/interior" className="text-sm text-gray-400 hover:text-[#FFA000] transition-colors">
                       Interior Design
                     </Link>
                   </li>
                   <li>
-                    <Link href="/projects/landscape" className="text-sm text-gray-400 hover:text-orange-400 transition-colors">
+                    <Link href="/projects/landscape" className="text-sm text-gray-400 hover:text-[#FFA000] transition-colors">
                       Landscape & Urbanism
                     </Link>
                   </li>
                   <li>
-                    <Link href="/projects/public" className="text-sm text-gray-400 hover:text-orange-400 transition-colors">
+                    <Link href="/projects/public" className="text-sm text-gray-400 hover:text-[#FFA000] transition-colors">
                       Public Architecture
                     </Link>
                   </li>
@@ -123,17 +145,17 @@ export default function Footer() {
               <div>
                 <ul className="space-y-2">
                   <li>
-                    <Link href="/projects/refurbishment" className="text-sm text-gray-400 hover:text-orange-400 transition-colors">
+                    <Link href="/projects/refurbishment" className="text-sm text-gray-400 hover:text-[#FFA000] transition-colors">
                       Refurbishment
                     </Link>
                   </li>
                   <li>
-                    <Link href="/projects/religious" className="text-sm text-gray-400 hover:text-orange-400 transition-colors">
+                    <Link href="/projects/religious" className="text-sm text-gray-400 hover:text-[#FFA000] transition-colors">
                       Religious Architecture
                     </Link>
                   </li>
                   <li>
-                    <Link href="/projects/residential" className="text-sm text-gray-400 hover:text-orange-400 transition-colors">
+                    <Link href="/projects/residential" className="text-sm text-gray-400 hover:text-[#FFA000] transition-colors">
                       Residential Architecture
                     </Link>
                   </li>
@@ -144,7 +166,7 @@ export default function Footer() {
             <div className="mt-8">
               <Link
                 href="/projects/submit"
-                className="inline-block bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+                className="inline-block bg-[#FFA000] hover:bg-[#e08f00] text-white px-6 py-3 rounded-md font-medium transition-colors"
               >
                 Submit Your Project
               </Link>

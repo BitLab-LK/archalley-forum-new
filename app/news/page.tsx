@@ -11,8 +11,9 @@ export const metadata: Metadata = {
   keywords: "architecture news, design trends, building regulations, construction news, architectural projects, industry updates, sustainable architecture, urban planning",
 }
 
-export default async function NewsPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
-  const pageParam = typeof searchParams?.page === 'string' ? searchParams?.page : Array.isArray(searchParams?.page) ? searchParams?.page[0] : null
+export default async function NewsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const resolvedSearchParams = await searchParams
+  const pageParam = typeof resolvedSearchParams?.page === 'string' ? resolvedSearchParams.page : Array.isArray(resolvedSearchParams?.page) ? resolvedSearchParams.page[0] : null
   // New standardized category listing (News = categoryId 42)
   return <CategoryListing categoryId={42} title="News" basePath="/news" pageParam={pageParam} />
 }

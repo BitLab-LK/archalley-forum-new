@@ -71,7 +71,16 @@ export async function getAllPosts(page: number = 1, perPage: number = 4): Promis
     )
 
     if (!response.ok) {
-      throw new Error(`WordPress API error: ${response.status}`)
+      console.error(`WordPress API error: ${response.status} ${response.statusText}`)
+      return []
+    }
+
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      const text = await response.text()
+      console.error(`WordPress API returned non-JSON response. Content-Type: ${contentType}, Preview: ${text.substring(0, 200)}`)
+      return []
     }
 
     const posts: WordPressPost[] = await response.json()
@@ -216,7 +225,16 @@ export async function getAllCategories(): Promise<WordPressCategory[]> {
     )
     
     if (!response.ok) {
-      throw new Error(`WordPress API error: ${response.status}`)
+      console.error(`WordPress API error: ${response.status} ${response.statusText}`)
+      return []
+    }
+    
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      const text = await response.text()
+      console.error(`WordPress API returned non-JSON response. Content-Type: ${contentType}, Preview: ${text.substring(0, 200)}`)
+      return []
     }
     
     const categories: WordPressCategory[] = await response.json()
@@ -224,6 +242,39 @@ export async function getAllCategories(): Promise<WordPressCategory[]> {
   } catch (error) {
     console.error('Error fetching WordPress categories:', error)
     return []
+  }
+}
+
+/**
+ * Get category by slug from WordPress
+ */
+export async function getCategoryBySlug(slug: string): Promise<WordPressCategory | null> {
+  try {
+    const response = await fetch(
+      `${WORDPRESS_API_URL}/categories?slug=${encodeURIComponent(slug)}&per_page=1`,
+      {
+        next: { revalidate: 3600 }, // Cache for 1 hour
+      }
+    )
+    
+    if (!response.ok) {
+      console.error(`WordPress API error for slug "${slug}": ${response.status} ${response.statusText}`)
+      return null
+    }
+    
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      const text = await response.text()
+      console.error(`WordPress API returned non-JSON response for slug "${slug}". Content-Type: ${contentType}, Preview: ${text.substring(0, 200)}`)
+      return null
+    }
+    
+    const categories: WordPressCategory[] = await response.json()
+    return categories.length > 0 ? categories[0] : null
+  } catch (error) {
+    console.error(`Error fetching WordPress category by slug "${slug}":`, error)
+    return null
   }
 }
 
@@ -240,7 +291,16 @@ export async function getPostsByCategory(categoryId: number, page: number = 1, p
     )
     
     if (!response.ok) {
-      throw new Error(`WordPress API error: ${response.status}`)
+      console.error(`WordPress API error for category ${categoryId}: ${response.status} ${response.statusText}`)
+      return []
+    }
+    
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      const text = await response.text()
+      console.error(`WordPress API returned non-JSON response for category ${categoryId}. Content-Type: ${contentType}, Preview: ${text.substring(0, 200)}`)
+      return []
     }
     
     const posts: WordPressPost[] = await response.json()
@@ -500,7 +560,16 @@ export async function searchPosts(searchTerm: string, page: number = 1, perPage:
     )
     
     if (!response.ok) {
-      throw new Error(`WordPress API error: ${response.status}`)
+      console.error(`WordPress API error for search "${searchTerm}": ${response.status} ${response.statusText}`)
+      return []
+    }
+    
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      const text = await response.text()
+      console.error(`WordPress API returned non-JSON response for search "${searchTerm}". Content-Type: ${contentType}, Preview: ${text.substring(0, 200)}`)
+      return []
     }
     
     const posts: WordPressPost[] = await response.json()
@@ -634,7 +703,16 @@ export async function getPostsByCategoryPaginated(
     )
     
     if (!response.ok) {
-      throw new Error(`WordPress API error: ${response.status}`)
+      console.error(`WordPress API error for category ${categoryId}: ${response.status} ${response.statusText}`)
+      return []
+    }
+    
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      const text = await response.text()
+      console.error(`WordPress API returned non-JSON response for category ${categoryId}. Content-Type: ${contentType}, Preview: ${text.substring(0, 200)}`)
+      return []
     }
     
     const posts: WordPressPost[] = await response.json()

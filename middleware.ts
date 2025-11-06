@@ -48,7 +48,12 @@ export async function middleware(request: NextRequest) {
     '/api/search',
     '/api/analytics/share',
     '/api/users',
-    '/api/ads'
+    '/api/ads',
+    '/api/wordpress/',
+    '/api/youtube/',
+    '/api/contact',
+    '/api/academic/submit',
+    '/api/projects/submit'
   ]
 
   // Check if the API route is public
@@ -187,9 +192,9 @@ export async function middleware(request: NextRequest) {
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com",
       "script-src-elem 'self' 'unsafe-inline' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com",
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://cdn.lineicons.com",
       "img-src 'self' data: https: http:",
-      "font-src 'self' data:",
+      "font-src 'self' data: https://cdn.lineicons.com",
       "frame-src 'self' https://www.youtube.com https://youtube.com https://www.facebook.com https://facebook.com https://web.facebook.com https://connect.facebook.net",
       "child-src 'self' https://www.youtube.com https://youtube.com https://www.facebook.com https://facebook.com",
       "connect-src 'self' https://connect.facebook.net https://www.facebook.com https:",

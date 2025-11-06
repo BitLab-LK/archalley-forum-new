@@ -86,7 +86,7 @@ export default async function MainPage() {
       </div>
 
       {/* News Section */}
-      <SiteLayout>
+      <SiteLayout showSidebar={false}>
         <ServerNewsSection />
       </SiteLayout>
 

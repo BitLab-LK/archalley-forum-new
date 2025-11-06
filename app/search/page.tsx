@@ -39,6 +39,9 @@ interface SearchPost {
   images: string[]
   commentsCount: number
   votesCount: number
+  isWordPress?: boolean
+  wordpressSlug?: string
+  wordpressLink?: string
 }
 
 interface SearchMember {
@@ -205,6 +208,14 @@ function SearchContent() {
         </mark>
       ) : part
     )
+  }
+
+  const getPostLink = (post: SearchPost): string => {
+    if (post.isWordPress && post.wordpressSlug) {
+      return `/post/${post.wordpressSlug}`
+    }
+    // Database posts use the ID
+    return `/${post.id}`
   }
 
   const renderPostImages = (images: string[]) => {
@@ -409,7 +420,7 @@ function SearchContent() {
                                     ) : null}
                                   </div>
                                   
-                                  <Link href={`/${post.id}`} className="group">
+                                  <Link href={getPostLink(post)} className="group">
                                     <h3 className="text-lg font-semibold group-hover:text-primary transition-colors mb-2">
                                       {highlightText(post.content?.substring(0, 80) + '...' || 'No content', searchQuery)}
                                     </h3>
@@ -592,7 +603,7 @@ function SearchContent() {
                                 ) : null}
                               </div>
                               
-                              <Link href={`/posts/${post.id}`} className="group">
+                              <Link href={getPostLink(post)} className="group">
                                 <h3 className="text-lg font-semibold group-hover:text-primary transition-colors mb-2">
                                   {highlightText(post.content?.substring(0, 80) + '...' || 'No content', searchQuery)}
                                 </h3>

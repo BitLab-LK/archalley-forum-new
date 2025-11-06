@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Search, Moon, Sun, LogOut, User, Shield, Home, Crown, MessageCircle, ChevronDown, FolderOpen, Newspaper, ClipboardList } from "lucide-react"
+import { Search, Moon, Sun, LogOut, User, Shield, Home, Crown, ChevronDown, FolderOpen, Newspaper, ClipboardList } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/lib/auth-context"
 import NotificationDropdown from "@/components/notification-dropdown"
@@ -212,44 +212,37 @@ export default function Header() {
 
               <Link 
                 href="/events" 
+                className="text-sm font-medium transition-all duration-300 ease-in-out px-4 py-2 rounded-md text-white"
+                style={{ backgroundColor: '#FFA000' }}
+              >
+                EVENTS
+              </Link>
+
+              <Link 
+                href="/about" 
                 className={`text-sm font-medium transition-all duration-300 ease-in-out py-2 relative overflow-hidden group ${
-                  isActivePath("/events") 
+                  isActivePath("/about") 
                     ? "text-primary" 
                     : "text-muted-foreground hover:text-primary"
                 }`}
               >
-                <span className="relative z-10">EVENTS</span>
-                {isActivePath("/events") && (
+                <span className="relative z-10">ABOUT</span>
+                {isActivePath("/about") && (
                   <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary animate-pulse"></div>
                 )}
                 <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all duration-300 ease-in-out group-hover:w-full"></div>
               </Link>
-              
+
               <Link 
-                href="/forum" 
+                href="/contact" 
                 className={`text-sm font-medium transition-all duration-300 ease-in-out py-2 relative overflow-hidden group ${
-                  isActivePath("/forum") 
+                  isActivePath("/contact") 
                     ? "text-primary" 
                     : "text-muted-foreground hover:text-primary"
                 }`}
               >
-                <span className="relative z-10">FORUM</span>
-                {isActivePath("/forum") && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary animate-pulse"></div>
-                )}
-                <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all duration-300 ease-in-out group-hover:w-full"></div>
-              </Link>
-              
-              <Link 
-                href="/members" 
-                className={`text-sm font-medium transition-all duration-300 ease-in-out py-2 relative overflow-hidden group ${
-                  isActivePath("/members") 
-                    ? "text-primary" 
-                    : "text-muted-foreground hover:text-primary"
-                }`}
-              >
-                <span className="relative z-10">MEMBERS</span>
-                {isActivePath("/members") && (
+                <span className="relative z-10">CONTACT</span>
+                {isActivePath("/contact") && (
                   <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary animate-pulse"></div>
                 )}
                 <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all duration-300 ease-in-out group-hover:w-full"></div>
@@ -502,7 +495,7 @@ export default function Header() {
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t safe-area-inset-bottom transition-all duration-300 ease-in-out">
-        <div className="grid grid-cols-5 h-18">
+        <div className="grid grid-cols-4 h-18">
           {/* Home */}
           <Link 
             href="/" 
@@ -527,19 +520,6 @@ export default function Header() {
           >
             <FolderOpen className={`h-4 w-4 transition-all duration-300 ease-in-out ${isActivePath("/projects") ? "fill-current scale-110" : "hover:scale-110"}`} />
             <span className="text-[9px] transition-all duration-300 ease-in-out">Projects</span>
-          </Link>
-
-          {/* Forum */}
-          <Link 
-            href="/forum" 
-            className={`flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-all duration-300 ease-in-out py-2 px-1 min-h-[44px] transform hover:scale-105 ${
-              isActivePath("/forum") 
-                ? "text-primary bg-primary/10" 
-                : "text-muted-foreground hover:text-primary"
-            }`}
-          >
-            <MessageCircle className={`h-4 w-4 transition-all duration-300 ease-in-out ${isActivePath("/forum") ? "fill-current scale-110" : "hover:scale-110"}`} />
-            <span className="text-[9px] transition-all duration-300 ease-in-out">Forum</span>
           </Link>
 
           {/* News */}

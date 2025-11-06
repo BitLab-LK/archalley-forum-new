@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export default async function PaymentSuccessPage({
   searchParams,
 }: {
-  searchParams: { order_id?: string };
+  searchParams: Promise<{ order_id?: string }>;
 }) {
   const session = await getServerSession(authOptions);
 
@@ -25,7 +25,8 @@ export default async function PaymentSuccessPage({
     redirect('/auth/signin');
   }
 
-  const orderId = searchParams.order_id;
+  const resolvedSearchParams = await searchParams;
+  const orderId = resolvedSearchParams.order_id;
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">

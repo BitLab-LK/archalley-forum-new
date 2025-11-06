@@ -31,10 +31,10 @@ export default function SidebarFacebook({ className }: SidebarFacebookProps) {
         return
       }
 
-      // Insert Facebook SDK script
+      // Insert Facebook SDK script with official configuration
       const script = document.createElement('script')
       script.id = 'facebook-jssdk'
-      script.src = 'https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v18.0'
+      script.src = 'https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v24.0&appId=1075191320881967'
       script.async = true
       script.defer = true
       script.crossOrigin = 'anonymous'
@@ -63,25 +63,25 @@ export default function SidebarFacebook({ className }: SidebarFacebookProps) {
     <Card className={`${className} border-0 shadow-sm bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm overflow-hidden`}>
       <CardHeader className="pb-2 px-4 pt-4">
         <CardTitle className="text-base text-gray-900 dark:text-gray-100">
-          Facebook
+          Follow us on Facebook
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
         {/* Live Facebook Page Plugin - Scrollable */}
-        <div className="w-full" id="fb-root">
+        <div className="w-full">
           <div 
             className="fb-page" 
-            data-href="https://www.facebook.com/archalley"
+            data-href="https://web.facebook.com/1823509644579642"
             data-tabs="timeline"
-            data-width="320"
-            data-height="500"
-            data-small-header="false"
+            data-width=""
+            data-height=""
+            data-small-header="true"
             data-adapt-container-width="true"
             data-hide-cover="false"
             data-show-facepile="true"
           >
-            <blockquote cite="https://www.facebook.com/archalley" className="fb-xfbml-parse-ignore">
-              <a href="https://www.facebook.com/archalley">Archalley</a>
+            <blockquote cite="https://web.facebook.com/1823509644579642" className="fb-xfbml-parse-ignore">
+              <a href="https://web.facebook.com/1823509644579642">Archalley</a>
             </blockquote>
           </div>
         </div>

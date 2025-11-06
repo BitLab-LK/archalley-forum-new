@@ -68,16 +68,6 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
       path: "/events",
       submenu: [],
     },
-    {
-      title: "Forum",
-      path: "/forum",
-      submenu: [],
-    },
-    {
-      title: "Members",
-      path: "/members",
-      submenu: [],
-    },
   ]
 
   const toggleSubmenu = (title: string) => {
@@ -119,9 +109,12 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
               <div key={item.title} className="relative group">
                 <Link 
                   href={item.path} 
-                  className={`py-2 hover:text-orange-400 flex items-center transition-colors ${
-                    isActivePath(item.path) ? "text-orange-400" : ""
+                  className={`py-2 flex items-center transition-colors ${
+                    item.title === "Events" 
+                      ? "px-4 rounded-md text-white"
+                      : `hover:text-orange-400 ${isActivePath(item.path) ? "text-orange-400" : ""}`
                   }`}
+                  style={item.title === "Events" ? { backgroundColor: '#FFA000' } : {}}
                 >
                   {item.title}
                   {item.submenu.length > 0 && <ChevronDown size={16} className="ml-1" />}
@@ -166,9 +159,12 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
                 >
                   <Link
                     href={item.path}
-                    className={`block hover:text-orange-400 transition-colors ${
-                      isActivePath(item.path) ? "text-orange-400" : ""
+                    className={`block transition-colors ${
+                      item.title === "Events"
+                        ? "px-4 py-2 rounded-md text-white"
+                        : `hover:text-orange-400 ${isActivePath(item.path) ? "text-orange-400" : ""}`
                     }`}
+                    style={item.title === "Events" ? { backgroundColor: '#FFA000' } : {}}
                     onClick={(e) => item.submenu.length > 0 && e.preventDefault()}
                   >
                     {item.title}

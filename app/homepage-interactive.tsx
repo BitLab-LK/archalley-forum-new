@@ -33,7 +33,7 @@ import { toast } from "sonner"
 import { Suspense } from "react"
 import LazyPostCreator from "@/components/lazy-post-creator"
 import PostCard from "@/components/post-card"
-import LazySidebar from "@/components/lazy-sidebar"
+import LazySidebar, { MobileSidebar } from "@/components/lazy-sidebar"
 import SearchParamsHandler from "@/components/homepage-search-params"
 import { Button } from "@/components/ui/button"
 import { useIsHydrated } from "@/hooks/use-performance"
@@ -884,11 +884,14 @@ export default function HomePageInteractive({
             )}
           </div>
 
-          {/* Sidebar - maintains consistent width during loading states */}
+          {/* Desktop Sidebar - maintains consistent width during loading states */}
           <div className="homepage-sidebar layout-stable">
             <LazySidebar />
           </div>
           </div>
+          
+          {/* Mobile Sidebar - rendered outside homepage-sidebar wrapper so it's visible on mobile */}
+          <MobileSidebar />
         </div>
       </div>
 

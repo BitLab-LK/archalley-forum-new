@@ -5,14 +5,13 @@ import Image from "next/image"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { 
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
-import { Calendar, ExternalLink, Search, Loader2 } from "lucide-react"
+import { Calendar, ExternalLink, Loader2 } from "lucide-react"
 import { 
   getPostsByCategory,
   getAllCategories,
@@ -24,9 +23,7 @@ import {
   type WordPressPost,
   type WordPressCategory
 } from "@/lib/wordpress-api"
-import AdBannerComponent from "@/components/ad-banner"
-import SidebarYouTube from "@/components/sidebar-youtube"
-import SidebarFacebook from "@/components/sidebar-facebook"
+import ArchAlleySidebar from "@/components/archalley-sidebar"
 
 interface EventsPageClientProps {
   initialEvents?: WordPressPost[]
@@ -53,14 +50,14 @@ const treeEvent2024: WordPressPost = {
   _embedded: {
     'wp:featuredmedia': [{
       id: 0,
-      source_url: '/uploads/1749372032760-Tree_without_a_Tree_-_Thumbnail_for_Events_Page.webp',
+      source_url: '/uploads/christamas-tree-2024.jpeg',
       alt_text: 'Tree Without a Tree Competition 2024',
       media_details: {
         width: 800,
         height: 600,
         sizes: {
           large: {
-            source_url: '/uploads/1749372032760-Tree_without_a_Tree_-_Thumbnail_for_Events_Page.webp',
+            source_url: '/uploads/christamas-tree-2024.jpeg',
             width: 800,
             height: 600
           }
@@ -82,21 +79,21 @@ const architecturalEvent2025: WordPressPost = {
   content: {
     rendered: '<p>The Innovative Design Challenge 2025 invites architects, designers, and creative minds to reimagine sustainable architecture. This competition focuses on creating innovative, eco-friendly solutions that address contemporary housing challenges while maintaining aesthetic excellence and environmental responsibility.</p>'
   },
-  slug: 'innovative-design-challenge-2025',
-  link: '/events/innovative-design-challenge-2025',
+  slug: 'archalley-competition-2025',
+  link: '/events/archalley-competition-2025',
   featured_media: 0,
   categories: [],
   _embedded: {
     'wp:featuredmedia': [{
       id: 0,
-      source_url: '/uploads/design-challenge-2025-thumbnail.svg',
+      source_url: '/uploads/christamas-tree-2025.jpeg',
       alt_text: 'Innovative Design Challenge 2025',
       media_details: {
         width: 800,
         height: 600,
         sizes: {
           large: {
-            source_url: '/uploads/design-challenge-2025-thumbnail.svg',
+            source_url: '/uploads/christamas-tree-2025.jpeg',
             width: 800,
             height: 600
           }
@@ -109,7 +106,6 @@ const architecturalEvent2025: WordPressPost = {
 export default function EventsPageClient({ initialEvents = [], initialCategories = [] }: EventsPageClientProps) {
   const [events, setEvents] = useState<WordPressPost[]>([architecturalEvent2025, treeEvent2024, ...initialEvents])
   const [categories, setCategories] = useState<WordPressCategory[]>(initialCategories)
-  const [searchTerm, setSearchTerm] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -125,20 +121,6 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
     }, 100)
     return () => clearTimeout(timer)
   }, [])
-
-  // Reset animations when search changes
-  useEffect(() => {
-    if (searchTerm) {
-      setShowAnimations(false)
-      const timer = setTimeout(() => {
-        setShowAnimations(true)
-      }, 50)
-      return () => clearTimeout(timer)
-    } else {
-      setShowAnimations(true)
-      return () => {} // Return empty cleanup function
-    }
-  }, [searchTerm])
 
   // Fetch events on client side if no initial data
   useEffect(() => {
@@ -238,14 +220,6 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
     }
   }
 
-  // Filter events based on search term
-  const filteredEvents = events.filter(item => {
-    const matchesSearch = searchTerm === "" || 
-      stripHtml(item.title.rendered).toLowerCase().includes(searchTerm.toLowerCase()) ||
-      stripHtml(item.excerpt.rendered).toLowerCase().includes(searchTerm.toLowerCase())
-    
-    return matchesSearch
-  })
 
   if (isLoading && events.length === 0) {
     return (
@@ -282,46 +256,19 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
 
   return (
     <div className="min-h-screen py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header - Minimalistic */}
-        <div className={`text-center mb-16 ${showAnimations ? 'animate-fade-in-up' : 'opacity-0'}`}>
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6 text-center">
-            Events
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed text-center">
-            Discover conferences, workshops, exhibitions, and networking events in the architecture and design community
-          </p>
-        </div>
-
-        {/* Search Bar - Minimalistic */}
-        <div className={`max-w-2xl mx-auto mb-16 text-center ${showAnimations ? 'animate-fade-in-up-delay' : 'opacity-0'}`}>
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  placeholder="Search events..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 py-3 text-base border-0 bg-muted/30 rounded-full focus:bg-background transition-all duration-300"
-                />
-              </div>
-            </div>
-
+      <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-3">
-            {/* Results Count */}
-            {searchTerm && (
-              <div className={`text-center mb-12 ${showAnimations ? 'animate-fade-in' : 'opacity-0'}`}>
-                <p className="text-sm text-muted-foreground">
-                  {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''} found
-                </p>
-              </div>
-            )}
+            {/* Header - Matching CategoryListing style */}
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold tracking-tight">Events</h1>
+            </div>
 
         {/* Events Grid - Minimalistic Layout */}
-        {filteredEvents.length > 0 && (
+        {events.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredEvents.map((item, index) => (
+            {events.map((item, index) => (
               <EventCard 
                 key={`event-${item.id}-${index}`} 
                 event={item} 
@@ -353,16 +300,16 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
         )}
 
         {/* Empty state */}
-        {filteredEvents.length === 0 && !isLoading && (
+        {events.length === 0 && !isLoading && (
           <div className="text-center py-16">
             <p className="text-muted-foreground text-lg">
-              {searchTerm ? `No events found for "${searchTerm}"` : 'No events available'}
+              No events available
             </p>
           </div>
         )}
 
         {/* Load More Button */}
-        {hasMore && !searchTerm && filteredEvents.length > 0 && (
+        {hasMore && events.length > 0 && (
           <div className="text-center mt-16">
             <Button 
               onClick={loadMoreEvents} 
@@ -383,46 +330,11 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
           </div>
         )}
 
-        {/* Newsletter Signup - Minimalistic */}
-        <div className="mt-24">
-          <div className="text-center py-16 border-t border-border/50">
-            <h3 className="text-2xl font-semibold mb-4">Stay Updated</h3>
-            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              Join our community for the latest events and opportunities
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-sm mx-auto">
-              <Button asChild variant="default" className="rounded-full">
-                <Link href="/forum">Join Community</Link>
-              </Button>
-              <Button variant="outline" asChild className="rounded-full">
-                <Link href="/auth/register">Subscribe</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
           </div>
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="sticky top-8 space-y-8">
-              {/* Square Ad in Sidebar */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm p-1">
-                <AdBannerComponent 
-                  size="320x320" 
-                  className="w-full" 
-                  positionId="sidebar-square-events"
-                  autoRotate={true}
-                  rotationInterval={30}
-                  showLabel={false}
-                />
-              </div>
-
-              {/* YouTube Section */}
-              <SidebarYouTube />
-
-              {/* Facebook Section */}
-              <SidebarFacebook />
-            </div>
+            <ArchAlleySidebar />
           </div>
         </div>
       </div>

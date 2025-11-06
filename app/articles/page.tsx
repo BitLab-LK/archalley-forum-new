@@ -10,8 +10,9 @@ export const metadata: Metadata = {
   description: 'Discover in-depth articles, research papers, and expert insights on architecture, design theory, and construction technology.',
 }
 
-export default async function ArticlesPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
-  const pageParam = typeof searchParams?.page === 'string' ? searchParams?.page : Array.isArray(searchParams?.page) ? searchParams?.page[0] : null
+export default async function ArticlesPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const resolvedSearchParams = await searchParams
+  const pageParam = typeof resolvedSearchParams?.page === 'string' ? resolvedSearchParams.page : Array.isArray(resolvedSearchParams?.page) ? resolvedSearchParams.page[0] : null
   // New standardized category listing (Articles = categoryId 41)
   return <CategoryListing categoryId={41} title="Articles" basePath="/articles" pageParam={pageParam} />
 }
