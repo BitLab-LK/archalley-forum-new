@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
 import { SOCIAL_MEDIA } from "@/lib/constants"
@@ -60,7 +62,7 @@ export default function Footer() {
           <div>
             <Link href="/" className="inline-block mb-4">
               <Image
-                src="https://archalley.com/wp-content/uploads/2024/07/archalley-logo-whte-x85.png"
+                src="/archalley-logo-whte-cropped.svg"
                 alt="Archalley Logo"
                 width={85}
                 height={30}

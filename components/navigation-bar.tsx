@@ -95,11 +95,11 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
           {/* Logo */}
           <Link href="/" className="flex-shrink-0">
             <Image
-              src="https://archalley.com/wp-content/uploads/2024/07/archalley-logo-whte-x85.png"
+              src="/archalley-logo-whte-cropped.svg"
               alt="Archalley Logo"
               width={85}
               height={30}
-              className="h-8 w-auto"
+              className="h-16 w-auto"
             />
           </Link>
 
@@ -109,7 +109,7 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
               <div key={item.title} className="relative group">
                 <Link 
                   href={item.path} 
-                  className={`py-2 flex items-center transition-colors ${
+                  className={`py-3 flex items-center transition-colors ${
                     item.title === "Events" 
                       ? "px-4 rounded-md text-white"
                       : `hover:text-orange-400 ${isActivePath(item.path) ? "text-orange-400" : ""}`

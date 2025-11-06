@@ -3,24 +3,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp } from "lucide-react"
 import { useEffect, useState, memo } from "react"
-import { useSidebar } from "@/lib/sidebar-context"
 import { cn } from "@/lib/utils"
-import { generateCategoryStyles } from "@/lib/color-utils"
 import AdBannerComponent from "@/components/ad-banner"
 import { AnimatedContentWrapper } from "@/components/animated-wrappers"
 import SidebarYouTube from "@/components/sidebar-youtube"
 import SidebarFacebook from "@/components/sidebar-facebook"
 import Link from "next/link"
 import Image from "next/image"
-
-interface Category {
-  id: string
-  name: string
-  color: string
-  icon: string
-  slug: string
-  count: number
-}
 
 interface WordPressPost {
   id: number
@@ -38,19 +27,10 @@ interface WordPressPost {
 }
 
 function ArchAlleySidebar() {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [wordPressPosts, setWordPressPosts] = useState<WordPressPost[]>([])
   const [isWordPressLoading, setIsWordPressLoading] = useState(false)
   const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false)
-  
-  // Use sidebar context for real-time updates
-  const { categoriesKey } = useSidebar()
 
-  // Helper function to get category styles using database colors
-  const getCategoryStyles = (categoryColor: string) => {
-    return generateCategoryStyles(categoryColor)
-  }
 
   // Format WordPress date
   const formatDate = (dateString: string) => {
@@ -113,26 +93,7 @@ function ArchAlleySidebar() {
     const loadSidebarData = async () => {
       setHasLoadedInitialData(true)
       
-      // 1. Load categories from database
-      const fetchCategories = async () => {
-        try {
-          const response = await fetchWithRetry('/api/categories')
-          const categoriesData = await response.json()
-          
-          if (categoriesData && Array.isArray(categoriesData) && categoriesData.length > 0) {
-            setCategories(categoriesData);
-          } else {
-            setCategories([]);
-          }
-        } catch (error) {
-          console.error('Sidebar: Error fetching categories:', error)
-          setCategories([]);
-        } finally {
-          setIsLoading(false)
-        }
-      }
-
-      // 2. Load WordPress posts
+      // Load WordPress posts
       const fetchWordPressPosts = async () => {
         setIsWordPressLoading(true)
         try {
@@ -163,15 +124,12 @@ function ArchAlleySidebar() {
         }
       }
 
-      // Execute in parallel
-      Promise.all([
-        fetchCategories(),
-        fetchWordPressPosts()
-      ])
+      // Execute
+      fetchWordPressPosts()
     }
 
     loadSidebarData()
-  }, [categoriesKey, hasLoadedInitialData])
+  }, [hasLoadedInitialData])
 
   return (
     <div className="space-y-6 sticky top-8">
@@ -263,79 +221,7 @@ function ArchAlleySidebar() {
         </CardContent>
       </Card>
 
-      {/* 5. Forum Categories */}
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50 smooth-transition hover-lift animate-fade-in-up">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between text-lg font-semibold">
-            <div className="flex items-center space-x-2">
-              <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/30">
-                <TrendingUp className={cn("w-4 h-4 text-orange-600 dark:text-orange-400", isLoading && "animate-pulse")} />
-              </div>
-              <span className="text-gray-900 dark:text-gray-100">Categories</span>
-            </div>
-            {isLoading && (
-              <div className="w-4 h-4 border-2 border-orange-200 border-t-orange-600 rounded-full animate-spin" />
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-0 px-2">
-          {isLoading ? (
-            // Loading skeleton
-            Array.from({ length: 7 }).map((_, index) => (
-              <div key={index} className="flex items-center justify-between animate-pulse p-3 rounded-xl">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 rounded-full bg-gray-200 dark:bg-gray-700" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24" />
-                </div>
-              </div>
-            ))
-          ) : categories.length === 0 ? (
-            <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-4 italic animate-fade-in">
-              No categories available. Create categories in the admin dashboard to get started.
-            </div>
-          ) : (
-            // Display categories with "Other" always at the bottom
-            (() => {
-              // Sort categories: alphabetically, but "Other" always last
-              const sortedCategories = [...categories].sort((a, b) => {
-                const aName = a.name.toLowerCase();
-                const bName = b.name.toLowerCase();
-                
-                // "Other" always goes to the bottom
-                if (aName === 'other') return 1;
-                if (bName === 'other') return -1;
-                
-                // All other categories sorted alphabetically
-                return a.name.localeCompare(b.name);
-              });
-              
-              return sortedCategories.map((category, index) => {
-                // Get category styles using database colors
-                const categoryStyles = getCategoryStyles(category.color);
-                
-                return (
-                  <div
-                    key={category.id}
-                    className="group flex items-center rounded-lg py-2 px-3 transition-all duration-200 cursor-pointer smooth-transition hover-lift animate-slide-in-up max-w-[280px] mx-auto border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700"
-                    style={{ 
-                      animationDelay: `${index * 50}ms`,
-                      backgroundColor: categoryStyles.lightBackground
-                    }}
-                  >
-                    <div className="flex items-center space-x-2 w-full">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: category.color }}
-                      />
-                      <span className="text-base font-semibold text-gray-700 dark:text-gray-300">{category.name}</span>
-                    </div>
-                  </div>
-                );
-              });
-            })()
-          )}
-        </CardContent>
-      </Card>
+      {/* Forum Categories removed */}
     </div>
   )
 }
