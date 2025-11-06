@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import CategoryListing from '@/components/category-listing'
-import { getCategoryBySlug, getAllCategories } from '@/lib/wordpress-api'
+import { getAllCategories } from '@/lib/wordpress-api'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 300

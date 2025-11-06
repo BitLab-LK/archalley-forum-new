@@ -1,10 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-if (!process.env.GOOGLE_GEMINI_API_KEY) {
-  throw new Error('GOOGLE_GEMINI_API_KEY is not configured')
-}
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY)
+// Build/runtime safe: don't throw at import time if key is missing
+const genAI = process.env.GOOGLE_GEMINI_API_KEY
+  ? new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY)
+  : null
 
 export interface CategorySuggestion {
   categories: string[]
@@ -13,10 +12,18 @@ export interface CategorySuggestion {
 }
 
 export class GeminiService {
-  private model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+  private model = genAI ? genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }) : null
 
   async categorizeContent(content: string, availableCategories: string[]): Promise<CategorySuggestion> {
     try {
+      if (!this.model) {
+        // Fallback when API key is not configured
+        return {
+          categories: availableCategories.slice(0, Math.min(2, availableCategories.length)),
+          confidence: 0.2,
+          reasoning: 'AI service unavailable; using fallback categories',
+        }
+      }
       const prompt = `
 You are a content categorization AI for a professional construction and design forum. 
 
@@ -86,6 +93,10 @@ Categories should match exactly from the provided list. Confidence should be bet
 
   async translateToEnglish(content: string, sourceLanguage?: string): Promise<string> {
     try {
+      if (!this.model) {
+        // If AI unavailable, return content as-is or a simple "translation"
+        return content
+      }
       const prompt = `
 Translate the following text to English. If it's already in English, return it unchanged.
 ${sourceLanguage ? `Source language: ${sourceLanguage}` : ''}

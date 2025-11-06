@@ -112,15 +112,7 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
   const [hasMore, setHasMore] = useState(initialEvents.length >= 20) // Set based on initial data
   const [selectedEvent, setSelectedEvent] = useState<WordPressPost | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [showAnimations, setShowAnimations] = useState(false)
-
-  // Trigger animations when component mounts or data loads
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowAnimations(true)
-    }, 100)
-    return () => clearTimeout(timer)
-  }, [])
+  // Animations handled purely via CSS keyframes and delays
 
   // Fetch events on client side if no initial data
   useEffect(() => {

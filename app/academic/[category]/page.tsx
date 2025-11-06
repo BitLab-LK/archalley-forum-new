@@ -97,10 +97,7 @@ export default async function AcademicCategoryPage({ params, searchParams }: Pag
       ? resolvedSearchParams.page[0] 
       : null
   
-  // Step 1: Map URL slug to WordPress category slug
-  const mappedSlug = CATEGORY_SLUG_MAP[category] || category
-  
-  // Step 2: Match slug - fetch category from WordPress
+  // Step 1 & 2: Match slug - fetch category from WordPress
   const wpCategory = await findCategoryBySlug(category)
   
   // Step 3: Show all posts from that category (via CategoryListing component)
