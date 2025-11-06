@@ -136,11 +136,13 @@ export default function AdBannerComponent({
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 dark:border-gray-500"></div>
           
           {/* Small "Ad" label in top right corner */}
-          <div className="absolute top-2 right-2 z-10">
-            <div className="bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-medium text-gray-700 shadow-sm border border-gray-200/50">
-              Ad
+          {showLabel && (
+            <div className="absolute top-2 right-2 z-10">
+              <div className="bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-medium text-gray-700 shadow-sm border border-gray-200/50">
+                Ad
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     )
@@ -214,11 +216,13 @@ export default function AdBannerComponent({
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 rounded-xl" />
           
           {/* Small "Ad" label in top right corner (Google-style) */}
-          <div className="absolute top-2 right-2 z-10">
-            <div className="bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-medium text-gray-700 shadow-sm border border-gray-200/50">
-              Ad
+          {showLabel && (
+            <div className="absolute top-2 right-2 z-10">
+              <div className="bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-medium text-gray-700 shadow-sm border border-gray-200/50">
+                Ad
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </Card>
 

@@ -55,7 +55,6 @@ export async function GET() {
     const entry = entryMatch[1]
     const videoIdMatch = entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/)
     const titleMatch = entry.match(/<title>([^<]+)<\/title>/)
-    const linkMatch = entry.match(/<link[^>]*href="([^"]+)"/)
 
     const videoId = videoIdMatch?.[1] || 'D0A-MIeq9gw'
     const title = titleMatch?.[1] || 'Latest Video from ArchAlley'

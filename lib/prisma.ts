@@ -5,15 +5,19 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 // Enhanced Prisma configuration with better connection handling for production
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({
+// Build-safe options: only pass datasources when URL is defined to avoid constructor validation errors
+const prismaClientOptions: any = {
   log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL
-    }
-  },
-  errorFormat: 'pretty'
-})
+  errorFormat: 'pretty',
+}
+
+if (process.env.DATABASE_URL) {
+  prismaClientOptions.datasources = {
+    db: { url: process.env.DATABASE_URL },
+  }
+}
+
+export const prisma = globalForPrisma.prisma ?? new PrismaClient(prismaClientOptions)
 
 // Connection monitoring with improved retry logic
 let isConnected = false
