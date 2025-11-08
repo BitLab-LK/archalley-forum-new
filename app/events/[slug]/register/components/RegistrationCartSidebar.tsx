@@ -27,6 +27,9 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
 
   // Countdown timer for cart expiration
   const countdown = useCountdown(cart?.expiresAt || null);
+  
+  // Check if expiry is disabled (client-side check)
+  const isExpiryDisabled = process.env.NEXT_PUBLIC_CART_EXPIRY_DISABLED === 'true';
 
   useEffect(() => {
     console.log('🔄 Cart refreshKey changed to:', refreshKey);
@@ -38,14 +41,14 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
     return () => clearTimeout(timer);
   }, [refreshKey]);
 
-  // Auto-refresh cart when expired
+  // Auto-refresh cart when expired (only if expiry is enabled)
   useEffect(() => {
-    if (countdown.isExpired && cart) {
+    if (!isExpiryDisabled && countdown.isExpired && cart) {
       toast.error('Your cart has expired. Items have been removed.');
       fetchCart();
       onCartUpdate();
     }
-  }, [countdown.isExpired, cart, onCartUpdate]);
+  }, [countdown.isExpired, cart, onCartUpdate, isExpiryDisabled]);
 
   const fetchCart = async () => {
     try {
@@ -353,8 +356,8 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
         {isCheckingOut ? 'Processing...' : 'Proceed to Checkout →'}
       </button>
 
-      {/* Timer Display Under Checkout Button */}
-      {cart?.expiresAt && !countdown.isExpired && (
+      {/* Timer Display Under Checkout Button - Only show if expiry is enabled */}
+      {!isExpiryDisabled && cart?.expiresAt && !countdown.isExpired && (
         <div className="mt-3 text-center">
           <p className="text-xs text-gray-500 mb-1">Time Remaining</p>
           <p className={`text-lg font-bold tabular-nums ${

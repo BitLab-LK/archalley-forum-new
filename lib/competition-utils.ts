@@ -229,9 +229,21 @@ export function getPayHereUrl(mode: 'sandbox' | 'live' = 'sandbox'): string {
 // ============================================
 
 /**
- * Calculate cart expiry time (30 minutes from now)
+ * Calculate cart expiry time
+ * Returns far future date if expiry is disabled via CART_EXPIRY_DISABLED env variable
  */
 export function calculateCartExpiry(): Date {
+  // Check if expiry is disabled via environment variable
+  const expiryDisabled = process.env.CART_EXPIRY_DISABLED === 'true';
+  
+  if (expiryDisabled) {
+    // Return a date far in the future (10 years from now) when expiry is disabled
+    const farFuture = new Date();
+    farFuture.setFullYear(farFuture.getFullYear() + 10);
+    return farFuture;
+  }
+  
+  // Normal expiry (30 minutes)
   const now = new Date();
   now.setMinutes(now.getMinutes() + 30);
   return now;
@@ -239,8 +251,14 @@ export function calculateCartExpiry(): Date {
 
 /**
  * Check if cart is expired
+ * Returns false if expiry is disabled via CART_EXPIRY_DISABLED env variable
  */
 export function isCartExpired(expiresAt: Date): boolean {
+  // If expiry is disabled, never expire
+  if (process.env.CART_EXPIRY_DISABLED === 'true') {
+    return false;
+  }
+  
   return new Date() > new Date(expiresAt);
 }
 
