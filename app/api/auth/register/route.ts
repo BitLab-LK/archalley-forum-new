@@ -7,6 +7,7 @@ import { sendVerificationEmail } from "@/lib/email-service"
 import { checkRateLimit } from "@/lib/security"
 import { logAuthEvent } from "@/lib/audit-log"
 import { sanitizeHtml } from "@/lib/security"
+import { verifyRecaptcha, isRecaptchaEnabled } from "@/lib/recaptcha"
 
 const registerSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
@@ -188,6 +189,8 @@ const registerSchema = z.object({
   profilePhotoPrivacy: z.enum(["EVERYONE", "MEMBERS_ONLY", "ONLY_ME"]).optional().default("EVERYONE"),
   // Callback URL for redirect after registration
   callbackUrl: z.string().optional().default("/"),
+  // reCAPTCHA token (optional if not configured)
+  recaptchaToken: z.string().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -213,6 +216,60 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    
+    // Verify reCAPTCHA if enabled
+    if (isRecaptchaEnabled()) {
+      const recaptchaToken = body.recaptchaToken
+      if (!recaptchaToken) {
+        await logAuthEvent("REGISTRATION_FAILED", {
+          email: body.email?.toLowerCase() || null,
+          ipAddress: ip,
+          success: false,
+          details: { action: "registration", reason: "missing_recaptcha" },
+          errorMessage: "reCAPTCHA verification required",
+        })
+        return NextResponse.json(
+          { error: "reCAPTCHA verification is required" },
+          { status: 400 }
+        )
+      }
+
+      const recaptchaResult = await verifyRecaptcha(recaptchaToken, 'register')
+      
+      if (!recaptchaResult.success) {
+        await logAuthEvent("REGISTRATION_FAILED", {
+          email: body.email?.toLowerCase() || null,
+          ipAddress: ip,
+          success: false,
+          details: { 
+            action: "registration", 
+            reason: "recaptcha_failed",
+            recaptchaScore: recaptchaResult.score,
+            recaptchaErrors: recaptchaResult['error-codes'],
+          },
+          errorMessage: "reCAPTCHA verification failed",
+        })
+        return NextResponse.json(
+          { error: "reCAPTCHA verification failed. Please try again." },
+          { status: 400 }
+        )
+      }
+
+      // Log successful reCAPTCHA verification (for monitoring)
+      if (recaptchaResult.score !== undefined && recaptchaResult.score < 0.5) {
+        await logAuthEvent("SUSPICIOUS_ACTIVITY", {
+          email: body.email?.toLowerCase() || null,
+          ipAddress: ip,
+          success: false,
+          details: { 
+            action: "registration", 
+            reason: "low_recaptcha_score",
+            recaptchaScore: recaptchaResult.score,
+          },
+          errorMessage: "Low reCAPTCHA score detected",
+        })
+      }
+    }
     
     // Basic validation for required fields before Zod parsing
     const { email, phoneNumber } = body

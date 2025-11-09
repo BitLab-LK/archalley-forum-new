@@ -100,9 +100,21 @@ export async function POST(
     }
     // If user doesn't have a password (social media signup), allow setting new password without current password
 
-    // Hash new password
-    const saltRounds = 12;
-    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+    // Check password history (prevent reusing current password)
+    // Note: Full password history requires a password history table
+    // For now, we'll check against the current password
+    if (user.password) {
+      const isSamePassword = await bcrypt.compare(newPassword, user.password)
+      if (isSamePassword) {
+        return NextResponse.json(
+          { error: 'You cannot reuse your current password. Please choose a different password.' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Hash new password (using 14 rounds for better security)
+    const hashedNewPassword = await bcrypt.hash(newPassword, 14);
 
     // Update password in database
     await prisma.users.update({

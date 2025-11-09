@@ -74,6 +74,18 @@ export const authOptions: NextAuthOptions = {
           where: {
             email: credentials.email.toLowerCase(),
           },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            image: true,
+            role: true,
+            isVerified: true,
+            emailVerified: true,
+            password: true,
+            twoFactorEnabled: true,
+            twoFactorSecret: true,
+          },
         })
 
         // Perform password comparison even if user doesn't exist (to prevent timing attacks)
@@ -121,6 +133,13 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Please verify your email address before logging in. Check your inbox for the verification email.")
         }
 
+        // Check if 2FA is enabled - if so, require 2FA verification
+        if (user.twoFactorEnabled) {
+          // Return a special error that indicates 2FA is required
+          // The client will handle this and show 2FA input form
+          throw new Error("2FA_REQUIRED")
+        }
+
         // Clear failed login attempts on successful login
         clearFailedLoginAttempts(credentials.email.toLowerCase())
         
@@ -129,8 +148,34 @@ export const authOptions: NextAuthOptions = {
           userId: user.id,
           email: credentials.email.toLowerCase(),
           success: true,
-          details: { action: "login", provider: "credentials" },
+          details: { action: "login", provider: "credentials", twoFactor: false },
         })
+
+        // Send login notification email (async, don't wait)
+        // Check if user has login notifications enabled (default: true)
+        const userWithSettings = await prisma.users.findUnique({
+          where: { id: user.id },
+          select: { emailNotifications: true },
+        })
+
+        if (userWithSettings?.emailNotifications !== false) {
+          // Send login notification asynchronously
+          import("@/lib/email-service").then(({ sendLoginNotificationEmail }) => {
+            const ip = (credentials as any).ipAddress || 'unknown'
+            const userAgent = (credentials as any).userAgent || 'unknown'
+            sendLoginNotificationEmail(
+              user.email,
+              user.name || 'User',
+              {
+                ipAddress: ip,
+                userAgent,
+                timestamp: new Date(),
+              }
+            ).catch((error) => {
+              console.error("Failed to send login notification:", error)
+            })
+          })
+        }
 
         return {
           id: user.id,
@@ -303,6 +348,28 @@ export const authOptions: NextAuthOptions = {
           success: true,
           details: { action: "login", provider: account.provider, isNewUser },
         })
+
+        // Send login notification email for OAuth logins (async)
+        if (user.email) {
+          const userWithSettings = await prisma.users.findUnique({
+            where: { id: user.id },
+            select: { emailNotifications: true, name: true },
+          })
+
+          if (userWithSettings?.emailNotifications !== false) {
+            import("@/lib/email-service").then(({ sendLoginNotificationEmail }) => {
+              sendLoginNotificationEmail(
+                user.email!,
+                userWithSettings.name || user.name || 'User',
+                {
+                  timestamp: new Date(),
+                }
+              ).catch((error) => {
+                console.error("Failed to send login notification:", error)
+              })
+            })
+          }
+        }
       }
       
       // Update user activity on sign in

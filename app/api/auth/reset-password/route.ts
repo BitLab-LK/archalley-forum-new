@@ -96,10 +96,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check password history (prevent reusing last 5 passwords)
+    // Note: This requires storing password history in the database
+    // For now, we'll check against the current password
+    if (user.password) {
+      const isSamePassword = await bcrypt.compare(password, user.password)
+      if (isSamePassword) {
+        await logAuthEvent("PASSWORD_RESET_FAILED", {
+          userId: user.id,
+          email: user.email.toLowerCase(),
+          ipAddress: ip,
+          userAgent: request.headers.get('user-agent') || null,
+          success: false,
+          details: { action: "password_reset", reason: "password_reuse" },
+          errorMessage: "Cannot reuse current password",
+        })
+        return NextResponse.json(
+          { error: "You cannot reuse your current password. Please choose a different password." },
+          { status: 400 }
+        )
+      }
+    }
+
     // Hash new password (using 14 rounds for better security)
     const hashedPassword = await bcrypt.hash(password, 14)
 
     // Update password and delete reset token in a transaction
+    // Note: In production, you should also update password history here
     await prisma.$transaction([
       prisma.users.update({
         where: { id: user.id },

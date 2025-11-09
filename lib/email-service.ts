@@ -1151,6 +1151,116 @@ This reset link will expire in 1 hour. If you didn't request a password reset, y
   }
 };
 
+/**
+ * Send login notification email
+ */
+export const sendLoginNotificationEmail = async (
+  email: string,
+  userName: string,
+  loginDetails: {
+    ipAddress?: string
+    userAgent?: string
+    location?: string
+    timestamp: Date
+  }
+): Promise<boolean> => {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    
+    const subject = 'New login detected'
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #333;">New login detected 🔐</h2>
+        <p>Hi ${userName},</p>
+        <p>We detected a new login to your account. If this was you, you can safely ignore this email.</p>
+        
+        <div style="background: #f5f5f5; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <h3 style="color: #333; margin-top: 0;">Login Details:</h3>
+          <p style="margin: 8px 0;"><strong>Time:</strong> ${loginDetails.timestamp.toLocaleString()}</p>
+          ${loginDetails.ipAddress ? `<p style="margin: 8px 0;"><strong>IP Address:</strong> ${loginDetails.ipAddress}</p>` : ''}
+          ${loginDetails.location ? `<p style="margin: 8px 0;"><strong>Location:</strong> ${loginDetails.location}</p>` : ''}
+          ${loginDetails.userAgent ? `<p style="margin: 8px 0;"><strong>Device:</strong> ${loginDetails.userAgent.substring(0, 100)}</p>` : ''}
+        </div>
+        
+        <div style="margin: 30px 0; text-align: center;">
+          <a href="${baseUrl}/profile" style="background: #0066cc; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">View Account Settings</a>
+        </div>
+        
+        <p style="color: #d32f2f; font-size: 12px; margin-top: 20px; font-weight: bold;">
+          ⚠️ If you didn't log in, please secure your account immediately:
+        </p>
+        <ul style="color: #666; font-size: 12px;">
+          <li>Change your password immediately</li>
+          <li>Review your account settings</li>
+          <li>Revoke any suspicious sessions</li>
+          <li>Contact support if needed</li>
+        </ul>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="color: #999; font-size: 11px;">
+          This is an automated security notification. If you have any concerns, please contact support.
+        </p>
+      </div>
+    `
+    
+    const text = `
+Hi ${userName},
+
+We detected a new login to your account. If this was you, you can safely ignore this email.
+
+Login Details:
+- Time: ${loginDetails.timestamp.toLocaleString()}
+${loginDetails.ipAddress ? `- IP Address: ${loginDetails.ipAddress}` : ''}
+${loginDetails.location ? `- Location: ${loginDetails.location}` : ''}
+${loginDetails.userAgent ? `- Device: ${loginDetails.userAgent.substring(0, 100)}` : ''}
+
+View your account: ${baseUrl}/profile
+
+⚠️ If you didn't log in, please secure your account immediately:
+- Change your password immediately
+- Review your account settings
+- Revoke any suspicious sessions
+- Contact support if needed
+
+This is an automated security notification. If you have any concerns, please contact support.
+    `.trim()
+
+    // Get transporter
+    const emailTransporter = await getTransporter()
+    if (!emailTransporter) {
+      console.error('❌ Email service not available for login notification email')
+      // Try Resend as fallback
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+
+    // Send email
+    const mailOptions = {
+      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley Forum'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      to: email,
+      subject,
+      text,
+      html,
+    }
+
+    try {
+      await emailTransporter.sendMail(mailOptions)
+      console.log(`✅ Login notification email sent to ${email}`)
+      
+      // Also try Resend as backup
+      await sendEmailViaResend(email, subject, html, text)
+      
+      return true
+    } catch (error) {
+      console.error('❌ Error sending login notification email via SMTP:', error)
+      // Fallback to Resend
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+  } catch (error) {
+    console.error('❌ Error in sendLoginNotificationEmail:', error)
+    return false
+  }
+};
+
 // Check if user wants email notifications for this type
 export const shouldSendEmail = async (userId: string, type: NotificationType): Promise<boolean> => {
   const user = await prisma.users.findUnique({
