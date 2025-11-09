@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { updateUserActivityAsync } from "@/lib/activity-service"
 import bcrypt from "bcryptjs"
 import { recordFailedLoginAttempt, clearFailedLoginAttempts, isAccountLocked, checkRateLimit } from "@/lib/security"
+import { logAuthEvent } from "@/lib/audit-log"
 
 export const authOptions: NextAuthOptions = {
   // Removed PrismaAdapter to avoid conflicts with custom signIn callback
@@ -48,11 +49,23 @@ export const authOptions: NextAuthOptions = {
         // Rate limiting: 10 login attempts per 15 minutes per email
         const rateLimitKey = `login:${credentials.email.toLowerCase()}`
         if (!checkRateLimit(rateLimitKey, 10, 15 * 60 * 1000)) {
+          await logAuthEvent("RATE_LIMIT_EXCEEDED", {
+            email: credentials.email.toLowerCase(),
+            success: false,
+            details: { action: "login", rateLimitKey },
+            errorMessage: "Too many login attempts",
+          })
           throw new Error("Too many login attempts. Please try again later.")
         }
 
         // Check if account is locked
         if (isAccountLocked(credentials.email.toLowerCase())) {
+          await logAuthEvent("LOGIN_LOCKED", {
+            email: credentials.email.toLowerCase(),
+            success: false,
+            details: { action: "login" },
+            errorMessage: "Account locked",
+          })
           throw new Error("Account is temporarily locked due to too many failed login attempts. Please try again in 15 minutes.")
         }
 
@@ -76,19 +89,48 @@ export const authOptions: NextAuthOptions = {
           if (user) {
             const lockoutStatus = recordFailedLoginAttempt(credentials.email.toLowerCase())
             if (lockoutStatus.isLocked) {
+              await logAuthEvent("ACCOUNT_LOCKED", {
+                userId: user.id,
+                email: credentials.email.toLowerCase(),
+                success: false,
+                details: { action: "login", lockoutUntil: lockoutStatus.lockoutUntil },
+                errorMessage: "Account locked due to too many failed attempts",
+              })
               throw new Error(`Account locked due to too many failed attempts. Please try again in ${Math.ceil((lockoutStatus.lockoutUntil! - Date.now()) / 60000)} minutes.`)
             }
+            await logAuthEvent("LOGIN_FAILED", {
+              userId: user.id,
+              email: credentials.email.toLowerCase(),
+              success: false,
+              details: { action: "login", reason: "invalid_password" },
+              errorMessage: "Invalid password",
+            })
           }
           return null
         }
 
         // Check if email is verified (enforce email verification)
         if (!user.isVerified || !user.emailVerified) {
+          await logAuthEvent("LOGIN_FAILED", {
+            userId: user.id,
+            email: credentials.email.toLowerCase(),
+            success: false,
+            details: { action: "login", reason: "email_not_verified" },
+            errorMessage: "Email not verified",
+          })
           throw new Error("Please verify your email address before logging in. Check your inbox for the verification email.")
         }
 
         // Clear failed login attempts on successful login
         clearFailedLoginAttempts(credentials.email.toLowerCase())
+        
+        // Log successful login
+        await logAuthEvent("LOGIN_SUCCESS", {
+          userId: user.id,
+          email: credentials.email.toLowerCase(),
+          success: true,
+          details: { action: "login", provider: "credentials" },
+        })
 
         return {
           id: user.id,
@@ -103,11 +145,11 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days (reduced from 30 for better security)
     updateAge: 24 * 60 * 60, // 24 hours
   },
   jwt: {
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days (reduced from 30 for better security)
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
@@ -253,6 +295,16 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, isNewUser }) {
       console.log('SignIn event:', { user: user.email, provider: account?.provider, isNewUser })
       
+      // Log OAuth sign-in
+      if (account?.provider && account.provider !== "credentials") {
+        await logAuthEvent("LOGIN_SUCCESS", {
+          userId: user.id,
+          email: user.email || null,
+          success: true,
+          details: { action: "login", provider: account.provider, isNewUser },
+        })
+      }
+      
       // Update user activity on sign in
       if (user?.id) {
         updateUserActivityAsync(user.id)
@@ -261,9 +313,16 @@ export const authOptions: NextAuthOptions = {
     async signOut({ session, token }) {
       console.log('SignOut event:', { userEmail: session?.user?.email || token?.email })
       
-      // Update user activity on sign out (they were active when they signed out)
+      // Log logout
       const userId = session?.user?.id || token?.id
+      const email = session?.user?.email || token?.email
       if (userId) {
+        await logAuthEvent("LOGOUT", {
+          userId: userId as string,
+          email: email as string | null,
+          success: true,
+          details: { action: "logout" },
+        })
         updateUserActivityAsync(userId as string)
       }
       

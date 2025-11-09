@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { checkRateLimit } from "@/lib/security"
 import { sendPasswordResetEmail } from "@/lib/email-service"
+import { logAuthEvent } from "@/lib/audit-log"
 import crypto from "crypto"
 
 /**
@@ -56,6 +57,17 @@ export async function POST(request: NextRequest) {
       // Send password reset email
       try {
         await sendPasswordResetEmail(user.email, user.name || 'User', resetToken)
+        
+        // Log password reset request
+        const userAgent = request.headers.get('user-agent') || null
+        await logAuthEvent("PASSWORD_RESET_REQUESTED", {
+          userId: user.id,
+          email: user.email.toLowerCase(),
+          ipAddress: ip,
+          userAgent,
+          success: true,
+          details: { action: "password_reset_request" },
+        })
       } catch (emailError) {
         console.error("Failed to send password reset email:", emailError)
         // Don't reveal email sending failure to user

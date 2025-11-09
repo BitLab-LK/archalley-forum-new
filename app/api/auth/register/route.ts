@@ -5,6 +5,8 @@ import { z } from "zod"
 import crypto from "crypto"
 import { sendVerificationEmail } from "@/lib/email-service"
 import { checkRateLimit } from "@/lib/security"
+import { logAuthEvent } from "@/lib/audit-log"
+import { sanitizeHtml } from "@/lib/security"
 
 const registerSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
@@ -197,6 +199,13 @@ export async function POST(request: NextRequest) {
     const rateLimitKey = `register:${ip}`
     
     if (!checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000)) {
+      await logAuthEvent("RATE_LIMIT_EXCEEDED", {
+        email: body.email?.toLowerCase() || null,
+        ipAddress: ip,
+        success: false,
+        details: { action: "registration", rateLimitKey },
+        errorMessage: "Too many registration attempts",
+      })
       return NextResponse.json(
         { error: "Too many registration attempts. Please try again later." },
         { status: 429 }
@@ -273,6 +282,32 @@ export async function POST(request: NextRequest) {
       callbackUrl,
     } = registerSchema.parse(body)
 
+    // Sanitize user inputs to prevent XSS attacks
+    const sanitizedFirstName = sanitizeHtml(validatedFirstName)
+    const sanitizedLastName = sanitizeHtml(validatedLastName)
+    const sanitizedHeadline = headline ? sanitizeHtml(headline) : null
+    const sanitizedBio = bio ? sanitizeHtml(bio) : null
+    const sanitizedCompany = company ? sanitizeHtml(company) : null
+    const sanitizedCity = city ? sanitizeHtml(city) : null
+    const sanitizedCountry = country ? sanitizeHtml(country) : null
+    const sanitizedSkills = skills?.map(skill => sanitizeHtml(skill)) || []
+    const sanitizedProfessions = professions?.map(prof => sanitizeHtml(prof)) || []
+    
+    // Sanitize work experience and education descriptions
+    const sanitizedWorkExperience = workExperience?.map(exp => ({
+      ...exp,
+      jobTitle: sanitizeHtml(exp.jobTitle),
+      company: sanitizeHtml(exp.company),
+      description: exp.description ? sanitizeHtml(exp.description) : null,
+    })) || []
+    
+    const sanitizedEducation = education?.map(edu => ({
+      ...edu,
+      degree: sanitizeHtml(edu.degree),
+      institution: sanitizeHtml(edu.institution),
+      description: edu.description ? sanitizeHtml(edu.description) : null,
+    })) || []
+
     // Validate password for non-social registration
     if (!isSocialRegistration && !password) {
       return NextResponse.json({ error: "Password is required for regular registration" }, { status: 400 })
@@ -347,22 +382,22 @@ export async function POST(request: NextRequest) {
       const user = await tx.users.create({
         data: {
           id: crypto.randomUUID(),
-          name: `${validatedFirstName} ${validatedLastName}`,
-          firstName: validatedFirstName,
-          lastName: validatedLastName,
+          name: `${sanitizedFirstName} ${sanitizedLastName}`,
+          firstName: sanitizedFirstName,
+          lastName: sanitizedLastName,
           email: validatedEmail as string,
           phoneNumber: validatedPhoneNumber || null,
           password: hashedPassword,
           
-          // Professional fields stored separately
-          headline: headline || null,
-          skills: skills || [],
-          professions: professions || [],
-          country: country || null,
-          city: city || null,
-          company: company || null,
-          profession: professions?.[0] || null, // Use first profession for backward compatibility
-          bio: bio || null, // Store bio separately, not concatenated
+          // Professional fields stored separately (sanitized)
+          headline: sanitizedHeadline,
+          skills: sanitizedSkills,
+          professions: sanitizedProfessions,
+          country: sanitizedCountry,
+          city: sanitizedCity,
+          company: sanitizedCompany,
+          profession: sanitizedProfessions?.[0] || null, // Use first profession for backward compatibility
+          bio: sanitizedBio, // Store bio separately, not concatenated
           
           // Location field for backward compatibility
           location: country && city ? `${city}, ${country}` : (city || country),
@@ -409,9 +444,9 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Create work experience entries
-      if (workExperience && workExperience.length > 0) {
-        for (const work of workExperience) {
+      // Create work experience entries (using sanitized data)
+      if (sanitizedWorkExperience && sanitizedWorkExperience.length > 0) {
+        for (const work of sanitizedWorkExperience) {
           if (work.jobTitle && work.company) {
             await tx.workExperience.create({
               data: {
@@ -429,9 +464,9 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Create education entries
-      if (education && education.length > 0) {
-        for (const edu of education) {
+      // Create education entries (using sanitized data)
+      if (sanitizedEducation && sanitizedEducation.length > 0) {
+        for (const edu of sanitizedEducation) {
           if (edu.degree && edu.institution) {
             await tx.education.create({
               data: {
@@ -450,6 +485,21 @@ export async function POST(request: NextRequest) {
       }
 
       return user
+    })
+
+    // Log successful registration
+    const userAgent = request.headers.get('user-agent') || null
+    await logAuthEvent("REGISTRATION_SUCCESS", {
+      userId: result.id,
+      email: validatedEmail.toLowerCase(),
+      ipAddress: ip,
+      userAgent,
+      success: true,
+      details: { 
+        action: "registration", 
+        isSocialRegistration: !!isSocialRegistration,
+        provider: provider || "email",
+      },
     })
 
     // For email/password registration, generate verification token and send email
@@ -543,7 +593,21 @@ export async function POST(request: NextRequest) {
       redirectTo: callbackUrl || "/"
     }, { status: 201 })
   } catch (error) {
+    // Log registration failure
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown'
+    const userAgent = request.headers.get('user-agent') || null
+    
     if (error instanceof z.ZodError) {
+      await logAuthEvent("REGISTRATION_FAILED", {
+        email: (error as any).email?.toLowerCase() || null,
+        ipAddress: ip,
+        userAgent,
+        success: false,
+        details: { action: "registration", reason: "validation_error" },
+        errorMessage: error.errors[0]?.message || "Validation error",
+      })
       // Extract specific validation error messages
       const fieldErrors = error.errors.map(err => ({
         field: err.path.join('.'),
@@ -569,6 +633,16 @@ export async function POST(request: NextRequest) {
     }
 
     console.error("Registration error:", error)
+    
+    await logAuthEvent("REGISTRATION_FAILED", {
+      email: null,
+      ipAddress: ip,
+      userAgent,
+      success: false,
+      details: { action: "registration", reason: "internal_error" },
+      errorMessage: error instanceof Error ? error.message : "Internal server error",
+    })
+    
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/security"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 import crypto from "crypto"
+import { logAuthEvent } from "@/lib/audit-log"
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, "Reset token is required"),
@@ -47,6 +48,15 @@ export async function POST(request: NextRequest) {
     })
 
     if (!resetToken) {
+      const userAgent = request.headers.get('user-agent') || null
+      await logAuthEvent("PASSWORD_RESET_FAILED", {
+        email: null,
+        ipAddress: ip,
+        userAgent,
+        success: false,
+        details: { action: "password_reset", reason: "invalid_token" },
+        errorMessage: "Invalid or expired reset token",
+      })
       return NextResponse.json(
         { error: "Invalid or expired reset token" },
         { status: 400 }
@@ -58,6 +68,15 @@ export async function POST(request: NextRequest) {
       // Delete expired token
       await prisma.verificationToken.delete({
         where: { token: resetToken.token },
+      })
+      const userAgent = request.headers.get('user-agent') || null
+      await logAuthEvent("PASSWORD_RESET_FAILED", {
+        email: resetToken.identifier.toLowerCase(),
+        ipAddress: ip,
+        userAgent,
+        success: false,
+        details: { action: "password_reset", reason: "expired_token" },
+        errorMessage: "Reset token has expired",
       })
       return NextResponse.json(
         { error: "Reset token has expired. Please request a new one." },
@@ -93,6 +112,17 @@ export async function POST(request: NextRequest) {
         where: { token: resetToken.token },
       }),
     ])
+
+    // Log password reset success
+    const userAgent = request.headers.get('user-agent') || null
+    await logAuthEvent("PASSWORD_RESET_SUCCESS", {
+      userId: user.id,
+      email: user.email.toLowerCase(),
+      ipAddress: ip,
+      userAgent,
+      success: true,
+      details: { action: "password_reset" },
+    })
 
     // Invalidate all existing sessions by updating user's updatedAt
     // (This will cause JWT validation to fail on next request)
