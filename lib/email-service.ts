@@ -949,8 +949,7 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
 export const sendVerificationEmail = async (
   email: string,
   userName: string,
-  token: string,
-  callbackUrl: string = '/'
+  token: string
 ): Promise<boolean> => {
   try {
     const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'

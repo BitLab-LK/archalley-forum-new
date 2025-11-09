@@ -443,7 +443,7 @@ export async function POST(request: NextRequest) {
       // Send verification email
       // Note: callbackUrl is stored in sessionStorage on client side, so we don't need to pass it in email
       const userName = `${validatedFirstName} ${validatedLastName}`
-      await sendVerificationEmail(validatedEmail, userName, verificationToken, '/')
+      await sendVerificationEmail(validatedEmail, userName, verificationToken)
 
       return NextResponse.json({
         user: {

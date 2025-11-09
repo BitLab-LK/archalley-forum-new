@@ -64,7 +64,7 @@ const getWordCountStatus = (text: string, limit: number = 150) => {
   return { status: 'normal', color: 'text-gray-600' }
 }
 
-import { saveLastUrl, getLastUrl, clearLastUrl } from "@/lib/auth-utils"
+import { getLastUrl, clearLastUrl } from "@/lib/auth-utils"
 
 const SESSION_STORAGE_KEY = 'archalley-last-url'
 

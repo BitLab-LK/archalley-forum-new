@@ -4,7 +4,7 @@ import { encode } from "next-auth/jwt"
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, provider } = await request.json()
+    const { email, provider, callbackUrl = '/' } = await request.json()
 
     // Find the user and their linked account
     const user = await prisma.users.findUnique({
