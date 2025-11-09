@@ -27,8 +27,7 @@ import {
   Plus,
   Minus,
   Upload,
-  Linkedin,
-  Sparkles
+  Linkedin
 } from "lucide-react"
 
 interface WorkExperience {
@@ -119,6 +118,8 @@ export default function SimplifiedEnhancedRegisterPage() {
         }
       }
     }
+    
+    return undefined
   }, [])
 
   // Set active tab based on URL parameter
@@ -262,7 +263,6 @@ export default function SimplifiedEnhancedRegisterPage() {
     tokenType?: string
     scope?: string
   }>({})
-  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null)
 
   // Cleanup effect for profile photo preview URL
   useEffect(() => {

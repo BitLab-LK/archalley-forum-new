@@ -8,7 +8,7 @@ import { sendEmailVerificationReminders } from "@/lib/email-verification-reminde
  * 
  * Security: Add authentication/authorization check in production
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Optional: Add authentication check
     // const authHeader = request.headers.get('authorization')

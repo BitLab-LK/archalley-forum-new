@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma"
 import { checkRateLimit } from "@/lib/security"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
-import crypto from "crypto"
 import { logAuthEvent } from "@/lib/audit-log"
 import { isPasswordInHistory, addPasswordToHistory } from "@/lib/password-history"
 

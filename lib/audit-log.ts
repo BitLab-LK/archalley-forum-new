@@ -1,5 +1,3 @@
-import { prisma } from "@/lib/prisma"
-
 export type AuditEventType =
   | "LOGIN_SUCCESS"
   | "LOGIN_FAILED"
@@ -97,8 +95,8 @@ export async function logAuthEvent(
  * This can be used to detect potential security threats
  */
 export async function checkSuspiciousActivity(
-  email: string,
-  ipAddress: string
+  _email: string,
+  _ipAddress: string
 ): Promise<boolean> {
   // This is a placeholder - in production, you'd check against stored audit logs
   // For now, we'll use rate limiting as a proxy for suspicious activity

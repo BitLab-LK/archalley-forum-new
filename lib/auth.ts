@@ -377,7 +377,7 @@ export const authOptions: NextAuthOptions = {
             import("@/lib/email-service").then(({ sendLoginNotificationEmail }) => {
               sendLoginNotificationEmail(
                 user.email!,
-                userWithSettings.name || user.name || 'User',
+                userWithSettings?.name || user.name || 'User',
                 {
                   timestamp: new Date(),
                 }
