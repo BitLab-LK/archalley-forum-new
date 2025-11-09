@@ -3,6 +3,9 @@ import { z } from "zod"
 // Rate limiting map (in production, use Redis)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 
+// Account lockout map (in production, use Redis)
+const accountLockoutMap = new Map<string, { count: number; lockoutUntil: number | null }>()
+
 /**
  * Check rate limit for a given key
  * @param key - Unique identifier for rate limiting
@@ -32,6 +35,89 @@ export function checkRateLimit(
 }
 
 /**
+ * Record a failed login attempt for an account
+ * @param identifier - Email or user ID
+ * @returns Object with isLocked and remainingAttempts
+ */
+export function recordFailedLoginAttempt(identifier: string): { isLocked: boolean; remainingAttempts: number; lockoutUntil: number | null } {
+  const maxAttempts = 5
+  const lockoutDuration = 15 * 60 * 1000 // 15 minutes
+  const now = Date.now()
+  
+  const lockout = accountLockoutMap.get(identifier)
+  
+  // If account is locked, check if lockout period has expired
+  if (lockout?.lockoutUntil && now < lockout.lockoutUntil) {
+    return {
+      isLocked: true,
+      remainingAttempts: 0,
+      lockoutUntil: lockout.lockoutUntil
+    }
+  }
+  
+  // Reset if lockout expired
+  if (lockout?.lockoutUntil && now >= lockout.lockoutUntil) {
+    accountLockoutMap.delete(identifier)
+  }
+  
+  // Increment failed attempts
+  const currentCount = (lockout?.count || 0) + 1
+  
+  if (currentCount >= maxAttempts) {
+    // Lock account
+    const lockoutUntil = now + lockoutDuration
+    accountLockoutMap.set(identifier, {
+      count: currentCount,
+      lockoutUntil
+    })
+    return {
+      isLocked: true,
+      remainingAttempts: 0,
+      lockoutUntil
+    }
+  }
+  
+  // Record attempt but don't lock yet
+  accountLockoutMap.set(identifier, {
+    count: currentCount,
+    lockoutUntil: null
+  })
+  
+  return {
+    isLocked: false,
+    remainingAttempts: maxAttempts - currentCount,
+    lockoutUntil: null
+  }
+}
+
+/**
+ * Clear failed login attempts for an account (on successful login)
+ * @param identifier - Email or user ID
+ */
+export function clearFailedLoginAttempts(identifier: string): void {
+  accountLockoutMap.delete(identifier)
+}
+
+/**
+ * Check if account is locked
+ * @param identifier - Email or user ID
+ * @returns boolean indicating if account is locked
+ */
+export function isAccountLocked(identifier: string): boolean {
+  const lockout = accountLockoutMap.get(identifier)
+  if (!lockout?.lockoutUntil) return false
+  
+  const now = Date.now()
+  if (now >= lockout.lockoutUntil) {
+    // Lockout expired, clear it
+    accountLockoutMap.delete(identifier)
+    return false
+  }
+  
+  return true
+}
+
+/**
  * Clean up expired rate limit entries
  */
 export function cleanupRateLimits(): void {
@@ -43,8 +129,21 @@ export function cleanupRateLimits(): void {
   }
 }
 
+/**
+ * Clean up expired account lockouts
+ */
+export function cleanupAccountLockouts(): void {
+  const now = Date.now()
+  for (const [identifier, lockout] of accountLockoutMap.entries()) {
+    if (lockout.lockoutUntil && now >= lockout.lockoutUntil) {
+      accountLockoutMap.delete(identifier)
+    }
+  }
+}
+
 // Run cleanup every 5 minutes
 setInterval(cleanupRateLimits, 5 * 60 * 1000)
+setInterval(cleanupAccountLockouts, 5 * 60 * 1000)
 
 /**
  * Sanitize HTML content to prevent XSS

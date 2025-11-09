@@ -65,6 +65,7 @@ const getWordCountStatus = (text: string, limit: number = 150) => {
 }
 
 import { getLastUrl, clearLastUrl } from "@/lib/auth-utils"
+import { PasswordStrengthMeter } from "@/components/password-strength-meter"
 
 const SESSION_STORAGE_KEY = 'archalley-last-url'
 
@@ -99,6 +100,26 @@ export default function SimplifiedEnhancedRegisterPage() {
     
     // Mark that initial animation has been shown
     setHasAnimated(true)
+
+    // Load reCAPTCHA script if enabled
+    const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+    if (recaptchaSiteKey && recaptchaSiteKey !== 'your-recaptcha-site-key') {
+      const script = document.createElement('script')
+      script.src = `https://www.google.com/recaptcha/api.js?render=${recaptchaSiteKey}`
+      script.async = true
+      script.defer = true
+      document.head.appendChild(script)
+
+      return () => {
+        // Cleanup script on unmount
+        const existingScript = document.querySelector(`script[src*="recaptcha"]`)
+        if (existingScript) {
+          existingScript.remove()
+        }
+      }
+    }
+    
+    return undefined
   }, [])
 
   // Set active tab based on URL parameter
@@ -458,6 +479,24 @@ export default function SimplifiedEnhancedRegisterPage() {
     const isSocialRegistration = !!provider
     console.log('🔒 Social registration:', isSocialRegistration)
 
+    // Get reCAPTCHA token if enabled
+    let recaptchaToken: string | null = null
+    const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+    if (recaptchaSiteKey && recaptchaSiteKey !== 'your-recaptcha-site-key' && !isSocialRegistration) {
+      try {
+        // @ts-ignore - grecaptcha is loaded dynamically
+        if (window.grecaptcha) {
+          // @ts-ignore
+          recaptchaToken = await window.grecaptcha.execute(recaptchaSiteKey, { action: 'register' })
+        }
+      } catch (recaptchaError) {
+        console.error('reCAPTCHA error:', recaptchaError)
+        setError("reCAPTCHA verification failed. Please refresh the page and try again.")
+        setIsLoading(false)
+        return
+      }
+    }
+
     // Validation
     if (!isSocialRegistration && password !== confirmPassword) {
       setError("Passwords do not match")
@@ -465,10 +504,23 @@ export default function SimplifiedEnhancedRegisterPage() {
       return
     }
 
-    if (!isSocialRegistration && password.length < 6) {
-      setError("Password must be at least 6 characters")
-      setIsLoading(false)
-      return
+    if (!isSocialRegistration) {
+      if (password.length < 8) {
+        setError("Password must be at least 8 characters")
+        setIsLoading(false)
+        return
+      }
+      // Check password complexity
+      const hasUpperCase = /[A-Z]/.test(password)
+      const hasLowerCase = /[a-z]/.test(password)
+      const hasNumber = /[0-9]/.test(password)
+      const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+      
+      if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+        setError("Password must contain uppercase, lowercase, number, and special character")
+        setIsLoading(false)
+        return
+      }
     }
 
     if (!agreeToTerms) {
@@ -557,6 +609,8 @@ export default function SimplifiedEnhancedRegisterPage() {
         emailPrivacy,
         phonePrivacy,
         profilePhotoPrivacy,
+        // reCAPTCHA token
+        ...(recaptchaToken ? { recaptchaToken } : {}),
         // Include OAuth data for account linking
         ...(isSocialRegistration && oauthData.provider ? {
           providerAccountId: oauthData.providerAccountId,
@@ -678,10 +732,15 @@ export default function SimplifiedEnhancedRegisterPage() {
     // Don't set loading to false here since we're redirecting
   }, [])
 
+  // 2FA state
+  const [requires2FA, setRequires2FA] = useState(false)
+  const [twoFactorCode, setTwoFactorCode] = useState("")
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
+    setRequires2FA(false)
 
     try {
       const result = await signIn("credentials", {
@@ -691,7 +750,21 @@ export default function SimplifiedEnhancedRegisterPage() {
       })
 
       if (result?.error) {
-        setError("Invalid email or password")
+        // Show specific error messages from the authorize function
+        const errorMessage = result.error
+        if (errorMessage === "2FA_REQUIRED") {
+          // Show 2FA input form
+          setRequires2FA(true)
+          setError("")
+        } else if (errorMessage.includes("verify")) {
+          setError("Please verify your email address before logging in. Check your inbox for the verification email.")
+        } else if (errorMessage.includes("locked")) {
+          setError(errorMessage)
+        } else if (errorMessage.includes("Too many")) {
+          setError(errorMessage)
+        } else {
+          setError("Invalid email or password")
+        }
       } else if (result?.ok) {
         // Get last URL from sessionStorage, clear it, and redirect
         const lastUrl = getLastUrl()
@@ -701,6 +774,41 @@ export default function SimplifiedEnhancedRegisterPage() {
       }
     } catch (error) {
       setError("An error occurred. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handle2FAVerification = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const response = await fetch("/api/auth/verify-2fa", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: loginEmail,
+          token: twoFactorCode,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Invalid verification code")
+      }
+
+      // Success - redirect
+      const lastUrl = getLastUrl()
+      clearLastUrl()
+      router.push(lastUrl)
+      router.refresh()
+    } catch (error: any) {
+      setError(error.message || "Invalid verification code. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -825,48 +933,101 @@ export default function SimplifiedEnhancedRegisterPage() {
               </div>
 
               {/* Email Login Form */}
-              <form onSubmit={handleLogin} className={`space-y-4 ${!hasAnimated ? 'animate-fade-in-up animate-delay-800' : ''}`}>
-                <div className="space-y-2">
-                  <Label htmlFor="loginEmail">Email Address</Label>
-                  <Input
-                    id="loginEmail"
-                    type="email"
-                    placeholder="m@example.com"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    required
-                    disabled={isLoading}
-                    className="smooth-transition focus:scale-105"
-                  />
-                </div>
+              {!requires2FA ? (
+                <form onSubmit={handleLogin} className={`space-y-4 ${!hasAnimated ? 'animate-fade-in-up animate-delay-800' : ''}`}>
+                  <div className="space-y-2">
+                    <Label htmlFor="loginEmail">Email Address</Label>
+                    <Input
+                      id="loginEmail"
+                      type="email"
+                      placeholder="m@example.com"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      required
+                      disabled={isLoading}
+                      className="smooth-transition focus:scale-105"
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="loginPassword">Password</Label>
-                    <Button variant="link" className="px-0 font-normal text-sm h-auto smooth-transition hover-lift" asChild>
-                      <Link href="/auth/forgot-password">Forgot Password?</Link>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="loginPassword">Password</Label>
+                      <Button variant="link" className="px-0 font-normal text-sm h-auto smooth-transition hover-lift" asChild>
+                        <Link href="/auth/forgot-password">Forgot Password?</Link>
+                      </Button>
+                    </div>
+                    <Input
+                      id="loginPassword"
+                      type="password"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      required
+                      disabled={isLoading}
+                      className="smooth-transition focus:scale-105"
+                    />
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full smooth-transition hover-lift" 
+                    disabled={isLoading}
+                    style={{ backgroundColor: '#ffa500', borderColor: '#ffa500' }}
+                  >
+                    {isLoading ? "Logging in..." : "Login"}
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={handle2FAVerification} className={`space-y-4 ${!hasAnimated ? 'animate-fade-in-up animate-delay-800' : ''}`}>
+                  <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/50">
+                    <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <AlertDescription className="text-blue-700 dark:text-blue-300">
+                      Two-factor authentication is enabled for this account. Please enter the verification code from your authenticator app.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="twoFactorCode">Verification Code</Label>
+                    <Input
+                      id="twoFactorCode"
+                      type="text"
+                      placeholder="000000"
+                      value={twoFactorCode}
+                      onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      maxLength={6}
+                      required
+                      disabled={isLoading}
+                      className="text-center text-2xl tracking-widest font-mono smooth-transition focus:scale-105"
+                    />
+                    <p className="text-xs text-muted-foreground text-center">
+                      Enter the 6-digit code from your authenticator app
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setRequires2FA(false)
+                        setTwoFactorCode("")
+                        setError("")
+                      }}
+                      disabled={isLoading}
+                    >
+                      Back
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      className="flex-1 smooth-transition hover-lift" 
+                      disabled={isLoading || twoFactorCode.length !== 6}
+                      style={{ backgroundColor: '#ffa500', borderColor: '#ffa500' }}
+                    >
+                      {isLoading ? "Verifying..." : "Verify"}
                     </Button>
                   </div>
-                  <Input
-                    id="loginPassword"
-                    type="password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    required
-                    disabled={isLoading}
-                    className="smooth-transition focus:scale-105"
-                  />
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full smooth-transition hover-lift" 
-                  disabled={isLoading}
-                  style={{ backgroundColor: '#ffa500', borderColor: '#ffa500' }}
-                >
-                  {isLoading ? "Logging in..." : "Login"}
-                </Button>
-              </form>
+                </form>
+              )}
             </TabsContent>
             
             <TabsContent value="register" className={`space-y-6 ${!hasAnimated ? 'animate-fade-in-up animate-delay-500' : ''}`}>
@@ -1023,31 +1184,36 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </div>
 
                 {!searchParams.get('provider') && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Create a password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={isLoading}
-                      />
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="Create a password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          disabled={isLoading}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm Password</Label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          placeholder="Confirm your password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required
+                          disabled={isLoading}
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm Password</Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        placeholder="Confirm your password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        disabled={isLoading}
-                      />
-                    </div>
+                    {password && (
+                      <PasswordStrengthMeter password={password} />
+                    )}
                   </div>
                 )}
 

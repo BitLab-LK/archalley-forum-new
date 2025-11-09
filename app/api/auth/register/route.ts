@@ -4,6 +4,10 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import crypto from "crypto"
 import { sendVerificationEmail } from "@/lib/email-service"
+import { checkRateLimit } from "@/lib/security"
+import { logAuthEvent } from "@/lib/audit-log"
+import { sanitizeHtml } from "@/lib/security"
+import { verifyRecaptcha, isRecaptchaEnabled } from "@/lib/recaptcha"
 
 const registerSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
@@ -17,8 +21,14 @@ const registerSchema = z.object({
   }, "Invalid phone number format"),
   password: z.string().nullable().optional().refine((pwd) => {
     if (!pwd) return true // Allow null/undefined
-    return pwd.length >= 6
-  }, "Password must be at least 6 characters"),
+    if (pwd.length < 8) return false
+    // Require at least one uppercase, one lowercase, one number, and one special character
+    const hasUpperCase = /[A-Z]/.test(pwd)
+    const hasLowerCase = /[a-z]/.test(pwd)
+    const hasNumber = /[0-9]/.test(pwd)
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
+    return hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar
+  }, "Password must be at least 8 characters and contain uppercase, lowercase, number, and special character"),
   headline: z.string().nullable().optional(),
   skills: z.array(z.string()).nullable().optional(),
   professions: z.array(z.string()).nullable().optional(),
@@ -179,27 +189,108 @@ const registerSchema = z.object({
   profilePhotoPrivacy: z.enum(["EVERYONE", "MEMBERS_ONLY", "ONLY_ME"]).optional().default("EVERYONE"),
   // Callback URL for redirect after registration
   callbackUrl: z.string().optional().default("/"),
+  // reCAPTCHA token (optional if not configured)
+  recaptchaToken: z.string().optional(),
 })
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting: 5 registrations per 15 minutes per IP
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown'
+    const rateLimitKey = `register:${ip}`
+    
+    if (!checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000)) {
+      await logAuthEvent("RATE_LIMIT_EXCEEDED", {
+        email: null, // Email not available yet at rate limit check
+        ipAddress: ip,
+        success: false,
+        details: { action: "registration", rateLimitKey },
+        errorMessage: "Too many registration attempts",
+      })
+      return NextResponse.json(
+        { error: "Too many registration attempts. Please try again later." },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
+    
+    // Verify reCAPTCHA if enabled
+    if (isRecaptchaEnabled()) {
+      const recaptchaToken = body.recaptchaToken
+      if (!recaptchaToken) {
+        await logAuthEvent("REGISTRATION_FAILED", {
+          email: body.email?.toLowerCase() || null,
+          ipAddress: ip,
+          success: false,
+          details: { action: "registration", reason: "missing_recaptcha" },
+          errorMessage: "reCAPTCHA verification required",
+        })
+        return NextResponse.json(
+          { error: "reCAPTCHA verification is required" },
+          { status: 400 }
+        )
+      }
+
+      const recaptchaResult = await verifyRecaptcha(recaptchaToken, 'register')
+      
+      if (!recaptchaResult.success) {
+        await logAuthEvent("REGISTRATION_FAILED", {
+          email: body.email?.toLowerCase() || null,
+          ipAddress: ip,
+          success: false,
+          details: { 
+            action: "registration", 
+            reason: "recaptcha_failed",
+            recaptchaScore: recaptchaResult.score,
+            recaptchaErrors: recaptchaResult['error-codes'],
+          },
+          errorMessage: "reCAPTCHA verification failed",
+        })
+        return NextResponse.json(
+          { error: "reCAPTCHA verification failed. Please try again." },
+          { status: 400 }
+        )
+      }
+
+      // Log successful reCAPTCHA verification (for monitoring)
+      if (recaptchaResult.score !== undefined && recaptchaResult.score < 0.5) {
+        await logAuthEvent("SUSPICIOUS_ACTIVITY", {
+          email: body.email?.toLowerCase() || null,
+          ipAddress: ip,
+          success: false,
+          details: { 
+            action: "registration", 
+            reason: "low_recaptcha_score",
+            recaptchaScore: recaptchaResult.score,
+          },
+          errorMessage: "Low reCAPTCHA score detected",
+        })
+      }
+    }
     
     // Basic validation for required fields before Zod parsing
     const { email, phoneNumber } = body
     
     // Check if user already exists by email (before Zod validation)
+    // Use generic error message to prevent account enumeration
     if (email) {
       const existingUser = await prisma.users.findUnique({
         where: { email },
       })
 
       if (existingUser) {
-        return NextResponse.json({ error: "User with this email already exists" }, { status: 400 })
+        // Generic error message to prevent account enumeration
+        return NextResponse.json({ 
+          error: "If this email is not already registered, a verification email will be sent to your inbox." 
+        }, { status: 400 })
       }
     }
 
     // Check if phone number already exists (before Zod validation)
+    // Use generic error message to prevent account enumeration
     if (phoneNumber && phoneNumber.trim() !== '') {
       const existingUserByPhone = await prisma.users.findFirst({
         where: { 
@@ -208,7 +299,10 @@ export async function POST(request: NextRequest) {
       })
 
       if (existingUserByPhone) {
-        return NextResponse.json({ error: "User with this phone number already exists" }, { status: 400 })
+        // Generic error message to prevent account enumeration
+        return NextResponse.json({ 
+          error: "If this phone number is not already registered, a verification email will be sent to your inbox." 
+        }, { status: 400 })
       }
     }
 
@@ -245,15 +339,42 @@ export async function POST(request: NextRequest) {
       callbackUrl,
     } = registerSchema.parse(body)
 
+    // Sanitize user inputs to prevent XSS attacks
+    const sanitizedFirstName = sanitizeHtml(validatedFirstName)
+    const sanitizedLastName = sanitizeHtml(validatedLastName)
+    const sanitizedHeadline = headline ? sanitizeHtml(headline) : null
+    const sanitizedBio = bio ? sanitizeHtml(bio) : null
+    const sanitizedCompany = company ? sanitizeHtml(company) : null
+    const sanitizedCity = city ? sanitizeHtml(city) : null
+    const sanitizedCountry = country ? sanitizeHtml(country) : null
+    const sanitizedSkills = skills?.map(skill => sanitizeHtml(skill)) || []
+    const sanitizedProfessions = professions?.map(prof => sanitizeHtml(prof)) || []
+    
+    // Sanitize work experience and education descriptions
+    const sanitizedWorkExperience = workExperience?.map(exp => ({
+      ...exp,
+      jobTitle: sanitizeHtml(exp.jobTitle),
+      company: sanitizeHtml(exp.company),
+      description: exp.description ? sanitizeHtml(exp.description) : null,
+    })) || []
+    
+    const sanitizedEducation = education?.map(edu => ({
+      ...edu,
+      degree: sanitizeHtml(edu.degree),
+      institution: sanitizeHtml(edu.institution),
+      description: edu.description ? sanitizeHtml(edu.description) : null,
+    })) || []
+
     // Validate password for non-social registration
     if (!isSocialRegistration && !password) {
       return NextResponse.json({ error: "Password is required for regular registration" }, { status: 400 })
     }
 
     // Hash password only if provided (for non-social registration)
+    // Increase bcrypt rounds from 12 to 14 for better security
     let hashedPassword = null
     if (password) {
-      hashedPassword = await bcrypt.hash(password, 12)
+      hashedPassword = await bcrypt.hash(password, 14)
     }
 
     // Process social media links array into individual URL fields
@@ -318,22 +439,22 @@ export async function POST(request: NextRequest) {
       const user = await tx.users.create({
         data: {
           id: crypto.randomUUID(),
-          name: `${validatedFirstName} ${validatedLastName}`,
-          firstName: validatedFirstName,
-          lastName: validatedLastName,
+          name: `${sanitizedFirstName} ${sanitizedLastName}`,
+          firstName: sanitizedFirstName,
+          lastName: sanitizedLastName,
           email: validatedEmail as string,
           phoneNumber: validatedPhoneNumber || null,
           password: hashedPassword,
           
-          // Professional fields stored separately
-          headline: headline || null,
-          skills: skills || [],
-          professions: professions || [],
-          country: country || null,
-          city: city || null,
-          company: company || null,
-          profession: professions?.[0] || null, // Use first profession for backward compatibility
-          bio: bio || null, // Store bio separately, not concatenated
+          // Professional fields stored separately (sanitized)
+          headline: sanitizedHeadline,
+          skills: sanitizedSkills,
+          professions: sanitizedProfessions,
+          country: sanitizedCountry,
+          city: sanitizedCity,
+          company: sanitizedCompany,
+          profession: sanitizedProfessions?.[0] || null, // Use first profession for backward compatibility
+          bio: sanitizedBio, // Store bio separately, not concatenated
           
           // Location field for backward compatibility
           location: country && city ? `${city}, ${country}` : (city || country),
@@ -380,9 +501,9 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Create work experience entries
-      if (workExperience && workExperience.length > 0) {
-        for (const work of workExperience) {
+      // Create work experience entries (using sanitized data)
+      if (sanitizedWorkExperience && sanitizedWorkExperience.length > 0) {
+        for (const work of sanitizedWorkExperience) {
           if (work.jobTitle && work.company) {
             await tx.workExperience.create({
               data: {
@@ -400,9 +521,9 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Create education entries
-      if (education && education.length > 0) {
-        for (const edu of education) {
+      // Create education entries (using sanitized data)
+      if (sanitizedEducation && sanitizedEducation.length > 0) {
+        for (const edu of sanitizedEducation) {
           if (edu.degree && edu.institution) {
             await tx.education.create({
               data: {
@@ -421,6 +542,21 @@ export async function POST(request: NextRequest) {
       }
 
       return user
+    })
+
+    // Log successful registration
+    const userAgent = request.headers.get('user-agent') || null
+    await logAuthEvent("REGISTRATION_SUCCESS", {
+      userId: result.id,
+      email: validatedEmail.toLowerCase(),
+      ipAddress: ip,
+      userAgent,
+      success: true,
+      details: { 
+        action: "registration", 
+        isSocialRegistration: !!isSocialRegistration,
+        provider: provider || "email",
+      },
     })
 
     // For email/password registration, generate verification token and send email
@@ -514,7 +650,21 @@ export async function POST(request: NextRequest) {
       redirectTo: callbackUrl || "/"
     }, { status: 201 })
   } catch (error) {
+    // Log registration failure
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown'
+    const userAgent = request.headers.get('user-agent') || null
+    
     if (error instanceof z.ZodError) {
+      await logAuthEvent("REGISTRATION_FAILED", {
+        email: (error as any).email?.toLowerCase() || null,
+        ipAddress: ip,
+        userAgent,
+        success: false,
+        details: { action: "registration", reason: "validation_error" },
+        errorMessage: error.errors[0]?.message || "Validation error",
+      })
       // Extract specific validation error messages
       const fieldErrors = error.errors.map(err => ({
         field: err.path.join('.'),
@@ -540,6 +690,16 @@ export async function POST(request: NextRequest) {
     }
 
     console.error("Registration error:", error)
+    
+    await logAuthEvent("REGISTRATION_FAILED", {
+      email: null,
+      ipAddress: ip,
+      userAgent,
+      success: false,
+      details: { action: "registration", reason: "internal_error" },
+      errorMessage: error instanceof Error ? error.message : "Internal server error",
+    })
+    
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

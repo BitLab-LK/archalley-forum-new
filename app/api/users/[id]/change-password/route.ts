@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { isPasswordInHistory, addPasswordToHistory } from '@/lib/password-history';
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().optional(), // Made optional for social media users
@@ -100,9 +101,44 @@ export async function POST(
     }
     // If user doesn't have a password (social media signup), allow setting new password without current password
 
-    // Hash new password
-    const saltRounds = 12;
-    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+    // Check password history (prevent reusing last 5 passwords)
+    // First check current password
+    if (user.password) {
+      const isSamePassword = await bcrypt.compare(newPassword, user.password)
+      if (isSamePassword) {
+        return NextResponse.json(
+          { error: 'You cannot reuse your current password. Please choose a different password.' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Check password history (last 5 passwords)
+    try {
+      const wasUsedRecently = await isPasswordInHistory(id, newPassword, 5)
+      if (wasUsedRecently) {
+        return NextResponse.json(
+          { error: 'You cannot reuse any of your last 5 passwords. Please choose a different password.' },
+          { status: 400 }
+        )
+      }
+    } catch (historyError) {
+      // If password history check fails, log but continue (fail open)
+      console.error("Password history check failed:", historyError)
+    }
+
+    // Hash new password (using 14 rounds for better security)
+    const hashedNewPassword = await bcrypt.hash(newPassword, 14);
+
+    // Store old password in history before updating
+    if (user.password) {
+      try {
+        await addPasswordToHistory(id, user.password, 5)
+      } catch (historyError) {
+        // Log but continue - password history is not critical
+        console.error("Failed to add password to history:", historyError)
+      }
+    }
 
     // Update password in database
     await prisma.users.update({
