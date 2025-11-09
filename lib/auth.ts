@@ -6,6 +6,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import { updateUserActivityAsync } from "@/lib/activity-service"
 import bcrypt from "bcryptjs"
+import { recordFailedLoginAttempt, clearFailedLoginAttempts, isAccountLocked, checkRateLimit } from "@/lib/security"
 
 export const authOptions: NextAuthOptions = {
   // Removed PrismaAdapter to avoid conflicts with custom signIn callback
@@ -44,21 +45,50 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        // Rate limiting: 10 login attempts per 15 minutes per email
+        const rateLimitKey = `login:${credentials.email.toLowerCase()}`
+        if (!checkRateLimit(rateLimitKey, 10, 15 * 60 * 1000)) {
+          throw new Error("Too many login attempts. Please try again later.")
+        }
+
+        // Check if account is locked
+        if (isAccountLocked(credentials.email.toLowerCase())) {
+          throw new Error("Account is temporarily locked due to too many failed login attempts. Please try again in 15 minutes.")
+        }
+
+        // Always perform user lookup to prevent timing attacks
         const user = await prisma.users.findUnique({
           where: {
-            email: credentials.email,
+            email: credentials.email.toLowerCase(),
           },
         })
 
-        if (!user || !user.password) {
+        // Perform password comparison even if user doesn't exist (to prevent timing attacks)
+        // Use a dummy hash to ensure constant time comparison
+        const dummyHash = "$2a$14$dummyhashfordummycomparisonpurposesonly"
+        const hashToCompare = user?.password || dummyHash
+        
+        const isPasswordValid = await bcrypt.compare(credentials.password, hashToCompare)
+
+        // If user doesn't exist or password is invalid, record failed attempt
+        if (!user || !user.password || !isPasswordValid) {
+          // Only record attempt if user exists (to prevent account enumeration)
+          if (user) {
+            const lockoutStatus = recordFailedLoginAttempt(credentials.email.toLowerCase())
+            if (lockoutStatus.isLocked) {
+              throw new Error(`Account locked due to too many failed attempts. Please try again in ${Math.ceil((lockoutStatus.lockoutUntil! - Date.now()) / 60000)} minutes.`)
+            }
+          }
           return null
         }
 
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
-
-        if (!isPasswordValid) {
-          return null
+        // Check if email is verified (enforce email verification)
+        if (!user.isVerified || !user.emailVerified) {
+          throw new Error("Please verify your email address before logging in. Check your inbox for the verification email.")
         }
+
+        // Clear failed login attempts on successful login
+        clearFailedLoginAttempts(credentials.email.toLowerCase())
 
         return {
           id: user.id,

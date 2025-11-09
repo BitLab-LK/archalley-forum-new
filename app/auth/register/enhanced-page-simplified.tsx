@@ -465,10 +465,23 @@ export default function SimplifiedEnhancedRegisterPage() {
       return
     }
 
-    if (!isSocialRegistration && password.length < 6) {
-      setError("Password must be at least 6 characters")
-      setIsLoading(false)
-      return
+    if (!isSocialRegistration) {
+      if (password.length < 8) {
+        setError("Password must be at least 8 characters")
+        setIsLoading(false)
+        return
+      }
+      // Check password complexity
+      const hasUpperCase = /[A-Z]/.test(password)
+      const hasLowerCase = /[a-z]/.test(password)
+      const hasNumber = /[0-9]/.test(password)
+      const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+      
+      if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+        setError("Password must contain uppercase, lowercase, number, and special character")
+        setIsLoading(false)
+        return
+      }
     }
 
     if (!agreeToTerms) {
@@ -691,7 +704,17 @@ export default function SimplifiedEnhancedRegisterPage() {
       })
 
       if (result?.error) {
-        setError("Invalid email or password")
+        // Show specific error messages from the authorize function
+        const errorMessage = result.error
+        if (errorMessage.includes("verify")) {
+          setError("Please verify your email address before logging in. Check your inbox for the verification email.")
+        } else if (errorMessage.includes("locked")) {
+          setError(errorMessage)
+        } else if (errorMessage.includes("Too many")) {
+          setError(errorMessage)
+        } else {
+          setError("Invalid email or password")
+        }
       } else if (result?.ok) {
         // Get last URL from sessionStorage, clear it, and redirect
         const lastUrl = getLastUrl()

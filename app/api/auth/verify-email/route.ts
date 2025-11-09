@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { encode } from "next-auth/jwt"
+import { checkRateLimit } from "@/lib/security"
 
 /**
  * Verify email with token (GET from email link or POST with code)
@@ -17,6 +18,24 @@ export async function POST(request: NextRequest) {
 
 async function handleVerification(request: NextRequest, method: 'GET' | 'POST') {
   try {
+    // Rate limiting: 10 verification attempts per 15 minutes per IP
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown'
+    const rateLimitKey = `verify-email:${ip}`
+    
+    if (!checkRateLimit(rateLimitKey, 10, 15 * 60 * 1000)) {
+      if (method === 'GET') {
+        return NextResponse.redirect(
+          new URL('/auth/verify?error=Too many verification attempts. Please try again later.', request.url)
+        )
+      }
+      return NextResponse.json(
+        { error: "Too many verification attempts. Please try again later." },
+        { status: 429 }
+      )
+    }
+
     let token: string | null = null
     let callbackUrl = '/'
 

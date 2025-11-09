@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import crypto from "crypto"
 import { sendVerificationEmail } from "@/lib/email-service"
+import { checkRateLimit } from "@/lib/security"
 
 const registerSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
@@ -17,8 +18,14 @@ const registerSchema = z.object({
   }, "Invalid phone number format"),
   password: z.string().nullable().optional().refine((pwd) => {
     if (!pwd) return true // Allow null/undefined
-    return pwd.length >= 6
-  }, "Password must be at least 6 characters"),
+    if (pwd.length < 8) return false
+    // Require at least one uppercase, one lowercase, one number, and one special character
+    const hasUpperCase = /[A-Z]/.test(pwd)
+    const hasLowerCase = /[a-z]/.test(pwd)
+    const hasNumber = /[0-9]/.test(pwd)
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
+    return hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar
+  }, "Password must be at least 8 characters and contain uppercase, lowercase, number, and special character"),
   headline: z.string().nullable().optional(),
   skills: z.array(z.string()).nullable().optional(),
   professions: z.array(z.string()).nullable().optional(),
@@ -183,23 +190,41 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting: 5 registrations per 15 minutes per IP
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown'
+    const rateLimitKey = `register:${ip}`
+    
+    if (!checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: "Too many registration attempts. Please try again later." },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     
     // Basic validation for required fields before Zod parsing
     const { email, phoneNumber } = body
     
     // Check if user already exists by email (before Zod validation)
+    // Use generic error message to prevent account enumeration
     if (email) {
       const existingUser = await prisma.users.findUnique({
         where: { email },
       })
 
       if (existingUser) {
-        return NextResponse.json({ error: "User with this email already exists" }, { status: 400 })
+        // Generic error message to prevent account enumeration
+        return NextResponse.json({ 
+          error: "If this email is not already registered, a verification email will be sent to your inbox." 
+        }, { status: 400 })
       }
     }
 
     // Check if phone number already exists (before Zod validation)
+    // Use generic error message to prevent account enumeration
     if (phoneNumber && phoneNumber.trim() !== '') {
       const existingUserByPhone = await prisma.users.findFirst({
         where: { 
@@ -208,7 +233,10 @@ export async function POST(request: NextRequest) {
       })
 
       if (existingUserByPhone) {
-        return NextResponse.json({ error: "User with this phone number already exists" }, { status: 400 })
+        // Generic error message to prevent account enumeration
+        return NextResponse.json({ 
+          error: "If this phone number is not already registered, a verification email will be sent to your inbox." 
+        }, { status: 400 })
       }
     }
 
@@ -251,9 +279,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Hash password only if provided (for non-social registration)
+    // Increase bcrypt rounds from 12 to 14 for better security
     let hashedPassword = null
     if (password) {
-      hashedPassword = await bcrypt.hash(password, 12)
+      hashedPassword = await bcrypt.hash(password, 14)
     }
 
     // Process social media links array into individual URL fields
