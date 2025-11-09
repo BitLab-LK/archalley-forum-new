@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import crypto from "crypto"
+import { sendVerificationEmail } from "@/lib/email-service"
 
 const registerSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
@@ -176,6 +177,8 @@ const registerSchema = z.object({
   emailPrivacy: z.enum(["EVERYONE", "MEMBERS_ONLY", "ONLY_ME"]).optional().default("EVERYONE"),
   phonePrivacy: z.enum(["EVERYONE", "MEMBERS_ONLY", "ONLY_ME"]).optional().default("MEMBERS_ONLY"),
   profilePhotoPrivacy: z.enum(["EVERYONE", "MEMBERS_ONLY", "ONLY_ME"]).optional().default("EVERYONE"),
+  // Callback URL for redirect after registration
+  callbackUrl: z.string().optional().default("/"),
 })
 
 export async function POST(request: NextRequest) {
@@ -239,6 +242,7 @@ export async function POST(request: NextRequest) {
       emailPrivacy,
       phonePrivacy,
       profilePhotoPrivacy,
+      callbackUrl,
     } = registerSchema.parse(body)
 
     // Validate password for non-social registration
@@ -358,7 +362,8 @@ export async function POST(request: NextRequest) {
           
           // System fields
           role: 'MEMBER',
-          isVerified: isSocialRegistration ? true : false,
+          isVerified: isSocialRegistration ? true : false, // Social login users are auto-verified
+          emailVerified: isSocialRegistration ? new Date() : null, // Email verified for social, null for email/password until verified
           updatedAt: new Date(),
         },
       })
@@ -418,6 +423,41 @@ export async function POST(request: NextRequest) {
       return user
     })
 
+    // For email/password registration, generate verification token and send email
+    if (!isSocialRegistration) {
+      // Generate verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex')
+      const expires = new Date()
+      expires.setHours(expires.getHours() + 24) // Token expires in 24 hours
+
+      // Store verification token
+      await prisma.verificationToken.create({
+        data: {
+          id: crypto.randomUUID(),
+          identifier: validatedEmail,
+          token: verificationToken,
+          expires,
+        },
+      })
+
+      // Send verification email
+      // Note: callbackUrl is stored in sessionStorage on client side, so we don't need to pass it in email
+      const userName = `${validatedFirstName} ${validatedLastName}`
+      await sendVerificationEmail(validatedEmail, userName, verificationToken, '/')
+
+      return NextResponse.json({
+        user: {
+          id: result.id,
+          name: result.name,
+          email: result.email
+        },
+        message: "Registration successful! Please check your email to verify your account. After verification, you will be automatically logged in.",
+        requiresVerification: true,
+        // callbackUrl is stored in sessionStorage on client, no need to pass in redirect
+        redirectTo: `/auth/register?tab=login&message=${encodeURIComponent('Registration successful! Please check your email to verify your account.')}`
+      }, { status: 201 })
+    }
+
     // Auto-login for social registration
     if (isSocialRegistration && provider) {
       try {
@@ -445,7 +485,7 @@ export async function POST(request: NextRequest) {
             }, 
             message: `Profile completed successfully! You are now automatically logged in.`,
             autoLogin: true,
-            redirectTo: "/"
+            redirectTo: callbackUrl || "/"
           }, { status: 201 })
 
           // Forward the session cookie to the client
@@ -462,16 +502,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Fallback response for social registration if auto-login fails
     return NextResponse.json({ 
       user: {
         id: result.id,
         name: result.name,
         email: result.email
       }, 
-      message: isSocialRegistration 
-        ? `Profile completed successfully! Please log in to continue.`
-        : "User created successfully. Enhanced profile features will be available after database migration.",
-      autoLogin: false
+      message: `Profile completed successfully! Please log in to continue.`,
+      autoLogin: false,
+      redirectTo: callbackUrl || "/"
     }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -86,7 +86,11 @@ export const authOptions: NextAuthOptions = {
         return baseUrl
       }
       // Allows relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`
+      if (url.startsWith("/")) {
+        // Use the callbackUrl from NextAuth (which comes from signIn call)
+        // This will be the last URL the user was trying to access
+        return `${baseUrl}${url}`
+      }
       // Allows callback URLs on the same origin
       else if (new URL(url).origin === baseUrl) return url
       // Default redirect to home page
@@ -138,7 +142,9 @@ export const authOptions: NextAuthOptions = {
 
           if (!existingUser) {
             // Redirect to registration with OAuth data for account linking
+            // Preserve callbackUrl from the signIn call if available
             console.log(`New user detected for ${account.provider}, redirecting to complete profile`)
+            // Note: callbackUrl is handled by NextAuth's redirect callback, we'll preserve it in URL params
             const redirectUrl = `/auth/register?provider=${account.provider}&email=${encodeURIComponent(user.email!)}&name=${encodeURIComponent(user.name || '')}&image=${encodeURIComponent(user.image || '')}&providerAccountId=${encodeURIComponent(account.providerAccountId)}&message=${encodeURIComponent('Complete your profile to join our community!')}`
             return redirectUrl
           } else {

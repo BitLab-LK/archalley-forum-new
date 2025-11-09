@@ -64,10 +64,16 @@ const getWordCountStatus = (text: string, limit: number = 150) => {
   return { status: 'normal', color: 'text-gray-600' }
 }
 
+import { saveLastUrl, getLastUrl, clearLastUrl } from "@/lib/auth-utils"
+
+const SESSION_STORAGE_KEY = 'archalley-last-url'
+
 export default function SimplifiedEnhancedRegisterPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const callbackUrl = searchParams.get('callbackUrl') || '/'
+  // Get callbackUrl from URL params or sessionStorage
+  const urlCallbackUrl = searchParams.get('callbackUrl')
+  const [callbackUrl, setCallbackUrl] = useState(urlCallbackUrl || getLastUrl())
   const [activeTab, setActiveTab] = useState("register")
   const [createMemberProfile, setCreateMemberProfile] = useState(false)
 
@@ -106,6 +112,17 @@ export default function SimplifiedEnhancedRegisterPage() {
     const urlMessage = searchParams.get('message')
     if (urlMessage) {
       setMessage(decodeURIComponent(urlMessage))
+    }
+    
+    // If callbackUrl is in URL params, save it to sessionStorage and update state
+    const urlCallbackUrl = searchParams.get('callbackUrl')
+    if (urlCallbackUrl) {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, urlCallbackUrl)
+      setCallbackUrl(urlCallbackUrl)
+    } else {
+      // Otherwise, use sessionStorage value or default
+      const storedUrl = sessionStorage.getItem(SESSION_STORAGE_KEY) || '/'
+      setCallbackUrl(storedUrl)
     }
   }, [searchParams])
 
@@ -535,6 +552,7 @@ export default function SimplifiedEnhancedRegisterPage() {
         education: education.filter(edu => edu.degree && edu.institution),
         isSocialRegistration,
         provider,
+        callbackUrl, // Include callbackUrl for redirect after registration
         // Privacy settings
         emailPrivacy,
         phonePrivacy,
@@ -578,41 +596,47 @@ export default function SimplifiedEnhancedRegisterPage() {
               },
               body: JSON.stringify({
                 email,
-                provider
+                provider,
+                callbackUrl: data.redirectTo || callbackUrl
               }),
             })
 
             const autoLoginData = await autoLoginResponse.json()
 
             if (autoLoginResponse.ok) {
-              console.log("Auto-login successful, redirecting to homepage...")
-              // Successful auto-login, redirect to homepage
-              window.location.href = "/"
+              console.log("Auto-login successful, redirecting to:", data.redirectTo || callbackUrl)
+              // Clear sessionStorage and redirect
+              clearLastUrl()
+              // Successful auto-login, redirect to callbackUrl or homepage
+              window.location.href = data.redirectTo || callbackUrl || "/"
             } else {
               console.error("Auto-login failed:", autoLoginData.error)
+              // Keep callbackUrl in sessionStorage for manual login
               // Fallback to manual login if auto-login fails
               router.push(`/auth/register?tab=login&message=✅ Registration complete! Click "${provider?.toUpperCase()}" to finish&provider=${provider}`)
             }
           } catch (error) {
             console.error("Auto-login error:", error)
+            // Keep callbackUrl in sessionStorage for manual login
             // Fallback to manual login if auto-login fails
             router.push(`/auth/register?tab=login&message=✅ Registration complete! Click "${provider?.toUpperCase()}" to finish&provider=${provider}`)
           }
         }, 1500) // Give user moment to see success, then auto-login
       } else {
-        // For regular registration, auto-login
-        setTimeout(async () => {
-          const result = await signIn("credentials", {
-            email,
-            password,
-            redirect: false,
-          })
-
-          if (result?.ok) {
-            router.push("/")
-            router.refresh()
-          }
-        }, 2000)
+        // For email/password registration, show message about email verification
+        if (data.requiresVerification) {
+          // Keep callbackUrl in sessionStorage for after verification
+          // Show success message and redirect to login with message
+          setTimeout(() => {
+            router.push(`/auth/register?tab=login&message=${encodeURIComponent(data.message)}`)
+          }, 2000)
+        } else {
+          // Fallback (should not happen for email/password registration)
+          clearLastUrl()
+          setTimeout(() => {
+            router.push(callbackUrl || "/")
+          }, 2000)
+        }
       }
     } catch (error: any) {
       setError(error.message || "An error occurred. Please try again.")
@@ -632,9 +656,11 @@ export default function SimplifiedEnhancedRegisterPage() {
       localStorage.setItem('oauth_attempt', provider)
       localStorage.setItem('oauth_timestamp', Date.now().toString())
       
-      // For social logins, let NextAuth handle the redirect automatically
+      // For social logins, save callbackUrl to sessionStorage and let NextAuth handle redirect
+      // NextAuth will use the callbackUrl parameter, and we'll also have it in sessionStorage as backup
+      const lastUrl = getLastUrl()
       await signIn(provider, { 
-        callbackUrl,
+        callbackUrl: lastUrl || '/',
         redirect: true // Let NextAuth handle the redirect
       })
     } catch (error) {
@@ -663,7 +689,10 @@ export default function SimplifiedEnhancedRegisterPage() {
       if (result?.error) {
         setError("Invalid email or password")
       } else if (result?.ok) {
-        router.push(callbackUrl)
+        // Get last URL from sessionStorage, clear it, and redirect
+        const lastUrl = getLastUrl()
+        clearLastUrl()
+        router.push(lastUrl)
         router.refresh()
       }
     } catch (error) {
@@ -934,7 +963,10 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </div>
 
                 <div className="space-y-2 animate-fade-in-up animate-delay-1100">
-                  <Label htmlFor="email">Email Address</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Label htmlFor="emailPrivacy" className="text-sm">Visibility</Label>
+                  </div>
                   <div className="flex gap-2">
                     <Input
                       id="email"
@@ -960,7 +992,10 @@ export default function SimplifiedEnhancedRegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Phone Number</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                    <Label htmlFor="phonePrivacy" className="text-sm">Visibility</Label>
+                  </div>
                   <div className="flex gap-2">
                     <Input
                       id="phoneNumber"
@@ -983,35 +1018,40 @@ export default function SimplifiedEnhancedRegisterPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password {searchParams.get('provider') && <span className="text-sm text-muted-foreground">(Optional for social login)</span>}</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder={searchParams.get('provider') ? "Optional - leave blank for social login" : "Create a password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required={!searchParams.get('provider')}
-                      disabled={isLoading}
-                    />
+                {!searchParams.get('provider') && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Create a password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        placeholder="Confirm your password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password {searchParams.get('provider') && <span className="text-sm text-muted-foreground">(Optional)</span>}</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder={searchParams.get('provider') ? "Optional" : "Confirm your password"}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required={!searchParams.get('provider')}
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
+                )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="profilePhoto">Profile Photo</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="profilePhoto">Profile Photo</Label>
+                    <Label htmlFor="profilePhotoPrivacy" className="text-sm">Visibility</Label>
+                  </div>
                   <div className="flex items-center gap-3">
                     {/* Image Preview Circle */}
                     <div className="relative shrink-0">
@@ -1092,6 +1132,13 @@ export default function SimplifiedEnhancedRegisterPage() {
                     </Select>
                   </div>
                 </div>
+
+                {/* Welcome Notice */}
+                <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/50">
+                  <AlertDescription className="text-blue-700 dark:text-blue-300">
+                    Welcome to your Archalley professional profile. You can manage its visibility and switch between Public or Private mode at anytime.
+                  </AlertDescription>
+                </Alert>
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 border rounded-lg">

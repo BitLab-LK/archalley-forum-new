@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ 
       success: true,
       message: "Auto-login successful",
-      redirectTo: "/"
+      redirectTo: callbackUrl
     })
 
     // Set the NextAuth session cookie
