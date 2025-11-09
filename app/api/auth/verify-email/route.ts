@@ -112,9 +112,11 @@ async function handleVerification(request: NextRequest, method: 'GET' | 'POST') 
     ])
 
     // Create JWT token for auto-login
+    // Note: Must include 'id' field (not just 'sub') for middleware validation
     const jwtToken = await encode({
       token: {
         sub: user.id,
+        id: user.id, // Required for middleware validation
         email: user.email,
         name: user.name,
         image: user.image,

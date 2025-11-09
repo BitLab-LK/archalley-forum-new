@@ -4,7 +4,8 @@ import { encode } from "next-auth/jwt"
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, provider, callbackUrl = '/' } = await request.json()
+    const body = await request.json()
+    const { email, provider, callbackUrl = '/' } = body
 
     // Find the user and their linked account
     const user = await prisma.users.findUnique({
@@ -25,9 +26,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Create a JWT token for the user
+    // Note: Must include 'id' field (not just 'sub') for middleware validation
+    // The middleware checks for token.id, and NextAuth's JWT callback also sets token.id
     const token = await encode({
       token: {
         sub: user.id,
+        id: user.id, // Required for middleware validation
         email: user.email,
         name: user.name,
         image: user.image,
@@ -39,7 +43,7 @@ export async function POST(request: NextRequest) {
       secret: process.env.NEXTAUTH_SECRET!,
     })
 
-// Set the session cookie
+    // Create response with JSON body
     const response = NextResponse.json({ 
       success: true,
       message: "Auto-login successful",
@@ -47,6 +51,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Set the NextAuth session cookie
+    // Important: Cookie must be set with proper SameSite and Secure flags
     response.cookies.set("next-auth.session-token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

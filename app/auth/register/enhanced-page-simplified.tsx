@@ -594,6 +594,7 @@ export default function SimplifiedEnhancedRegisterPage() {
               headers: {
                 "Content-Type": "application/json",
               },
+              credentials: "include", // Ensure cookies are sent and received
               body: JSON.stringify({
                 email,
                 provider,
@@ -604,11 +605,14 @@ export default function SimplifiedEnhancedRegisterPage() {
             const autoLoginData = await autoLoginResponse.json()
 
             if (autoLoginResponse.ok) {
-              console.log("Auto-login successful, redirecting to:", data.redirectTo || callbackUrl)
-              // Clear sessionStorage and redirect
+              console.log("Auto-login successful, redirecting to:", autoLoginData.redirectTo || callbackUrl)
+              // Clear sessionStorage
               clearLastUrl()
-              // Successful auto-login, redirect to callbackUrl or homepage
-              window.location.href = data.redirectTo || callbackUrl || "/"
+              // Wait a moment to ensure cookie is set, then redirect
+              // Using a full page reload ensures cookies are properly sent
+              setTimeout(() => {
+                window.location.href = autoLoginData.redirectTo || callbackUrl || "/"
+              }, 100)
             } else {
               console.error("Auto-login failed:", autoLoginData.error)
               // Keep callbackUrl in sessionStorage for manual login
