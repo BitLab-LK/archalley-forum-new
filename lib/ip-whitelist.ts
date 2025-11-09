@@ -11,7 +11,7 @@ import { prisma } from "@/lib/prisma"
  * @param ipAddress - IP address to check
  * @returns true if IP is whitelisted or no whitelist exists, false if IP is blocked
  */
-export async function isIPWhitelisted(userId: string, ipAddress: string): Promise<boolean> {
+export async function isIPWhitelisted(userId: string, _ipAddress: string): Promise<boolean> {
   try {
     // Get user's IP whitelist
     // Note: This requires an ipWhitelist field in the users table
@@ -53,7 +53,7 @@ export async function isIPWhitelisted(userId: string, ipAddress: string): Promis
  * @param userId - User ID
  * @param ipAddress - IP address to add
  */
-export async function addIPToWhitelist(userId: string, ipAddress: string): Promise<void> {
+export async function addIPToWhitelist(userId: string, _ipAddress: string): Promise<void> {
   try {
     // Note: This requires an ipWhitelist field in the users table
     // Implementation would update the user's IP whitelist array
@@ -67,7 +67,7 @@ export async function addIPToWhitelist(userId: string, ipAddress: string): Promi
     //   }
     // })
     
-    console.log(`IP whitelist feature not fully implemented - would add ${ipAddress} for user ${userId}`)
+    console.log(`IP whitelist feature not fully implemented - would add ${_ipAddress} for user ${userId}`)
   } catch (error) {
     console.error("Error adding IP to whitelist:", error)
   }
@@ -78,7 +78,7 @@ export async function addIPToWhitelist(userId: string, ipAddress: string): Promi
  * @param userId - User ID
  * @param ipAddress - IP address to remove
  */
-export async function removeIPFromWhitelist(userId: string, ipAddress: string): Promise<void> {
+export async function removeIPFromWhitelist(userId: string, _ipAddress: string): Promise<void> {
   try {
     // Note: This requires an ipWhitelist field in the users table
     // Implementation would remove the IP from the user's IP whitelist array
@@ -98,7 +98,7 @@ export async function removeIPFromWhitelist(userId: string, ipAddress: string): 
     //   })
     // }
     
-    console.log(`IP whitelist feature not fully implemented - would remove ${ipAddress} for user ${userId}`)
+    console.log(`IP whitelist feature not fully implemented - would remove ${_ipAddress} for user ${userId}`)
   } catch (error) {
     console.error("Error removing IP from whitelist:", error)
   }

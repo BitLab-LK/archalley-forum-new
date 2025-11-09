@@ -157,10 +157,10 @@ export async function GET(request: NextRequest) {
       import("@/lib/email-service").then(({ sendLoginNotificationEmail }) => {
         sendLoginNotificationEmail(
           user.email,
-          userWithSettings.name || user.name || 'User',
+          userWithSettings?.name || user.name || 'User',
           {
             ipAddress: ip,
-            userAgent,
+            userAgent: userAgent || undefined,
             timestamp: new Date(),
           }
         ).catch((error) => {

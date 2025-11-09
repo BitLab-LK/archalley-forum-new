@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
     
     if (!checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000)) {
       await logAuthEvent("RATE_LIMIT_EXCEEDED", {
-        email: body.email?.toLowerCase() || null,
+        email: null, // Email not available yet at rate limit check
         ipAddress: ip,
         success: false,
         details: { action: "registration", rateLimitKey },

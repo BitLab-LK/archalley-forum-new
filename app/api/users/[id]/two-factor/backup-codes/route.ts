@@ -5,7 +5,6 @@ import { prisma } from '@/lib/prisma'
 import { generateSecureRandomString } from '@/lib/security'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
-import crypto from 'crypto'
 
 const backupCodeSchema = z.object({
   action: z.enum(['generate', 'verify']),
@@ -55,7 +54,7 @@ export async function POST(
       where: { id: userId },
       select: { 
         twoFactorEnabled: true,
-        twoFactorBackupCodes: true,
+        // twoFactorBackupCodes: true, // Uncomment when database field is added
       }
     })
 

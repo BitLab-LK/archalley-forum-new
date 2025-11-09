@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { email, token, tempSessionToken } = body
+    const { email, token } = body
 
     if (!email || !token) {
       return NextResponse.json(
@@ -147,10 +147,10 @@ export async function POST(request: NextRequest) {
       import("@/lib/email-service").then(({ sendLoginNotificationEmail }) => {
         sendLoginNotificationEmail(
           user.email,
-          userWithSettings.name || user.name || 'User',
+          userWithSettings?.name || user.name || 'User',
           {
             ipAddress: ip,
-            userAgent,
+            userAgent: userAgent || undefined,
             timestamp: new Date(),
           }
         ).catch((error) => {
