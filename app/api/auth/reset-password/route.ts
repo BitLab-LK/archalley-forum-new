@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs"
 import { z } from "zod"
 import crypto from "crypto"
 import { logAuthEvent } from "@/lib/audit-log"
+import { isPasswordInHistory, addPasswordToHistory } from "@/lib/password-history"
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, "Reset token is required"),
@@ -97,8 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check password history (prevent reusing last 5 passwords)
-    // Note: This requires storing password history in the database
-    // For now, we'll check against the current password
+    // First check current password
     if (user.password) {
       const isSamePassword = await bcrypt.compare(password, user.password)
       if (isSamePassword) {
@@ -118,11 +118,43 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Check password history (last 5 passwords)
+    try {
+      const wasUsedRecently = await isPasswordInHistory(user.id, password, 5)
+      if (wasUsedRecently) {
+        await logAuthEvent("PASSWORD_RESET_FAILED", {
+          userId: user.id,
+          email: user.email.toLowerCase(),
+          ipAddress: ip,
+          userAgent: request.headers.get('user-agent') || null,
+          success: false,
+          details: { action: "password_reset", reason: "password_in_history" },
+          errorMessage: "Password was used recently",
+        })
+        return NextResponse.json(
+          { error: "You cannot reuse any of your last 5 passwords. Please choose a different password." },
+          { status: 400 }
+        )
+      }
+    } catch (historyError) {
+      // If password history check fails, log but continue (fail open)
+      console.error("Password history check failed:", historyError)
+    }
+
     // Hash new password (using 14 rounds for better security)
     const hashedPassword = await bcrypt.hash(password, 14)
 
+    // Store old password in history before updating
+    if (user.password) {
+      try {
+        await addPasswordToHistory(user.id, user.password, 5)
+      } catch (historyError) {
+        // Log but continue - password history is not critical
+        console.error("Failed to add password to history:", historyError)
+      }
+    }
+
     // Update password and delete reset token in a transaction
-    // Note: In production, you should also update password history here
     await prisma.$transaction([
       prisma.users.update({
         where: { id: user.id },

@@ -133,6 +133,23 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Please verify your email address before logging in. Check your inbox for the verification email.")
         }
 
+        // Check IP whitelist if enabled (for high-security accounts)
+        // Note: This feature requires database fields - placeholder for now
+        // const ipAddress = (credentials as any).ipAddress
+        // if (ipAddress) {
+        //   const isWhitelisted = await isIPWhitelisted(user.id, ipAddress)
+        //   if (!isWhitelisted) {
+        //     await logAuthEvent("LOGIN_FAILED", {
+        //       userId: user.id,
+        //       email: credentials.email.toLowerCase(),
+        //       success: false,
+        //       details: { action: "login", reason: "ip_not_whitelisted", ipAddress },
+        //       errorMessage: "IP address not whitelisted",
+        //     })
+        //     throw new Error("Your IP address is not authorized to access this account.")
+        //   }
+        // }
+
         // Check if 2FA is enabled - if so, require 2FA verification
         if (user.twoFactorEnabled) {
           // Return a special error that indicates 2FA is required

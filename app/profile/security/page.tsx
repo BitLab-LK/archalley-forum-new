@@ -20,6 +20,9 @@ import {
 interface Session {
   id: string
   device: string
+  browser?: string
+  userAgent?: string
+  fingerprint?: string
   ipAddress: string
   lastActive: string
   isCurrent: boolean
@@ -187,6 +190,7 @@ export default function SecurityDashboardPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Device</TableHead>
+                    <TableHead>Browser</TableHead>
                     <TableHead>IP Address</TableHead>
                     <TableHead>Last Active</TableHead>
                     <TableHead>Status</TableHead>
@@ -198,6 +202,14 @@ export default function SecurityDashboardPage() {
                     <TableRow key={session.id}>
                       <TableCell className="font-medium">
                         {session.device}
+                        {session.fingerprint && (
+                          <span className="text-xs text-muted-foreground block">
+                            ID: {session.fingerprint.substring(0, 8)}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {session.browser || 'Unknown'}
                       </TableCell>
                       <TableCell>{session.ipAddress}</TableCell>
                       <TableCell>

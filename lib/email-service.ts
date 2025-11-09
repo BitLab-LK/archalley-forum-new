@@ -1261,6 +1261,113 @@ This is an automated security notification. If you have any concerns, please con
   }
 };
 
+/**
+ * Send magic link email for passwordless login
+ */
+export const sendMagicLinkEmail = async (
+  email: string,
+  userName: string,
+  token: string
+): Promise<boolean> => {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    // Magic link URL
+    const magicLinkUrl = `${baseUrl}/api/auth/verify-magic-link?token=${encodeURIComponent(token)}`
+    
+    // Generate a 6-digit code from token (for display in email)
+    const code = token.slice(0, 6).toUpperCase()
+    
+    const subject = 'Your magic link to sign in'
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #333;">Sign in with magic link ✨</h2>
+        <p>Hi ${userName},</p>
+        <p>Click the button below to sign in to your account. No password required!</p>
+        
+        <div style="margin: 30px 0;">
+          <p style="margin-bottom: 15px;"><strong>Login Code:</strong></p>
+          <div style="background: #f5f5f5; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0066cc;">
+            ${code}
+          </div>
+        </div>
+        
+        <div style="margin: 30px 0; text-align: center;">
+          <a href="${magicLinkUrl}" style="background: #0066cc; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Sign In</a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px; margin-top: 30px;">
+          Or copy and paste this link into your browser:<br/>
+          <a href="${magicLinkUrl}" style="color: #0066cc; word-break: break-all;">${magicLinkUrl}</a>
+        </p>
+        
+        <p style="color: #666; font-size: 12px; margin-top: 30px;">
+          This magic link will expire in 15 minutes. If you didn't request this, you can safely ignore this email.
+        </p>
+        
+        <p style="color: #d32f2f; font-size: 12px; margin-top: 20px; font-weight: bold;">
+          ⚠️ If you didn't request this magic link, please contact support immediately.
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="color: #999; font-size: 11px;">
+          If you're having trouble clicking the button, copy and paste the URL above into your web browser.
+        </p>
+      </div>
+    `
+    
+    const text = `
+Hi ${userName},
+
+Click the link below to sign in to your account. No password required!
+
+Login Code: ${code}
+
+Sign in by clicking this link:
+${magicLinkUrl}
+
+Or copy and paste the link into your browser.
+
+This magic link will expire in 15 minutes. If you didn't request this, you can safely ignore this email.
+
+⚠️ If you didn't request this magic link, please contact support immediately.
+    `.trim()
+
+    // Get transporter
+    const emailTransporter = await getTransporter()
+    if (!emailTransporter) {
+      console.error('❌ Email service not available for magic link email')
+      // Try Resend as fallback
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+
+    // Send email
+    const mailOptions = {
+      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley Forum'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      to: email,
+      subject,
+      text,
+      html,
+    }
+
+    try {
+      await emailTransporter.sendMail(mailOptions)
+      console.log(`✅ Magic link email sent to ${email}`)
+      
+      // Also try Resend as backup
+      await sendEmailViaResend(email, subject, html, text)
+      
+      return true
+    } catch (error) {
+      console.error('❌ Error sending magic link email via SMTP:', error)
+      // Fallback to Resend
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+  } catch (error) {
+    console.error('❌ Error in sendMagicLinkEmail:', error)
+    return false
+  }
+};
+
 // Check if user wants email notifications for this type
 export const shouldSendEmail = async (userId: string, type: NotificationType): Promise<boolean> => {
   const user = await prisma.users.findUnique({

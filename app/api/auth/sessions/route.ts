@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { logAuthEvent } from "@/lib/audit-log"
+import { getDeviceName, getBrowserName, generateDeviceFingerprint } from "@/lib/device-fingerprint"
 
 /**
  * GET /api/auth/sessions
@@ -21,11 +22,19 @@ export async function GET(request: NextRequest) {
 
     // Note: NextAuth uses JWT sessions, so we can't track individual sessions
     // This is a placeholder for future implementation with database sessions
-    // For now, we'll return the current session info
+    // For now, we'll return the current session info with device fingerprinting
+    
+    const userAgent = request.headers.get('user-agent') || "Unknown"
+    const deviceFingerprint = generateDeviceFingerprint(userAgent, {
+      language: request.headers.get('accept-language') || undefined,
+    })
     
     const currentSession = {
       id: "current",
-      device: request.headers.get('user-agent') || "Unknown",
+      device: getDeviceName(userAgent),
+      browser: getBrowserName(userAgent),
+      userAgent: userAgent.substring(0, 100), // Truncate for display
+      fingerprint: deviceFingerprint.hash,
       ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0] || 
                  request.headers.get('x-real-ip') || 
                  "Unknown",

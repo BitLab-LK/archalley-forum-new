@@ -27,7 +27,8 @@ import {
   Plus,
   Minus,
   Upload,
-  Linkedin
+  Linkedin,
+  Sparkles
 } from "lucide-react"
 
 interface WorkExperience {
