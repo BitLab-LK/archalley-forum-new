@@ -1,30 +1,35 @@
 import { redirect } from 'next/navigation';
 
-interface CompetitionPageProps {
+export default async function CompetitionPage({
+  searchParams,
+}: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}
-
-export default async function CompetitionPage({ searchParams }: CompetitionPageProps) {
+}) {
   const params = await searchParams;
   
-  // Build the redirect path with query parameters
-  const searchParamsObj = new URLSearchParams();
+  // Build redirect URL with query parameters
+  let targetUrl = '/events/archalley-competition-2025';
   
   // Preserve query parameters if any
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined) {
-      if (Array.isArray(value)) {
-        value.forEach(v => searchParamsObj.append(key, v));
-      } else {
-        searchParamsObj.set(key, value);
+  if (params && Object.keys(params).length > 0) {
+    const queryParams = new URLSearchParams();
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (Array.isArray(value)) {
+          value.forEach(v => queryParams.append(key, String(v)));
+        } else {
+          queryParams.set(key, String(value));
+        }
       }
+    });
+    
+    const queryString = queryParams.toString();
+    if (queryString) {
+      targetUrl += `?${queryString}`;
     }
-  });
+  }
   
-  // Build the target path
-  const queryString = searchParamsObj.toString();
-  const targetPath = '/events/archalley-competition-2025' + (queryString ? `?${queryString}` : '');
-  
-  redirect(targetPath);
+  redirect(targetUrl);
 }
 

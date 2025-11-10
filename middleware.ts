@@ -25,6 +25,17 @@ async function isSessionValidForEdge(request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
+  // Redirect /competition to /events/archalley-competition-2025
+  if (request.nextUrl.pathname === '/competition') {
+    const targetUrl = new URL('/events/archalley-competition-2025', request.url)
+    // Preserve query parameters
+    request.nextUrl.searchParams.forEach((value, key) => {
+      targetUrl.searchParams.set(key, value)
+    })
+    console.log('🔄 Redirecting /competition to /events/archalley-competition-2025')
+    return NextResponse.redirect(targetUrl, 308) // 308 Permanent Redirect
+  }
+
   // Skip middleware entirely for auth routes to prevent redirect loops
   if (request.nextUrl.pathname.startsWith('/auth/')) {
     console.log('🔄 Skipping middleware for auth route:', request.nextUrl.pathname)
