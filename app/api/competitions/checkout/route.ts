@@ -123,8 +123,10 @@ export async function POST(
       console.log('Total amount:', totalAmount);
       console.log('Bank slip URL:', body.bankSlipUrl);
       console.log('Will send via WhatsApp:', body.willSendViaWhatsApp);
+      console.log('Customer info:', body.customerInfo);
       
-      // Get all unique competition IDs from cart
+      try {
+        // Get all unique competition IDs from cart
       const competitionIds = [...new Set(cart.items.map((item) => item.competitionId))];
       
       // Create payment record with PENDING status for manual verification
@@ -167,7 +169,7 @@ export async function POST(
           const typeName = item.registrationType.name.toUpperCase();
           let participantType: 'INDIVIDUAL' | 'TEAM' | 'COMPANY' | 'STUDENT' | 'KIDS' = 'INDIVIDUAL';
           
-          if (typeName.includes('TEAM')) {
+          if (typeName.includes('TEAM') || typeName.includes('GROUP')) {
             participantType = 'TEAM';
           } else if (typeName.includes('COMPANY')) {
             participantType = 'COMPANY';
@@ -246,6 +248,12 @@ export async function POST(
         },
         message: 'Bank transfer details submitted. Awaiting verification.',
       });
+      } catch (bankTransferError) {
+        console.error('❌ Bank transfer processing error:', bankTransferError);
+        console.error('Error details:', bankTransferError instanceof Error ? bankTransferError.message : 'Unknown');
+        console.error('Error stack:', bankTransferError instanceof Error ? bankTransferError.stack : '');
+        throw bankTransferError; // Re-throw to be caught by outer catch
+      }
     }
 
     // Handle Card Payment (PayHere)
