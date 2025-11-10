@@ -1158,7 +1158,7 @@ export default function CompetitionPageClient() {
       <section className="relative py-16 md:py-24 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
         <div className="max-w-7xl mx-auto relative">
           <h2 id="faq" className="text-3xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
-            <a href="#faq" className="hover:underline">FREQUENTLY ASKED QUESTIONS</a>
+            <a href="#faq" className="hover:underline">FAQ</a>
           </h2>
           <div className="max-w-4xl mx-auto">
             <div className="space-y-6">
