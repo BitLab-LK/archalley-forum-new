@@ -1088,6 +1088,9 @@ export default function RegistrationForm({
                     // Reset members if changing type
                     if (type.maxMembers < members.length) {
                       setMembers([members[0]]);
+                    } else if (members.length === 0) {
+                      // Ensure at least one member exists for auto-fill
+                      setMembers([{ name: '', firstName: '', lastName: '', email: '' }]);
                     }
                   }}
                   className="w-4 h-4 text-orange-500 border-gray-300 focus:ring-orange-500"
