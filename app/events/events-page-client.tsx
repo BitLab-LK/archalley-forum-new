@@ -103,8 +103,44 @@ const architecturalEvent2025: WordPressPost = {
   }
 }
 
+const shutterAlley2020: WordPressPost = {
+  id: -3, // Special ID to identify this static event
+  date: '2020-01-01T00:00:00',
+  title: {
+    rendered: 'SHUTTERALLEY 2020'
+  },
+  excerpt: {
+    rendered: 'Photography Competition - Showcase your architectural and design photography skills in this exciting competition.'
+  },
+  content: {
+    rendered: '<p>SHUTTERALLEY 2020 was a photography competition that celebrated architectural and design photography. Participants were invited to capture and showcase the beauty of architecture, design, and built environments through their lenses.</p>'
+  },
+  slug: 'shutteralley-2020',
+  link: '/events/shutteralley-2020',
+  featured_media: 0,
+  categories: [],
+  _embedded: {
+    'wp:featuredmedia': [{
+      id: 0,
+      source_url: '/uploads/shutteralley-cover.webp',
+      alt_text: 'SHUTTERALLEY 2020',
+      media_details: {
+        width: 800,
+        height: 600,
+        sizes: {
+          large: {
+            source_url: '/uploads/shutteralley-cover.webp',
+            width: 800,
+            height: 600
+          }
+        }
+      }
+    }]
+  }
+}
+
 export default function EventsPageClient({ initialEvents = [], initialCategories = [] }: EventsPageClientProps) {
-  const [events, setEvents] = useState<WordPressPost[]>([architecturalEvent2025, treeEvent2024, ...initialEvents])
+  const [events, setEvents] = useState<WordPressPost[]>([architecturalEvent2025, treeEvent2024, shutterAlley2020, ...initialEvents])
   const [categories, setCategories] = useState<WordPressCategory[]>(initialCategories)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -138,7 +174,7 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
       if (eventsCategory) {
         // Fetch events posts
         const fetchedEvents = await getPostsByCategory(eventsCategory.id, 1, 20)
-        setEvents([architecturalEvent2025, treeEvent2024, ...fetchedEvents]) // Always prepend the static events
+        setEvents([architecturalEvent2025, treeEvent2024, shutterAlley2020, ...fetchedEvents]) // Always prepend the static events
         setCurrentPage(1) // Reset to first page
         setHasMore(fetchedEvents.length === 20)
       } else {
@@ -188,8 +224,8 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
           // Deduplicate posts by ID to prevent duplicate keys
           // Keep static events at the beginning if they exist
           setEvents(prev => {
-            const staticEvents = prev.filter(e => e.id === -1 || e.id === -2)
-            const nonStaticEvents = prev.filter(e => e.id !== -1 && e.id !== -2)
+            const staticEvents = prev.filter(e => e.id === -1 || e.id === -2 || e.id === -3)
+            const nonStaticEvents = prev.filter(e => e.id !== -1 && e.id !== -2 && e.id !== -3)
             const existingIds = new Set(prev.map(post => post.id))
             const newPosts = moreEvents.filter(post => !existingIds.has(post.id))
             const updatedEvents = [...nonStaticEvents, ...newPosts]
@@ -261,15 +297,20 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
         {events.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {events.map((item, index) => (
-              <EventCard 
-                key={`event-${item.id}-${index}`} 
-                event={item} 
-                index={index}
-                onReadMore={(eventItem) => {
-                  setSelectedEvent(eventItem)
-                  setIsModalOpen(true)
-                }}
-              />
+              <div 
+                key={`event-${item.id}-${index}`}
+                className={index === 0 ? "md:col-span-2" : ""}
+              >
+                <EventCard 
+                  event={item} 
+                  index={index}
+                  isWide={index === 0}
+                  onReadMore={(eventItem) => {
+                    setSelectedEvent(eventItem)
+                    setIsModalOpen(true)
+                  }}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -462,10 +503,12 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
 function EventCard({ 
   event, 
   index, 
+  isWide = false,
   onReadMore 
 }: { 
   event: WordPressPost; 
   index: number;
+  isWide?: boolean;
   onReadMore: (event: WordPressPost) => void;
 }) {
   const imageUrl = getFeaturedImageUrl(event, 'large')
@@ -473,10 +516,76 @@ function EventCard({
   const title = stripHtml(event.title.rendered)
   const excerpt = getPostExcerpt(event, 150)
 
-  // Check if this is a static event (id === -1 or -2)
-  const isStaticEvent = event.id === -1 || event.id === -2
+  // Check if this is a static event (id === -1, -2, or -3)
+  const isStaticEvent = event.id === -1 || event.id === -2 || event.id === -3
   const eventLink = isStaticEvent ? event.link : null
 
+  // Wide layout: horizontal (image left, content right)
+  if (isWide) {
+    return (
+      <Card 
+        className="group hover:shadow-lg transition-all duration-500 ease-in-out hover:-translate-y-1 bg-white/50 backdrop-blur-sm border-0 overflow-hidden animate-slide-in flex flex-col md:flex-row"
+        style={{
+          animationDelay: `${Math.min(index * 150, 1000)}ms`, // Cap delay at 1000ms
+        } as React.CSSProperties}
+      >
+        {/* Thumbnail - takes up 50% width on desktop */}
+        <div className="relative w-full md:w-1/2 aspect-video md:h-[500px] overflow-hidden flex-shrink-0">
+          <Image
+            src={imageUrl}
+            alt={imageAlt}
+            fill
+            className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, 50vw"
+          />
+        </div>
+
+        {/* Content */}
+        <div className="p-6 md:p-8 flex flex-col flex-grow justify-center md:h-[500px]">
+          {/* Title */}
+          <h3 className="text-2xl md:text-3xl font-bold mb-3 group-hover:text-primary transition-colors duration-300 leading-tight">
+            {title}
+          </h3>
+
+          {/* Description */}
+          <p className="text-muted-foreground mb-6 leading-relaxed text-base md:text-lg">
+            {excerpt}
+          </p>
+
+          {/* View Event Button */}
+          {isStaticEvent && eventLink ? (
+            <Button 
+              variant="default" 
+              size="lg" 
+              asChild
+              className="w-full md:w-auto self-start"
+            >
+              <Link href={eventLink}>
+                <span className="inline-flex items-center">
+                  View Event
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                </span>
+              </Link>
+            </Button>
+          ) : (
+            <Button 
+              variant="default" 
+              size="lg" 
+              onClick={() => onReadMore(event)}
+              className="w-full md:w-auto self-start"
+            >
+              <span className="inline-flex items-center">
+                View Event
+                <ExternalLink className="ml-2 h-4 w-4" />
+              </span>
+            </Button>
+          )}
+        </div>
+      </Card>
+    )
+  }
+
+  // Regular layout: vertical (image top, content bottom)
   return (
     <Card 
       className="group hover:shadow-lg transition-all duration-500 ease-in-out hover:-translate-y-1 bg-white/50 backdrop-blur-sm border-0 overflow-hidden animate-slide-in flex flex-col"
