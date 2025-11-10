@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,9 +34,7 @@ interface UserBadge {
 export default function ProfilePage() {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [userBadges, setUserBadges] = useState<UserBadge[]>([])
+  const userBadges: UserBadge[] = []
   const { user, isLoading: authLoading } = useAuth()
 
   // Redirect to /profile/{uuid} when user accesses /profile
@@ -46,18 +44,15 @@ export default function ProfilePage() {
     }
   }, [user?.id, authLoading, router])
 
-  // Memoized badge transformation to prevent unnecessary re-renders
-  const transformedBadges = useMemo(() => 
-    userBadges.map(ub => ({
-      id: ub.badges.id,
-      name: ub.badges.name,
-      description: ub.badges.description,
-      icon: ub.badges.icon,
-      color: ub.badges.color,
-      level: ub.badges.level,
-      type: ub.badges.type
-    })), [userBadges]
-  )
+  const transformedBadges = userBadges.map(ub => ({
+    id: ub.badges.id,
+    name: ub.badges.name,
+    description: ub.badges.description,
+    icon: ub.badges.icon,
+    color: ub.badges.color,
+    level: ub.badges.level,
+    type: ub.badges.type
+  }))
 
   const [profileData, setProfileData] = useState({
     // Basic Information
@@ -133,7 +128,7 @@ export default function ProfilePage() {
 
       setIsEditing(false)
     } catch (err) {
-      setError("Failed to update profile")
+      console.error("Failed to update profile", err)
     }
   }, [user?.id, profileData])
 
