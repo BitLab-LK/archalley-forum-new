@@ -5,9 +5,7 @@
 
 import { 
   BlobServiceClient, 
-  ContainerClient, 
-  BlockBlobClient,
-  StorageSharedKeyCredential 
+  ContainerClient
 } from '@azure/storage-blob';
 
 // Get Azure Storage configuration
@@ -34,10 +32,11 @@ function getBlobServiceClient(): BlobServiceClient {
   if (config.connectionString) {
     return BlobServiceClient.fromConnectionString(config.connectionString);
   } else {
-    // Use account name and key
-    const accountUrl = `https://${config.accountName}.blob.core.windows.net`;
-    const sharedKeyCredential = new StorageSharedKeyCredential(config.accountName!, config.accountKey!);
-    return new BlobServiceClient(accountUrl, sharedKeyCredential);
+    // Construct connection string from account name and key
+    // Format: DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net
+    const constructedConnectionString = 
+      `DefaultEndpointsProtocol=https;AccountName=${config.accountName};AccountKey=${config.accountKey};EndpointSuffix=core.windows.net`;
+    return BlobServiceClient.fromConnectionString(constructedConnectionString);
   }
 }
 
@@ -67,7 +66,7 @@ function getBlobUrl(containerName: string, blobName: string): string {
   // If account name not provided, try to extract from connection string
   if (!accountName && config.connectionString) {
     const match = config.connectionString.match(/AccountName=([^;]+)/);
-    accountName = match ? match[1] : null;
+    accountName = match ? match[1] : undefined;
   }
   
   if (!accountName) {
