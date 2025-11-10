@@ -45,13 +45,13 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 640) {
-        setVisiblePosts(1.3) // Show 1 full + partials on mobile
+        setVisiblePosts(1.5) // Show 1 full + partials on mobile
       } else if (window.innerWidth < 768) {
-        setVisiblePosts(1.8) // Show 1-2 full + partials on small tablets
+        setVisiblePosts(2.3) // Show 2 full + partials on small tablets
       } else if (window.innerWidth < 1024) {
-        setVisiblePosts(2.8) // Show 2-3 full + partials on tablets
+        setVisiblePosts(3.5) // Show 3 full + partials on tablets
       } else {
-        setVisiblePosts(3.8) // Show 3-4 full + partials on all larger screens
+        setVisiblePosts(4.8) // Show 4-5 full + partials on all larger screens
       }
     }
 
@@ -158,7 +158,7 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
 
   return (
     <div className="relative bg-white py-12">
-      <div className="w-full max-w-[1300px] mx-auto">
+      <div className="w-full max-w-[1600px] mx-auto">
         <div className="flex items-center justify-between mb-8 px-6">
           <h2 className="text-3xl font-bold">Latest Posts</h2>
         </div>
@@ -170,17 +170,18 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
         >
           <div className="overflow-hidden">
             {/* 
-              Symmetric partial card positioning with 1/4 cards visible on both sides:
-              - Transform offset (12.5%) centers the main cards showing 1/4 on each side
-              - Padding (6.25% each side) ensures equal 1/4 card partials on left and right
-              - Each scroll moves exactly 1 card to maintain balance
+              Slide by 1 full post at a time with partials always visible:
+              - Each slide moves exactly 1 full card width
+              - Offset ensures partials are visible on both left and right
+              - Transform calculation moves by full card width
+              - Padding creates space for partial visibility
             */}
             <div
               className={`flex ${isTransitioning ? 'transition-transform duration-500 ease-in-out' : ''}`}
               style={{ 
-                transform: `translateX(calc(-${currentIndex * (100 / visiblePosts)}% + 12.5%))`,
-                paddingLeft: '6.25%',
-                paddingRight: '6.25%'
+                transform: `translateX(calc(-${(currentIndex * 100) / visiblePosts}% + ${100 / (visiblePosts * 2)}%))`,
+                paddingLeft: `${100 / (visiblePosts * 4)}%`,
+                paddingRight: `${100 / (visiblePosts * 4)}%`
               }}
             >
               {duplicatedPosts.map((post, index) => {
