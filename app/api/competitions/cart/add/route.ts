@@ -14,7 +14,6 @@ import {
   sanitizeInput,
   getRegistrationPeriod,
   calculateRegistrationPrice,
-  getCurrentDateInSriLanka,
 } from '@/lib/competition-utils';
 
 interface AddToCartRequest {
