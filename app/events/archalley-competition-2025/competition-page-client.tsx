@@ -3,8 +3,86 @@
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { useState, useEffect, useRef } from "react"
 
 export default function CompetitionPageClient() {
+  const [isSticky, setIsSticky] = useState(false)
+  const [navHeight, setNavHeight] = useState(0)
+  const navRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const heroSection = document.querySelector('section:first-of-type')
+      if (heroSection) {
+        const heroBottom = heroSection.getBoundingClientRect().bottom
+        setIsSticky(heroBottom <= 0)
+      }
+    }
+
+    const updateNavHeight = () => {
+      if (navRef.current) {
+        setNavHeight(navRef.current.offsetHeight)
+      }
+    }
+
+    updateNavHeight()
+    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('resize', updateNavHeight)
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', updateNavHeight)
+    }
+  }, [])
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault()
+    const targetId = href.replace('#', '')
+    const targetElement = document.getElementById(targetId)
+    
+    if (!targetElement) {
+      console.warn(`Element with id "${targetId}" not found`)
+      return
+    }
+    
+    const currentNavHeight = navRef.current?.offsetHeight || 0
+    const heroSection = document.querySelector('section:first-of-type')
+    const isNavSticky = heroSection ? heroSection.getBoundingClientRect().bottom <= 0 : false
+    
+    // Calculate the absolute position of the element
+    let elementTop = 0
+    let currentElement: HTMLElement | null = targetElement
+    
+    while (currentElement) {
+      elementTop += currentElement.offsetTop
+      currentElement = currentElement.offsetParent as HTMLElement | null
+    }
+    
+    // Account for sticky navbar
+    const scrollPosition = elementTop - (isNavSticky ? currentNavHeight : 0)
+    
+    window.scrollTo({
+      top: Math.max(0, scrollPosition),
+      behavior: 'smooth'
+    })
+  }
+
+  const navLinks = [
+    { href: '#introduction', label: 'Introduction' },
+    { href: '#theme', label: 'Theme' },
+    { href: '#contribution', label: 'Contribution' },
+    { href: '#design-considerations', label: 'Design Considerations' },
+    { href: '#submission-categories', label: 'Categories' },
+    { href: '#how-to-join', label: 'How to Join' },
+    { href: '#submission-requirements', label: 'Submission Requirements' },
+    { href: '#awards', label: 'Awards' },
+    { href: '#timeline', label: 'Timeline' },
+    { href: '#registration', label: 'Registration' },
+    { href: '#jury-panel', label: 'Jury' },
+    { href: '#terms-conditions', label: 'T&C' },
+    { href: '#faq', label: 'FAQ' },
+  ]
+
   return (
     <div className="min-h-screen bg-slate-900 text-gray-200 scroll-smooth relative">
       {/* Fixed Background Image - Sticky behind all sections except hero */}
@@ -20,7 +98,7 @@ export default function CompetitionPageClient() {
       />
 
       {/* Hero Section - Has solid background to cover fixed bg */}
-      <section className="relative w-full z-30 bg-slate-900">
+      <section id="introduction" className="relative w-full z-30 bg-slate-900">
         <div className="relative w-full h-[720px] md:h-[820px] lg:h-[900px]">
           <Image
             src="/uploads/hero-bg-img-1.webp"
@@ -88,13 +166,45 @@ export default function CompetitionPageClient() {
                 variant="outline"
                 className="text-blue-400 hover:bg-blue-500/10 px-8 py-6 text-lg"
               >
-                <Link href="#theme">Learn More</Link>
+                <a 
+                  href="/downloads/Christmas Tree Competition 2025 - Brief.pdf"
+                  download="Christmas Tree Competition 2025 - Brief.pdf"
+                >
+                  Download Brief
+                </a>
               </Button>
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Navigation Bar */}
+      <div className="relative">
+        <nav 
+          ref={navRef}
+          className={`w-full bg-white text-black z-50 transition-all duration-300 ${
+            isSticky ? 'fixed top-0 shadow-lg' : 'relative'
+          }`}
+        >
+          <div className="w-full px-4 md:px-6 lg:px-8">
+            <div className="flex items-center justify-center gap-3 md:gap-4 lg:gap-6 py-3 md:py-4 overflow-x-auto">
+              {navLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={(e) => handleNavClick(e, link.href)}
+                  className="text-xs md:text-sm lg:text-base font-medium text-black hover:text-blue-600 transition-colors whitespace-nowrap flex-shrink-0"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        </nav>
+        {/* Placeholder to prevent content shift when navbar becomes fixed */}
+        {isSticky && navHeight > 0 && <div style={{ height: `${navHeight}px` }} />}
+      </div>
 
       {/* Theme Section */}
       <section id="theme" className="relative py-16 md:py-24 px-4 md:px-6 lg:px-8 z-20">
@@ -165,7 +275,7 @@ export default function CompetitionPageClient() {
                 
               <div className="flex items-center justify-center mb-6">
                 <Image
-                  src="/uploads/sos-logo-2.webp"
+                  src="/uploads/SOS-Logo-new.webp"
                   alt="SOS Children's Villages"
                     width={200}
                     height={200}
@@ -305,21 +415,11 @@ export default function CompetitionPageClient() {
 
       {/* Submission Categories & Who Can Join */}
       <section className="relative min-h-[600px] z-20 overflow-hidden">
-        {/* Full-width background - Right half with background image */}
-        <div className="absolute inset-0 right-0 w-1/2 h-full">
-                <Image
-                  src="/uploads/SUBMISSION_CATEGORIES_1.webp"
-                  alt="Submission Categories"
-                  fill
-                  className="object-cover"
-                />
-                </div>
-                
         {/* Content - Constrained to default width */}
         <div className="relative z-10 min-h-[600px] flex items-center px-4 md:px-6 lg:px-8 py-16 md:py-24">
           <div className="max-w-7xl mx-auto w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[600px]">
-              {/* Left Column Content - Transparent background */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[600px] gap-6">
+              {/* Left Column Content */}
               <div className="relative z-10 flex flex-col pr-6 md:pr-8 lg:pr-12">
                 <h2 id="submission-categories" className="text-3xl md:text-4xl font-bold text-white mb-6 uppercase tracking-wide scroll-mt-20">
                   <a href="#submission-categories" className="hover:underline">SUBMISSION CATEGORIES</a>
@@ -360,8 +460,17 @@ export default function CompetitionPageClient() {
                 </p>
                   </div>
 
-              {/* Right Column - Background image (handled by full-width background above) */}
-              <div className="relative z-10"></div>
+              {/* Right Column - Image */}
+              <div className="relative z-10 flex items-center justify-center">
+                <div className="relative w-full h-full min-h-[400px]">
+                  <Image
+                    src="/uploads/SUBMISSION_CATEGORIES_1.webp"
+                    alt="Submission Categories"
+                    fill
+                    className="object-cover rounded-lg"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

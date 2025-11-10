@@ -44,7 +44,12 @@ export const metadata: Metadata = {
   description:
     "Discover innovative architecture and design. Join our community of architects, designers, and enthusiasts to connect, share ideas, and explore cutting-edge projects.",
   keywords: "architecture, design, construction, forum, community, architects, designers, projects, innovation",
-  generator: 'bitlab.lk'
+  generator: 'bitlab.lk',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({
