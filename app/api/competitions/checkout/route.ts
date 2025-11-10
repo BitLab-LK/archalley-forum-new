@@ -110,9 +110,20 @@ export async function POST(
 
     // Get PayHere configuration
     const payHereConfig = getPayHereConfig();
+    console.log('PayHere config loaded:', {
+      hasMerchantId: !!payHereConfig.merchantId,
+      hasMerchantSecret: !!payHereConfig.merchantSecret,
+      paymentUrl: payHereConfig.paymentUrl
+    });
 
     // Handle Bank Transfer Payment
     if (paymentMethod === 'bank') {
+      console.log('=== Bank Transfer Payment Processing ===');
+      console.log('Cart items:', cart.items.length);
+      console.log('Total amount:', totalAmount);
+      console.log('Bank slip URL:', body.bankSlipUrl);
+      console.log('Will send via WhatsApp:', body.willSendViaWhatsApp);
+      
       // Get all unique competition IDs from cart
       const competitionIds = [...new Set(cart.items.map((item) => item.competitionId))];
       
@@ -152,16 +163,32 @@ export async function POST(
       // Create registration records with PENDING status (awaiting bank transfer verification)
       const registrations = await Promise.all(
         cart.items.map(async (item) => {
+          // Map registration type name to proper enum value
+          const typeName = item.registrationType.name.toUpperCase();
+          let participantType: 'INDIVIDUAL' | 'TEAM' | 'COMPANY' | 'STUDENT' | 'KIDS' = 'INDIVIDUAL';
+          
+          if (typeName.includes('TEAM')) {
+            participantType = 'TEAM';
+          } else if (typeName.includes('COMPANY')) {
+            participantType = 'COMPANY';
+          } else if (typeName.includes('STUDENT')) {
+            participantType = 'STUDENT';
+          } else if (typeName.includes('KIDS') || typeName.includes('KID')) {
+            participantType = 'KIDS';
+          }
+          
+          console.log(`Mapping registration type: "${item.registrationType.name}" -> "${participantType}"`);
+          
           // Get next sequence number for this competition and type
           const sequence = await getNextSequenceNumber(
             prisma,
             item.competitionId,
-            (item.registrationType.name.toUpperCase() as any) || 'INDIVIDUAL'
+            participantType
           );
 
           // Generate proper registration number using standard format
           const regNumber = generateRegistrationNumber(
-            (item.registrationType.name.toUpperCase() as any) || 'INDIVIDUAL',
+            participantType,
             sequence,
             item.competition.year
           );
@@ -176,7 +203,7 @@ export async function POST(
               members: item.members as any,
               teamName: item.teamName,
               companyName: item.companyName,
-              participantType: (item.registrationType.name.toUpperCase() as any) || 'INDIVIDUAL',
+              participantType: participantType,
               amountPaid: item.subtotal,
               status: 'PENDING',
               paymentId: payment.id,
@@ -305,10 +332,13 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error initiating checkout:', error);
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error stack:', error instanceof Error ? error.stack : '');
+    
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to initiate payment',
+        error: error instanceof Error ? error.message : 'Failed to initiate payment',
       },
       { status: 500 }
     );
