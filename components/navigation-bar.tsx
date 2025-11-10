@@ -121,8 +121,8 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
                 </Link>
 
                 {item.submenu.length > 0 && (
-                  <div className="absolute left-0 mt-2 w-64 bg-black shadow-lg z-50 hidden group-hover:block">
-                    <div className="py-2">
+                  <div className="absolute left-0 top-full pt-2 w-64 z-50 hidden group-hover:block">
+                    <div className="bg-black shadow-lg border border-gray-800 rounded-md py-2">
                       {item.submenu.map((subItem) => (
                         <Link
                           key={subItem.title}
