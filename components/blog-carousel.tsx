@@ -41,19 +41,17 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
     }
   }, [initialPosts.length])
 
-  // Update visible posts based on screen size
+  // Update visible posts based on screen size - showing 1/4 partials on both sides
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 640) {
         setVisiblePosts(1.3) // Show 1 full + partials on mobile
       } else if (window.innerWidth < 768) {
-        setVisiblePosts(2.3) // Show 2 full + partials on small tablets
+        setVisiblePosts(1.8) // Show 1-2 full + partials on small tablets
       } else if (window.innerWidth < 1024) {
-        setVisiblePosts(3.3) // Show 3 full + partials on tablets
-      } else if (window.innerWidth < 1280) {
-        setVisiblePosts(4.4) // Show 4 full + partials on medium screens
+        setVisiblePosts(2.8) // Show 2-3 full + partials on tablets
       } else {
-        setVisiblePosts(4.5) // Show 4 full + half cards on large desktop
+        setVisiblePosts(3.8) // Show 3-4 full + partials on all larger screens
       }
     }
 
@@ -62,18 +60,18 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  // Auto-play carousel with infinite scroll
+  // Auto-play carousel with infinite scroll - always move by 1 post
   useEffect(() => {
-    if (posts.length === 0 || isPaused) return
+    if (posts.length === 0) return
 
-    // Only auto-play if there are more posts than visible
-    if (posts.length <= visiblePosts) return
-
+    // Always auto-play, moving by 1 post at a time
     intervalRef.current = setInterval(() => {
-      setCurrentIndex((prevIndex) => {
-        // Move by 1 full card to maintain symmetric partial view
-        return prevIndex + 1
-      })
+      if (!isPaused) {
+        setCurrentIndex((prevIndex) => {
+          // Move by 1 full card to maintain symmetric partial view
+          return prevIndex + 1
+        })
+      }
     }, autoPlayInterval)
 
     return () => {
@@ -81,7 +79,7 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
         clearInterval(intervalRef.current)
       }
     }
-  }, [posts.length, visiblePosts, autoPlayInterval, isPaused])
+  }, [posts.length, autoPlayInterval, isPaused])
 
   // Reset position when reaching the end of duplicated posts (infinite loop)
   useEffect(() => {
@@ -160,8 +158,8 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
 
   return (
     <div className="relative bg-white py-12">
-      <div className="w-full">
-        <div className="flex items-center justify-between mb-8 px-6 max-w-[1600px] mx-auto">
+      <div className="w-full max-w-[1300px] mx-auto">
+        <div className="flex items-center justify-between mb-8 px-6">
           <h2 className="text-3xl font-bold">Latest Posts</h2>
         </div>
 
@@ -172,17 +170,17 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
         >
           <div className="overflow-hidden">
             {/* 
-              Symmetric partial card positioning:
-              - Transform offset (+10%) centers the cards
-              - Padding (5% each side) ensures equal partials
+              Symmetric partial card positioning with 1/4 cards visible on both sides:
+              - Transform offset (12.5%) centers the main cards showing 1/4 on each side
+              - Padding (6.25% each side) ensures equal 1/4 card partials on left and right
               - Each scroll moves exactly 1 card to maintain balance
             */}
             <div
               className={`flex ${isTransitioning ? 'transition-transform duration-500 ease-in-out' : ''}`}
               style={{ 
-                transform: `translateX(calc(-${currentIndex * (100 / visiblePosts)}% + 10%))`,
-                paddingLeft: '5%',
-                paddingRight: '5%'
+                transform: `translateX(calc(-${currentIndex * (100 / visiblePosts)}% + 12.5%))`,
+                paddingLeft: '6.25%',
+                paddingRight: '6.25%'
               }}
             >
               {duplicatedPosts.map((post, index) => {
@@ -192,9 +190,9 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
                 const date = formatDate(post.date)
 
                 return (
-                  <div key={`${post.id}-${index}`} className="flex-shrink-0 px-1" style={{ width: `${100 / visiblePosts}%` }}>
+                  <div key={`${post.id}-${index}`} className="flex-shrink-0 px-0.5" style={{ width: `${100 / visiblePosts}%` }}>
                     <Link href={`/${post.slug}`} className="block group">
-                      <div className="relative w-full overflow-hidden border-4 border-white shadow-xl hover:shadow-2xl transition-shadow duration-300" style={{ paddingBottom: '120%' }}>
+                      <div className="relative w-full overflow-hidden border-4 border-white shadow-xl hover:shadow-2xl transition-shadow duration-300" style={{ paddingBottom: '140%' }}>
                         <Image
                           src={imageUrl || "/placeholder.svg"}
                           alt={title}
