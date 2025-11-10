@@ -70,7 +70,7 @@ export async function POST(
       case 'enable':
         // Generate new secret for 2FA setup
         const newSecret = speakeasy.generateSecret({
-          name: `ArchAlley Forum (${user.email})`,
+          name: `Archalley (${user.email})`,
           issuer: 'ArchAlley Forum',
           length: 32
         });

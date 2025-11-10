@@ -6,6 +6,16 @@ import { useState, useEffect, useCallback } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+
+// Declare grecaptcha type for TypeScript
+declare global {
+  interface Window {
+    grecaptcha?: {
+      ready: (callback: () => void) => void
+      execute: (siteKey: string, options: { action: string }) => Promise<string>
+    }
+  }
+}
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -80,6 +90,8 @@ export default function SimplifiedEnhancedRegisterPage() {
 
   // Track animation state to prevent repeated animations
   const [hasAnimated, setHasAnimated] = useState(false)
+  // Track reCAPTCHA ready state
+  const [recaptchaReady, setRecaptchaReady] = useState(false)
   
   // Clean up OAuth flags on component mount (without page reload)
   useEffect(() => {
@@ -101,26 +113,82 @@ export default function SimplifiedEnhancedRegisterPage() {
     // Mark that initial animation has been shown
     setHasAnimated(true)
 
-    // Load reCAPTCHA script if enabled
+    // Check if this is a social registration - skip reCAPTCHA for social registrations
+    const provider = searchParams.get('provider')
+    const isSocialRegistration = !!provider
+    
+    // Load reCAPTCHA script if enabled AND not a social registration
     const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
-    if (recaptchaSiteKey && recaptchaSiteKey !== 'your-recaptcha-site-key') {
-      const script = document.createElement('script')
-      script.src = `https://www.google.com/recaptcha/api.js?render=${recaptchaSiteKey}`
-      script.async = true
-      script.defer = true
-      document.head.appendChild(script)
-
-      return () => {
-        // Cleanup script on unmount
-        const existingScript = document.querySelector(`script[src*="recaptcha"]`)
-        if (existingScript) {
-          existingScript.remove()
+    if (!isSocialRegistration && recaptchaSiteKey && recaptchaSiteKey !== 'your-recaptcha-site-key') {
+      // Helper function to initialize reCAPTCHA
+      const initializeRecaptcha = () => {
+        if (window.grecaptcha) {
+          window.grecaptcha.ready(() => {
+            setRecaptchaReady(true)
+          })
+        } else {
+          // If grecaptcha is not available yet, wait a bit and try again
+          setTimeout(() => {
+            if (window.grecaptcha) {
+              window.grecaptcha.ready(() => {
+                setRecaptchaReady(true)
+              })
+            } else {
+              console.warn('reCAPTCHA script loaded but grecaptcha not available')
+              // Don't block registration if reCAPTCHA fails - mark as ready anyway
+              // The backend will handle the validation
+              setRecaptchaReady(true)
+            }
+          }, 100)
         }
       }
+      
+      // Check if script is already loaded
+      const existingScript = document.querySelector(`script[src*="recaptcha"]`)
+      
+      if (existingScript) {
+        // Script already exists
+        if (window.grecaptcha) {
+          // Already loaded, initialize immediately
+          initializeRecaptcha()
+        } else {
+          // Wait for script to finish loading
+          const loadHandler = () => {
+            initializeRecaptcha()
+            existingScript.removeEventListener('load', loadHandler)
+          }
+          existingScript.addEventListener('load', loadHandler)
+          // Also check immediately in case it's already loaded
+          initializeRecaptcha()
+        }
+      } else {
+        // Create and load script
+        const script = document.createElement('script')
+        script.src = `https://www.google.com/recaptcha/api.js?render=${recaptchaSiteKey}`
+        script.async = true
+        script.defer = true
+        
+        script.onload = () => {
+          initializeRecaptcha()
+        }
+        
+        script.onerror = () => {
+          console.warn('Failed to load reCAPTCHA script. This may be due to network issues or invalid configuration.')
+          console.warn('Registration will continue, but reCAPTCHA verification may fail on the server.')
+          // Don't block the UI - mark as ready anyway
+          // The backend will handle the validation and return appropriate error
+          setRecaptchaReady(true)
+        }
+        
+        document.head.appendChild(script)
+      }
+    } else {
+      // reCAPTCHA not needed (social registration or not enabled), mark as ready
+      setRecaptchaReady(true)
     }
     
     return undefined
-  }, [])
+  }, [searchParams])
 
   // Set active tab based on URL parameter
   useEffect(() => {
@@ -255,6 +323,7 @@ export default function SimplifiedEnhancedRegisterPage() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+  const [requiresEmailVerification, setRequiresEmailVerification] = useState(false)
   const [message, setMessage] = useState("")
   const [oauthData, setOauthData] = useState<{
     provider?: string
@@ -482,15 +551,54 @@ export default function SimplifiedEnhancedRegisterPage() {
     // Get reCAPTCHA token if enabled
     let recaptchaToken: string | null = null
     const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
-    if (recaptchaSiteKey && recaptchaSiteKey !== 'your-recaptcha-site-key' && !isSocialRegistration) {
-      try {
-        // @ts-ignore - grecaptcha is loaded dynamically
-        if (window.grecaptcha) {
-          // @ts-ignore
-          recaptchaToken = await window.grecaptcha.execute(recaptchaSiteKey, { action: 'register' })
+    const isRecaptchaRequired = recaptchaSiteKey && recaptchaSiteKey !== 'your-recaptcha-site-key' && !isSocialRegistration
+    
+    if (isRecaptchaRequired) {
+      // Wait for reCAPTCHA to be ready (with timeout)
+      if (!recaptchaReady) {
+        // Wait up to 5 seconds for reCAPTCHA to load
+        const maxWaitTime = 5000
+        const startTime = Date.now()
+        
+        while (!recaptchaReady && (Date.now() - startTime) < maxWaitTime) {
+          await new Promise(resolve => setTimeout(resolve, 100))
         }
+        
+        if (!recaptchaReady) {
+          setError("reCAPTCHA is taking too long to load. Please refresh the page and try again.")
+          setIsLoading(false)
+          return
+        }
+      }
+      
+      // Verify grecaptcha is available
+      if (!window.grecaptcha) {
+        setError("reCAPTCHA verification failed. Please refresh the page and try again.")
+        setIsLoading(false)
+        return
+      }
+      
+      try {
+        // Wait for grecaptcha to be ready, then execute
+        recaptchaToken = await new Promise<string>((resolve, reject) => {
+          window.grecaptcha!.ready(async () => {
+            try {
+              const token = await window.grecaptcha!.execute(recaptchaSiteKey, { action: 'register' })
+              resolve(token)
+            } catch (error) {
+              reject(error)
+            }
+          })
+        })
       } catch (recaptchaError) {
         console.error('reCAPTCHA error:', recaptchaError)
+        setError("reCAPTCHA verification failed. Please refresh the page and try again.")
+        setIsLoading(false)
+        return
+      }
+      
+      // Ensure we have a token
+      if (!recaptchaToken) {
         setError("reCAPTCHA verification failed. Please refresh the page and try again.")
         setIsLoading(false)
         return
@@ -609,7 +717,7 @@ export default function SimplifiedEnhancedRegisterPage() {
         emailPrivacy,
         phonePrivacy,
         profilePhotoPrivacy,
-        // reCAPTCHA token
+        // reCAPTCHA token (always include if we have it, or if reCAPTCHA is required)
         ...(recaptchaToken ? { recaptchaToken } : {}),
         // Include OAuth data for account linking
         ...(isSocialRegistration && oauthData.provider ? {
@@ -618,6 +726,11 @@ export default function SimplifiedEnhancedRegisterPage() {
           tokenType: oauthData.tokenType,
           scope: oauthData.scope,
         } : {})
+      }
+
+      // Debug log for reCAPTCHA
+      if (isRecaptchaRequired) {
+        console.log('🔒 reCAPTCHA required:', isRecaptchaRequired, 'Token present:', !!recaptchaToken, 'Token length:', recaptchaToken?.length || 0)
       }
 
       const response = await fetch("/api/auth/register", {
@@ -634,6 +747,9 @@ export default function SimplifiedEnhancedRegisterPage() {
         throw new Error(data.error || "Registration failed")
       }
 
+      // Check if email verification is required
+      const needsVerification = data.requiresVerification === true
+      setRequiresEmailVerification(needsVerification)
       setSuccess(true)
 
       // Handle post-registration flow
@@ -682,12 +798,12 @@ export default function SimplifiedEnhancedRegisterPage() {
         }, 1500) // Give user moment to see success, then auto-login
       } else {
         // For email/password registration, show message about email verification
-        if (data.requiresVerification) {
+        if (needsVerification) {
           // Keep callbackUrl in sessionStorage for after verification
           // Show success message and redirect to login with message
           setTimeout(() => {
             router.push(`/auth/register?tab=login&message=${encodeURIComponent(data.message)}`)
-          }, 2000)
+          }, 3000) // Give user time to read the verification message
         } else {
           // Fallback (should not happen for email/password registration)
           clearLastUrl()
@@ -752,7 +868,11 @@ export default function SimplifiedEnhancedRegisterPage() {
       if (result?.error) {
         // Show specific error messages from the authorize function
         const errorMessage = result.error
-        if (errorMessage === "2FA_REQUIRED") {
+        console.log("[Login] Error received:", errorMessage)
+        
+        // Check for 2FA_REQUIRED - can be exact match or contain the string
+        if (errorMessage === "2FA_REQUIRED" || errorMessage.includes("2FA_REQUIRED")) {
+          console.log("[Login] 2FA required, showing 2FA form")
           // Show 2FA input form
           setRequires2FA(true)
           setError("")
@@ -763,9 +883,11 @@ export default function SimplifiedEnhancedRegisterPage() {
         } else if (errorMessage.includes("Too many")) {
           setError(errorMessage)
         } else {
+          console.log("[Login] Unknown error, showing generic error message")
           setError("Invalid email or password")
         }
       } else if (result?.ok) {
+        console.log("[Login] Login successful (no 2FA)")
         // Get last URL from sessionStorage, clear it, and redirect
         const lastUrl = getLastUrl()
         clearLastUrl()
@@ -802,11 +924,9 @@ export default function SimplifiedEnhancedRegisterPage() {
         throw new Error(data.error || "Invalid verification code")
       }
 
-      // Success - redirect
-      const lastUrl = getLastUrl()
-      clearLastUrl()
-      router.push(lastUrl)
-      router.refresh()
+      // Success - reload the page to refresh the session
+      // This ensures NextAuth recognizes the new session cookie
+      window.location.href = getLastUrl() || "/"
     } catch (error: any) {
       setError(error.message || "Invalid verification code. Please try again.")
     } finally {
@@ -833,6 +953,19 @@ export default function SimplifiedEnhancedRegisterPage() {
                   <div className="flex items-center justify-center space-x-2">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2" style={{ borderColor: '#ffa500' }}></div>
                     <span className="text-sm text-muted-foreground">Logging you in...</span>
+                  </div>
+                </div>
+              ) : requiresEmailVerification ? (
+                <div className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Your professional profile has been created successfully!
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Please check your email to verify your account. After verification, you can log in.
+                  </p>
+                  <div className="flex items-center justify-center space-x-2 mt-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2" style={{ borderColor: '#ffa500' }}></div>
+                    <span className="text-sm text-muted-foreground">Redirecting to login...</span>
                   </div>
                 </div>
               ) : (
@@ -1868,11 +2001,11 @@ export default function SimplifiedEnhancedRegisterPage() {
                   />
                   <Label htmlFor="agreeToTerms" className="text-sm">
                     I agree to the{" "}
-                    <Link href="/terms" className="text-primary hover:underline">
+                    <Link href="/terms-conditions" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
                       Terms of Service
                     </Link>{" "}
                     and{" "}
-                    <Link href="/privacy" className="text-primary hover:underline">
+                    <Link href="/privacy-policy" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
                       Privacy Policy
                     </Link>
                   </Label>

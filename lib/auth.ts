@@ -151,10 +151,16 @@ export const authOptions: NextAuthOptions = {
         // }
 
         // Check if 2FA is enabled - if so, require 2FA verification
-        if (user.twoFactorEnabled) {
+        // Explicitly check for true to handle null/undefined cases
+        if (user.twoFactorEnabled === true && user.twoFactorSecret) {
+          // Log that 2FA is required for debugging
+          console.log(`[2FA] 2FA is enabled for user ${user.email}, requiring 2FA verification`)
           // Return a special error that indicates 2FA is required
           // The client will handle this and show 2FA input form
           throw new Error("2FA_REQUIRED")
+        } else {
+          // Log 2FA status for debugging
+          console.log(`[2FA] 2FA status for user ${user.email}: enabled=${user.twoFactorEnabled}, hasSecret=${!!user.twoFactorSecret}`)
         }
 
         // Clear failed login attempts on successful login
@@ -272,6 +278,14 @@ export const authOptions: NextAuthOptions = {
           // Check if user exists
           const existingUser = await prisma.users.findUnique({
             where: { email: user.email! },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              image: true,
+              twoFactorEnabled: true,
+              twoFactorSecret: true,
+            }
           })
 
           if (!existingUser) {
@@ -282,6 +296,10 @@ export const authOptions: NextAuthOptions = {
             const redirectUrl = `/auth/register?provider=${account.provider}&email=${encodeURIComponent(user.email!)}&name=${encodeURIComponent(user.name || '')}&image=${encodeURIComponent(user.image || '')}&providerAccountId=${encodeURIComponent(account.providerAccountId)}&message=${encodeURIComponent('Complete your profile to join our community!')}`
             return redirectUrl
           } else {
+            // Note: OAuth 2FA check would go here, but NextAuth's OAuth flow
+            // completes before we can check 2FA. For now, OAuth logins bypass 2FA.
+            // TODO: Implement OAuth + 2FA flow (requires storing temporary OAuth session)
+            
             // Check if this social account is already linked
             const existingAccount = await prisma.account.findUnique({
               where: {

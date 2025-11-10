@@ -76,15 +76,15 @@ const sendEmailViaResend = async (
   text: string
 ): Promise<boolean> => {
   try {
-    // In development or when Resend is not configured, just log the email
-    if (process.env.NODE_ENV === 'development' || !process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'your-resend-api-key') {
-      console.log(`📧 [EMAIL DEBUG] DEVELOPMENT MODE - Email that would be sent:`);
+    // Check if Resend is configured (but send emails even in development mode)
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'your-resend-api-key') {
+      console.log(`📧 [EMAIL DEBUG] Resend API key not configured - Email that would be sent:`);
       console.log(`📧 [EMAIL DEBUG] To: ${to}`);
       console.log(`📧 [EMAIL DEBUG] Subject: ${subject}`);
       console.log(`📧 [EMAIL DEBUG] Text: ${text}`);
       console.log(`📧 [EMAIL DEBUG] HTML Length: ${html.length} characters`);
-      console.log(`✅ [EMAIL DEBUG] Email logged successfully (development mode)`);
-      return true;
+      console.log(`⚠️ [EMAIL DEBUG] Email NOT sent - Resend API key not configured`);
+      return false;
     }
 
     if (!resend) {
@@ -93,16 +93,15 @@ const sendEmailViaResend = async (
     
     if (!resend) {
       console.error('❌ [EMAIL DEBUG] Resend client not available:', resendError);
-      // Fall back to logging in production if Resend fails
       console.log(`📧 [EMAIL DEBUG] FALLBACK - Email that would be sent:`);
       console.log(`📧 [EMAIL DEBUG] To: ${to}, Subject: ${subject}`);
-      return true;
+      return false;
     }
 
     console.log(`📧 [EMAIL DEBUG] Sending email via Resend to ${to}`);
     
     const result = await resend.emails.send({
-      from: `${process.env.EMAIL_FROM_NAME || 'Archalley Forum'} <${process.env.EMAIL_FROM || 'noreply@archalley.com'}>`,
+      from: `${process.env.EMAIL_FROM_NAME || 'Archalley'} <${process.env.EMAIL_FROM || 'noreply@archalley.com'}>`,
       to: [to],
       subject,
       html,
@@ -119,9 +118,8 @@ const sendEmailViaResend = async (
 
   } catch (error) {
     console.error('❌ [EMAIL DEBUG] Resend send failed:', error);
-    // Final fallback - just log
-    console.log(`📧 [EMAIL DEBUG] FINAL FALLBACK - Email logged: To: ${to}, Subject: ${subject}`);
-    return true;
+    console.log(`📧 [EMAIL DEBUG] FINAL FALLBACK - Email could not be sent: To: ${to}, Subject: ${subject}`);
+    return false;
   }
 };
 
@@ -1018,7 +1016,7 @@ This verification link will expire in 24 hours. If you didn't create this accoun
 
     // Send email
     const mailOptions = {
-      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley Forum'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
       to: email,
       subject,
       text,
@@ -1125,7 +1123,7 @@ This reset link will expire in 1 hour. If you didn't request a password reset, y
 
     // Send email
     const mailOptions = {
-      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley Forum'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
       to: email,
       subject,
       text,
@@ -1235,7 +1233,7 @@ This is an automated security notification. If you have any concerns, please con
 
     // Send email
     const mailOptions = {
-      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley Forum'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
       to: email,
       subject,
       text,
@@ -1342,7 +1340,7 @@ This magic link will expire in 15 minutes. If you didn't request this, you can s
 
     // Send email
     const mailOptions = {
-      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley Forum'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
       to: email,
       subject,
       text,
@@ -1364,6 +1362,159 @@ This magic link will expire in 15 minutes. If you didn't request this, you can s
     }
   } catch (error) {
     console.error('❌ Error in sendMagicLinkEmail:', error)
+    return false
+  }
+};
+
+/**
+ * Send welcome email after successful registration
+ */
+export const sendWelcomeEmail = async (
+  email: string,
+  userName: string
+): Promise<boolean> => {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const archalleyHomeUrl = 'https://archalley.com'
+    
+    const subject = 'Welcome to Archalley! 🎉'
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+        <!-- Header -->
+        <div style="text-align: center; padding: 30px 0; border-bottom: 2px solid #FFA000;">
+          <h1 style="color: #FFA000; margin: 0; font-size: 32px;">Welcome to Archalley! 🎉</h1>
+        </div>
+        
+        <!-- Main Content -->
+        <div style="padding: 30px 20px;">
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            Hi ${userName},
+          </p>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            Welcome to Archalley! We're thrilled to have you join our online platform dedicated to architecture and design, with a particular focus on innovative tropical architecture in Sri Lanka.
+          </p>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            Archalley is your source for information and inspiration, connecting architects, designers, and creative minds who are passionate about tropical architecture and sustainable design practices.
+          </p>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+            Get started by exploring our community, sharing your projects, and connecting with fellow professionals. We're here to support your creative journey and inspire innovation in tropical architecture!
+          </p>
+          
+          <!-- CTA Button -->
+          <div style="text-align: center; margin: 40px 0;">
+            <a href="${archalleyHomeUrl}" 
+               style="background: #FFA000; 
+                      color: white; 
+                      padding: 15px 40px; 
+                      text-decoration: none; 
+                      border-radius: 8px; 
+                      display: inline-block; 
+                      font-weight: bold; 
+                      font-size: 16px;
+                      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                      transition: background 0.3s;">
+              Visit Archalley.com
+            </a>
+          </div>
+          
+          <!-- Features Section -->
+          <div style="background: #f9f9f9; padding: 25px; border-radius: 8px; margin: 30px 0;">
+            <h3 style="color: #333; font-size: 18px; margin: 0 0 15px 0;">What you can do:</h3>
+            <ul style="color: #666; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+              <li>Discover innovative tropical architecture projects from Sri Lanka and beyond</li>
+              <li>Share your architectural designs and get valuable feedback</li>
+              <li>Participate in discussions with industry professionals</li>
+              <li>Explore design inspiration and sustainable building practices</li>
+              <li>Connect with like-minded architects and designers</li>
+              <li>Stay updated with the latest trends, competitions, and architectural news</li>
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background: #f9f9f9; padding: 25px; text-align: center; border-top: 1px solid #eee;">
+          <p style="color: #999; font-size: 12px; margin: 0 0 10px 0;">
+            Need help? Contact us at <a href="mailto:projects@archalley.com" style="color: #FFA000; text-decoration: none;">projects@archalley.com</a>
+          </p>
+          <p style="color: #999; font-size: 12px; margin: 0;">
+            Follow us on 
+            <a href="https://facebook.com/archalley" style="color: #FFA000; text-decoration: none; margin: 0 5px;">Facebook</a> |
+            <a href="https://www.instagram.com/archalley_insta/" style="color: #FFA000; text-decoration: none; margin: 0 5px;">Instagram</a> |
+            <a href="https://www.linkedin.com/company/archalleypage/" style="color: #FFA000; text-decoration: none; margin: 0 5px;">LinkedIn</a>
+          </p>
+          <p style="color: #999; font-size: 11px; margin: 15px 0 0 0;">
+            © ${new Date().getFullYear()} Archalley. All rights reserved.
+          </p>
+        </div>
+      </div>
+    `
+    
+    const text = `
+Welcome to Archalley! 🎉
+
+Hi ${userName},
+
+Welcome to Archalley! We're thrilled to have you join our online platform dedicated to architecture and design, with a particular focus on innovative tropical architecture in Sri Lanka.
+
+Archalley is your source for information and inspiration, connecting architects, designers, and creative minds who are passionate about tropical architecture and sustainable design practices.
+
+Get started by exploring our community, sharing your projects, and connecting with fellow professionals. We're here to support your creative journey and inspire innovation in tropical architecture!
+
+Visit Archalley.com: ${archalleyHomeUrl}
+
+What you can do:
+- Discover innovative tropical architecture projects from Sri Lanka and beyond
+- Share your architectural designs and get valuable feedback
+- Participate in discussions with industry professionals
+- Explore design inspiration and sustainable building practices
+- Connect with like-minded architects and designers
+- Stay updated with the latest trends, competitions, and architectural news
+
+Need help? Contact us at support@archalley.com
+
+Follow us on:
+- Facebook: https://facebook.com/archalley
+- Instagram: https://www.instagram.com/archalley_insta/
+- LinkedIn: https://www.linkedin.com/company/archalleypage/
+
+© ${new Date().getFullYear()} Archalley. All rights reserved.
+    `.trim()
+
+    // Get transporter
+    const emailTransporter = await getTransporter()
+    if (!emailTransporter) {
+      console.error('❌ Email service not available for welcome email')
+      // Try Resend as fallback
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+
+    // Send email
+    const mailOptions = {
+      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      to: email,
+      subject,
+      text,
+      html,
+    }
+
+    try {
+      await emailTransporter.sendMail(mailOptions)
+      console.log(`✅ Welcome email sent to ${email}`)
+      
+      // Also try Resend as backup
+      await sendEmailViaResend(email, subject, html, text)
+      
+      return true
+    } catch (error) {
+      console.error('❌ Error sending welcome email via SMTP:', error)
+      // Fallback to Resend
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+  } catch (error) {
+    console.error('❌ Error in sendWelcomeEmail:', error)
     return false
   }
 };
@@ -1579,7 +1730,7 @@ export const sendNotificationEmail = async (
     try {
       // Prepare mail options
       const mailOptions = {
-        from: `"${process.env.EMAIL_FROM_NAME || 'Archalley Forum'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+        from: `"${process.env.EMAIL_FROM_NAME || 'Archalley'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
         to: user.email,
         subject: template.subject,
         text: template.text,

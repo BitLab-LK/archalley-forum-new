@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import crypto from "crypto"
-import { sendVerificationEmail } from "@/lib/email-service"
+import { sendVerificationEmail, sendWelcomeEmail } from "@/lib/email-service"
 import { checkRateLimit } from "@/lib/security"
 import { logAuthEvent } from "@/lib/audit-log"
 import { sanitizeHtml } from "@/lib/security"
@@ -217,8 +217,12 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     
-    // Verify reCAPTCHA if enabled
-    if (isRecaptchaEnabled()) {
+    // Check if this is a social registration - skip reCAPTCHA for social registrations
+    // We'll get the validated value from Zod parse later, but check early for reCAPTCHA
+    const isSocialReg = body.isSocialRegistration === true
+    
+    // Verify reCAPTCHA if enabled AND not a social registration
+    if (isRecaptchaEnabled() && !isSocialReg) {
       const recaptchaToken = body.recaptchaToken
       if (!recaptchaToken) {
         await logAuthEvent("REGISTRATION_FAILED", {
@@ -580,6 +584,11 @@ export async function POST(request: NextRequest) {
       // Note: callbackUrl is stored in sessionStorage on client side, so we don't need to pass it in email
       const userName = `${validatedFirstName} ${validatedLastName}`
       await sendVerificationEmail(validatedEmail, userName, verificationToken)
+      
+      // Send welcome email (async, don't block registration)
+      sendWelcomeEmail(validatedEmail, userName).catch((error) => {
+        console.error("Failed to send welcome email:", error)
+      })
 
       return NextResponse.json({
         user: {
@@ -596,6 +605,14 @@ export async function POST(request: NextRequest) {
 
     // Auto-login for social registration
     if (isSocialRegistration && provider) {
+      // Send welcome email for social registration (async, don't block)
+      const userName = result.name || `${result.firstName || ''} ${result.lastName || ''}`.trim() || 'User'
+      if (result.email) {
+        sendWelcomeEmail(result.email, userName).catch((error) => {
+          console.error("Failed to send welcome email:", error)
+        })
+      }
+      
       try {
         // Call auto-login API to set session
         const autoLoginResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/auto-login`, {
@@ -639,6 +656,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Fallback response for social registration if auto-login fails
+    // Send welcome email if not already sent above
+    if (isSocialRegistration && result.email) {
+      const userName = result.name || `${result.firstName || ''} ${result.lastName || ''}`.trim() || 'User'
+      sendWelcomeEmail(result.email, userName).catch((error) => {
+        console.error("Failed to send welcome email:", error)
+      })
+    }
+    
     return NextResponse.json({ 
       user: {
         id: result.id,

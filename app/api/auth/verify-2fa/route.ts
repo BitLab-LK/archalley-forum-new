@@ -159,6 +159,10 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Clear failed login attempts on successful 2FA verification
+    const { clearFailedLoginAttempts } = await import("@/lib/security")
+    clearFailedLoginAttempts(user.email.toLowerCase())
+
     // Create response with session cookie
     const response = NextResponse.json({
       success: true,
@@ -171,6 +175,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Set the NextAuth session cookie
+    // Always set both cookie names for compatibility
     response.cookies.set("next-auth.session-token", jwtToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -179,6 +184,7 @@ export async function POST(request: NextRequest) {
       maxAge: 7 * 24 * 60 * 60, // 7 days
     })
 
+    // Also set the secure cookie name for production
     if (process.env.NODE_ENV === "production") {
       response.cookies.set("__Secure-next-auth.session-token", jwtToken, {
         httpOnly: true,
