@@ -244,6 +244,22 @@ export async function POST(
     const subtotal = unitPrice; // Single registration per cart item
     console.log('💰 Price calculation - Unit:', unitPrice, 'Subtotal:', subtotal);
 
+    // Map participant type to proper enum value
+    const participantTypeUpper = body.participantType.toUpperCase();
+    let validParticipantType: 'INDIVIDUAL' | 'TEAM' | 'COMPANY' | 'STUDENT' | 'KIDS' = 'INDIVIDUAL';
+    
+    if (participantTypeUpper.includes('TEAM') || participantTypeUpper.includes('GROUP')) {
+      validParticipantType = 'TEAM';
+    } else if (participantTypeUpper.includes('COMPANY')) {
+      validParticipantType = 'COMPANY';
+    } else if (participantTypeUpper.includes('STUDENT')) {
+      validParticipantType = 'STUDENT';
+    } else if (participantTypeUpper.includes('KIDS') || participantTypeUpper.includes('KID')) {
+      validParticipantType = 'KIDS';
+    }
+    
+    console.log(`📋 Mapping participant type: "${body.participantType}" -> "${validParticipantType}"`);
+
     // Add item to cart
     console.log('📦 Creating cart item...');
     const cartItem = await prisma.registrationCartItem.create({
@@ -252,7 +268,7 @@ export async function POST(
         competitionId: body.competitionId,
         registrationTypeId: body.registrationTypeId,
         country: sanitizeInput(body.country),
-        participantType: body.participantType as any,
+        participantType: validParticipantType,
         referralSource: body.referralSource
           ? sanitizeInput(body.referralSource)
           : undefined,
