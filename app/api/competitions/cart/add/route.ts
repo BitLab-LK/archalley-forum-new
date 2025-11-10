@@ -251,9 +251,7 @@ export async function POST(
       
       // Parse dates from timeline (dates are stored as strings in YYYY-MM-DD format)
       const parseDate = (dateStr: string): Date => {
-        // If it's already a Date object, return it
-        if (dateStr instanceof Date) return dateStr;
-        // If it's a string in YYYY-MM-DD format, parse it
+        // Parse string in YYYY-MM-DD format
         const [year, month, day] = dateStr.split('-').map(Number);
         // Create date in Sri Lanka timezone (Asia/Colombo)
         // Note: We need to create the date at midnight in Sri Lanka timezone
