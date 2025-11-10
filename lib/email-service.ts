@@ -1374,8 +1374,11 @@ export const sendWelcomeEmail = async (
   userName: string
 ): Promise<boolean> => {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    const archalleyHomeUrl = 'https://archalley.com'
+    const archalleyHomeUrl =
+      process.env.NEXT_PUBLIC_ARCHALLEY_URL ||
+      process.env.NEXTAUTH_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      'https://archalley.com'
     
     const subject = 'Welcome to Archalley! 🎉'
     const html = `
