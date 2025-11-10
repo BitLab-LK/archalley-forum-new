@@ -59,16 +59,45 @@ export default async function RegistrationPage({ params }: PageProps) {
   }
 
   // Check if registration is open
+  // Compare dates using UTC to avoid timezone issues
   const now = new Date();
+  const startDate = new Date(competition.startDate);
+  const deadline = new Date(competition.registrationDeadline);
+  
+  // Get UTC date components for comparison (compare only year, month, day)
+  // Format as YYYYMMDD for proper string comparison
+  const getUTCDateString = (date: Date) => {
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
+  };
+  
+  const nowDateStr = getUTCDateString(now);
+  const startDateStr = getUTCDateString(startDate);
+  const deadlineDateStr = getUTCDateString(deadline);
+  
+  // Compare date strings (registration starts at the beginning of the start date)
+  const hasStarted = nowDateStr >= startDateStr;
+  // Registration ends at the end of the deadline date, so we check if now is after the deadline
+  const hasEnded = nowDateStr > deadlineDateStr;
+  
+  // Registration is open if: status is REGISTRATION_OPEN, has started, and hasn't ended
   const isOpen = 
     competition.status === 'REGISTRATION_OPEN' &&
-    now <= new Date(competition.registrationDeadline);
+    hasStarted &&
+    !hasEnded;
+  
+  // Registration hasn't started if current time is before start date
+  const hasNotStarted = !hasStarted;
 
   return (
     <RegistrationClient
       competition={competition}
       registrationTypes={competition.registrationTypes}
       isOpen={isOpen}
+      hasNotStarted={hasNotStarted}
+      startDate={competition.startDate}
     />
   );
 }

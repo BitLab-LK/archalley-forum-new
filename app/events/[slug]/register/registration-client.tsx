@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { Competition, CompetitionRegistrationType } from '@prisma/client';
 import RegistrationForm from './components/RegistrationForm';
 import RegistrationCartSidebar from './components/RegistrationCartSidebar';
+import RegistrationCountdown from './components/RegistrationCountdown';
 import { formatDate, getDaysRemaining } from '@/lib/competition-utils';
 
 interface Props {
@@ -18,12 +19,16 @@ interface Props {
   };
   registrationTypes: CompetitionRegistrationType[];
   isOpen: boolean;
+  hasNotStarted?: boolean;
+  startDate?: Date | string;
 }
 
 export default function RegistrationClient({
   competition,
   registrationTypes,
   isOpen,
+  hasNotStarted = false,
+  startDate,
 }: Props) {
   const router = useRouter();
   const [cartKey, setCartKey] = useState(0);
@@ -84,13 +89,21 @@ export default function RegistrationClient({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {!isOpen ? (
+        {hasNotStarted && startDate ? (
+          <RegistrationCountdown 
+            targetDate={startDate}
+            onExpired={() => {
+              // Reload page when countdown expires to check registration status
+              window.location.reload();
+            }}
+          />
+        ) : !isOpen ? (
           <div className="bg-white border-2 border-orange-500 rounded-lg p-6 text-center shadow-lg">
             <h2 className="text-2xl font-bold text-black mb-2">
               Registration Closed
             </h2>
             <p className="text-gray-700">
-              Registration for this competition has ended or is not yet open.
+              Registration for this competition has ended.
             </p>
             <button
               onClick={() => router.push('/events')}

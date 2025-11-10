@@ -379,7 +379,7 @@ export default function CompetitionPageClient() {
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 uppercase tracking-wide">
               AWARDS
-            </h2>
+          </h2>
             <p className="text-lg md:text-xl text-gray-300 mb-2">
               Total prize fund more than
             </p>
@@ -388,8 +388,8 @@ export default function CompetitionPageClient() {
             </p>
             <p className="text-base md:text-lg text-gray-300 max-w-4xl mx-auto">
               Archalley will award a total of LKR 325,000.00 in prize money to competition winners as follows:
-            </p>
-          </div>
+          </p>
+        </div>
 
           {/* Main Prize Categories - Two Columns with Equal Height */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-stretch">
@@ -418,7 +418,7 @@ export default function CompetitionPageClient() {
             <div className="bg-blue-500/10 border-2 border-blue-500 rounded-lg p-6 flex flex-col h-full">
               <h3 className="text-xl md:text-2xl font-bold text-blue-400 mb-6 uppercase text-center">
                 DIGITAL CATEGORY
-              </h3>
+            </h3>
               <div className="flex-1 flex flex-col gap-3">
                 <div className="bg-red-900/80 border border-red-700 rounded-lg p-6 text-center flex-1 flex flex-col justify-center">
                   <p className="text-white mb-2">1st Prize</p>
@@ -573,11 +573,11 @@ export default function CompetitionPageClient() {
               </div>
               <div className="bg-slate-800/90 border border-slate-600/50 rounded-md p-4 flex items-center">
                 <span className="text-white text-sm md:text-base">Submission Deadline for Kids' Category</span>
-              </div>
+                  </div>
               <div className="bg-slate-800/90 border border-slate-600/50 rounded-md p-4 flex items-center">
                 <span className="text-white font-semibold text-sm md:text-base">21<sup>st</sup> December</span>
-              </div>
-            </div>
+                  </div>
+                </div>
 
             {/* Submissions - Row 4 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -586,11 +586,11 @@ export default function CompetitionPageClient() {
               </div>
               <div className="bg-slate-800/90 border border-slate-600/50 rounded-md p-4 flex items-center">
                 <span className="text-white text-sm md:text-base">Submission Deadline for other categories</span>
-              </div>
+                  </div>
               <div className="bg-slate-800/90 border border-slate-600/50 rounded-md p-4 flex items-center">
                 <span className="text-white font-semibold text-sm md:text-base">24<sup>th</sup> December</span>
-              </div>
-            </div>
+                  </div>
+                </div>
 
             <hr className="border-slate-700 my-6" />
 
@@ -603,12 +603,12 @@ export default function CompetitionPageClient() {
               {/* Column 2 - Event Description */}
               <div className="bg-slate-800/90 border border-slate-600/50 rounded-md p-4 flex items-center">
                 <span className="text-white text-sm md:text-base">Most popular category voting</span>
-              </div>
+                  </div>
               {/* Column 3 - Date */}
               <div className="bg-slate-800/90 border border-slate-600/50 rounded-md p-4 flex items-center">
                 <span className="text-white font-semibold text-sm md:text-base">25<sup>th</sup> December to 4<sup>th</sup> January</span>
-              </div>
-            </div>
+                  </div>
+                </div>
 
             {/* Voting & Results - Row 2 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -627,61 +627,113 @@ export default function CompetitionPageClient() {
       </section>
 
       {/* Registration Section */}
-      <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8">
+      <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 bg-slate-900">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-red-500 mb-12 uppercase tracking-wide">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-12 uppercase tracking-wide">
             REGISTRATION
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {/* Early Bird */}
-            <div className="bg-slate-800/70 rounded-lg p-6 border-2 border-blue-500">
-              <h3 className="text-xl font-bold text-blue-400 mb-4 text-center">Early Bird</h3>
-              <p className="text-gray-300 text-center mb-4 text-sm">(11th-20th Nov)</p>
-              <div className="space-y-2 text-gray-300">
-                <p><strong className="text-white">Single Entry:</strong> LKR 2,000</p>
-                <p><strong className="text-white">Group Entry:</strong> LKR 4,000</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
+            {/* Left Side - Registration Content */}
+            <div className="space-y-8">
+              {/* Earlybird Registration */}
+              <div>
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Earlybird Registration</h3>
+                <p className="text-gray-300 text-lg mb-4">(11<sup>th</sup> November - 20<sup>th</sup> November)</p>
+                <div className="space-y-2 text-white">
+                  <div className="flex justify-between items-center">
+                    <span>Single Entry:</span>
+                    <span className="font-semibold">LKR 2,000</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Group Entry:</span>
+                    <span className="font-semibold">LKR 4,000</span>
+                  </div>
+                </div>
               </div>
-            </div>
-            {/* Standard */}
-            <div className="bg-slate-800/70 rounded-lg p-6 border-2 border-red-500">
-              <h3 className="text-xl font-bold text-red-500 mb-4 text-center">Standard</h3>
-              <p className="text-gray-300 text-center mb-4 text-sm">(21st Nov - 20th Dec)</p>
-              <div className="space-y-2 text-gray-300">
-                <p><strong className="text-white">Student Entry:</strong> LKR 2,000</p>
-                <p><strong className="text-white">Single Entry:</strong> LKR 3,000</p>
-                <p><strong className="text-white">Group Entry:</strong> LKR 5,000</p>
+
+              {/* Standard Registration */}
+              <div>
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Standard Registration</h3>
+                <p className="text-gray-300 text-lg mb-4">(21<sup>st</sup> November - 20<sup>th</sup> December)</p>
+                <div className="space-y-2 text-white">
+                  <div className="flex justify-between items-center">
+                    <span>Student Entry:</span>
+                    <span className="font-semibold">LKR 2,000</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Single Entry:</span>
+                    <span className="font-semibold">LKR 3,000</span>
+                </div>
+                  <div className="flex justify-between items-center">
+                    <span>Group Entry:</span>
+                    <span className="font-semibold">LKR 5,000</span>
               </div>
-            </div>
-            {/* Late */}
-            <div className="bg-slate-800/70 rounded-lg p-6 border-2 border-blue-500">
-              <h3 className="text-xl font-bold text-blue-400 mb-4 text-center">Late</h3>
-              <p className="text-gray-300 text-center mb-4 text-sm">(21st Dec - 24th Dec)</p>
-              <div className="space-y-2 text-gray-300">
-                <p><strong className="text-white">Student Entry:</strong> LKR 2,000</p>
-                <p><strong className="text-white">Single Entry:</strong> LKR 5,000</p>
-                <p><strong className="text-white">Group Entry:</strong> LKR 8,000</p>
-              </div>
-            </div>
-            {/* Kids' Category */}
-            <div className="bg-slate-800/70 rounded-lg p-6 border-2 border-red-500">
-              <h3 className="text-xl font-bold text-red-500 mb-4 text-center">Kids' Category</h3>
-              <p className="text-gray-300 text-center mb-4 text-sm">(21st Nov - 21st Dec)</p>
-              <div className="space-y-2 text-gray-300">
-                <p><strong className="text-white">Single Entry:</strong> LKR 2,000</p>
-                <p className="text-sm text-center mt-4">(Only single entries allowed)</p>
-              </div>
-            </div>
           </div>
-          <div className="text-center">
-            <Button
-              asChild
-              className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-6 text-lg"
-            >
-              <Link href="/events/archalley-competition-2025/register">
-                Register Now
-              </Link>
-            </Button>
+        </div>
+
+              {/* Late Registration */}
+              <div>
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Late Registration</h3>
+                <p className="text-gray-300 text-lg mb-4">(21<sup>st</sup> December - 24<sup>th</sup> December)</p>
+                <div className="space-y-2 text-white">
+                  <div className="flex justify-between items-center">
+                    <span>Student Entry:</span>
+                    <span className="font-semibold">LKR 2,000</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Single Entry:</span>
+                    <span className="font-semibold">LKR 5,000</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Group Entry:</span>
+                    <span className="font-semibold">LKR 8,000</span>
+                  </div>
           </div>
+        </div>
+
+              {/* Kids' Tree Category Registration */}
+              <div>
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Kids' Tree Category Registration</h3>
+                <p className="text-gray-300 text-lg mb-4">(21<sup>st</sup> November to 21<sup>st</sup> December)</p>
+                <div className="space-y-2 text-white mb-3">
+                  <div className="flex justify-between items-center">
+                    <span>Single Entry:</span>
+                    <span className="font-semibold">LKR 2,000</span>
+                  </div>
+                </div>
+                <p className="text-gray-400 text-sm italic">*Only single entries are allowed in kids' category.</p>
+              </div>
+
+              {/* General Note */}
+              <div className="pt-4">
+                <p className="text-gray-400 text-sm italic">
+                  * Registration fee for foreign participants will be converted to USD according to current Central Bank exchange rate.
+                </p>
+              </div>
+
+              {/* Register Now Button */}
+              <div className="pt-4">
+                <Button
+                  asChild
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-6 text-lg"
+                >
+                  <Link href="/events/archalley-competition-2025/register">
+                    Register Now
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            {/* Right Side - Image */}
+            <div className="relative w-full h-full min-h-[600px] rounded-lg overflow-hidden border-2 border-blue-500/50">
+              <Image
+                src="/uploads/Registration-1.webp"
+                alt="Registration"
+                fill
+                className="object-cover"
+              />
+        </div>
+      </div>
         </div>
       </section>
 

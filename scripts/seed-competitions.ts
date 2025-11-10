@@ -164,6 +164,158 @@ async function main() {
 
     console.log('✅ Created competition:', competition2024.title);
 
+    // Create Archalley Competition 2025
+    const archalleyCompetition2025 = await prisma.competition.upsert({
+      where: { slug: 'archalley-competition-2025' },
+      update: {
+        // Update dates to ensure they're correct
+        startDate: new Date('2025-11-11T00:00:00.000Z'),
+        endDate: new Date('2026-01-10T23:59:59.999Z'),
+        earlyBirdDeadline: new Date('2025-11-20T23:59:59.999Z'),
+        registrationDeadline: new Date('2025-12-24T23:59:59.999Z'),
+        status: CompetitionStatus.REGISTRATION_OPEN,
+        timeline: {
+          registration: {
+            opens: '2025-11-11',
+            earlybird: { start: '2025-11-11', end: '2025-11-20' },
+            standard: { start: '2025-11-21', end: '2025-12-20' },
+            late: { start: '2025-12-21', end: '2025-12-24' },
+            kids: { start: '2025-11-21', end: '2025-12-21' },
+          },
+          submissions: {
+            start: '2025-12-11',
+            faqDeadline: '2025-12-20',
+            kidsDeadline: '2025-12-21',
+            otherDeadline: '2025-12-24',
+          },
+          voting: {
+            start: '2025-12-25',
+            end: '2026-01-04',
+          },
+          results: {
+            announcement: '2026-01-10',
+          },
+        },
+      },
+      create: {
+        slug: 'archalley-competition-2025',
+        title: 'Archalley Competition 2025 - Innovative Christmas Tree',
+        description: `"What will a Christmas tree look like in 50 years? Will it float, glow, or live in the metaverse? This year's competition invites you to imagine the tree of tomorrow." Participants are encouraged to explore unconventional, futuristic, and conceptual interpretations, from virtual models to physical tree designs. Your tree can be either minimal or detailed, digital, tech-infused, or completely surreal. There are no rules... Only imagination.`,
+        year: 2025,
+        // Registration dates from competition page
+        startDate: new Date('2025-11-11T00:00:00.000Z'), // Registration starts: 11th November 2025
+        endDate: new Date('2026-01-10T23:59:59.999Z'), // Winners announced: 10th January 2026
+        status: CompetitionStatus.REGISTRATION_OPEN,
+        registrationFee: 2000, // Base fee in LKR
+        earlyBirdDeadline: new Date('2025-11-20T23:59:59.999Z'), // Early bird ends: 20th November 2025
+        registrationDeadline: new Date('2025-12-24T23:59:59.999Z'), // Late registration ends: 24th December 2025
+        totalPrizeFund: 0, // Will be updated based on actual prize structure
+        prizes: {
+          physical: {
+            first: { title: '1st Prize', item: 'TABLET' },
+            second: { title: '2nd Prize', item: 'DRAWING PAD' },
+          },
+          digital: {
+            first: { title: '1st Prize', item: 'TABLET' },
+            second: { title: '2nd Prize', item: 'DRAWING PAD' },
+          },
+          special: [
+            { title: 'Archalley Most Popular Tree Award', description: 'Award for most popular tree' },
+          ],
+        },
+        timeline: {
+          registration: {
+            opens: '2025-11-11', // Competition Registration starts: 11th November 2025
+            earlybird: { start: '2025-11-11', end: '2025-11-20' }, // Early bird: 11th - 20th November 2025
+            standard: { start: '2025-11-21', end: '2025-12-20' }, // Standard: 21st November - 20th December 2025
+            late: { start: '2025-12-21', end: '2025-12-24' }, // Late: 21st - 24th December 2025
+            kids: { start: '2025-11-21', end: '2025-12-21' }, // Kids' Category: 21st November - 21st December 2025
+          },
+          submissions: {
+            start: '2025-12-11', // Submission Start: 11th December 2025
+            faqDeadline: '2025-12-20', // Closing Date for FAQ: 20th December 2025
+            kidsDeadline: '2025-12-21', // Submission Deadline for Kids' Category: 21st December 2025
+            otherDeadline: '2025-12-24', // Submission Deadline for other categories: 24th December 2025
+          },
+          voting: {
+            start: '2025-12-25', // Most popular category voting: 25th December 2025
+            end: '2026-01-04', // Voting ends: 4th January 2026
+          },
+          results: {
+            announcement: '2026-01-10', // Announcement of the Winners: 10th January 2026
+          },
+        },
+        requirements: {
+          theme: 'Christmas in Future',
+          categories: ['Physical Category', 'Digital Category', 'Kids\' Tree Category'],
+        },
+      },
+    });
+
+    console.log('✅ Created competition:', archalleyCompetition2025.title);
+
+    // Create registration types for Archalley Competition 2025
+    // Note: Pricing varies by registration period (Earlybird, Standard, Late)
+    // These are base prices; the registration system should handle period-based pricing
+    const archalleyRegistrationTypes = [
+      {
+        competitionId: archalleyCompetition2025.id,
+        type: RegistrationType.INDIVIDUAL,
+        name: 'Single Entry',
+        description: 'Individual participant registration',
+        fee: 3000, // Standard registration fee
+        maxMembers: 1,
+        isActive: true,
+        displayOrder: 1,
+      },
+      {
+        competitionId: archalleyCompetition2025.id,
+        type: RegistrationType.TEAM,
+        name: 'Group Entry',
+        description: 'Team registration (2 or more members)',
+        fee: 5000, // Standard registration fee
+        maxMembers: 10,
+        isActive: true,
+        displayOrder: 2,
+      },
+      {
+        competitionId: archalleyCompetition2025.id,
+        type: RegistrationType.STUDENT,
+        name: 'Student Entry',
+        description: 'Student registration with valid ID',
+        fee: 2000,
+        maxMembers: 1,
+        isActive: true,
+        displayOrder: 3,
+      },
+      {
+        competitionId: archalleyCompetition2025.id,
+        type: RegistrationType.KIDS,
+        name: 'Kids\' Tree Category',
+        description: 'For participants under 12 years (single entry only)',
+        fee: 2000,
+        maxMembers: 1,
+        minAge: 5,
+        maxAge: 12,
+        isActive: true,
+        displayOrder: 4,
+      },
+    ];
+
+    for (const regType of archalleyRegistrationTypes) {
+      const created = await prisma.competitionRegistrationType.upsert({
+        where: {
+          competitionId_type: {
+            competitionId: regType.competitionId,
+            type: regType.type,
+          },
+        },
+        update: {},
+        create: regType,
+      });
+      console.log(`  ✅ Created registration type: ${created.name}`);
+    }
+
     console.log('\n✨ Competition seeding completed successfully!');
   } catch (error) {
     console.error('❌ Error seeding competitions:', error);
