@@ -26,7 +26,7 @@ async function isSessionValidForEdge(request: NextRequest) {
 
 export async function middleware(request: NextRequest) {
   // Redirect /competition to /events/archalley-competition-2025
-  if (request.nextUrl.pathname === '/competition') {
+  if (request.nextUrl.pathname === '/competition' || request.nextUrl.pathname === '/competition/') {
     const targetUrl = new URL('/events/archalley-competition-2025', request.url)
     // Preserve query parameters
     request.nextUrl.searchParams.forEach((value, key) => {
