@@ -13,6 +13,13 @@ import RegistrationCartSidebar from './components/RegistrationCartSidebar';
 import RegistrationCountdown from './components/RegistrationCountdown';
 import { formatDate, getDaysRemaining } from '@/lib/competition-utils';
 
+interface UserProfile {
+  email: string;
+  phoneNumber: string | null;
+  firstName: string | null;
+  lastName: string | null;
+}
+
 interface Props {
   competition: Competition & {
     registrationTypes: CompetitionRegistrationType[];
@@ -21,6 +28,7 @@ interface Props {
   isOpen: boolean;
   hasNotStarted?: boolean;
   startDate?: Date | string;
+  userProfile?: UserProfile;
 }
 
 export default function RegistrationClient({
@@ -29,6 +37,7 @@ export default function RegistrationClient({
   isOpen,
   hasNotStarted = false,
   startDate,
+  userProfile,
 }: Props) {
   const router = useRouter();
   const [cartKey, setCartKey] = useState(0);
@@ -122,6 +131,7 @@ export default function RegistrationClient({
                 onCartUpdate={handleCartUpdate}
                 editingItem={editingItem}
                 onEditComplete={handleEditComplete}
+                userProfile={userProfile}
               />
             </div>
 

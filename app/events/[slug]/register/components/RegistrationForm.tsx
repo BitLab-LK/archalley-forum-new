@@ -10,12 +10,20 @@ import { Competition, CompetitionRegistrationType } from '@prisma/client';
 import { MemberInfo, AgreementData } from '@/types/competition';
 import { toast } from 'sonner';
 
+interface UserProfile {
+  email: string;
+  phoneNumber: string | null;
+  firstName: string | null;
+  lastName: string | null;
+}
+
 interface Props {
   competition: Competition;
   registrationTypes: CompetitionRegistrationType[];
   onCartUpdate: () => void;
   editingItem?: any; // Cart item being edited
   onEditComplete?: () => void; // Callback when edit is done
+  userProfile?: UserProfile; // User profile data for auto-filling
 }
 
 export default function RegistrationForm({
@@ -24,6 +32,7 @@ export default function RegistrationForm({
   onCartUpdate,
   editingItem,
   onEditComplete,
+  userProfile,
 }: Props) {
   // Initialize with empty values - useEffect will handle editingItem
   const [selectedType, setSelectedType] = useState<CompetitionRegistrationType | null>(null);
@@ -72,6 +81,15 @@ export default function RegistrationForm({
           role: m.role || '',
           studentId: m.studentId || '',
           institution: m.institution || '',
+          studentEmail: m.studentEmail || '',
+          dateOfBirth: m.dateOfBirth || '',
+          courseOfStudy: m.courseOfStudy || '',
+          idCardUrl: m.idCardUrl || '',
+          parentFirstName: m.parentFirstName || '',
+          parentLastName: m.parentLastName || '',
+          parentEmail: m.parentEmail || '',
+          parentPhone: m.parentPhone || '',
+          postalAddress: m.postalAddress || '',
         })));
       }
       
@@ -98,6 +116,71 @@ export default function RegistrationForm({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingItem?.id]);
+
+  // Auto-fill email and phone from user profile when form loads (only for new registrations, not editing)
+  useEffect(() => {
+    // Only auto-fill if:
+    // 1. User profile data is available
+    // 2. Not currently editing an existing item
+    // 3. Members array has at least one member
+    // 4. Selected type is set (so we know what registration type we're dealing with)
+    if (!userProfile || editingItem || members.length === 0 || !selectedType) {
+      return;
+    }
+
+    const updatedMembers = [...members];
+    const firstMember = updatedMembers[0];
+    const isKidsType = selectedType.type === 'KIDS';
+    const isStudentType = selectedType.type === 'STUDENT';
+    let hasChanges = false;
+
+    if (isKidsType) {
+      // For Kids category: fill parent/guardian email and phone (only if empty)
+      if (!firstMember.parentEmail && userProfile.email) {
+        updatedMembers[0].parentEmail = userProfile.email;
+        hasChanges = true;
+      }
+      if (!firstMember.parentPhone && userProfile.phoneNumber) {
+        updatedMembers[0].parentPhone = userProfile.phoneNumber;
+        hasChanges = true;
+      }
+      // Also fill parent names if available
+      if (!firstMember.parentFirstName && userProfile.firstName) {
+        updatedMembers[0].parentFirstName = userProfile.firstName;
+        hasChanges = true;
+      }
+      if (!firstMember.parentLastName && userProfile.lastName) {
+        updatedMembers[0].parentLastName = userProfile.lastName;
+        hasChanges = true;
+      }
+    } else if (isStudentType) {
+      // For Student category: fill student email and phone (only if empty)
+      if (!firstMember.studentEmail && userProfile.email) {
+        updatedMembers[0].studentEmail = userProfile.email;
+        hasChanges = true;
+      }
+      if (!firstMember.phone && userProfile.phoneNumber) {
+        updatedMembers[0].phone = userProfile.phoneNumber;
+        hasChanges = true;
+      }
+    } else {
+      // For Individual, Team, Company: fill email and phone for representative/first member (only if empty)
+      if (!firstMember.email && userProfile.email) {
+        updatedMembers[0].email = userProfile.email;
+        hasChanges = true;
+      }
+      if (!firstMember.phone && userProfile.phoneNumber) {
+        updatedMembers[0].phone = userProfile.phoneNumber;
+        hasChanges = true;
+      }
+    }
+
+    // Update members state only if we made changes
+    if (hasChanges) {
+      setMembers(updatedMembers);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userProfile, selectedType?.id, editingItem?.id]);
 
   const handleAddMember = () => {
     if (!selectedType || members.length >= selectedType.maxMembers) {

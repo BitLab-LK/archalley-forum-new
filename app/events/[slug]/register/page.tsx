@@ -91,6 +91,17 @@ export default async function RegistrationPage({ params }: PageProps) {
   // Registration hasn't started if current time is before start date
   const hasNotStarted = !hasStarted;
 
+  // Fetch user profile data for auto-filling registration form
+  const userProfile = await prisma.users.findUnique({
+    where: { id: session.user.id },
+    select: {
+      email: true,
+      phoneNumber: true,
+      firstName: true,
+      lastName: true,
+    },
+  });
+
   return (
     <RegistrationClient
       competition={competition}
@@ -98,6 +109,7 @@ export default async function RegistrationPage({ params }: PageProps) {
       isOpen={isOpen}
       hasNotStarted={hasNotStarted}
       startDate={competition.startDate}
+      userProfile={userProfile || undefined}
     />
   );
 }
