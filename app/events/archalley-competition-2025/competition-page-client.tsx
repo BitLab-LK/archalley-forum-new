@@ -28,7 +28,7 @@ export default function CompetitionPageClient() {
 
       {/* Hero Section - Has solid background to cover fixed bg */}
       <section className="relative w-full z-30 bg-slate-900">
-        <div className="relative w-full h-[600px] md:h-[700px]">
+        <div className="relative w-full h-[720px] md:h-[820px] lg:h-[900px]">
           <Image
             src="/uploads/hero-bg-img-1.webp"
             alt="Christmas in Future"
@@ -37,19 +37,50 @@ export default function CompetitionPageClient() {
             priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/70 to-transparent" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
-              Archalley Competition 2025
+          <div className="absolute inset-0 flex items-center justify-center px-4 md:px-6 lg:px-8">
+            <div className="max-w-7xl w-full flex flex-col items-end text-right space-y-8 md:space-y-10 lg:space-y-12">
+              <h1 className="font-aquire uppercase mb-12">
+                <span 
+                  className="block text-5xl md:text-6xl lg:text-7xl bg-gradient-to-r from-[#C00000] via-[#6A4A60] via-[#95B3D7] to-[#376092] bg-clip-text text-transparent mb-4 md:mb-6"
+                  style={{ WebkitBoxReflect: 'below 0 linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.1) 30%, transparent 50%)' }}
+                >
+                  CHRISTMAS IN
+                </span>
+                <span 
+                  className="block text-6xl md:text-7xl lg:text-8xl bg-gradient-to-r from-[#C00000] via-[#6A4A60] via-[#95B3D7] to-[#376092] bg-clip-text text-transparent"
+                  style={{ WebkitBoxReflect: 'below 0 linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.1) 30%, transparent 50%)' }}
+                >
+                  FUTURE
+                </span>
             </h1>
-            <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold text-blue-400 mb-4">
-              Innovative Christmas Tree
-            </h2>
-            <p className="text-xl md:text-2xl text-gray-300 mb-2">
-              "Design, Create & Decorate" Competition
-            </p>
-            <p className="text-2xl md:text-3xl font-semibold text-red-500 mb-8">
-              Christmas in Future
-            </p>
+              <div className="text-xl md:text-2xl lg:text-3xl text-gray-300">
+                <p className="mb-4 md:mb-5">Innovative Christmas Tree</p>
+                <p className="mb-4 md:mb-5">"Design, Create & Decorate"</p>
+                <p>Competition</p>
+              </div>
+              <div className="mb-8">
+                <h3 className="text-lg md:text-xl font-bold text-blue-400 mb-4">Official Partners</h3>
+                <div className="flex flex-wrap justify-end items-center gap-6">
+                  <div className="h-16 md:h-20 flex items-center">
+                    <Image
+                      src="/uploads/A-Plus-Logo.jpg"
+                      alt="A PLUS"
+                      width={150}
+                      height={80}
+                      className="object-contain h-full w-auto"
+                    />
+                  </div>
+                  <div className="h-16 md:h-20 flex items-center">
+                    <Image
+                      src="/uploads/ABrand-Logo.jpg"
+                      alt="A BRAND"
+                      width={150}
+                      height={80}
+                      className="object-contain h-full w-auto"
+                    />
+                  </div>
+                </div>
+              </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
                 asChild
@@ -66,6 +97,7 @@ export default function CompetitionPageClient() {
               >
                 <Link href="#theme">Learn More</Link>
               </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -78,197 +110,265 @@ export default function CompetitionPageClient() {
             <h2 className="text-3xl md:text-4xl font-bold text-blue-400 mb-6 uppercase tracking-wide text-center">
               A THEME THAT REIMAGINES TRADITION
             </h2>
-            <blockquote className="text-2xl md:text-3xl font-semibold text-white mb-6 italic pl-6 text-center">
-              "What will a Christmas tree look like in 50 years? Will it float, glow, or live in the metaverse? This year's competition invites you to imagine the tree of tomorrow."
-            </blockquote>
-            <p className="text-lg md:text-xl text-gray-300 leading-relaxed text-center">
-              Participants are encouraged to explore unconventional, futuristic, and conceptual interpretations, from virtual models to physical tree designs. Your tree can be either minimal or detailed, digital, tech-infused, or completely surreal. There are no rules... Only imagination.
-            </p>
+            <div className="text-2xl md:text-3xl text-center mb-6">
+              <span className="text-red-500">
+                What will a Christmas tree look like in<br />
+              </span>
+              <span className="text-red-500 text-3xl md:text-4xl font-bold">
+                50 years?
+              </span>
+            </div>
+            <div className="text-xl md:text-2xl text-gray-300 text-center mb-6">
+              Will it float, glow, or live in the metaverse? This year's<br />
+              competition invites you to imagine the "tree of tomorrow."
+            </div>
+            
+            <div className="mb-6"></div>
+            
+            <div className="text-lg md:text-xl text-gray-300 text-center mb-6">
+              Participants are encouraged to explore<br />
+              <span className="text-red-500">unconventional, futuristic, and conceptual interpretations,</span><br />
+              from virtual models to physical tree designs.
+            </div>
+            
+            <div className="mb-6"></div>
+            
+            <div className="text-lg md:text-xl text-gray-300 text-center">
+              Your tree can be<br />
+              either minimal or detailed, digital, tech-infused, or<br />
+              completely surreal.<br />
+              There are no rules... Only imagination.
+            </div>
           </div>
         </div>
       </section>
 
       {/* Contribution Section */}
-      <section className="relative py-16 md:py-24 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
-        <div className="max-w-7xl mx-auto relative">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-red-500 mb-4">
-            The Spirit of Giving
+      <section className="relative min-h-[600px] bg-slate-800/50 z-20 overflow-hidden">
+        {/* Full-width overlays - extend full width of section */}
+        <div className="absolute inset-0 left-0 w-1/2 h-full bg-gradient-to-br from-white/20 via-blue-500/30 to-white/20" />
+        <div className="absolute inset-0 right-0 w-1/2 h-full bg-gradient-to-bl from-red-500/40 via-red-600/30 to-red-500/40" />
+        
+        {/* Content - Constrained to default width */}
+        <div className="relative z-10 min-h-[600px] flex items-center px-4 md:px-6 lg:px-8 py-16 md:py-24">
+          <div className="max-w-7xl mx-auto w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 min-h-[600px]">
+              {/* Left Column Content */}
+              <div className="relative z-10 flex flex-col justify-center">
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+                  The Spirit Of Giving
           </h2>
-          <p className="text-xl md:text-2xl text-center text-gray-300 mb-12">
-            Your creativity doesn't just shine, it gives back to people and the planet.
+                
+                <div className="mb-6"></div>
+                
+                <p className="text-xl md:text-2xl text-white mb-4">
+                  <strong>15% of your fee supports SOS<br />Children's Villages Sri Lanka</strong>
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-            <div className="bg-slate-800/70 rounded-lg p-8">
+                <p className="text-lg md:text-xl text-white mb-6">
+                  - nurturing children today and investing<br />in their futures.
+                </p>
+                
+                <div className="mb-6"></div>
+                
               <div className="flex items-center justify-center mb-6">
                 <Image
                   src="/uploads/sos-logo-2.webp"
                   alt="SOS Children's Villages"
-                  width={300}
-                  height={300}
+                    width={200}
+                    height={200}
                   className="object-contain"
                 />
               </div>
-              <p className="text-lg text-gray-300 text-center">
-                15% of your fee supports SOS Children's Villages—nurturing children today and investing in their futures.
+                
+                <div className="mb-6"></div>
+                
+                <p className="text-lg md:text-xl text-white">
+                  Your creativity doesn't just shine, it <strong>gives back</strong> to people and the planet.
               </p>
             </div>
-            <div className="bg-slate-800/70 rounded-lg p-8">
-              <div className="flex items-center justify-center mb-6">
-                <Image
-                  src="/uploads/planting_19011477.webp"
-                  alt="Tree Planting"
-                  width={300}
-                  height={300}
-                  className="object-contain rounded-lg"
-                />
-              </div>
-              <p className="text-lg text-gray-300 text-center">
-                For every entry submitted, we will plant a tree, helping rebuild the planet's future canopy.
+
+              {/* Right Column Content */}
+              <div className="relative z-10 flex flex-col justify-center">
+                <div className="flex-1"></div>
+                <div className="flex-1"></div>
+                <div className="flex-1"></div>
+                
+                <p className="text-xl md:text-2xl text-white text-center">
+                  For <strong>every entry submitted</strong>, we will <strong>plant a tree</strong>,<br />helping rebuild the planet's future canopy.
               </p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Design Considerations Section */}
-      <section className="relative py-16 md:py-24 px-4 md:px-6 lg:px-8 z-20">
-        <div className="max-w-7xl mx-auto relative">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-blue-400 mb-4 uppercase tracking-wide">
-            DESIGN CONSIDERATIONS
+      <section className="relative min-h-[600px] z-20 overflow-hidden">
+        {/* Full-width backgrounds - extend full width of section */}
+        {/* Left half - Background Image with Red Overlay */}
+        <div className="absolute inset-0 left-0 w-1/2 h-full">
+          <Image
+            src="/uploads/DESIGN_CONSIDERATIONS_1.webp"
+            alt="Design Considerations"
+            fill
+            className="object-cover"
+          />
+          {/* Red Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-red-500/40 via-red-600/30 to-red-500/40" />
+        </div>
+        {/* Right half - Gradient Background */}
+        <div 
+          className="absolute inset-0 right-0 w-1/2 h-full"
+          style={{
+            background: 'linear-gradient(to bottom, #10253F, #090A0C)'
+          }}
+        />
+        
+        {/* Content - Constrained to default width */}
+        <div className="relative z-10 min-h-[600px] flex items-center px-4 md:px-6 lg:px-8 py-16 md:py-24">
+          <div className="max-w-7xl mx-auto w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[600px]">
+              {/* Left Column Content */}
+              <div className="relative z-10 flex flex-col justify-between pr-6 md:pr-8 lg:pr-12 text-right">
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-bold text-white uppercase tracking-wide">
+                    DESIGN<br />CONSIDERATIONS
           </h2>
-          <p className="text-xl md:text-2xl text-center text-gray-300 mb-12">
-            What makes a futuristic tree stand out? All entrants should respond to the Competition theme, "Christmas in future"
+                </div>
+                <div>
+                  <p className="text-xl md:text-2xl text-white">
+                    All entrants should respond to the Competition<br /> theme, "Christmas in future"
           </p>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
-            <div className="space-y-6">
-              <div className="bg-slate-800/50 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-2">
-                  1. Concept & Originality
+                </div>
+              </div>
+
+              {/* Right Column Content */}
+              <div className="relative z-10 flex flex-col pl-6 md:pl-8 lg:pl-12">
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-8">
+                  What makes a futuristic tree stand out?
                 </h3>
+                
+                <div className="mb-8"></div>
+                
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-xl font-bold text-red-500 mb-2">
+                      Concept & Originality
+                    </h4>
                 <p className="text-gray-300">
                   The idea should be fresh, imaginative, and clearly aligned with the futuristic theme.
                 </p>
               </div>
-              <div className="bg-slate-800/50 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-red-500 mb-2">
-                  2. The design as a whole
-                </h3>
+                  
+                  <div className="mb-6"></div>
+                  
+                  <div>
+                    <h4 className="text-xl font-bold text-red-500 mb-2">
+                      The design as a whole
+                    </h4>
                 <p className="text-gray-300">
                   The product should be designed and composed as a whole relevant to the chosen category.
                 </p>
               </div>
-              <div className="bg-slate-800/50 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-2">
-                  3. Theme Relevance
-                </h3>
+                  
+                  <div className="mb-6"></div>
+                  
+                  <div>
+                    <h4 className="text-xl font-bold text-red-500 mb-2">
+                      Theme Relevance
+                    </h4>
                 <p className="text-gray-300">
                   The overall design must respond thoughtfully to the idea of "Christmas in the Future" - bold or subtle.
                 </p>
               </div>
-              <div className="bg-slate-800/50 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-red-500 mb-2">
-                  4. Visual Aesthetics
-                </h3>
+                  
+                  <div className="mb-6"></div>
+                  
+                  <div>
+                    <h4 className="text-xl font-bold text-red-500 mb-2">
+                      Visual Aesthetics
+                    </h4>
                 <p className="text-gray-300">
                   The product should be aesthetically appealing while being innovative.
                 </p>
               </div>
-              <div className="bg-slate-800/50 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-2">
-                  5. Material & Technique
-                </h3>
+                  
+                  <div className="mb-6"></div>
+                  
+                  <div>
+                    <h4 className="text-xl font-bold text-red-500 mb-2">
+                      Material & Technique
+                    </h4>
                 <p className="text-gray-300">
                   Use of unconventional, digital, or experimental methods is encouraged. Consider the lifecycle of your design and how it's made.
                 </p>
               </div>
             </div>
-            <div className="relative w-full h-full min-h-[600px] rounded-lg overflow-hidden">
-              <Image
-                src="/uploads/DESIGN_CONSIDERATIONS_1.webp"
-                alt="Design Considerations"
-                fill
-                className="object-cover"
-              />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Submission Categories & Who Can Join */}
-      <section className="relative py-16 md:py-24 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
-        <div className="max-w-7xl mx-auto relative">
-          {/* Submission Categories */}
-          <div className="mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-center text-blue-400 mb-12 uppercase tracking-wide">
-              SUBMISSION CATEGORIES
-            </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
-              <div className="relative w-full h-full min-h-[600px] rounded-lg overflow-hidden">
-                <Image
-                  src="/uploads/SUBMISSION_CATEGORIES_1.webp"
-                  alt="Submission Categories"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="space-y-6 flex flex-col justify-center">
-                <div className="bg-slate-800/70 rounded-lg p-8 text-center transition-colors">
-                  <h3 className="text-2xl font-bold text-red-500 mb-4">
-                    Physical Tree Category
-                  </h3>
-                  <p className="text-gray-300">
-                    Create a physical, tangible Christmas tree design
-                  </p>
-                </div>
-                <div className="bg-slate-800/70 rounded-lg p-8 text-center transition-colors">
-                  <h3 className="text-2xl font-bold text-blue-400 mb-4">
-                    Digital Tree Category
-                  </h3>
-                  <p className="text-gray-300">
-                    Design a digital or virtual Christmas tree
-                  </p>
-                </div>
-                <div className="bg-slate-800/70 rounded-lg p-8 text-center transition-colors">
-                  <h3 className="text-2xl font-bold text-red-500 mb-4">
-                    Kids' Tree Category
-                  </h3>
-                  <p className="text-gray-300">
-                    For participants age under 12
-                  </p>
-                </div>
+      <section className="relative min-h-[600px] z-20 overflow-hidden">
+        {/* Full-width background - Right half with background image */}
+        <div className="absolute inset-0 right-0 w-1/2 h-full">
+          <Image
+            src="/uploads/SUBMISSION_CATEGORIES_1.webp"
+            alt="Submission Categories"
+            fill
+            className="object-cover"
+          />
+        </div>
+        
+        {/* Content - Constrained to default width */}
+        <div className="relative z-10 min-h-[600px] flex items-center px-4 md:px-6 lg:px-8 py-16 md:py-24">
+          <div className="max-w-7xl mx-auto w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[600px]">
+              {/* Left Column Content - Transparent background */}
+              <div className="relative z-10 flex flex-col pr-6 md:pr-8 lg:pr-12">
+                <h2 className="text-3xl md:text-4xl font-bold text-blue-400 mb-6 uppercase tracking-wide">
+                  SUBMISSION CATEGORIES
+                </h2>
                 
-                {/* Who Can Join - Inside Submission Categories Section */}
-                <div className="bg-slate-800/70 rounded-lg p-8 mt-6">
-                  <h3 className="text-2xl font-bold text-blue-400 mb-3 text-center">
-                    Who Can Join
-                  </h3>
-                  <p className="text-lg text-gray-300 text-center mb-4">
-                    Open to all enthusiasts
-                  </p>
-                  <p className="text-lg text-gray-300 text-center mb-6">
+                <div className="mb-6"></div>
+                
+                <ul className="space-y-4 mb-6 text-gray-300 text-lg md:text-xl">
+                  <li>Physical Tree Category</li>
+                  <li>Digital Tree Category</li>
+                  <li>Kid's Tree Category (Age under 12)</li>
+                </ul>
+                
+                <div className="mb-6"></div>
+                
+                <div className="text-gray-300 text-base md:text-lg space-y-4">
+                  <p>
+                    <strong>Who Can Join</strong><br />
+                    Open to all enthusiasts<br />
                     Students | Professionals | Creatives | Anyone with a Vision
                   </p>
                   
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-xl font-bold text-blue-400 mb-2 text-center">
-                        Creative Freedom
-                      </h4>
-                      <p className="text-gray-300 text-center">
-                        No limits on size, color, materials, or format; as long as it reflects the futuristic theme.
-                      </p>
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-bold text-red-500 mb-2 text-center">
-                        Global Participation
-                      </h4>
-                      <p className="text-gray-300 text-center">
-                        Entries accepted locally and internationally. All formats must be submitted online.
-                      </p>
-                    </div>
-                  </div>
+                  <p>
+                    <strong>Creative Freedom</strong><br />
+                    No limits on size, color, materials, or format; as long as it reflects the futuristic theme.
+                  </p>
+                  
+                  <p>
+                    <strong>Global Participation</strong><br />
+                    Entries accepted locally and internationally. All formats must be submitted online.
+                  </p>
                 </div>
+                
+                <div className="mb-6"></div>
+                
+                <p className="text-sm md:text-base text-gray-400 italic">
+                  * Refer terms & conditions for further details.
+                </p>
               </div>
+
+              {/* Right Column - Background image (handled by full-width background above) */}
+              <div className="relative z-10"></div>
             </div>
           </div>
         </div>
@@ -280,63 +380,63 @@ export default function CompetitionPageClient() {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-blue-400 mb-12 uppercase tracking-wide">
             HOW TO JOIN THE CHALLENGE
           </h2>
-          <div className="space-y-6">
-            <div className="flex gap-6">
-              <div className="flex-shrink-0 w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-2xl font-bold text-white">
-                01
-              </div>
-              <div className="flex-1 bg-slate-800/50 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-2">Register</h3>
-                <p className="text-gray-300">
-                  Sign in to the Archalley website and register between 11th November and 24th December 2025.
-                </p>
-              </div>
+          
+          <div className="mb-6"></div>
+          
+          <div className="space-y-6 text-gray-300">
+            <div>
+              <h3 className="text-xl md:text-2xl font-bold text-red-500 mb-3">
+                01. Register for the Competition
+              </h3>
+              <ul className="list-disc list-inside ml-4 space-y-2">
+                <li>Sign in to the Archalley website and register between 11th November and 24th December 2025 by providing correct information & paying the registration fee.</li>
+              </ul>
             </div>
-            <div className="flex gap-6">
-              <div className="flex-shrink-0 w-16 h-16 bg-red-500 rounded-full flex items-center justify-center text-2xl font-bold text-white">
-                02
-              </div>
-              <div className="flex-1 bg-slate-800/50 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-red-500 mb-2">Choose Category</h3>
-                <p className="text-gray-300">
-                  Select one category - Physical, Digital, or Kids' Tree.
-                </p>
-              </div>
+            
+            <div>
+              <h3 className="text-xl md:text-2xl font-bold text-red-500 mb-3">
+                02. Chose your preferred category of participation
+              </h3>
+              <ul className="list-disc list-inside ml-4 space-y-2">
+                <li>Select one category - Physical, Digital, or Kids' Tree –and follow the terms & conditions for that category; non-compliance may lead to disqualification.</li>
+              </ul>
             </div>
-            <div className="flex gap-6">
-              <div className="flex-shrink-0 w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-2xl font-bold text-white">
-                03
-              </div>
-              <div className="flex-1 bg-slate-800/50 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-2">Create/Design</h3>
-                <p className="text-gray-300">
-                  Enjoy full creative freedom. Ensure your design aligns with the Key Design Considerations.
-                </p>
-              </div>
+            
+            <div>
+              <h3 className="text-xl md:text-2xl font-bold text-red-500 mb-3">
+                03. Create/Design your Christmas tree
+              </h3>
+              <ul className="list-disc list-inside ml-4 space-y-2">
+                <li>Enjoy full creative freedom on color, materials, size, and decoration (In compliance with the terms & conditions for your selected category).</li>
+                <li>Ensure your design aligns with the Key Design Considerations of the competition.</li>
+              </ul>
             </div>
-            <div className="flex gap-6">
-              <div className="flex-shrink-0 w-16 h-16 bg-red-500 rounded-full flex items-center justify-center text-2xl font-bold text-white">
-                04
-              </div>
-              <div className="flex-1 bg-slate-800/50 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-red-500 mb-2">Prepare Materials</h3>
-                <p className="text-gray-300">
-                  Compile the required submission items for your selected category.
-                </p>
-              </div>
+            
+            <div>
+              <h3 className="text-xl md:text-2xl font-bold text-red-500 mb-3">
+                04. Prepare Your Submission Materials
+              </h3>
+              <ul className="list-disc list-inside ml-4 space-y-2">
+                <li>Compile the require submission items for your selected category.</li>
+                <li>You may also add optional document or optional video (per the terms & conditions ) to strengthen your entry.</li>
+              </ul>
             </div>
-            <div className="flex gap-6">
-              <div className="flex-shrink-0 w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-2xl font-bold text-white">
-                05
-              </div>
-              <div className="flex-1 bg-slate-800/50 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-2">Submit</h3>
-                <ul className="text-gray-300 space-y-2 mt-2">
-                  <li>• Kids' Tree Category: From 11th to 21st December 2025</li>
-                  <li>• Physical & Digital Tree Category: From 11th to 24th December 2025</li>
-                </ul>
-              </div>
+            
+            <div>
+              <h3 className="text-xl md:text-2xl font-bold text-red-500 mb-3">
+                05. Submission
+              </h3>
+              <ul className="list-disc list-inside ml-4 space-y-2">
+                <li>Kids' Tree Category - From 11th to 21st December 2025</li>
+                <li>Physical Tree Category & Digital Tree Category - From 11th to 24th December 2025</li>
+              </ul>
             </div>
+          </div>
+          
+          <div className="mt-8">
+            <p className="text-sm md:text-base text-gray-400 italic">
+              Note:-Refer to this brochure & terms & conditions for all required information.
+            </p>
           </div>
         </div>
       </section>

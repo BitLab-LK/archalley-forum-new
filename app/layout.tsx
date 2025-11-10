@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
+import localFont from "next/font/local"
 import "./globals.css"
 import { Providers } from "@/components/providers"
 import TopBar from "@/components/top-bar"
@@ -12,6 +13,31 @@ import { ConfirmDialogProvider } from "@/hooks/use-confirm-dialog"
 import { SessionMonitor } from "@/hooks/use-session-monitor"
 
 const inter = Inter({ subsets: ["latin"] })
+
+// Aquire font family
+// Font files should be placed in the root-level 'fonts' directory
+// Alternative: You can also place them in 'public/fonts' and update paths accordingly
+const aquire = localFont({
+  src: [
+    {
+      path: "../fonts/AquireLight.otf",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "../fonts/Aquire.otf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../fonts/AquireBold.otf",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  variable: "--font-aquire",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   title: "Archalley - Architecture & Design Excellence",
@@ -43,7 +69,7 @@ export default function RootLayout({
           }
         `}</style>
       </head>
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={`${inter.className} ${aquire.variable}`} suppressHydrationWarning>
         <Providers>
           <ConfirmDialogProvider>
             <SessionMonitor>
