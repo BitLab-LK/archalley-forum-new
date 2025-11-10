@@ -12,6 +12,9 @@ import {
   calculateCartExpiry,
   validateMemberInfo,
   sanitizeInput,
+  getRegistrationPeriod,
+  calculateRegistrationPrice,
+  getCurrentDateInSriLanka,
 } from '@/lib/competition-utils';
 
 interface AddToCartRequest {
@@ -239,8 +242,72 @@ export async function POST(
     }));
     console.log('✅ Sanitized members:', sanitizedMembers);
 
-    // Calculate price (you can add early bird discount logic here)
-    const unitPrice = registrationType.fee;
+    // Calculate price based on registration period and type
+    let unitPrice = registrationType.fee; // Default to base fee
+    
+    // Get competition timeline to determine registration period
+    const timeline = competition.timeline as any;
+    if (timeline?.registration) {
+      const regTimeline = timeline.registration;
+      
+      // Parse dates from timeline (dates are stored as strings in YYYY-MM-DD format)
+      const parseDate = (dateStr: string): Date => {
+        // If it's already a Date object, return it
+        if (dateStr instanceof Date) return dateStr;
+        // If it's a string in YYYY-MM-DD format, parse it
+        const [year, month, day] = dateStr.split('-').map(Number);
+        // Create date in Sri Lanka timezone (Asia/Colombo)
+        // Note: We need to create the date at midnight in Sri Lanka timezone
+        const date = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00+05:30`);
+        return date;
+      };
+      
+      const earlyBirdStart = regTimeline.earlybird?.start 
+        ? parseDate(regTimeline.earlybird.start) 
+        : new Date('2025-11-11T00:00:00+05:30');
+      const earlyBirdEnd = regTimeline.earlybird?.end 
+        ? parseDate(regTimeline.earlybird.end) 
+        : new Date('2025-11-20T23:59:59+05:30');
+      const standardStart = regTimeline.standard?.start 
+        ? parseDate(regTimeline.standard.start) 
+        : new Date('2025-11-21T00:00:00+05:30');
+      const standardEnd = regTimeline.standard?.end 
+        ? parseDate(regTimeline.standard.end) 
+        : new Date('2025-12-20T23:59:59+05:30');
+      const lateStart = regTimeline.late?.start 
+        ? parseDate(regTimeline.late.start) 
+        : new Date('2025-12-21T00:00:00+05:30');
+      const lateEnd = regTimeline.late?.end 
+        ? parseDate(regTimeline.late.end) 
+        : new Date('2025-12-24T23:59:59+05:30');
+      const kidsStart = regTimeline.kids?.start 
+        ? parseDate(regTimeline.kids.start) 
+        : new Date('2025-11-21T00:00:00+05:30');
+      const kidsEnd = regTimeline.kids?.end 
+        ? parseDate(regTimeline.kids.end) 
+        : new Date('2025-12-21T23:59:59+05:30');
+      
+      // Determine current registration period
+      const period = getRegistrationPeriod(
+        earlyBirdStart,
+        earlyBirdEnd,
+        standardStart,
+        standardEnd,
+        lateStart,
+        lateEnd,
+        kidsStart,
+        kidsEnd
+      );
+      
+      console.log('📅 Current registration period:', period);
+      
+      // Calculate price based on registration type and period
+      unitPrice = calculateRegistrationPrice(registrationType.type, period);
+      console.log('💰 Calculated price - Type:', registrationType.type, 'Period:', period, 'Price:', unitPrice);
+    } else {
+      console.log('⚠️ No timeline data found, using base fee:', unitPrice);
+    }
+    
     const subtotal = unitPrice; // Single registration per cart item
     console.log('💰 Price calculation - Unit:', unitPrice, 'Subtotal:', subtotal);
 

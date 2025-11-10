@@ -401,6 +401,45 @@ export function sanitizeInput(input: string): string {
 // ============================================
 
 /**
+ * Get current date in Sri Lanka timezone (Asia/Colombo)
+ * Returns a Date object representing the current date/time in Sri Lanka timezone
+ */
+export function getCurrentDateInSriLanka(): Date {
+  // Get current time
+  const now = new Date();
+  
+  // Get date components in Sri Lanka timezone
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Colombo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const year = parseInt(parts.find(p => p.type === 'year')?.value || '0', 10);
+  const month = parseInt(parts.find(p => p.type === 'month')?.value || '0', 10) - 1; // Month is 0-indexed
+  const day = parseInt(parts.find(p => p.type === 'day')?.value || '0', 10);
+  const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+  const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+  const second = parseInt(parts.find(p => p.type === 'second')?.value || '0', 10);
+  
+  // Create a Date object in UTC that represents the Sri Lanka time
+  // We need to create it as if it were in UTC, then adjust for the timezone offset
+  // Sri Lanka is UTC+5:30, so we subtract 5:30 hours to get the UTC equivalent
+  const sriLankaDate = new Date(Date.UTC(year, month, day, hour, minute, second));
+  // Adjust for timezone offset (subtract 5:30 hours to get UTC equivalent)
+  sriLankaDate.setUTCHours(sriLankaDate.getUTCHours() - 5);
+  sriLankaDate.setUTCMinutes(sriLankaDate.getUTCMinutes() - 30);
+  
+  return sriLankaDate;
+}
+
+/**
  * Format date for display
  */
 export function formatDate(date: Date | string): string {
@@ -419,7 +458,7 @@ export function isRegistrationOpen(
   startDate: Date,
   deadline: Date
 ): boolean {
-  const now = new Date();
+  const now = getCurrentDateInSriLanka();
   return now >= new Date(startDate) && now <= new Date(deadline);
 }
 
@@ -427,9 +466,124 @@ export function isRegistrationOpen(
  * Get days remaining until deadline
  */
 export function getDaysRemaining(deadline: Date): number {
-  const now = new Date();
+  const now = getCurrentDateInSriLanka();
   const diff = new Date(deadline).getTime() - now.getTime();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Registration period types
+ */
+export type RegistrationPeriod = 'EARLY_BIRD' | 'STANDARD' | 'LATE' | 'KIDS';
+
+/**
+ * Determine the current registration period based on dates
+ * Returns the period that applies to the current date in Sri Lanka timezone
+ */
+export function getRegistrationPeriod(
+  earlyBirdStart: Date,
+  earlyBirdEnd: Date,
+  standardStart: Date,
+  standardEnd: Date,
+  lateStart: Date,
+  lateEnd: Date,
+  kidsStart: Date,
+  kidsEnd: Date
+): RegistrationPeriod {
+  const now = getCurrentDateInSriLanka();
+  const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  // Helper to compare dates (only year, month, day)
+  const compareDate = (date: Date): Date => {
+    const d = new Date(date);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  };
+  
+  const earlyBirdStartDate = compareDate(earlyBirdStart);
+  const earlyBirdEndDate = compareDate(earlyBirdEnd);
+  const standardStartDate = compareDate(standardStart);
+  const standardEndDate = compareDate(standardEnd);
+  const lateStartDate = compareDate(lateStart);
+  const lateEndDate = compareDate(lateEnd);
+  const kidsStartDate = compareDate(kidsStart);
+  const kidsEndDate = compareDate(kidsEnd);
+  
+  // Check if we're in early bird period
+  if (currentDate >= earlyBirdStartDate && currentDate <= earlyBirdEndDate) {
+    return 'EARLY_BIRD';
+  }
+  
+  // Check if we're in late period
+  if (currentDate >= lateStartDate && currentDate <= lateEndDate) {
+    return 'LATE';
+  }
+  
+  // Check if we're in standard period
+  if (currentDate >= standardStartDate && currentDate <= standardEndDate) {
+    return 'STANDARD';
+  }
+  
+  // Check if we're in kids period (can overlap with standard/late)
+  if (currentDate >= kidsStartDate && currentDate <= kidsEndDate) {
+    return 'KIDS';
+  }
+  
+  // Default to standard if none match
+  return 'STANDARD';
+}
+
+/**
+ * Calculate registration price based on registration type and period
+ * Pricing structure:
+ * - Early Bird (Nov 11-20): Single Entry 2,000, Group Entry 4,000
+ * - Standard (Nov 21-Dec 20): Student Entry 2,000, Single Entry 3,000, Group Entry 5,000
+ * - Late (Dec 21-24): Student Entry 2,000, Single Entry 5,000, Group Entry 8,000
+ * - Kids' Tree Category (Nov 21-Dec 21): Single Entry 2,000
+ */
+export function calculateRegistrationPrice(
+  registrationType: 'INDIVIDUAL' | 'TEAM' | 'COMPANY' | 'STUDENT' | 'KIDS',
+  period: RegistrationPeriod
+): number {
+  // Kids' Tree Category always costs 2,000 regardless of period
+  if (registrationType === 'KIDS') {
+    return 2000;
+  }
+  
+  // Student Entry always costs 2,000 (available in Standard and Late periods)
+  if (registrationType === 'STUDENT') {
+    return 2000;
+  }
+  
+  // Single Entry (INDIVIDUAL)
+  if (registrationType === 'INDIVIDUAL') {
+    switch (period) {
+      case 'EARLY_BIRD':
+        return 2000;
+      case 'STANDARD':
+        return 3000;
+      case 'LATE':
+        return 5000;
+      default:
+        return 3000; // Default to standard pricing
+    }
+  }
+  
+  // Group Entry (TEAM or COMPANY)
+  if (registrationType === 'TEAM' || registrationType === 'COMPANY') {
+    switch (period) {
+      case 'EARLY_BIRD':
+        return 4000;
+      case 'STANDARD':
+        return 5000;
+      case 'LATE':
+        return 8000;
+      default:
+        return 5000; // Default to standard pricing
+    }
+  }
+  
+  // Default fallback
+  return 3000;
 }
 
 // ============================================

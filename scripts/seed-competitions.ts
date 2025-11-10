@@ -165,14 +165,15 @@ async function main() {
     console.log('✅ Created competition:', competition2024.title);
 
     // Create Archalley Competition 2025
+    // All dates are in Sri Lanka timezone (Asia/Colombo, UTC+5:30)
     const archalleyCompetition2025 = await prisma.competition.upsert({
       where: { slug: 'archalley-competition-2025' },
       update: {
-        // Update dates to ensure they're correct
-        startDate: new Date('2025-11-11T00:00:00.000Z'),
-        endDate: new Date('2026-01-10T23:59:59.999Z'),
-        earlyBirdDeadline: new Date('2025-11-20T23:59:59.999Z'),
-        registrationDeadline: new Date('2025-12-24T23:59:59.999Z'),
+        // Update dates to ensure they're correct in Sri Lanka timezone (UTC+5:30)
+        startDate: new Date('2025-11-11T00:00:00+05:30'), // Registration starts: 11th November 2025, 00:00:00 IST
+        endDate: new Date('2026-01-10T23:59:59+05:30'), // Winners announced: 10th January 2026, 23:59:59 IST
+        earlyBirdDeadline: new Date('2025-11-20T23:59:59+05:30'), // Early bird ends: 20th November 2025, 23:59:59 IST
+        registrationDeadline: new Date('2025-12-24T23:59:59+05:30'), // Late registration ends: 24th December 2025, 23:59:59 IST
         status: CompetitionStatus.REGISTRATION_OPEN,
         timeline: {
           registration: {
@@ -202,13 +203,13 @@ async function main() {
         title: 'Archalley Competition 2025 - Innovative Christmas Tree',
         description: `"What will a Christmas tree look like in 50 years? Will it float, glow, or live in the metaverse? This year's competition invites you to imagine the tree of tomorrow." Participants are encouraged to explore unconventional, futuristic, and conceptual interpretations, from virtual models to physical tree designs. Your tree can be either minimal or detailed, digital, tech-infused, or completely surreal. There are no rules... Only imagination.`,
         year: 2025,
-        // Registration dates from competition page
-        startDate: new Date('2025-11-11T00:00:00.000Z'), // Registration starts: 11th November 2025
-        endDate: new Date('2026-01-10T23:59:59.999Z'), // Winners announced: 10th January 2026
+        // Registration dates in Sri Lanka timezone (Asia/Colombo, UTC+5:30)
+        startDate: new Date('2025-11-11T00:00:00+05:30'), // Registration starts: 11th November 2025, 00:00:00 IST
+        endDate: new Date('2026-01-10T23:59:59+05:30'), // Winners announced: 10th January 2026, 23:59:59 IST
         status: CompetitionStatus.REGISTRATION_OPEN,
         registrationFee: 2000, // Base fee in LKR
-        earlyBirdDeadline: new Date('2025-11-20T23:59:59.999Z'), // Early bird ends: 20th November 2025
-        registrationDeadline: new Date('2025-12-24T23:59:59.999Z'), // Late registration ends: 24th December 2025
+        earlyBirdDeadline: new Date('2025-11-20T23:59:59+05:30'), // Early bird ends: 20th November 2025, 23:59:59 IST
+        registrationDeadline: new Date('2025-12-24T23:59:59+05:30'), // Late registration ends: 24th December 2025, 23:59:59 IST
         totalPrizeFund: 0, // Will be updated based on actual prize structure
         prizes: {
           physical: {

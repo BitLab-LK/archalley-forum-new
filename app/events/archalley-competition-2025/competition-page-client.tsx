@@ -881,9 +881,9 @@ export default function CompetitionPageClient() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
             {/* Left Side - Registration Content */}
             <div className="space-y-8">
-              {/* Earlybird Registration */}
+              {/* Early bird Registration */}
               <div>
-                <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Earlybird Registration</h3>
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Early bird Registration</h3>
                 <p className="text-gray-300 text-lg mb-4">(11<sup>th</sup> November - 20<sup>th</sup> November)</p>
                 <div className="space-y-2 text-white">
                   <div className="flex justify-between items-center">
