@@ -74,26 +74,16 @@ export default function CompetitionPageClient() {
       {/* Theme Section */}
       <section id="theme" className="relative py-16 md:py-24 px-4 md:px-6 lg:px-8 z-20">
         <div className="max-w-7xl mx-auto relative">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-blue-400 mb-6 uppercase tracking-wide">
-                A THEME THAT REIMAGINES TRADITION
-              </h2>
-              <blockquote className="text-2xl md:text-3xl font-semibold text-white mb-6 italic pl-6">
-                "What will a Christmas tree look like in 50 years? Will it float, glow, or live in the metaverse? This year's competition invites you to imagine the tree of tomorrow."
-              </blockquote>
-              <p className="text-lg md:text-xl text-gray-300 leading-relaxed">
-                Participants are encouraged to explore unconventional, futuristic, and conceptual interpretations, from virtual models to physical tree designs. Your tree can be either minimal or detailed, digital, tech-infused, or completely surreal. There are no rules... Only imagination.
-              </p>
-            </div>
-            <div className="relative aspect-square rounded-lg overflow-hidden">
-              <Image
-                src="/uploads/tree-2025-1.webp"
-                alt="The Theme"
-                fill
-                className="object-cover"
-              />
-            </div>
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold text-blue-400 mb-6 uppercase tracking-wide text-center">
+              A THEME THAT REIMAGINES TRADITION
+            </h2>
+            <blockquote className="text-2xl md:text-3xl font-semibold text-white mb-6 italic pl-6 text-center">
+              "What will a Christmas tree look like in 50 years? Will it float, glow, or live in the metaverse? This year's competition invites you to imagine the tree of tomorrow."
+            </blockquote>
+            <p className="text-lg md:text-xl text-gray-300 leading-relaxed text-center">
+              Participants are encouraged to explore unconventional, futuristic, and conceptual interpretations, from virtual models to physical tree designs. Your tree can be either minimal or detailed, digital, tech-infused, or completely surreal. There are no rules... Only imagination.
+            </p>
           </div>
         </div>
       </section>
@@ -1024,8 +1014,8 @@ export default function CompetitionPageClient() {
                   className="object-contain h-full w-auto"
                 />
               </div>
-            </div>
-          </div>
+        </div>
+      </div>
         </div>
       </footer>
     </div>

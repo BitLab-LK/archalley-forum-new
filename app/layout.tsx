@@ -48,10 +48,16 @@ export default function RootLayout({
           <ConfirmDialogProvider>
             <SessionMonitor>
               <div className="min-h-screen flex flex-col">
-                <TopBar />
-                <NavigationBar />
-                <main className="flex-1 pb-20 md:pb-0">{children}</main>
-                <Footer />
+                <div className="relative z-50">
+                  <TopBar />
+                </div>
+                <div className="relative z-50">
+                  <NavigationBar />
+                </div>
+                <main className="flex-1 pb-20 md:pb-0 relative z-10">{children}</main>
+                <div className="relative z-50">
+                  <Footer />
+                </div>
                 <BadgeNotificationHandler />
                 <Toaster />
               </div>
