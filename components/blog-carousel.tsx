@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight } from "lucide-react"
 import { 
   getAllPosts, 
   getFeaturedImageUrl, 
@@ -16,19 +15,29 @@ import {
 
 interface BlogCarouselProps {
   initialPosts?: WordPressPost[]
+  autoPlayInterval?: number // in milliseconds
 }
 
-export default function BlogCarousel({ initialPosts = [] }: BlogCarouselProps) {
+export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 3000 }: BlogCarouselProps) {
   const [posts, setPosts] = useState<WordPressPost[]>(initialPosts)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [visiblePosts, setVisiblePosts] = useState(4)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isPaused, setIsPaused] = useState(false)
+  const [isTransitioning, setIsTransitioning] = useState(true)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Create duplicated posts for infinite scroll
+  const duplicatedPosts = posts.length > 0 ? [...posts, ...posts, ...posts] : []
 
   // Fetch posts on client side if no initial data
   useEffect(() => {
     if (initialPosts.length === 0) {
       fetchPosts()
+    } else {
+      // Start from the middle set of duplicated posts
+      setCurrentIndex(posts.length)
     }
   }, [initialPosts.length])
 
@@ -51,12 +60,68 @@ export default function BlogCarousel({ initialPosts = [] }: BlogCarouselProps) {
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
+  // Auto-play carousel with infinite scroll
+  useEffect(() => {
+    if (posts.length === 0 || isPaused) return
+
+    // Only auto-play if there are more posts than visible
+    if (posts.length <= visiblePosts) return
+
+    intervalRef.current = setInterval(() => {
+      setCurrentIndex((prevIndex) => prevIndex + 1)
+    }, autoPlayInterval)
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
+  }, [posts.length, visiblePosts, autoPlayInterval, isPaused])
+
+  // Reset position when reaching the end of duplicated posts (infinite loop)
+  useEffect(() => {
+    if (posts.length === 0) return
+
+    // If we've scrolled to the last set, instantly jump back to middle set without animation
+    if (currentIndex >= posts.length * 2) {
+      setIsTransitioning(false)
+      setTimeout(() => {
+        setCurrentIndex(posts.length)
+        setTimeout(() => {
+          setIsTransitioning(true)
+        }, 50)
+      }, 50)
+    }
+    
+    // If we've scrolled before the first set, instantly jump to middle set without animation
+    if (currentIndex < posts.length) {
+      setIsTransitioning(false)
+      setTimeout(() => {
+        setCurrentIndex(posts.length + currentIndex)
+        setTimeout(() => {
+          setIsTransitioning(true)
+        }, 50)
+      }, 50)
+    }
+  }, [currentIndex, posts.length])
+
+  // Pause auto-play on hover
+  const handleMouseEnter = () => {
+    setIsPaused(true)
+  }
+
+  const handleMouseLeave = () => {
+    setIsPaused(false)
+  }
+
   const fetchPosts = async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const fetchedPosts = await getAllPosts(1, 4)
+      const fetchedPosts = await getAllPosts(1, 12)
       setPosts(fetchedPosts)
+      // Start from the middle set after fetching
+      setCurrentIndex(fetchedPosts.length)
     } catch (err) {
       setError('Failed to load blog posts')
       console.error('Error fetching posts:', err)
@@ -65,15 +130,7 @@ export default function BlogCarousel({ initialPosts = [] }: BlogCarouselProps) {
     }
   }
 
-  const nextSlide = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + visiblePosts >= posts.length ? 0 : prevIndex + visiblePosts))
-  }
 
-  const prevSlide = () => {
-    setCurrentIndex((prevIndex) =>
-      prevIndex - visiblePosts < 0 ? Math.max(0, posts.length - visiblePosts) : prevIndex - visiblePosts,
-    )
-  }
 
   if (isLoading) {
     return (
@@ -101,37 +158,25 @@ export default function BlogCarousel({ initialPosts = [] }: BlogCarouselProps) {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold">Latest Posts</h2>
-          <div className="flex space-x-2">
-            <button
-              onClick={prevSlide}
-              className="p-2 rounded-full bg-black text-white hover:bg-gray-800"
-              aria-label="Previous slide"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button
-              onClick={nextSlide}
-              className="p-2 rounded-full bg-black text-white hover:bg-gray-800"
-              aria-label="Next slide"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
         </div>
 
-        <div className="relative overflow-hidden">
+        <div 
+          className="relative overflow-hidden"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
           <div
-            className="flex transition-transform duration-500 ease-in-out"
+            className={`flex ${isTransitioning ? 'transition-transform duration-500 ease-in-out' : ''}`}
             style={{ transform: `translateX(-${currentIndex * (100 / visiblePosts)}%)` }}
           >
-            {posts.map((post) => {
+            {duplicatedPosts.map((post, index) => {
               const imageUrl = getFeaturedImageUrl(post, 'large')
               const category = getPostCategory(post)
               const title = stripHtml(post.title.rendered)
               const date = formatDate(post.date)
 
               return (
-                <div key={post.id} className="flex-shrink-0 px-2" style={{ width: `${100 / visiblePosts}%` }}>
+                <div key={`${post.id}-${index}`} className="flex-shrink-0 px-2" style={{ width: `${100 / visiblePosts}%` }}>
                   <Link href={`/${post.slug}`} className="block group">
                     <div className="relative h-[375px] w-full overflow-hidden">
                       <Image
