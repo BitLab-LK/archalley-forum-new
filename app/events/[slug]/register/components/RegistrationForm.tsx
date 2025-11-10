@@ -117,7 +117,7 @@ export default function RegistrationForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingItem?.id]);
 
-  // Auto-fill email and phone from user profile when form loads (only for new registrations, not editing)
+  // Auto-fill email, phone, first name, and last name from user profile when form loads (only for new registrations, not editing)
   useEffect(() => {
     // Only auto-fill if:
     // 1. User profile data is available
@@ -133,9 +133,10 @@ export default function RegistrationForm({
     const isKidsType = selectedType.type === 'KIDS';
     const isStudentType = selectedType.type === 'STUDENT';
     let hasChanges = false;
+    let nameFieldsUpdated = false;
 
     if (isKidsType) {
-      // For Kids category: fill parent/guardian email and phone (only if empty)
+      // For Kids category: fill parent/guardian email, phone, and names (only if empty)
       if (!firstMember.parentEmail && userProfile.email) {
         updatedMembers[0].parentEmail = userProfile.email;
         hasChanges = true;
@@ -144,7 +145,7 @@ export default function RegistrationForm({
         updatedMembers[0].parentPhone = userProfile.phoneNumber;
         hasChanges = true;
       }
-      // Also fill parent names if available
+      // Fill parent names if available
       if (!firstMember.parentFirstName && userProfile.firstName) {
         updatedMembers[0].parentFirstName = userProfile.firstName;
         hasChanges = true;
@@ -154,7 +155,7 @@ export default function RegistrationForm({
         hasChanges = true;
       }
     } else if (isStudentType) {
-      // For Student category: fill student email and phone (only if empty)
+      // For Student category: fill student email, phone, and names (only if empty)
       if (!firstMember.studentEmail && userProfile.email) {
         updatedMembers[0].studentEmail = userProfile.email;
         hasChanges = true;
@@ -163,8 +164,23 @@ export default function RegistrationForm({
         updatedMembers[0].phone = userProfile.phoneNumber;
         hasChanges = true;
       }
+      // Fill first name and last name if available
+      if (!firstMember.firstName && userProfile.firstName) {
+        updatedMembers[0].firstName = userProfile.firstName;
+        hasChanges = true;
+        nameFieldsUpdated = true;
+      }
+      if (!firstMember.lastName && userProfile.lastName) {
+        updatedMembers[0].lastName = userProfile.lastName;
+        hasChanges = true;
+        nameFieldsUpdated = true;
+      }
+      // Update name field after setting firstName/lastName
+      if (nameFieldsUpdated) {
+        updatedMembers[0].name = `${updatedMembers[0].firstName || ''} ${updatedMembers[0].lastName || ''}`.trim();
+      }
     } else {
-      // For Individual, Team, Company: fill email and phone for representative/first member (only if empty)
+      // For Individual, Team, Company: fill email, phone, and names for representative/first member (only if empty)
       if (!firstMember.email && userProfile.email) {
         updatedMembers[0].email = userProfile.email;
         hasChanges = true;
@@ -172,6 +188,21 @@ export default function RegistrationForm({
       if (!firstMember.phone && userProfile.phoneNumber) {
         updatedMembers[0].phone = userProfile.phoneNumber;
         hasChanges = true;
+      }
+      // Fill first name and last name if available
+      if (!firstMember.firstName && userProfile.firstName) {
+        updatedMembers[0].firstName = userProfile.firstName;
+        hasChanges = true;
+        nameFieldsUpdated = true;
+      }
+      if (!firstMember.lastName && userProfile.lastName) {
+        updatedMembers[0].lastName = userProfile.lastName;
+        hasChanges = true;
+        nameFieldsUpdated = true;
+      }
+      // Update name field after setting firstName/lastName
+      if (nameFieldsUpdated) {
+        updatedMembers[0].name = `${updatedMembers[0].firstName || ''} ${updatedMembers[0].lastName || ''}`.trim();
       }
     }
 

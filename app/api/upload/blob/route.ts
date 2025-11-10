@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { put, del } from '@vercel/blob'
+import { uploadToAzureBlob, deleteFromAzureBlob } from '@/lib/azure-blob-storage'
 import { generateSecureImageFilename, getExtensionFromMimeType } from "@/lib/utils"
 
 // Rate limiting map (in production, use Redis or similar)
@@ -140,20 +140,21 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // Upload to Vercel Blob
-        const blob = await put(filename, buffer, {
-          access: 'public',
+        // Upload to Azure Blob Storage
+        const result = await uploadToAzureBlob(buffer, filename, {
+          containerName: 'uploads',
+          contentType: outputMime,
           addRandomSuffix: true,
-          cacheControlMaxAge: 60 * 60 * 24 * 30, // Cache for 30 days
+          cacheControl: 'public, max-age=2592000', // Cache for 30 days
         })
 
         return {
-          url: blob.url,
+          url: result.url,
           name: file.name, // Keep original name for user reference
           size: buffer.length,
           type: outputMime,
-          pathname: blob.pathname,
-          downloadUrl: blob.downloadUrl
+          pathname: result.pathname,
+          downloadUrl: result.downloadUrl
         }
       } catch (blobError) {
         console.error(`Blob upload failed for ${filename}:`, blobError)
@@ -161,9 +162,9 @@ export async function POST(request: NextRequest) {
         let specificError = `Failed to upload to blob storage`
         if (blobError instanceof Error) {
           if (blobError.message.includes('unauthorized') || blobError.message.includes('403')) {
-            specificError = `Authentication failed for blob storage. Please check your BLOB_READ_WRITE_TOKEN.`
+            specificError = `Authentication failed for blob storage. Please check your Azure Storage configuration.`
           } else if (blobError.message.includes('not found') || blobError.message.includes('404')) {
-            specificError = `Blob storage endpoint not found. Please verify your token configuration.`
+            specificError = `Blob storage endpoint not found. Please verify your Azure Storage configuration.`
           } else if (blobError.message.includes('rate limit') || blobError.message.includes('429')) {
             specificError = `Rate limit exceeded for blob storage. Please try again later.`
           } else {
@@ -238,8 +239,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "URL parameter required" }, { status: 400 })
     }
 
-    // Delete from Vercel Blob
-    await del(url)
+    // Delete from Azure Blob Storage
+    await deleteFromAzureBlob(url)
 
     return NextResponse.json({ message: "File deleted successfully" })
   } catch (error) {

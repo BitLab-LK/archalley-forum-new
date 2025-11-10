@@ -1,10 +1,10 @@
 /**
  * File Upload API
- * Uploads files to Vercel Blob Storage
+ * Uploads files to Azure Blob Storage
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { uploadToAzureBlob } from '@/lib/azure-blob-storage';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -52,15 +52,16 @@ export async function POST(request: NextRequest) {
     const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const fileName = `${folder}/${timestamp}-${sanitizedFileName}`;
 
-    // Upload to Vercel Blob
-    const blob = await put(fileName, file, {
-      access: 'public',
+    // Upload to Azure Blob Storage
+    const result = await uploadToAzureBlob(file, fileName, {
+      containerName: 'uploads',
+      contentType: file.type,
       addRandomSuffix: false,
     });
 
     return NextResponse.json({
       success: true,
-      url: blob.url,
+      url: result.url,
       fileName: file.name,
       size: file.size,
       type: file.type,

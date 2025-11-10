@@ -3,12 +3,6 @@
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
 
 export default function CompetitionPageClient() {
   return (
@@ -58,7 +52,7 @@ export default function CompetitionPageClient() {
                 <p>Competition</p>
               </div>
               <div className="mb-8">
-                <h3 className="text-lg md:text-xl font-bold text-blue-400 mb-4">Official Partners</h3>
+                <h3 className="text-lg md:text-xl font-bold text-white mb-4">Official Partners</h3>
                 <div className="flex flex-wrap justify-end items-center gap-6">
                   <div className="h-16 md:h-20 flex items-center">
                     <Image
@@ -106,8 +100,8 @@ export default function CompetitionPageClient() {
       <section id="theme" className="relative py-16 md:py-24 px-4 md:px-6 lg:px-8 z-20">
         <div className="max-w-7xl mx-auto relative">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold text-blue-400 mb-6 uppercase tracking-wide text-center">
-              A THEME THAT REIMAGINES TRADITION
+            <h2 id="theme" className="text-3xl md:text-4xl font-bold text-white mb-6 uppercase tracking-wide text-center scroll-mt-20">
+              <a href="#theme" className="hover:underline">A THEME THAT REIMAGINES TRADITION</a>
             </h2>
             <div className="text-2xl md:text-3xl text-center mb-6">
               <span className="text-red-500">
@@ -154,8 +148,8 @@ export default function CompetitionPageClient() {
             <div className="grid grid-cols-1 md:grid-cols-2 min-h-[600px]">
               {/* Left Column Content */}
               <div className="relative z-10 flex flex-col justify-center">
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-                  The Spirit Of Giving
+                <h2 id="contribution" className="text-3xl md:text-4xl font-bold text-white mb-6 uppercase tracking-wide scroll-mt-20">
+                  <a href="#contribution" className="hover:underline">THE SPIRIT OF GIVING</a>
           </h2>
                 
                 <div className="mb-6"></div>
@@ -230,8 +224,8 @@ export default function CompetitionPageClient() {
               {/* Left Column Content */}
               <div className="relative z-10 flex flex-col justify-between pr-6 md:pr-8 lg:pr-12 text-right">
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-bold text-white uppercase tracking-wide">
-                    DESIGN<br />CONSIDERATIONS
+                  <h2 id="design-considerations" className="text-3xl md:text-4xl font-bold text-white uppercase tracking-wide scroll-mt-20">
+                    <a href="#design-considerations" className="hover:underline">DESIGN<br />CONSIDERATIONS</a>
           </h2>
                 </div>
                 <div>
@@ -327,8 +321,8 @@ export default function CompetitionPageClient() {
             <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[600px]">
               {/* Left Column Content - Transparent background */}
               <div className="relative z-10 flex flex-col pr-6 md:pr-8 lg:pr-12">
-                <h2 className="text-3xl md:text-4xl font-bold text-blue-400 mb-6 uppercase tracking-wide">
-                  SUBMISSION CATEGORIES
+                <h2 id="submission-categories" className="text-3xl md:text-4xl font-bold text-white mb-6 uppercase tracking-wide scroll-mt-20">
+                  <a href="#submission-categories" className="hover:underline">SUBMISSION CATEGORIES</a>
                 </h2>
                 
                 <div className="mb-6"></div>
@@ -376,8 +370,8 @@ export default function CompetitionPageClient() {
       {/* How to Join the Challenge */}
       <section className="relative py-16 md:py-24 px-4 md:px-6 lg:px-8 z-20">
         <div className="max-w-7xl mx-auto relative">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-blue-400 mb-12 uppercase tracking-wide">
-            HOW TO JOIN THE CHALLENGE
+          <h2 id="how-to-join" className="text-3xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
+            <a href="#how-to-join" className="hover:underline">HOW TO JOIN THE CHALLENGE</a>
           </h2>
           
           <div className="mb-6"></div>
@@ -443,8 +437,8 @@ export default function CompetitionPageClient() {
       {/* Submission Requirements */}
       <section className="relative py-16 md:py-24 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
         <div className="max-w-7xl mx-auto relative">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide">
-            SUBMISSION REQUIREMENTS
+          <h2 id="submission-requirements" className="text-3xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
+            <a href="#submission-requirements" className="hover:underline">SUBMISSION REQUIREMENTS</a>
           </h2>
           <div className="max-w-7xl">
             <div className="space-y-6 text-white text-lg text-left">
@@ -520,13 +514,13 @@ export default function CompetitionPageClient() {
         <div className="max-w-7xl mx-auto relative">
           {/* Top Section */}
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 uppercase tracking-wide">
-              AWARDS
+            <h2 id="awards" className="text-3xl md:text-4xl font-bold text-white mb-4 uppercase tracking-wide scroll-mt-20">
+              <a href="#awards" className="hover:underline">AWARDS</a>
           </h2>
             <p className="text-lg md:text-xl text-gray-300 mb-2">
               Total prize fund more than
             </p>
-            <p className="text-4xl md:text-5xl font-bold text-red-500 mb-4">
+            <p className="text-4xl md:text-5xl font-bold text-white mb-4">
               LKR 500,000.00
             </p>
             <p className="text-base md:text-lg text-gray-300 max-w-4xl mx-auto">
@@ -618,8 +612,8 @@ export default function CompetitionPageClient() {
       {/* Timeline Section */}
       <section className="relative py-16 md:py-24 px-4 md:px-6 lg:px-8 bg-slate-900/80 z-20">
         <div className="max-w-7xl mx-auto relative">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-12 uppercase tracking-wide">
-            TIMELINE
+          <h2 id="timeline" className="text-3xl md:text-4xl font-bold text-white mb-12 uppercase tracking-wide text-center scroll-mt-20">
+            <a href="#timeline" className="hover:underline">TIMELINE</a>
           </h2>
           
           <div className="space-y-3">
@@ -772,8 +766,8 @@ export default function CompetitionPageClient() {
       {/* Registration Section */}
       <section className="relative py-16 md:py-24 px-4 md:px-6 lg:px-8 bg-slate-900/80 z-20">
         <div className="max-w-7xl mx-auto relative">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-12 uppercase tracking-wide">
-            REGISTRATION
+          <h2 id="registration" className="text-3xl md:text-4xl font-bold text-white mb-12 uppercase tracking-wide text-center scroll-mt-20">
+            <a href="#registration" className="hover:underline">REGISTRATION</a>
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
             {/* Left Side - Registration Content */}
@@ -883,8 +877,8 @@ export default function CompetitionPageClient() {
       {/* Jury Section */}
       <section className="relative py-16 md:py-24 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
         <div className="max-w-7xl mx-auto relative">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-blue-400 mb-12 uppercase tracking-wide">
-            JURY PANEL
+          <h2 id="jury-panel" className="text-3xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
+            <a href="#jury-panel" className="hover:underline">JURY PANEL</a>
           </h2>
           {/* First 4 Jurors - Top Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -970,12 +964,12 @@ export default function CompetitionPageClient() {
       {/* Terms & Conditions Section */}
       <section className="relative py-16 md:py-24 px-4 md:px-6 lg:px-8 z-20">
         <div className="max-w-7xl mx-auto relative">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-red-500 mb-12 uppercase tracking-wide">
-            TERMS & CONDITIONS
+          <h2 id="terms-conditions" className="text-3xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
+            <a href="#terms-conditions" className="hover:underline">TERMS & CONDITIONS</a>
           </h2>
           <div className="max-w-7xl mx-auto">
             {/* Introduction */}
-            <div className="mb-8 text-gray-300 text-lg space-y-4">
+            <div className="mb-8 text-white text-lg space-y-4">
               <p>
                 We invite everyone, irrespective of their age, gender, profession, or qualifications, to join the competition and present the product.
               </p>
@@ -988,8 +982,8 @@ export default function CompetitionPageClient() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Physical Tree Category */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-4">Physical Tree Category</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Physical Tree Category</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p><strong>Build it for real:</strong> The tree must be a physically made product (in 2D or 3D form) and photographed for submission.</p>
                   <p><strong>Real photos only:</strong> Upload actual photographs of the built tree. Post-processing is limited to basic global color/exposure correction and cropping.</p>
                   <p><strong>Strictly no AI or graphic edits:</strong> AI-generated/AI-modified images, graphically enhances, compositing, retouching, or graphic enhancements are not permitted and may lead to disqualification.</p>
@@ -1000,8 +994,8 @@ export default function CompetitionPageClient() {
               
               {/* Digital Tree Category */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-red-500 mb-4">Digital Tree Category</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Digital Tree Category</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p><strong>Digital Tree Category - Accepted Formats:</strong> Paintings, drawings, digital illustrations, mixed media, AI-generated or AI-enhanced images, 3D-rendered images, and graphical representations created using 3D modeling software.</p>
                   <p><strong>Originality & rights:</strong> The entry must be your original work or use assets you are legally licensed to use. Do not include copyrighted logos/characters or third-party assets without written permission. You are responsible for all rights and clearances.</p>
                   <p><strong>AI usage disclosure:</strong> AI-assisted work is allowed. By submitting, you warrant that no third-party rights are infringed and that any model/assets/prompts used are permitted for this purpose.</p>
@@ -1011,8 +1005,8 @@ export default function CompetitionPageClient() {
               
               {/* Kids' Tree Category */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-4">Kids' Tree Category</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Kids' Tree Category</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p><strong>No winners selected:</strong> This category will not be judged by the jury and is not eligible for popularity voting or prizes.</p>
                   <p><strong>Participation recognition:</strong> Each completed submission receives one gift and a certificate of participation.</p>
                   <p><strong>Single entry policy:</strong> Only one (1) entry per participant is permitted.</p>
@@ -1024,8 +1018,8 @@ export default function CompetitionPageClient() {
               
               {/* Submission Formats */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-red-500 mb-4">Submission Formats (All Categories)</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Submission Formats (All Categories)</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p>Submit files via the Archalley web portal only (no external links or email). Do not include names, logos, watermarks, or identifying marks on images or filenames.</p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
                     <li><strong>Key Photograph (JPG, max 5 MB)</strong> — required; whole product must be clearly visible; used for Most Popular voting.</li>
@@ -1037,8 +1031,8 @@ export default function CompetitionPageClient() {
               
               {/* Optional Documents */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-4">Optional Documents (Physical, Digital Tree Categories Only)</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Optional Documents (Physical, Digital Tree Categories Only)</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p><strong>Optional PDF:</strong> Entrants may upload one (1) additional PDF (sketches, materials, drawings, graphics, process documentation), max 5 MB.</p>
                   <p><strong>Optional Video:</strong> Entrants may upload one (1) additional video (e.g., physical tree clip, AI video, animated walkthrough), max 10 MB.</p>
                   <p><strong>Submission channel:</strong> Only files uploaded via the Archalley web portal will be considered. External links (e.g., Google Drive), emails, or other reference documents/links will not be accepted for evaluation.</p>
@@ -1048,8 +1042,8 @@ export default function CompetitionPageClient() {
               
               {/* Group Entry */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-red-500 mb-4">Group Entry</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Group Entry</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p><strong>Eligibility.</strong> Under Group entry, teams, and company entries are permitted. A team may include up to ten (10) participants.</p>
                   <p>If entering under a company name, the entrant represents and warrants that (i) the company has authorized participation in the competition; and (ii) the entrant has the right and authority to submit the entry and all related materials on the company's behalf. Archalley is not liable for any unauthorized submissions, fraud, or misrepresentation by the entrant or team and may, at its discretion, disqualify the entry and recover any costs or damages arising therefrom.</p>
                   <p><strong>Documentation.</strong> Archalley may request supporting documents to verify company authorization and authenticity. Failure to provide satisfactory documentation may result in disqualification.</p>
@@ -1059,8 +1053,8 @@ export default function CompetitionPageClient() {
               
               {/* Registration & Identification */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-4">Registration & Identification</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Registration & Identification</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p>After your registration has been approved, you will be sent a unique identification number for your entry, which will be necessary to submit your proposal. If you haven't received a confirmation within two business days, please contact us at projects@archalley.com</p>
                   <p>For kid's category the guardian is liable for entering the details of the kid & his submission & address & other details.</p>
                   <p>The registration number and the name are the only forms of identification for the entries.</p>
@@ -1071,8 +1065,8 @@ export default function CompetitionPageClient() {
               
               {/* Submission Method, Format & Deadline */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-red-500 mb-4">Submission Method, Format & Deadline</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Submission Method, Format & Deadline</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p>Entries must be registered and submitted only via the Archalley web portal.</p>
                   <p>Entries must be submitted as JPG and must not exceed 5 MB per upload in the portal.</p>
                   <p>The submission deadline is 11:59 PM IST, 24 December 2025. Submissions after this deadline will not be considered.</p>
@@ -1081,8 +1075,8 @@ export default function CompetitionPageClient() {
               
               {/* Multiple Entries & Duplicate Products */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-4">Multiple Entries & Duplicate Products</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Multiple Entries & Duplicate Products</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p>Participants are free to submit multiple entries with different products, but each entry must be registered separately.</p>
                   <p>Multiple submissions by the same entrant with the same product may result in rejection of all relevant entries.</p>
                   <p>Multiple submissions of the same product by different participants may result in rejection of all relevant entries.</p>
@@ -1091,8 +1085,8 @@ export default function CompetitionPageClient() {
               
               {/* Judging & Jury Protocol */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-red-500 mb-4">Judging & Jury Protocol</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Judging & Jury Protocol</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p>Entries will be judged on their artistic merit and creative responses to the requirement to design a Christmas tree based on the theme "Christmas in future."</p>
                   <p>Entries will be presented anonymously for judging purposes.</p>
                   <p>The judges' decisions will be final and binding in all matters, and no correspondence will be entered into.</p>
@@ -1102,8 +1096,8 @@ export default function CompetitionPageClient() {
               
               {/* Verification & Compliance */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-4">Verification & Compliance</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Verification & Compliance</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p><strong>Verification:</strong> Archalley reserves the right to request additional proof of physical fabrication (e.g., build photos, process images) and to disqualify any entry that does not conform to these terms.</p>
                   <p><strong>Non-compliance:</strong> Entries that do not meet the above will be disqualified.</p>
                 </div>
@@ -1111,8 +1105,8 @@ export default function CompetitionPageClient() {
               
               {/* Intellectual Property, Permissions & Indemnity */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-red-500 mb-4">Intellectual Property, Permissions & Indemnity</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Intellectual Property, Permissions & Indemnity</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p>All copyright and any other intellectual property rights in the product photographs are vested in the entrant. The entrant confirms they have not assigned, licensed, disposed of, or otherwise encumbered any of their rights in the product.</p>
                   <p>The entrant warrants that the entry does not infringe the intellectual property rights of any third party. The entrant(s) will indemnify Archalley against any claims made by third parties in respect of such infringement.</p>
                   <p>By entering the competition, the entrant confirms and warrants that they have the permission of any persons pictured in the product photographs (if any); where the photograph includes a person under the age of 18, the entrant has obtained the consent of the parent or legal guardian for the photo to be published and used by Archalley as contemplated by these terms and conditions.</p>
@@ -1121,8 +1115,8 @@ export default function CompetitionPageClient() {
               
               {/* Archalley Rights & Liability */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-4">Archalley Rights & Liability</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Archalley Rights & Liability</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p>Archalley reserves the right to amend the competition schedule or cancel the competition at any point if it deems such action necessary or for reasons beyond its reasonable control. Archalley will not be liable to entrants for any such cancellation; however, entry fees will be refunded in such events.</p>
                   <p>Archalley reserves the right to disqualify, refuse entry or refuse to award the prize to anyone in breach of these terms and conditions.</p>
                   <p>Archalley will not be liable for any loss or damage to any entries and bears no responsibility for incomplete or delayed entries.</p>
@@ -1133,8 +1127,8 @@ export default function CompetitionPageClient() {
               
               {/* Winner Notification & Prizes */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-red-500 mb-4">Winner Notification & Prizes</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Winner Notification & Prizes</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p>Winning entrants will be notified via email or phone using the contact information provided. If Archalley is unable to contact any winner, or if the prize is not accepted within two days of being notified, the winner will be deemed to have forfeited the prize, and Archalley reserves the right to determine a new winner for that prize or cancel the prize.</p>
                   <p>The winning entrants will receive prize money/gift as announced by Archalley. There will be no alternative to the prizes/gifts.</p>
                 </div>
@@ -1142,16 +1136,16 @@ export default function CompetitionPageClient() {
               
               {/* License for Winning Entries */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-4">License for Winning Entries</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">License for Winning Entries</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p>By entering the competition, each winning entrant grants Archalley, the competition sponsors, and all media partners an irrevocable, perpetual license to reproduce, enlarge, publish, or exhibit the product; the entrant's name; product images; product detail documents; and a self-picture of the entrant, mechanically or electronically, on any media worldwide (including the internet).</p>
                 </div>
               </div>
               
               {/* Acceptance of Terms */}
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-red-500 mb-4">Acceptance of Terms</h3>
-                <div className="text-gray-300 space-y-3 text-sm">
+                <h3 className="text-xl font-bold text-white mb-4">Acceptance of Terms</h3>
+                <div className="text-white space-y-3 text-sm">
                   <p>Submitting an entry to the competition indicates acceptance of these terms and conditions.</p>
                 </div>
               </div>
@@ -1163,68 +1157,80 @@ export default function CompetitionPageClient() {
       {/* FAQ Section */}
       <section className="relative py-16 md:py-24 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
         <div className="max-w-7xl mx-auto relative">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-blue-400 mb-12 uppercase tracking-wide">
-            FREQUENTLY ASKED QUESTIONS
+          <h2 id="faq" className="text-3xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
+            <a href="#faq" className="hover:underline">FREQUENTLY ASKED QUESTIONS</a>
           </h2>
           <div className="max-w-4xl mx-auto">
-            <Accordion type="single" collapsible className="w-full space-y-4">
-              <AccordionItem value="faq-1" className="bg-slate-800/70 rounded-lg px-6">
-                <AccordionTrigger className="text-blue-400 hover:text-blue-300 text-left">
-                  Can I submit more than one entry?
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-300 pt-4">
-                  <p>Yes! You can submit multiple entries. Each entry requires a separate registration and fee payment.</p>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="faq-2" className="bg-slate-800/70 rounded-lg px-6">
-                <AccordionTrigger className="text-red-500 hover:text-red-400 text-left">
-                  Can I collaborate with others?
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-300 pt-4">
-                  <p>Yes. Group submissions are welcome. Please register as a group entry and include all team members' information during registration.</p>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="faq-3" className="bg-slate-800/70 rounded-lg px-6">
-                <AccordionTrigger className="text-blue-400 hover:text-blue-300 text-left">
-                  Are international entries allowed?
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-300 pt-4">
-                  <p>Absolutely! The competition is open to participants from around the world. All submissions must be made online through our platform.</p>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="faq-4" className="bg-slate-800/70 rounded-lg px-6">
-                <AccordionTrigger className="text-red-500 hover:text-red-400 text-left">
-                  Do I have to build the physical model?
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-300 pt-4">
-                  <p>Only if you choose the Physical Tree Category. For the Digital Tree Category, you only need to submit digital files. For Kids' Category, you can choose either physical or digital submission.</p>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="faq-5" className="bg-slate-800/70 rounded-lg px-6">
-                <AccordionTrigger className="text-blue-400 hover:text-blue-300 text-left">
-                  What format should I submit digital work in?
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-300 pt-4">
-                  <p>JPG format is required for all images. For documents, PDF format is accepted (max 5 MB). Videos should be in MP4 format (max 10 MB).</p>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="faq-6" className="bg-slate-800/70 rounded-lg px-6">
-                <AccordionTrigger className="text-red-500 hover:text-red-400 text-left">
-                  Can the tree be of any size?
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-300 pt-4">
-                  <p>Yes, There are no limitations on size, color, materials, or format; as long as it reflects the futuristic theme and can be properly documented for submission.</p>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="faq-7" className="bg-slate-800/70 rounded-lg px-6">
-                <AccordionTrigger className="text-blue-400 hover:text-blue-300 text-left">
-                  I'm 12 or younger. Can I join?
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-300 pt-4">
-                  <p>Yes! Submit under the Kids' Tree Category. The registration fee is LKR 2,000 for single entries only. Parents or guardians should assist with registration and submission.</p>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            <div className="space-y-6">
+              <div className="bg-slate-800/70 rounded-lg p-6">
+                <h3 className="text-lg md:text-xl font-bold text-white mb-3">
+                  Q: Can I submit more than one entry?
+                </h3>
+                <p className="text-white">
+                  A: Yes! You can submit multiple entries, But each should go under separate registrations.
+                </p>
+              </div>
+              
+              <div className="bg-slate-800/70 rounded-lg p-6">
+                <h3 className="text-lg md:text-xl font-bold text-white mb-3">
+                  Q: Can I collaborate with others?
+                </h3>
+                <p className="text-white">
+                  A: Yes. Group submissions are allowed as a team or a company.
+                </p>
+              </div>
+              
+              <div className="bg-slate-800/70 rounded-lg p-6">
+                <h3 className="text-lg md:text-xl font-bold text-white mb-3">
+                  Q: Are international entries allowed?
+                </h3>
+                <p className="text-white">
+                  A: Absolutely. We welcome entries from around the world.
+                </p>
+              </div>
+              
+              <div className="bg-slate-800/70 rounded-lg p-6">
+                <h3 className="text-lg md:text-xl font-bold text-white mb-3">
+                  Q: Do I have to build the physical model?
+                </h3>
+                <p className="text-white">
+                  A: Only if you choose the physical tree category. Digital entries are equally accepted.
+                </p>
+              </div>
+              
+              <div className="bg-slate-800/70 rounded-lg p-6">
+                <h3 className="text-lg md:text-xl font-bold text-white mb-3">
+                  Q: What format should I submit digital work in?
+                </h3>
+                <p className="text-white">
+                  A: JPG format is the accepted format for all submissions, other than the optional documents.
+                </p>
+              </div>
+              
+              <div className="bg-slate-800/70 rounded-lg p-6">
+                <h3 className="text-lg md:text-xl font-bold text-white mb-3">
+                  Q: Can the tree be of any size?
+                </h3>
+                <p className="text-white">
+                  A: Yes, There are no limitations for the sizes.
+                </p>
+              </div>
+              
+              <div className="bg-slate-800/70 rounded-lg p-6">
+                <h3 className="text-lg md:text-xl font-bold text-white mb-3">
+                  Q: I'm 12 or younger. Can I join?
+                </h3>
+                <p className="text-white">
+                  A: Yes! Submit under the Kids' Category – any format is allowed.
+                </p>
+              </div>
+            </div>
+            
+            <div className="mt-8">
+              <p className="text-sm md:text-base text-gray-400 italic text-center">
+                Note:-Refer to terms & conditions for all required information.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -1234,23 +1240,23 @@ export default function CompetitionPageClient() {
         <div className="max-w-7xl mx-auto relative">
           {/* Official Partners */}
           <div className="text-center">
-            <h3 className="text-xl font-bold text-blue-400 mb-4">Official Partners</h3>
+            <h3 className="text-xl font-bold text-white mb-4">Official Partners</h3>
             <div className="flex flex-wrap justify-center items-center gap-6">
-              <div className="h-24 md:h-32 flex items-center">
-                <Image
-                  src="/uploads/ABrand-Logo.jpg"
-                  alt="A BRAND"
-                  width={200}
-                  height={128}
-                  className="object-contain h-full w-auto"
-                />
-              </div>
-              <div className="h-24 md:h-32 flex items-center">
+              <div className="h-16 md:h-20 flex items-center">
                 <Image
                   src="/uploads/A-Plus-Logo.jpg"
                   alt="A PLUS"
-                  width={200}
-                  height={128}
+                  width={150}
+                  height={80}
+                  className="object-contain h-full w-auto"
+                />
+              </div>
+              <div className="h-16 md:h-20 flex items-center">
+                <Image
+                  src="/uploads/ABrand-Logo.jpg"
+                  alt="A BRAND"
+                  width={150}
+                  height={80}
                   className="object-contain h-full w-auto"
                 />
               </div>

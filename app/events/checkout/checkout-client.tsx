@@ -189,7 +189,7 @@ export default function CheckoutClient({ user }: Props) {
         let bankSlipUrl = null;
         let bankSlipFileName = null;
 
-        // Upload file to Vercel Blob if provided
+        // Upload file to Azure Blob Storage if provided
         if (bankSlipFile) {
           const uploadFormData = new FormData();
           uploadFormData.append('file', bankSlipFile);

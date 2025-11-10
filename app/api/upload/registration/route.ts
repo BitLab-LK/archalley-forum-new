@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { put } from '@vercel/blob'
+import { uploadToAzureBlob } from '@/lib/azure-blob-storage'
 import { generateSecureImageFilename, getExtensionFromMimeType } from "@/lib/utils"
 
 // Rate limiting map for unauthenticated uploads
@@ -63,28 +63,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `File too large. Maximum size is ${maxSize / (1024 * 1024)}MB.` }, { status: 400 })
     }
 
-    let buffer = Buffer.from(await file.arrayBuffer())
-    
     // Generate short secure filename for registration
     let filename = `profile_${generateSecureImageFilename(getExtensionFromMimeType(file.type)).replace('img_', '')}`
 
     try {
-      // Check if BLOB_READ_WRITE_TOKEN is available
-      if (!process.env.BLOB_READ_WRITE_TOKEN) {
-        console.error('BLOB_READ_WRITE_TOKEN not found in environment variables')
+      // Check if Azure Storage is configured
+      if (!process.env.AZURE_STORAGE_CONNECTION_STRING && 
+          (!process.env.AZURE_STORAGE_ACCOUNT_NAME || !process.env.AZURE_STORAGE_ACCOUNT_KEY)) {
+        console.error('Azure Storage configuration not found in environment variables')
         return NextResponse.json({ error: "Blob storage not configured" }, { status: 500 })
       }
 
-      const blob = await put(filename, buffer, {
-        access: 'public',
+      // Upload to Azure Blob Storage
+      const result = await uploadToAzureBlob(file, filename, {
+        containerName: 'uploads',
         contentType: file.type,
+        addRandomSuffix: false,
       })
 
       return NextResponse.json({
         images: [{
-          url: blob.url,
-          filename: filename,
-          size: buffer.length,
+          url: result.url,
+          filename: result.pathname,
+          size: result.size,
           originalName: 'profile' + getExtensionFromMimeType(file.type) // Clean name for user downloads
         }]
       })

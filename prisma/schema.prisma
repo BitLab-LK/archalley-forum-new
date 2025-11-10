@@ -52,7 +52,7 @@ model Post {
   moderationReason  String?
   moderationNotes   String?        // Internal notes for moderators
   // Content and Display
-  images            String[]       @default([]) // Store Vercel Blob URLs directly
+  images            String[]       @default([]) // Store Azure Blob Storage URLs directly
   aiTags            String[]
   originalLanguage  String         @default("English")
   translatedContent String?

@@ -1,4 +1,4 @@
-import { put, del } from '@vercel/blob'
+import { uploadToAzureBlob, deleteFromAzureBlob } from '@/lib/azure-blob-storage'
 
 export interface AdImageUploadResult {
   url: string
@@ -56,7 +56,7 @@ export function generateAdImageFilename(originalName: string, adId?: string): st
   return `advertisements/${prefix}-${timestamp}-${randomString}.${extension}`
 }
 
-// Upload advertisement image to Vercel Blob
+// Upload advertisement image to Azure Blob Storage
 export async function uploadAdImageToBlob(
   file: File | Buffer,
   originalName: string,
@@ -66,20 +66,24 @@ export async function uploadAdImageToBlob(
     // Generate filename
     const filename = generateAdImageFilename(originalName, options?.adId)
     
-    // Upload to Vercel Blob
-    const blob = await put(filename, file, {
-      access: options?.access || 'public',
+    // Determine content type
+    const contentType = file instanceof File ? file.type : 'application/octet-stream'
+    
+    // Upload to Azure Blob Storage
+    const result = await uploadToAzureBlob(file, filename, {
+      containerName: 'uploads',
+      contentType,
       addRandomSuffix: options?.addRandomSuffix ?? false, // We already add our own suffix
-      cacheControlMaxAge: options?.cacheControlMaxAge || 60 * 60 * 24 * 365, // 1 year for ads
+      cacheControl: `public, max-age=${options?.cacheControlMaxAge || 31536000}`, // 1 year for ads
     })
 
     return {
-      url: blob.url,
+      url: result.url,
       name: originalName,
       size: file instanceof File ? file.size : file.length,
-      type: file instanceof File ? file.type : 'application/octet-stream',
-      pathname: blob.pathname,
-      downloadUrl: blob.downloadUrl || blob.url
+      type: contentType,
+      pathname: result.pathname,
+      downloadUrl: result.downloadUrl
     }
   } catch (error) {
     console.error('Advertisement image upload error:', error)
@@ -87,10 +91,10 @@ export async function uploadAdImageToBlob(
   }
 }
 
-// Delete advertisement image from Vercel Blob
+// Delete advertisement image from Azure Blob Storage
 export async function deleteAdImageFromBlob(url: string): Promise<void> {
   try {
-    await del(url)
+    await deleteFromAzureBlob(url)
     console.log(`🗑️ Deleted advertisement image: ${url}`)
   } catch (error) {
     console.error('Advertisement image delete error:', error)

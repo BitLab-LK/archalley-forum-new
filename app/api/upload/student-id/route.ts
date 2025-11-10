@@ -1,10 +1,10 @@
 /**
  * Student ID Card Upload API
- * Handles uploading student ID cards to Vercel Blob storage
+ * Handles uploading student ID cards to Azure Blob storage
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { uploadToAzureBlob } from '@/lib/azure-blob-storage';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -52,17 +52,18 @@ export async function POST(request: NextRequest) {
     const fileExt = file.name.split('.').pop();
     const filename = `student-id/${session.user.id}/${timestamp}.${fileExt}`;
 
-    // Upload to Vercel Blob
-    const blob = await put(filename, file, {
-      access: 'public',
+    // Upload to Azure Blob Storage
+    const result = await uploadToAzureBlob(file, filename, {
+      containerName: 'uploads',
+      contentType: file.type,
       addRandomSuffix: true,
     });
 
     return NextResponse.json({
       success: true,
       data: {
-        url: blob.url,
-        filename: blob.pathname,
+        url: result.url,
+        filename: result.pathname,
       },
     });
   } catch (error) {

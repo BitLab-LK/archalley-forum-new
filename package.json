@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.9.1",
+    "@azure/storage-blob": "^12.29.1",
     "@emotion/react": "^11.14.0",
     "@google/generative-ai": "^0.24.1",
     "@heroicons/react": "^2.2.0",
@@ -63,7 +64,6 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/qrcode": "^1.5.5",
     "@types/speakeasy": "^2.0.10",
-    "@vercel/blob": "^1.1.1",
     "antd": "^5.27.0",
     "autoprefixer": "^10.4.20",
     "bcryptjs": "^2.4.3",

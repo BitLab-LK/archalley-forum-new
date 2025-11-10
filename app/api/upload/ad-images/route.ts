@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
 
         console.log(`📤 Uploading advertisement image: ${file.name} (${file.size} bytes)`)
 
-        // Upload to Vercel Blob
+        // Upload to Azure Blob Storage
         const result = await uploadAdImageToBlob(file, file.name, { 
           adId: adId || undefined,
           cacheControlMaxAge: 60 * 60 * 24 * 365 // 1 year cache for ads
@@ -155,7 +155,7 @@ export async function DELETE(request: NextRequest) {
 
     console.log(`🗑️ Deleting advertisement image: ${imageUrl}`)
 
-    // Delete from Vercel Blob
+    // Delete from Azure Blob Storage
     await deleteAdImageFromBlob(imageUrl)
 
     return NextResponse.json({

@@ -83,7 +83,7 @@ export interface MemberInfo {
   dateOfBirth?: string; // For students
   studentEmail?: string; // For students - University/School Email
   idCardFile?: File | string; // For students - Student ID Card / National ID / Passport (local file)
-  idCardUrl?: string; // For students - Uploaded file URL from Vercel Blob
+  idCardUrl?: string; // For students - Uploaded file URL from Azure Blob Storage
   // For kids registration
   parentFirstName?: string; // Parent/Guardian's First Name
   parentLastName?: string; // Parent/Guardian's Last Name

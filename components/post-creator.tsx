@@ -87,7 +87,7 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
   const [aiStatus, setAiStatus] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Use Vercel Blob upload hook
+  // Use Azure Blob Storage upload hook (via API)
   const {
     isUploading,
     uploadProgress,
