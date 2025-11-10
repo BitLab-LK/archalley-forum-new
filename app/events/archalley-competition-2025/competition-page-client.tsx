@@ -18,7 +18,7 @@ export default function CompetitionPageClient() {
       <section className="relative w-full">
         <div className="relative w-full h-[600px] md:h-[700px]">
           <Image
-            src="https://placehold.co/1200x600/1a1a2e/4d4dff?text=Christmas+in+Future"
+            src="/uploads/hero-bg-img.webp"
             alt="Christmas in Future"
             fill
             className="object-cover"
@@ -745,23 +745,64 @@ export default function CompetitionPageClient() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {[
-              { name: "Prof. Narein Perera", title: "Head of the Department..." },
-              { name: "Dinesh Chandrasena", title: "..." },
-              { name: "Dr. Kamal Wasala", title: "..." },
-              { name: "Yashodara Pathanjali", title: "..." },
-              { name: "Alley (Non Biological Juror)", title: "..." },
+              {
+                name: "Prof. Narein Perera",
+                bio: [
+                  "Head of the Department",
+                  "Faculty of Architecture,",
+                  "University of Moratuwa,",
+                  "Sri Lanka.",
+                ],
+                image: "/uploads/narein-perera.jpg",
+              },
+              {
+                name: "Dinesh Chandrasena",
+                bio: [
+                  "Designer & Academic Director of College of Fashion and Design,",
+                  "Colombo,",
+                  "Sri Lanka.",
+                ],
+                image: "/uploads/dinesh-chandrasena.jpg",
+              },
+              {
+                name: "Yashodara Pathanjali",
+                bio: [
+                  "Principal and Co-Founder of Independent Collective School,",
+                  "Colombo,",
+                  "Sri Lanka.",
+                ],
+                image: "/uploads/yashodara-pathanjali.png",
+              },
+              {
+                name: "Dr. Kamal Wasala",
+                bio: [
+                  "Senior Lecturer / Field Coordinator - Product Design /",
+                  "Coordinator - Timber Design and Innovation Centre, University of Moratuwa,",
+                  "Sri Lanka.",
+                ],
+                image: "/uploads/kamal-wasala.jpg",
+              },
+              {
+                name: "Alley",
+                bio: ["Non Biological Juror"],
+                image: "/uploads/alley-juror.webp",
+              },
             ].map((jury, index) => (
               <div key={index} className="bg-slate-800/70 rounded-lg p-6 border-2 border-blue-500/50 text-center">
                 <div className="relative w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden border-2 border-blue-500">
                   <Image
-                    src="https://placehold.co/200x200/1a1a2e/ffffff?text=Jury+Photo"
+                    src={jury.image}
                     alt={jury.name}
                     fill
                     className="object-cover"
                   />
                 </div>
                 <h3 className="text-lg font-bold text-white mb-2">{jury.name}</h3>
-                <p className="text-sm text-gray-400">{jury.title}</p>
+                <div className="text-sm text-gray-400 space-y-1">
+                  {jury.bio.map((line, bioIndex) => (
+                    <p key={bioIndex}>{line}</p>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
@@ -949,37 +990,29 @@ export default function CompetitionPageClient() {
       {/* Footer Section */}
       <footer className="bg-slate-950 py-12 px-4 md:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            {/* Official Partners */}
-            <div>
-              <h3 className="text-xl font-bold text-blue-400 mb-4">Official Partners</h3>
-              <div className="flex flex-wrap gap-6">
+          {/* Official Partners */}
+          <div className="text-center">
+            <h3 className="text-xl font-bold text-blue-400 mb-4">Official Partners</h3>
+            <div className="flex flex-wrap justify-center items-center gap-6">
+              <div className="h-24 md:h-32 flex items-center">
                 <Image
-                  src="https://placehold.co/150x70/ffffff/1a1a2e?text=A+BRAND"
+                  src="/uploads/ABrand-Logo.jpg"
                   alt="A BRAND"
-                  width={150}
-                  height={70}
-                  className="object-contain"
+                  width={200}
+                  height={128}
+                  className="object-contain h-full w-auto"
                 />
+              </div>
+              <div className="h-24 md:h-32 flex items-center">
                 <Image
-                  src="https://placehold.co/150x70/ffffff/1a1a2e?text=A+PLUS"
+                  src="/uploads/A-Plus-Logo.jpg"
                   alt="A PLUS"
-                  width={150}
-                  height={70}
-                  className="object-contain"
+                  width={200}
+                  height={128}
+                  className="object-contain h-full w-auto"
                 />
               </div>
             </div>
-            {/* Contact Info */}
-            <div>
-              <h3 className="text-xl font-bold text-red-500 mb-4">Contact Us</h3>
-              <p className="text-gray-300">
-                Email: <a href="mailto:projects@archalley.com" className="text-blue-400 hover:text-blue-300">projects@archalley.com</a>
-              </p>
-            </div>
-          </div>
-          <div className="border-t border-slate-700 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 Archalley. All rights reserved.</p>
           </div>
         </div>
       </footer>
