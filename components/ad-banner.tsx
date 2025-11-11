@@ -286,7 +286,7 @@ export function ExelAd({ className }: { className?: string }) {
           }}
         >
           <Image
-            src="https://archalley.com/wp-content/uploads/2025/02/Exel-Banner-345-x-345-main-banner.webp"
+            src="https://wp.archalley.com/wp-content/uploads/2025/02/Exel-Banner-345-x-345-main-banner.webp"
             alt="Advertisement"
             fill
             className="object-cover transition-all duration-300 ease-in-out group-hover:scale-105"
