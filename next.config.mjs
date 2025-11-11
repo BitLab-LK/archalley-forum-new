@@ -38,6 +38,7 @@ const nextConfig = {
   
   // Image optimization
   images: {
+    domains: ['wp.archalley.com', 'archalley.com'],
     remotePatterns: [
       {
         protocol: 'http',
