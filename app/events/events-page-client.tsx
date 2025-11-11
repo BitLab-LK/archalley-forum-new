@@ -86,14 +86,14 @@ const architecturalEvent2025: WordPressPost = {
   _embedded: {
     'wp:featuredmedia': [{
       id: 0,
-      source_url: '/uploads/christamas-tree-2025.jpeg',
+      source_url: '/uploads/tree-2025-2.webp',
       alt_text: 'Innovative Design Challenge 2025',
       media_details: {
         width: 800,
         height: 600,
         sizes: {
           large: {
-            source_url: '/uploads/christamas-tree-2025.jpeg',
+            source_url: '/uploads/tree-2025-2.webp',
             width: 800,
             height: 600
           }
