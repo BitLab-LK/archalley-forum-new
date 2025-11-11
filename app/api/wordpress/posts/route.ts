@@ -6,7 +6,14 @@ import { NextResponse } from 'next/server'
  */
 export async function GET() {
   try {
-    const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || 'https://archalley.com/wp-json/wp/v2'
+    const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL
+    if (!WORDPRESS_API_URL) {
+      console.error('[WordPress API] WORDPRESS_API_URL environment variable is not set')
+      return NextResponse.json({ 
+        posts: [],
+        error: 'WORDPRESS_API_URL environment variable is not set. Please configure it in your .env file.'
+      }, { status: 500 })
+    }
     
     // Try with status=publish first, then fallback without it
     const apiUrls = [
@@ -105,10 +112,11 @@ export async function GET() {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('[WordPress API] Outer exception:', errorMessage)
+    const apiUrl = process.env.WORDPRESS_API_URL || 'Not configured'
     return NextResponse.json({ 
       posts: [],
       error: `Exception: ${errorMessage}`,
-      apiUrl: process.env.WORDPRESS_API_URL || 'https://archalley.com/wp-json/wp/v2'
+      apiUrl
     }, { status: 200 })
   }
 }

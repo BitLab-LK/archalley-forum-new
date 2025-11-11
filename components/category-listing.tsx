@@ -2,8 +2,6 @@ import SiteLayout from "@/components/site-layout"
 import CategoryGridClient from "@/components/category-grid-client"
 import AdBannerComponent from "@/components/ad-banner"
 
-const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || 'https://archalley.com/wp-json/wp/v2'
-
 interface CategoryListingProps {
   categoryId: number
   title: string
@@ -12,6 +10,21 @@ interface CategoryListingProps {
 }
 
 export default async function CategoryListing({ categoryId, title, basePath, pageParam }: CategoryListingProps) {
+  const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL
+  if (!WORDPRESS_API_URL) {
+    console.error(`❌ CategoryListing: WORDPRESS_API_URL environment variable is not set for category ${categoryId}`)
+    return (
+      <SiteLayout>
+        <div className="space-y-8">
+          <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
+          <div className="text-red-500">
+            Error: WORDPRESS_API_URL environment variable is not configured. Please set it in your .env file.
+          </div>
+        </div>
+      </SiteLayout>
+    )
+  }
+
   const page = Math.max(parseInt(pageParam || '1', 10) || 1, 1)
   const perPage = 10
 
