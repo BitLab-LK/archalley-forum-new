@@ -2,14 +2,18 @@
 
 /**
  * Get WordPress API URL from environment variables
- * Throws an error if WORDPRESS_API_URL is not set
+ * Returns null if WORDPRESS_API_URL is not set (for graceful degradation)
  */
-function getWordPressApiUrl(): string {
+function getWordPressApiUrl(): string | null {
   const apiUrl = process.env.WORDPRESS_API_URL
   if (!apiUrl) {
-    throw new Error(
-      'WORDPRESS_API_URL environment variable is not set. Please configure it in your .env file.'
-    )
+    if (typeof window === 'undefined') {
+      // Server-side: log error but don't throw to prevent crashes
+      console.error(
+        'WORDPRESS_API_URL environment variable is not set. Please configure it in your .env file.'
+      )
+    }
+    return null
   }
   return apiUrl
 }
@@ -77,6 +81,10 @@ export interface WordPressPost {
 export async function getAllPosts(page: number = 1, perPage: number = 4): Promise<WordPressPost[]> {
   try {
     const WORDPRESS_API_URL = getWordPressApiUrl()
+    if (!WORDPRESS_API_URL) {
+      console.warn('WordPress API URL not configured, returning empty posts array')
+      return []
+    }
     const response = await fetch(
       `${WORDPRESS_API_URL}/posts?_embed=wp:featuredmedia,wp:term&page=${page}&per_page=${perPage}&orderby=date&order=desc`,
       {
@@ -232,6 +240,10 @@ export interface WordPressCategory {
 export async function getAllCategories(): Promise<WordPressCategory[]> {
   try {
     const WORDPRESS_API_URL = getWordPressApiUrl()
+    if (!WORDPRESS_API_URL) {
+      console.warn('WordPress API URL not configured, returning empty categories array')
+      return []
+    }
     const response = await fetch(
       `${WORDPRESS_API_URL}/categories?per_page=100&hide_empty=true`,
       {
@@ -266,6 +278,10 @@ export async function getAllCategories(): Promise<WordPressCategory[]> {
 export async function getCategoryBySlug(slug: string): Promise<WordPressCategory | null> {
   try {
     const WORDPRESS_API_URL = getWordPressApiUrl()
+    if (!WORDPRESS_API_URL) {
+      console.warn('WordPress API URL not configured, returning null for category')
+      return null
+    }
     const response = await fetch(
       `${WORDPRESS_API_URL}/categories?slug=${encodeURIComponent(slug)}&per_page=1`,
       {
@@ -300,6 +316,10 @@ export async function getCategoryBySlug(slug: string): Promise<WordPressCategory
 export async function getPostsByCategory(categoryId: number, page: number = 1, perPage: number = 8): Promise<WordPressPost[]> {
   try {
     const WORDPRESS_API_URL = getWordPressApiUrl()
+    if (!WORDPRESS_API_URL) {
+      console.warn('WordPress API URL not configured, returning empty posts array')
+      return []
+    }
     const response = await fetch(
       `${WORDPRESS_API_URL}/posts?_embed=wp:featuredmedia,wp:term&categories=${categoryId}&page=${page}&per_page=${perPage}&status=publish&orderby=date&order=desc`,
       {
@@ -570,6 +590,10 @@ export async function getArticlesPosts(page: number = 1, perPage: number = 20): 
 export async function searchPosts(searchTerm: string, page: number = 1, perPage: number = 10): Promise<WordPressPost[]> {
   try {
     const WORDPRESS_API_URL = getWordPressApiUrl()
+    if (!WORDPRESS_API_URL) {
+      console.warn('WordPress API URL not configured, returning empty search results')
+      return []
+    }
     const response = await fetch(
       `${WORDPRESS_API_URL}/posts?_embed=wp:featuredmedia,wp:term&search=${encodeURIComponent(searchTerm)}&page=${page}&per_page=${perPage}&status=publish&orderby=relevance`,
       {
@@ -604,6 +628,10 @@ export async function searchPosts(searchTerm: string, page: number = 1, perPage:
 export async function getProjectBySlug(slug: string): Promise<WordPressPost | null> {
   try {
     const WORDPRESS_API_URL = getWordPressApiUrl()
+    if (!WORDPRESS_API_URL) {
+      console.warn('WordPress API URL not configured, returning null for project')
+      return null
+    }
     // URL encode the slug to handle special characters
     const encodedSlug = encodeURIComponent(slug)
     
@@ -649,6 +677,10 @@ export async function getProjectBySlug(slug: string): Promise<WordPressPost | nu
 async function getProjectBySlugFallback(slug: string): Promise<WordPressPost | null> {
   try {
     const WORDPRESS_API_URL = getWordPressApiUrl()
+    if (!WORDPRESS_API_URL) {
+      console.warn('WordPress API URL not configured, returning null for project fallback')
+      return null
+    }
     console.log(`Attempting fallback fetch for slug: "${slug}"`)
     
     // Fetch a larger batch of recent posts and search for the slug
@@ -716,6 +748,10 @@ export async function getPostsByCategoryPaginated(
 ): Promise<WordPressPost[]> {
   try {
     const WORDPRESS_API_URL = getWordPressApiUrl()
+    if (!WORDPRESS_API_URL) {
+      console.warn('WordPress API URL not configured, returning empty posts array')
+      return []
+    }
     const response = await fetch(
       `${WORDPRESS_API_URL}/posts?_embed=wp:featuredmedia,wp:term&categories=${categoryId}&per_page=${perPage}&status=publish&orderby=date&order=desc`,
       {
@@ -750,6 +786,10 @@ export async function getPostsByCategoryPaginated(
 export async function getMediaUrl(mediaId: number): Promise<string | null> {
   try {
     const WORDPRESS_API_URL = getWordPressApiUrl()
+    if (!WORDPRESS_API_URL) {
+      console.warn('WordPress API URL not configured, returning null for media URL')
+      return null
+    }
     const response = await fetch(
       `${WORDPRESS_API_URL}/media/${mediaId}`,
       {
