@@ -332,9 +332,13 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
             className="mt-0.5 w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer"
           />
           <span className="text-xs text-gray-700 leading-tight">
-            I agree to all{' '}
+            I agree to the{' '}
+            <a href="/events/archalley-competition-2025/terms" target="_blank" className="text-orange-500 hover:underline font-medium">
+              Competition Terms & Conditions
+            </a>
+            ,{' '}
             <a href="/terms-conditions" target="_blank" className="text-orange-500 hover:underline font-medium">
-              Terms & Conditions
+              Website Terms & Conditions
             </a>
             ,{' '}
             <a href="/privacy-policy" target="_blank" className="text-orange-500 hover:underline font-medium">

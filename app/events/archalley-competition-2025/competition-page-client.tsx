@@ -112,14 +112,20 @@ export default function CompetitionPageClient() {
             <div className="max-w-7xl w-full flex flex-col items-end text-right space-y-8 md:space-y-10 lg:space-y-12">
               <h1 className="font-aquire uppercase mb-12">
                 <span 
-                  className="block text-5xl md:text-6xl lg:text-7xl bg-gradient-to-r from-[#C00000] via-[#6A4A60] via-[#95B3D7] to-[#376092] bg-clip-text text-transparent mb-4 md:mb-6"
-                  style={{ WebkitBoxReflect: 'below 0 linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.1) 30%, transparent 50%)' }}
+                  className="block text-5xl md:text-6xl lg:text-7xl bg-clip-text text-transparent mb-4 md:mb-6"
+                  style={{ 
+                    backgroundImage: 'linear-gradient(to right, #C00000 0%, #6A4A60 33%, #95B3D7 66%, #376092 100%)',
+                    WebkitBoxReflect: 'below 0 linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.1) 30%, transparent 50%)'
+                  }}
                 >
                   CHRISTMAS IN
                 </span>
                 <span 
-                  className="block text-6xl md:text-7xl lg:text-8xl bg-gradient-to-r from-[#C00000] via-[#6A4A60] via-[#95B3D7] to-[#376092] bg-clip-text text-transparent"
-                  style={{ WebkitBoxReflect: 'below 0 linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.1) 30%, transparent 50%)' }}
+                  className="block text-6xl md:text-7xl lg:text-8xl bg-clip-text text-transparent"
+                  style={{ 
+                    backgroundImage: 'linear-gradient(to right, #C00000 0%, #6A4A60 33%, #95B3D7 66%, #376092 100%)',
+                    WebkitBoxReflect: 'below 0 linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.1) 30%, transparent 50%)'
+                  }}
                 >
                   FUTURE
                 </span>
