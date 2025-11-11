@@ -1100,40 +1100,98 @@ export default function RegistrationForm({
           <label className="block text-sm font-medium text-black mb-3">
             Registration Type <span className="text-orange-500">*</span>
           </label>
-          <div className="space-y-2">
-            {registrationTypes.map((type) => (
-              <label
-                key={type.id}
-                className={`flex items-center p-3 border rounded cursor-pointer transition-all ${
-                  selectedType?.id === type.id
-                    ? 'border-orange-500 bg-orange-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="registrationType"
-                  checked={selectedType?.id === type.id}
-                  onChange={() => {
-                    setSelectedType(type);
-                    // Reset members if changing type
-                    if (type.maxMembers < members.length) {
-                      setMembers([members[0]]);
-                    } else if (members.length === 0) {
-                      // Ensure at least one member exists for auto-fill
-                      setMembers([{ name: '', firstName: '', lastName: '', email: '' }]);
-                    }
-                  }}
-                  className="w-4 h-4 text-orange-500 border-gray-300 focus:ring-orange-500"
-                />
-                <div className="ml-3 flex-1">
-                  <h3 className="font-medium text-black text-sm">{type.name}</h3>
-                  {type.description && (
-                    <p className="text-xs text-gray-600 mt-0.5">{type.description}</p>
-                  )}
+          <div className="space-y-4">
+            {/* For Digital & Physical Tree Categories */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2 pb-1 border-b border-gray-200">
+                For Digital & Physical Tree Categories
+              </h3>
+              <div className="space-y-2 mt-2">
+                {registrationTypes
+                  .filter((type) => type.type !== 'KIDS')
+                  .map((type) => (
+                    <label
+                      key={type.id}
+                      className={`flex items-center p-3 border rounded cursor-pointer transition-all ${
+                        selectedType?.id === type.id
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="registrationType"
+                        checked={selectedType?.id === type.id}
+                        onChange={() => {
+                          setSelectedType(type);
+                          // Reset members if changing type
+                          if (type.maxMembers < members.length) {
+                            setMembers([members[0]]);
+                          } else if (members.length === 0) {
+                            // Ensure at least one member exists for auto-fill
+                            setMembers([{ name: '', firstName: '', lastName: '', email: '' }]);
+                          }
+                        }}
+                        className="w-4 h-4 text-orange-500 border-gray-300 focus:ring-orange-500"
+                      />
+                      <div className="ml-3 flex-1">
+                        <h3 className="font-medium text-black text-sm">{type.name}</h3>
+                        {type.description && (
+                          <p className="text-xs text-gray-600 mt-0.5">{type.description}</p>
+                        )}
+                      </div>
+                    </label>
+                  ))}
+              </div>
+            </div>
+
+            {/* For Kids' Tree Category */}
+            {registrationTypes.some((type) => type.type === 'KIDS') && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2 pb-1 border-b border-gray-200">
+                  For Kids' Tree Category
+                </h3>
+                <div className="space-y-2 mt-2">
+                  {registrationTypes
+                    .filter((type) => type.type === 'KIDS')
+                    .map((type) => (
+                      <label
+                        key={type.id}
+                        className={`flex items-center p-3 border rounded cursor-pointer transition-all ${
+                          selectedType?.id === type.id
+                            ? 'border-orange-500 bg-orange-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="registrationType"
+                          checked={selectedType?.id === type.id}
+                          onChange={() => {
+                            setSelectedType(type);
+                            // Reset members if changing type
+                            if (type.maxMembers < members.length) {
+                              setMembers([members[0]]);
+                            } else if (members.length === 0) {
+                              // Ensure at least one member exists for auto-fill
+                              setMembers([{ name: '', firstName: '', lastName: '', email: '' }]);
+                            }
+                          }}
+                          className="w-4 h-4 text-orange-500 border-gray-300 focus:ring-orange-500"
+                        />
+                        <div className="ml-3 flex-1">
+                          <h3 className="font-medium text-black text-sm">
+                            {type.type === 'KIDS' ? 'Kids\' Entry' : type.name}
+                          </h3>
+                          {type.description && (
+                            <p className="text-xs text-gray-600 mt-0.5">{type.description}</p>
+                          )}
+                        </div>
+                      </label>
+                    ))}
                 </div>
-              </label>
-            ))}
+              </div>
+            )}
           </div>
         </div>
 
