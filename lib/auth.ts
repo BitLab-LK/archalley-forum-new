@@ -406,6 +406,22 @@ export const authOptions: NextAuthOptions = {
           }
         }
       }
+
+      // If this is a new OAuth user, also send the welcome email (non-blocking)
+      try {
+        if (isNewUser && user?.email) {
+          import("@/lib/email-service").then(({ sendWelcomeEmail }) => {
+            const userName = (user.name as string) || 'User'
+            sendWelcomeEmail(user.email!, userName).catch((error) => {
+              console.error("Failed to send welcome email for new OAuth user:", error)
+            })
+          }).catch((err) => {
+            console.error('Failed to import email-service for welcome email:', err)
+          })
+        }
+      } catch (err) {
+        console.error('Error while attempting to send welcome email in signIn event:', err)
+      }
       
       // Update user activity on sign in
       if (user?.id) {

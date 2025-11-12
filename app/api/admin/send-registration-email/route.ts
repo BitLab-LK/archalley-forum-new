@@ -86,23 +86,23 @@ export async function POST(request: NextRequest) {
     console.log('📧 [EMAIL API] Reject Reason:', rejectReason || 'N/A');
     
     if (template === 'BANK_TRANSFER_PENDING') {
-      subject = `Payment Pending - ${competitionTitle}`;
+      subject = `Payment Pending - Archalley Competition 2025`;
       message = `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
-          <!-- Header with Logo -->
-          <div style="background: #000000; padding: 30px; text-align: center; border-bottom: 3px solid #f97316;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 2px;">ARCHALLEY</h1>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+          <!-- Header -->
+          <div style="text-align: center; padding: 30px 0; border-bottom: 2px solid #FFA000;">
+            <h1 style="color: #FFA000; margin: 0; font-size: 32px;">ARCHALLEY</h1>
           </div>
           
           <!-- Main Content -->
-          <div style="padding: 40px 30px; background: #ffffff;">
-            <h2 style="color: #000000; margin: 0 0 20px 0; font-size: 24px; font-weight: 400;">Payment Pending</h2>
+          <div style="padding: 30px 20px;">
+            <h2 style="color: #333; margin: 0 0 20px 0; font-size: 24px; font-weight: 400;">Payment Pending</h2>
             
-            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+            <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
               Dear ${name},
             </p>
             
-            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+            <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
               Your bank transfer details for <strong>${competitionTitle}</strong> have been successfully submitted and are awaiting verification.
             </p>
             
@@ -110,18 +110,18 @@ export async function POST(request: NextRequest) {
             <table style="width: 100%; border-collapse: collapse; margin: 25px 0; border: 1px solid #e5e5e5;">
               <tr style="background: #f9f9f9;">
                 <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px; width: 40%;">Registration Number</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #000; font-size: 14px; font-weight: 500;">${registrationNumber}</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #333; font-size: 14px; font-weight: 500;">${registrationNumber}</td>
               </tr>
               <tr>
                 <td style="padding: 12px 15px; color: #666; font-size: 14px;">Status</td>
-                <td style="padding: 12px 15px; color: #f97316; font-size: 14px; font-weight: 500;">Payment Verification Pending</td>
+                <td style="padding: 12px 15px; color: #FFA000; font-size: 14px; font-weight: 500;">Payment Verification Pending</td>
               </tr>
             </table>
 
             <!-- Next Steps -->
             <div style="margin: 30px 0;">
-              <h3 style="color: #000000; margin: 0 0 15px 0; font-size: 16px; font-weight: 500;">What happens next</h3>
-              <ol style="color: #4a4a4a; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
+              <h3 style="color: #333; margin: 0 0 15px 0; font-size: 16px; font-weight: 500;">What happens next</h3>
+              <ol style="color: #333; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
                 <li style="margin-bottom: 8px;">Our admin team will review your bank transfer slip within 24-48 hours</li>
                 <li style="margin-bottom: 8px;">Once verified, your payment status will be updated to "Confirmed"</li>
                 <li style="margin-bottom: 8px;">You will receive another email confirming your registration</li>
@@ -131,72 +131,45 @@ export async function POST(request: NextRequest) {
             <!-- Contact Info -->
             <div style="border-top: 1px solid #e5e5e5; padding-top: 20px; margin-top: 30px;">
               <p style="color: #666; font-size: 13px; line-height: 1.6; margin: 0;">
-                <strong style="color: #000;">Important:</strong> Please check your email regularly for updates.
+                <strong style="color: #333;">Important:</strong> Please check your email regularly for updates.
               </p>
             </div>
           </div>
           
           <!-- Footer -->
-          <div style="background: #f9f9f9; padding: 30px 25px; border-top: 1px solid #e5e5e5;">
-            <!-- Contact Information -->
-            <div style="text-align: center; margin-bottom: 20px;">
-              <h3 style="color: #000; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">CONTACT US</h3>
-              <div style="display: inline-block; text-align: left;">
-                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   Email: <a href="mailto:${process.env.SMTP_FROM || 'support@archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.SMTP_FROM || 'support@archalley.com'}</a>
-                </p>
-                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   WhatsApp: <a href="https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, '') || '94711942194'}" style="color: #25D366; text-decoration: none;">${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+94 71 194 2194'}</a>
-                </p>
-                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   Website: <a href="${process.env.NEXTAUTH_URL || 'https://archalley.com'}" style="color: #f97316; text-decoration: none;">${process.env.NEXTAUTH_URL?.replace('https://', '').replace('http://', '') || 'archalley.com'}</a>
-                </p>
-              </div>
+          <div style="background: #f9f9f9; padding: 30px 20px; text-align: center; border-top: 1px solid #e5e5e5;">
+            <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+              Questions? Email us at <a href="mailto:projects@archalley.com" style="color: #FFA000; text-decoration: none;">projects@archalley.com</a>
+            </p>
+            <div style="margin: 20px 0;">
+              <a href="https://facebook.com/archalley" style="color: #1877f2; text-decoration: none; margin: 0 10px; font-size: 13px;">Facebook</a>
+              <a href="https://instagram.com/archalley" style="color: #e4405f; text-decoration: none; margin: 0 10px; font-size: 13px;">Instagram</a>
+              <a href="https://linkedin.com/company/archalley" style="color: #0a66c2; text-decoration: none; margin: 0 10px; font-size: 13px;">LinkedIn</a>
             </div>
-
-            <!-- Social Media Links -->
-            <div style="text-align: center; margin: 20px 0; padding: 15px 0; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5;">
-              <p style="color: #666; font-size: 12px; margin: 0 0 10px 0; font-weight: 600;">FOLLOW US</p>
-              <div style="display: inline-block;">
-                <a href="https://facebook.com/archalley" style="display: inline-block; margin: 0 8px; color: #1877f2; text-decoration: none; font-size: 13px;">Facebook</a>
-                <span style="color: #ddd;">|</span>
-                <a href="https://instagram.com/archalley" style="display: inline-block; margin: 0 8px; color: #e4405f; text-decoration: none; font-size: 13px;">Instagram</a>
-                <span style="color: #ddd;">|</span>
-                <a href="https://linkedin.com/company/archalley" style="display: inline-block; margin: 0 8px; color: #0a66c2; text-decoration: none; font-size: 13px;">LinkedIn</a>
-              </div>
-            </div>
-
-            <!-- Legal & Disclaimer -->
-            <div style="text-align: center;">
-              <p style="color: #999; font-size: 11px; margin: 0 0 8px 0; line-height: 1.6;">
-                © ${new Date().getFullYear()} <strong style="color: #000;">Archalley Forum</strong>. All rights reserved.
-              </p>
-              <p style="color: #999; font-size: 11px; margin: 0; line-height: 1.6;">
-                This is an automated message, please do not reply to this email.<br>
-                For support inquiries, please use the contact information above.
-              </p>
-            </div>
+            <p style="margin: 10px 0 0 0; color: #999; font-size: 11px;">
+              © ${new Date().getFullYear()} Archalley Forum. All rights reserved.
+            </p>
           </div>
         </div>
       `;
     } else if (template === 'PAYMENT_REJECTED') {
-      subject = `Payment Issue - ${competitionTitle}`;
+      subject = `Payment Issue - Archalley Competition 2025`;
       message = `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
-          <!-- Header with Logo -->
-          <div style="background: #000000; padding: 30px; text-align: center; border-bottom: 3px solid #dc2626;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 2px;">ARCHALLEY</h1>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+          <!-- Header -->
+          <div style="text-align: center; padding: 30px 0; border-bottom: 2px solid #FFA000;">
+            <h1 style="color: #FFA000; margin: 0; font-size: 32px;">ARCHALLEY</h1>
           </div>
           
           <!-- Main Content -->
-          <div style="padding: 40px 30px; background: #ffffff;">
+          <div style="padding: 30px 20px;">
             <h2 style="color: #dc2626; margin: 0 0 20px 0; font-size: 24px; font-weight: 400;">Payment Not Verified</h2>
             
-            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+            <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
               Dear ${name},
             </p>
 
-            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+            <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
               We regret to inform you that we were unable to verify your bank transfer payment for <strong>${competitionTitle}</strong>.
             </p>
             
@@ -204,11 +177,11 @@ export async function POST(request: NextRequest) {
             <table style="width: 100%; border-collapse: collapse; margin: 25px 0; border: 1px solid #e5e5e5;">
               <tr style="background: #f9f9f9;">
                 <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px; width: 40%;">Registration Number</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #000; font-size: 14px; font-weight: 500;">${registrationNumber}</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #333; font-size: 14px; font-weight: 500;">${registrationNumber}</td>
               </tr>
               <tr style="background: #f9f9f9;">
                 <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px;">Competition</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #000; font-size: 14px; font-weight: 500;">${competitionTitle}</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #333; font-size: 14px; font-weight: 500;">${competitionTitle}</td>
               </tr>
               <tr>
                 <td style="padding: 12px 15px; color: #666; font-size: 14px;">Status</td>
@@ -219,8 +192,8 @@ export async function POST(request: NextRequest) {
             ${rejectReason ? `
               <!-- Admin's Note -->
               <div style="border: 2px solid #f59e0b; padding: 20px; margin: 25px 0; background: #fffbeb;">
-                <h3 style="color: #000000; margin: 0 0 12px 0; font-size: 16px; font-weight: 500;">Admin's Note</h3>
-                <p style="margin: 0; color: #4a4a4a; font-size: 14px; line-height: 1.6;">
+                <h3 style="color: #333; margin: 0 0 12px 0; font-size: 16px; font-weight: 500;">Admin's Note</h3>
+                <p style="margin: 0; color: #333; font-size: 14px; line-height: 1.6;">
                   ${rejectReason}
                 </p>
               </div>
@@ -228,8 +201,8 @@ export async function POST(request: NextRequest) {
 
             <!-- Common Reasons -->
             <div style="margin: 30px 0;">
-              <h3 style="color: #000000; margin: 0 0 15px 0; font-size: 16px; font-weight: 500;">Common reasons for payment issues</h3>
-              <ul style="color: #4a4a4a; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
+              <h3 style="color: #333; margin: 0 0 15px 0; font-size: 16px; font-weight: 500;">Common reasons for payment issues</h3>
+              <ul style="color: #333; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
                 <li style="margin-bottom: 8px;">Bank slip image was unclear or unreadable</li>
                 <li style="margin-bottom: 8px;">Payment details do not match our records</li>
                 <li style="margin-bottom: 8px;">Incorrect amount transferred</li>
@@ -239,8 +212,8 @@ export async function POST(request: NextRequest) {
 
             <!-- What to Do -->
             <div style="margin: 30px 0;">
-              <h3 style="color: #000000; margin: 0 0 15px 0; font-size: 16px; font-weight: 500;">What you can do</h3>
-              <ol style="color: #4a4a4a; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
+              <h3 style="color: #333; margin: 0 0 15px 0; font-size: 16px; font-weight: 500;">What you can do</h3>
+              <ol style="color: #333; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
                 <li style="margin-bottom: 8px;">Verify the payment was made to the correct account</li>
                 <li style="margin-bottom: 8px;">Check if the correct amount was transferred</li>
                 <li style="margin-bottom: 8px;">Upload a clearer image of your bank slip</li>
@@ -254,62 +227,39 @@ export async function POST(request: NextRequest) {
           </div>
           
           <!-- Footer -->
-          <div style="background: #f9f9f9; padding: 30px 25px; border-top: 1px solid #e5e5e5;">
-            <!-- Contact Information -->
-            <div style="text-align: center; margin-bottom: 20px;">
-              <h3 style="color: #000; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">VISIT US</h3>
-              <div style="display: inline-block; text-align: left;">
-                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   Website: <a href="https://archalley.com/" style="color: #f97316; text-decoration: none;">archalley.com</a>
-                </p>
-              </div>
+          <div style="background: #f9f9f9; padding: 30px 20px; text-align: center; border-top: 1px solid #e5e5e5;">
+            <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+              Questions? Email us at <a href="mailto:projects@archalley.com" style="color: #FFA000; text-decoration: none;">projects@archalley.com</a>
+            </p>
+            <div style="margin: 20px 0;">
+              <a href="https://facebook.com/archalley" style="color: #1877f2; text-decoration: none; margin: 0 10px; font-size: 13px;">Facebook</a>
+              <a href="https://instagram.com/archalley" style="color: #e4405f; text-decoration: none; margin: 0 10px; font-size: 13px;">Instagram</a>
+              <a href="https://linkedin.com/company/archalley" style="color: #0a66c2; text-decoration: none; margin: 0 10px; font-size: 13px;">LinkedIn</a>
             </div>
-
-            <!-- Social Media Links -->
-            <div style="text-align: center; margin: 20px 0; padding: 15px 0; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5;">
-              <p style="color: #666; font-size: 12px; margin: 0 0 10px 0; font-weight: 600;">FOLLOW US</p>
-              <div style="display: inline-block;">
-                <a href="https://facebook.com/archalley" style="display: inline-block; margin: 0 8px; color: #1877f2; text-decoration: none; font-size: 13px;">Facebook</a>
-                <span style="color: #ddd;">|</span>
-                <a href="https://www.instagram.com/archalley_insta/" style="display: inline-block; margin: 0 8px; color: #e4405f; text-decoration: none; font-size: 13px;">Instagram</a>
-                <span style="color: #ddd;">|</span>
-                <a href="https://www.linkedin.com/company/archalleypage/" style="display: inline-block; margin: 0 8px; color: #0a66c2; text-decoration: none; font-size: 13px;">LinkedIn</a>
-                <span style="color: #ddd;">|</span>
-                <a href="https://www.youtube.com/@archalleytube" style="display: inline-block; margin: 0 8px; color: #ff0000; text-decoration: none; font-size: 13px;">YouTube</a>
-              </div>
-            </div>
-
-            <!-- Legal & Disclaimer -->
-            <div style="text-align: center;">
-              <p style="color: #999; font-size: 11px; margin: 0 0 8px 0; line-height: 1.6;">
-                © ${new Date().getFullYear()} <strong style="color: #000;">Archalley Forum</strong>. All rights reserved.
-              </p>
-              <p style="color: #999; font-size: 11px; margin: 0; line-height: 1.6;">
-                This is an automated message, please do not reply to this email.<br>
-                For support inquiries, please use the contact information above.
-              </p>
-            </div>
+            <p style="margin: 10px 0 0 0; color: #999; font-size: 11px;">
+              © ${new Date().getFullYear()} Archalley Forum. All rights reserved.
+            </p>
           </div>
         </div>
       `;
     } else if (template === 'PAYMENT_VERIFIED') {
-      subject = `Payment Confirmed - ${competitionTitle}`;
+      subject = `Payment Confirmed - Archalley Competition 2025`;
       message = `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
-          <!-- Header with Logo -->
-          <div style="background: #000000; padding: 30px; text-align: center; border-bottom: 3px solid #10b981;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 2px;">ARCHALLEY</h1>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+          <!-- Header -->
+          <div style="text-align: center; padding: 30px 0; border-bottom: 2px solid #FFA000;">
+            <h1 style="color: #FFA000; margin: 0; font-size: 32px;">ARCHALLEY</h1>
           </div>
           
           <!-- Main Content -->
-          <div style="padding: 40px 30px; background: #ffffff;">
+          <div style="padding: 30px 20px;">
             <h2 style="color: #10b981; margin: 0 0 20px 0; font-size: 24px; font-weight: 400;">Payment Confirmed</h2>
             
-            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+            <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
               Dear ${name},
             </p>
             
-            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+            <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
               Great news! Your bank transfer has been verified and your registration for <strong>${competitionTitle}</strong> is now confirmed.
             </p>
             
@@ -317,11 +267,11 @@ export async function POST(request: NextRequest) {
             <table style="width: 100%; border-collapse: collapse; margin: 25px 0; border: 1px solid #e5e5e5;">
               <tr style="background: #f9f9f9;">
                 <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px; width: 40%;">Registration Number</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #000; font-size: 14px; font-weight: 500;">${registrationNumber}</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #333; font-size: 14px; font-weight: 500;">${registrationNumber}</td>
               </tr>
               <tr style="background: #f9f9f9;">
                 <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px;">Competition</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #000; font-size: 14px; font-weight: 500;">${competitionTitle}</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #333; font-size: 14px; font-weight: 500;">${competitionTitle}</td>
               </tr>
               <tr>
                 <td style="padding: 12px 15px; color: #666; font-size: 14px;">Status</td>
@@ -331,8 +281,8 @@ export async function POST(request: NextRequest) {
 
             <!-- Next Steps -->
             <div style="margin: 30px 0;">
-              <h3 style="color: #000000; margin: 0 0 15px 0; font-size: 16px; font-weight: 500;">Next steps</h3>
-              <ol style="color: #4a4a4a; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
+              <h3 style="color: #333; margin: 0 0 15px 0; font-size: 16px; font-weight: 500;">Next steps</h3>
+              <ol style="color: #333; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
                 <li style="margin-bottom: 8px;">Review the competition guidelines carefully</li>
                 <li style="margin-bottom: 8px;">Prepare your submission according to the requirements</li>
                 <li style="margin-bottom: 8px;">Submit your entry before the deadline</li>
@@ -343,11 +293,11 @@ export async function POST(request: NextRequest) {
             <!-- CTA Buttons -->
             <div style="text-align: center; margin: 35px 0 0 0;">
               <a href="${process.env.NEXTAUTH_URL}/profile" 
-                 style="background: #000000; color: #ffffff; padding: 14px 35px; text-decoration: none; display: inline-block; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; border: 2px solid #000000; margin-right: 10px;">
+                 style="background: #FFA000; color: #ffffff; padding: 14px 35px; text-decoration: none; display: inline-block; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; border: 2px solid #FFA000; margin-right: 10px;">
                 VIEW MY REGISTRATIONS
               </a>
               <a href="${process.env.NEXTAUTH_URL}/events" 
-                 style="background: #ffffff; color: #000000; padding: 14px 35px; text-decoration: none; display: inline-block; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; border: 2px solid #000000;">
+                 style="background: #ffffff; color: #FFA000; padding: 14px 35px; text-decoration: none; display: inline-block; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; border: 2px solid #FFA000;">
                 BROWSE EVENTS
               </a>
             </div>
@@ -358,62 +308,40 @@ export async function POST(request: NextRequest) {
           </div>
           
           <!-- Footer -->
-          <div style="background: #f9f9f9; padding: 30px 25px; border-top: 1px solid #e5e5e5;">
-            <!-- Contact Information -->
-            <div style="text-align: center; margin-bottom: 20px;">
-              <h3 style="color: #000; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">VISIT US</h3>
-              <div style="display: inline-block; text-align: left;">
-                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   Website: <a href="https://archalley.com/" style="color: #f97316; text-decoration: none;">archalley.com</a>
-                </p>
-              </div>
+          <div style="background: #f9f9f9; padding: 30px 20px; text-align: center; border-top: 1px solid #e5e5e5;">
+            <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+              Questions? Email us at <a href="mailto:projects@archalley.com" style="color: #FFA000; text-decoration: none;">projects@archalley.com</a>
+            </p>
+            <div style="margin: 20px 0;">
+              <a href="https://facebook.com/archalley" style="color: #1877f2; text-decoration: none; margin: 0 10px; font-size: 13px;">Facebook</a>
+              <a href="https://instagram.com/archalley" style="color: #e4405f; text-decoration: none; margin: 0 10px; font-size: 13px;">Instagram</a>
+              <a href="https://linkedin.com/company/archalley" style="color: #0a66c2; text-decoration: none; margin: 0 10px; font-size: 13px;">LinkedIn</a>
             </div>
-
-            <!-- Social Media Links -->
-            <div style="text-align: center; margin: 20px 0; padding: 15px 0; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5;">
-              <p style="color: #666; font-size: 12px; margin: 0 0 10px 0; font-weight: 600;">FOLLOW US</p>
-              <div style="display: inline-block;">
-                <a href="https://facebook.com/archalley" style="display: inline-block; margin: 0 8px; color: #1877f2; text-decoration: none; font-size: 13px;">Facebook</a>
-                <span style="color: #ddd;">|</span>
-                <a href="https://www.instagram.com/archalley_insta/" style="display: inline-block; margin: 0 8px; color: #e4405f; text-decoration: none; font-size: 13px;">Instagram</a>
-                <span style="color: #ddd;">|</span>
-                <a href="https://www.linkedin.com/company/archalleypage/" style="display: inline-block; margin: 0 8px; color: #0a66c2; text-decoration: none; font-size: 13px;">LinkedIn</a>
-                <span style="color: #ddd;">|</span>
-                <a href="https://www.youtube.com/@archalleytube" style="display: inline-block; margin: 0 8px; color: #ff0000; text-decoration: none; font-size: 13px;">YouTube</a>
-              </div>
-            </div>
-
-            <!-- Legal & Disclaimer -->
-            <div style="text-align: center;">
-              <p style="color: #999; font-size: 11px; margin: 0 0 8px 0; line-height: 1.6;">
-                © ${new Date().getFullYear()} <strong style="color: #000;">Archalley Forum</strong>. All rights reserved.
-              </p>
-              <p style="color: #999; font-size: 11px; margin: 0; line-height: 1.6;">
-                This is an automated message, please do not reply to this email.<br>
-                For support inquiries, please use the contact information above.
+            <p style="margin: 10px 0 0 0; color: #999; font-size: 11px;">
+              © ${new Date().getFullYear()} Archalley Forum. All rights reserved.
             </p>
           </div>
         </div>
       `;
     } else {
       // Generic message for other statuses
-      subject = `Update on Your Registration - ${competitionTitle}`;
+      subject = `Update on Your Registration - Archalley Competition 2025`;
       message = `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
-          <!-- Header with Logo -->
-          <div style="background: #000000; padding: 30px; text-align: center; border-bottom: 3px solid #f97316;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 2px;">ARCHALLEY</h1>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+          <!-- Header -->
+          <div style="text-align: center; padding: 30px 0; border-bottom: 2px solid #FFA000;">
+            <h1 style="color: #FFA000; margin: 0; font-size: 32px;">ARCHALLEY</h1>
           </div>
           
           <!-- Main Content -->
-          <div style="padding: 40px 30px; background: #ffffff;">
-            <h2 style="color: #000000; margin: 0 0 20px 0; font-size: 24px; font-weight: 400;">Registration Update</h2>
+          <div style="padding: 30px 20px;">
+            <h2 style="color: #333; margin: 0 0 20px 0; font-size: 24px; font-weight: 400;">Registration Update</h2>
             
-            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+            <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
               Dear ${name},
             </p>
             
-            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+            <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
               We are reaching out regarding your registration for <strong>${competitionTitle}</strong>.
             </p>
             
@@ -421,55 +349,32 @@ export async function POST(request: NextRequest) {
             <table style="width: 100%; border-collapse: collapse; margin: 25px 0; border: 1px solid #e5e5e5;">
               <tr style="background: #f9f9f9;">
                 <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px; width: 40%;">Registration Number</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #000; font-size: 14px; font-weight: 500;">${registrationNumber}</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #333; font-size: 14px; font-weight: 500;">${registrationNumber}</td>
               </tr>
               <tr>
                 <td style="padding: 12px 15px; color: #666; font-size: 14px;">Payment Status</td>
-                <td style="padding: 12px 15px; color: #000; font-size: 14px; font-weight: 500;">${status.replace('_', ' ')}</td>
+                <td style="padding: 12px 15px; color: #333; font-size: 14px; font-weight: 500;">${status.replace('_', ' ')}</td>
               </tr>
             </table>
             
-            <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+            <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
               Please check your registration details and ensure everything is in order.
             </p>
           </div>
           
           <!-- Footer -->
-          <div style="background: #f9f9f9; padding: 30px 25px; border-top: 1px solid #e5e5e5;">
-            <!-- Contact Information -->
-            <div style="text-align: center; margin-bottom: 20px;">
-              <h3 style="color: #000; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">VISIT US</h3>
-              <div style="display: inline-block; text-align: left;">
-                <p style="color: #666; font-size: 13px; margin: 5px 0; line-height: 1.6;">
-                   Website: <a href="https://archalley.com/" style="color: #f97316; text-decoration: none;">archalley.com</a>
-                </p>
-              </div>
+          <div style="background: #f9f9f9; padding: 30px 20px; text-align: center; border-top: 1px solid #e5e5e5;">
+            <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+              Questions? Email us at <a href="mailto:projects@archalley.com" style="color: #FFA000; text-decoration: none;">projects@archalley.com</a>
+            </p>
+            <div style="margin: 20px 0;">
+              <a href="https://facebook.com/archalley" style="color: #1877f2; text-decoration: none; margin: 0 10px; font-size: 13px;">Facebook</a>
+              <a href="https://instagram.com/archalley" style="color: #e4405f; text-decoration: none; margin: 0 10px; font-size: 13px;">Instagram</a>
+              <a href="https://linkedin.com/company/archalley" style="color: #0a66c2; text-decoration: none; margin: 0 10px; font-size: 13px;">LinkedIn</a>
             </div>
-
-            <!-- Social Media Links -->
-            <div style="text-align: center; margin: 20px 0; padding: 15px 0; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5;">
-              <p style="color: #666; font-size: 12px; margin: 0 0 10px 0; font-weight: 600;">FOLLOW US</p>
-              <div style="display: inline-block;">
-                <a href="https://facebook.com/archalley" style="display: inline-block; margin: 0 8px; color: #1877f2; text-decoration: none; font-size: 13px;">Facebook</a>
-                <span style="color: #ddd;">|</span>
-                <a href="https://www.instagram.com/archalley_insta/" style="display: inline-block; margin: 0 8px; color: #e4405f; text-decoration: none; font-size: 13px;">Instagram</a>
-                <span style="color: #ddd;">|</span>
-                <a href="https://www.linkedin.com/company/archalleypage/" style="display: inline-block; margin: 0 8px; color: #0a66c2; text-decoration: none; font-size: 13px;">LinkedIn</a>
-                <span style="color: #ddd;">|</span>
-                <a href="https://www.youtube.com/@archalleytube" style="display: inline-block; margin: 0 8px; color: #ff0000; text-decoration: none; font-size: 13px;">YouTube</a>
-              </div>
-            </div>
-
-            <!-- Legal & Disclaimer -->
-            <div style="text-align: center;">
-              <p style="color: #999; font-size: 11px; margin: 0 0 8px 0; line-height: 1.6;">
-                © ${new Date().getFullYear()} <strong style="color: #000;">Archalley Forum</strong>. All rights reserved.
-              </p>
-              <p style="color: #999; font-size: 11px; margin: 0; line-height: 1.6;">
-                This is an automated message, please do not reply to this email.<br>
-                For support inquiries, please use the contact information above.
-              </p>
-            </div>
+            <p style="margin: 10px 0 0 0; color: #999; font-size: 11px;">
+              © ${new Date().getFullYear()} Archalley Forum. All rights reserved.
+            </p>
           </div>
         </div>
       `;
