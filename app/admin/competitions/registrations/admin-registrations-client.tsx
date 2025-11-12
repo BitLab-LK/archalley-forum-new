@@ -9,7 +9,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { 
   Search, 
   Download, 
-  Mail, 
   CheckCircle, 
   Clock,
   Users,
@@ -120,6 +119,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [isRevertingPayment, setIsRevertingPayment] = useState(false);
+  const [isDeletingRegistrations, setIsDeletingRegistrations] = useState(false);
   
   // Dialog states
   const [showRevertDialog, setShowRevertDialog] = useState(false);
@@ -378,10 +378,49 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
 
   // Bulk delete registrations
   const handleBulkDelete = async () => {
-    console.log('Delete:', selectedRegistrations);
-    toast.info('Delete feature coming soon');
-    setShowDeleteDialog(false);
-    // TODO: Implement bulk delete API endpoint
+    if (selectedRegistrations.length === 0) {
+      toast.error('No registrations selected');
+      setShowDeleteDialog(false);
+      return;
+    }
+
+    console.log('Deleting registrations:', selectedRegistrations);
+
+    setIsDeletingRegistrations(true);
+
+    try {
+      const response = await fetch('/api/admin/competitions/delete-registrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          registrationIds: selectedRegistrations,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(`Successfully deleted ${data.deletedCount} registration(s)`);
+        
+        // Clear selection
+        setSelectedRegistrations([]);
+        
+        // Refresh data to update the UI
+        await refreshData();
+        
+        // Close dialog
+        setShowDeleteDialog(false);
+      } else {
+        toast.error(data.error || 'Failed to delete registrations');
+        setShowDeleteDialog(false);
+      }
+    } catch (error) {
+      console.error('Error deleting registrations:', error);
+      toast.error('Failed to delete registrations. Please try again.');
+      setShowDeleteDialog(false);
+    } finally {
+      setIsDeletingRegistrations(false);
+    }
   };
 
   // Open revert dialog
@@ -611,16 +650,6 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                 {selectedRegistrations.length} selected
               </span>
               <div className="flex gap-2">
-                <button 
-                  onClick={() => {
-                    console.log('Send email to:', selectedRegistrations);
-                    toast.info('Email feature coming soon');
-                  }}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-black text-white rounded-lg hover:bg-orange-500 transition-colors"
-                >
-                  <Mail className="w-4 h-4" />
-                  Email
-                </button>
                 <button 
                   onClick={() => setShowDeleteDialog(true)}
                   className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
@@ -1531,7 +1560,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                   disabled={isSendingEmail}
                   className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-white rounded-lg hover:bg-orange-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Mail className={`w-5 h-5 ${isSendingEmail ? 'animate-pulse' : ''}`} />
+                  <Send className={`w-5 h-5 ${isSendingEmail ? 'animate-pulse' : ''}`} />
                   {isSendingEmail ? 'Sending...' : 'Send Email'}
                 </button>
                 <button
@@ -1564,6 +1593,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
         onClose={() => setShowDeleteDialog(false)}
         onConfirm={handleBulkDelete}
         count={selectedRegistrations.length}
+        isLoading={isDeletingRegistrations}
       />
 
       {/* Reject Payment Dialog */}

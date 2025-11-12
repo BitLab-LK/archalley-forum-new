@@ -151,7 +151,7 @@ export default async function PaymentSuccessPage({
           </p>
         </div>
       </div>
-      </div>
+    </div>
     </>
   );
 }
