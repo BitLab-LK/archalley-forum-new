@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { decodeWordPressPosts } from '@/lib/wordpress-api'
+import type { WordPressPost } from '@/lib/wordpress-api'
 
 /**
  * API endpoint to fetch latest WordPress posts for sidebar
@@ -70,7 +72,7 @@ export async function GET() {
           }, { status: 200 })
         }
 
-        const posts = await response.json()
+        const posts: WordPressPost[] = await response.json()
         console.log(`[WordPress API] Successfully fetched ${Array.isArray(posts) ? posts.length : 0} posts`)
         
         if (!Array.isArray(posts)) {
@@ -85,8 +87,11 @@ export async function GET() {
           return NextResponse.json({ posts: [], error: 'Invalid response format', apiUrl }, { status: 200 })
         }
         
+        // Decode HTML entities in posts before returning
+        const decodedPosts = decodeWordPressPosts(posts)
+        
         // Success!
-        return NextResponse.json({ posts: posts || [] })
+        return NextResponse.json({ posts: decodedPosts || [] })
         
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'

@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Roboto } from "next/font/google"
 import localFont from "next/font/local"
 import "./globals.css"
 import { Providers } from "@/components/providers"
@@ -13,7 +13,7 @@ import { ConfirmDialogProvider } from "@/hooks/use-confirm-dialog"
 import { SessionMonitor } from "@/hooks/use-session-monitor"
 import GoogleAnalytics from "@/components/google-analytics"
 
-const inter = Inter({ subsets: ["latin"] })
+const roboto = Roboto({ subsets: ["latin"], weight: ["300", "400", "500", "700"] })
 
 // Aquire font family
 // Font files should be placed in the root-level 'fonts' directory
@@ -75,7 +75,7 @@ export default function RootLayout({
           }
         `}</style>
       </head>
-      <body className={`${inter.className} ${aquire.variable}`} suppressHydrationWarning>
+      <body className={`${roboto.className} ${aquire.variable}`} suppressHydrationWarning>
         <GoogleAnalytics />
         <Providers>
           <ConfirmDialogProvider>

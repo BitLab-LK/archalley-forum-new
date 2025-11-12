@@ -1,4 +1,5 @@
 // WordPress API utilities for fetching blog posts
+import he from 'he'
 
 /**
  * Get WordPress API URL from environment variables
@@ -106,7 +107,7 @@ export async function getAllPosts(page: number = 1, perPage: number = 4): Promis
     }
 
     const posts: WordPressPost[] = await response.json()
-    return posts
+    return decodeWordPressPosts(posts)
   } catch (error) {
     console.error('Error fetching WordPress posts:', error)
     // Return fallback data or empty array
@@ -167,28 +168,38 @@ export function stripHtml(html: string): string {
 }
 
 /**
- * Decode common HTML entities (including numeric) to plain text
+ * Decode HTML entities using the he library for safe and comprehensive decoding
+ * This handles all HTML entities including named, numeric decimal, and hex entities
  */
 export function decodeHtmlEntities(input: string): string {
   if (!input) return ''
-  // Basic named entities
-  const named = input
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-  // Numeric decimal entities: &#8211;
-  const numericDec = named.replace(/&#(\d+);/g, (_, dec) => {
-    const code = parseInt(dec, 10)
-    return Number.isFinite(code) ? String.fromCharCode(code) : _
-  })
-  // Numeric hex entities: &#x2013;
-  const numericHex = numericDec.replace(/&#x([\da-fA-F]+);/g, (_, hex) => {
-    const code = parseInt(hex, 16)
-    return Number.isFinite(code) ? String.fromCharCode(code) : _
-  })
-  return numericHex
+  return he.decode(input, { strict: false })
+}
+
+/**
+ * Decode WordPress post title and content fields
+ * This ensures all HTML entities are properly decoded before rendering
+ */
+export function decodeWordPressPost(post: WordPressPost): WordPressPost {
+  return {
+    ...post,
+    title: {
+      rendered: decodeHtmlEntities(post.title.rendered)
+    },
+    content: {
+      rendered: decodeHtmlEntities(post.content.rendered)
+    },
+    excerpt: {
+      rendered: decodeHtmlEntities(post.excerpt.rendered)
+    }
+  }
+}
+
+/**
+ * Decode an array of WordPress posts
+ */
+export function decodeWordPressPosts(posts: WordPressPost[]): WordPressPost[] {
+  return posts.map(decodeWordPressPost)
 }
 
 /**
@@ -341,7 +352,7 @@ export async function getPostsByCategory(categoryId: number, page: number = 1, p
     }
     
     const posts: WordPressPost[] = await response.json()
-    return posts
+    return decodeWordPressPosts(posts)
   } catch (error) {
     console.error('Error fetching WordPress posts by category:', error)
     return []
@@ -615,7 +626,7 @@ export async function searchPosts(searchTerm: string, page: number = 1, perPage:
     }
     
     const posts: WordPressPost[] = await response.json()
-    return posts
+    return decodeWordPressPosts(posts)
   } catch (error) {
     console.error('Error searching WordPress posts:', error)
     return []
@@ -659,7 +670,7 @@ export async function getProjectBySlug(slug: string): Promise<WordPressPost | nu
     
     const posts: WordPressPost[] = await response.json()
     if (posts.length > 0) {
-      return posts[0]
+      return decodeWordPressPost(posts[0])
     }
     
     // If no results, try fallback method
@@ -703,20 +714,21 @@ async function getProjectBySlugFallback(slug: string): Promise<WordPressPost | n
     }
     
     const posts: WordPressPost[] = await response.json()
-    console.log(`Fallback: Fetched ${posts.length} posts, searching for slug: "${slug}"`)
+    const decodedPosts = decodeWordPressPosts(posts)
+    console.log(`Fallback: Fetched ${decodedPosts.length} posts, searching for slug: "${slug}"`)
     
     // Try exact match first (case-insensitive)
-    let post = posts.find(p => p.slug.toLowerCase() === slug.toLowerCase())
+    let post = decodedPosts.find(p => p.slug.toLowerCase() === slug.toLowerCase())
     
     // If not found, try partial match (in case slug has extra characters)
     if (!post) {
-      post = posts.find(p => p.slug.toLowerCase().includes(slug.toLowerCase()) || slug.toLowerCase().includes(p.slug.toLowerCase()))
+      post = decodedPosts.find(p => p.slug.toLowerCase().includes(slug.toLowerCase()) || slug.toLowerCase().includes(p.slug.toLowerCase()))
     }
     
     // If still not found, try matching against the link/permalink
     if (!post) {
       const normalizedSlug = slug.replace(/\/$/, '') // Remove trailing slash
-      post = posts.find(p => {
+      post = decodedPosts.find(p => {
         const linkSlug = p.link.split('/').filter(Boolean).pop()?.replace(/\/$/, '')
         return linkSlug?.toLowerCase() === normalizedSlug.toLowerCase()
       })
@@ -727,8 +739,8 @@ async function getProjectBySlugFallback(slug: string): Promise<WordPressPost | n
     } else {
       console.log(`Fallback: No post found matching slug "${slug}"`)
       // Log available slugs for debugging
-      if (posts.length > 0) {
-        console.log(`Available slugs (first 10): ${posts.slice(0, 10).map(p => p.slug).join(', ')}`)
+      if (decodedPosts.length > 0) {
+        console.log(`Available slugs (first 10): ${decodedPosts.slice(0, 10).map(p => p.slug).join(', ')}`)
       }
     }
     
@@ -773,7 +785,7 @@ export async function getPostsByCategoryPaginated(
     }
     
     const posts: WordPressPost[] = await response.json()
-    return posts
+    return decodeWordPressPosts(posts)
   } catch (error) {
     console.error('Error fetching posts by category:', error)
     return []
