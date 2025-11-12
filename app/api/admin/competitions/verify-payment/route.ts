@@ -8,6 +8,10 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { generateUniqueDisplayCode } from '@/lib/competition-utils';
+import {
+  sendPaymentVerifiedEmail,
+  sendPaymentRejectedEmail,
+} from '@/lib/competition-email-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,6 +65,7 @@ export async function POST(request: NextRequest) {
       where: { id: registrationId },
       include: {
         competition: true,
+        registrationType: true,
         user: true,
       },
     });
@@ -118,21 +123,18 @@ export async function POST(request: NextRequest) {
 
       console.log(`📧 Sending verification email to competition registration email: ${customerEmail}`);
 
-      // Send payment verified email to the email used during competition registration
+      // Send payment verified email directly using Nodemailer
       try {
-        await fetch(`${request.nextUrl.origin}/api/admin/send-registration-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: customerEmail, // ✅ Use competition registration email, not main account email
-            name: customerName,   // ✅ Use name from competition registration
-            registrationNumber: registration.registrationNumber,
-            competitionTitle: registration.competition.title,
-            template: 'PAYMENT_VERIFIED',
-          }),
+        await sendPaymentVerifiedEmail({
+          registration,
+          competition: registration.competition,
+          registrationType: registration.registrationType,
+          userName: customerName,
+          userEmail: customerEmail,
         });
+        console.log('✅ Payment verified email sent successfully');
       } catch (emailError) {
-        console.error('Failed to send verification email:', emailError);
+        console.error('❌ Failed to send verification email:', emailError);
         // Don't fail the request if email fails
       }
 
@@ -174,23 +176,19 @@ export async function POST(request: NextRequest) {
 
       console.log(`📧 Sending rejection email to: ${customerEmail}`);
 
-      // Send payment rejected email with admin's reject reason
+      // Send payment rejected email directly using Nodemailer
       try {
-        await fetch(`${request.nextUrl.origin}/api/admin/send-registration-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: customerEmail,
-            name: customerName,
-            registrationNumber: registration.registrationNumber,
-            competitionTitle: registration.competition.title,
-            template: 'PAYMENT_REJECTED',
-            rejectReason: rejectReason, // ✅ FIXED: Pass admin's specific rejection reason
-          }),
+        await sendPaymentRejectedEmail({
+          registration,
+          competition: registration.competition,
+          registrationType: registration.registrationType,
+          userName: customerName,
+          userEmail: customerEmail,
+          rejectReason: rejectReason || 'Payment could not be verified',
         });
         console.log('✅ Rejection email sent with reason:', rejectReason);
       } catch (emailError) {
-        console.error('Failed to send rejection email:', emailError);
+        console.error('❌ Failed to send rejection email:', emailError);
         // Don't fail the request if email fails
       }
 

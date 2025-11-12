@@ -16,6 +16,8 @@ import {
   sendRegistrationConfirmationEmail,
   sendPaymentReceiptEmail,
   sendCompetitionGuidelinesEmail,
+  sendConsolidatedRegistrationConfirmationEmail,
+  sendConsolidatedPaymentReceiptEmail,
 } from '@/lib/competition-email-service';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -244,17 +246,64 @@ async function handleSuccessfulPayment(
     
     console.log(`📧 Sending emails to competition registration email: ${customerEmail}`);
     
-    for (const registration of registrations) {
-      try {
+    try {
+      // Calculate total amount
+      const totalAmount = registrations.reduce((sum, reg) => sum + Number(reg.amountPaid), 0);
+      
+      // Use consolidated emails if multiple registrations, otherwise use individual emails
+      if (registrations.length > 1) {
+        console.log(`📧 Using CONSOLIDATED emails (${registrations.length} registrations, total: LKR ${totalAmount.toLocaleString()})`);
+        
+        // Prepare consolidated data
+        const consolidatedData = {
+          registrations: registrations.map(reg => {
+            const item = cartItems.find(i => i.competitionId === reg.competitionId);
+            return {
+              registration: reg,
+              registrationType: item!.registrationType,
+              members: (item?.members as any) || [],
+            };
+          }),
+          competition: cartItems[0].competition,
+          userName: customerName,
+          userEmail: customerEmail,
+          paymentOrderId: payment.orderId,
+          totalAmount,
+        };
+        
+        // Send consolidated emails
+        await Promise.all([
+          sendConsolidatedRegistrationConfirmationEmail(consolidatedData),
+          sendConsolidatedPaymentReceiptEmail(consolidatedData),
+          sendCompetitionGuidelinesEmail({
+            registration: registrations[0],
+            competition: cartItems[0].competition,
+            registrationType: cartItems[0].registrationType,
+            userName: customerName,
+            userEmail: customerEmail,
+            members: [],
+            paymentOrderId: payment.orderId,
+          }),
+        ]);
+        
+        console.log(`✅ Consolidated emails sent successfully`);
+      } else {
+        console.log(`📧 Using INDIVIDUAL emails (single registration)`);
+        
+        // Send individual emails for single registration
+        const registration = registrations[0];
         const item = cartItems.find(i => i.competitionId === registration.competitionId);
-        if (!item) continue;
+        
+        if (!item) {
+          throw new Error('Cart item not found for registration');
+        }
 
         const emailData = {
           registration,
           competition: item.competition,
           registrationType: item.registrationType,
-          userName: customerName,      // ✅ Use name from competition registration
-          userEmail: customerEmail,    // ✅ Use email from competition registration, not main account
+          userName: customerName,
+          userEmail: customerEmail,
           members: (item.members as any) || [],
           paymentOrderId: payment.orderId,
         };
@@ -266,11 +315,11 @@ async function handleSuccessfulPayment(
           sendCompetitionGuidelinesEmail(emailData),
         ]);
 
-        console.log(`✅ Emails sent for registration: ${registration.registrationNumber}`);
-      } catch (emailError) {
-        console.error(`❌ Failed to send emails for ${registration.registrationNumber}:`, emailError);
-        // Don't throw - registration is already created
+        console.log(`✅ Individual emails sent for registration: ${registration.registrationNumber}`);
       }
+    } catch (emailError) {
+      console.error(`❌ Failed to send emails:`, emailError);
+      // Don't throw - registration is already created
     }
     
   } catch (error) {

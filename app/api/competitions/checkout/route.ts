@@ -20,6 +20,7 @@ import {
   generateUniqueRegistrationNumber,
 } from '@/lib/competition-utils';
 import { getPayHereConfig } from '@/lib/payhere-config';
+import { sendBankTransferPendingEmail, sendConsolidatedBankTransferPendingEmail } from '@/lib/competition-email-service';
 
 export async function POST(
   request: NextRequest
@@ -210,21 +211,47 @@ export async function POST(
         data: { status: 'COMPLETED' },
       });
 
-      // Send confirmation email (bank transfer pending)
+      // Send bank transfer pending email directly
+      console.log('📧 Sending bank transfer pending email...');
       try {
-        await fetch(`${request.nextUrl.origin}/api/admin/send-registration-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: body.customerInfo.email,
-            name: `${body.customerInfo.firstName} ${body.customerInfo.lastName}`,
-            registrationNumber: registrations[0].registrationNumber,
-            competitionTitle: cart.items[0].competition.title,
-            template: 'BANK_TRANSFER_PENDING',
-          }),
-        });
+        // Calculate total amount
+        const totalAmount = registrations.reduce((sum, reg) => sum + Number(reg.amountPaid), 0);
+        
+        if (registrations.length > 1) {
+          console.log(`📧 Using CONSOLIDATED bank transfer email (${registrations.length} registrations, total: LKR ${totalAmount.toLocaleString()})`);
+          
+          // Send consolidated email for multiple registrations
+          await sendConsolidatedBankTransferPendingEmail({
+            registrations: registrations.map((reg, index) => ({
+              registration: reg,
+              registrationType: cart.items[index].registrationType,
+              members: (cart.items[index].members as any) || [],
+            })),
+            competition: cart.items[0].competition,
+            userName: `${body.customerInfo.firstName} ${body.customerInfo.lastName}`,
+            userEmail: body.customerInfo.email,
+            paymentOrderId: orderId,
+            totalAmount,
+          });
+        } else {
+          console.log(`📧 Using INDIVIDUAL bank transfer email (single registration)`);
+          
+          // Send individual email for single registration
+          const firstRegistration = registrations[0];
+          const firstItem = cart.items[0];
+          
+          await sendBankTransferPendingEmail({
+            registration: firstRegistration,
+            competition: firstItem.competition,
+            registrationType: firstItem.registrationType,
+            userName: `${body.customerInfo.firstName} ${body.customerInfo.lastName}`,
+            userEmail: body.customerInfo.email,
+          });
+        }
+        
+        console.log('✅ Bank transfer pending email sent successfully');
       } catch (emailError) {
-        console.error('Failed to send confirmation email:', emailError);
+        console.error('❌ Failed to send bank transfer pending email:', emailError);
         // Don't fail the request if email fails
       }
 
