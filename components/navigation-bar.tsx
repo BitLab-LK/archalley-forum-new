@@ -68,6 +68,11 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
       path: "/events",
       submenu: [],
     },
+    {
+      title: "Competition",
+      path: "/events/archalley-competition-2025",
+      submenu: [],
+    },
   ]
 
   const toggleSubmenu = (title: string) => {
@@ -89,7 +94,7 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
   }
 
   return (
-    <nav className="bg-black text-white py-4">
+    <nav className="bg-black text-white py-[30px]">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
           {/* Logo */}
@@ -99,22 +104,28 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
               alt="Archalley Logo"
               width={85}
               height={30}
-              className="h-16 w-auto"
+              className="h-[90px] w-auto"
             />
           </Link>
 
           {/* Desktop Menu */}
-          <div className="hidden lg:flex space-x-6">
+          <div className="hidden lg:flex space-x-8">
             {menuItems.map((item) => (
               <div key={item.title} className="relative group">
                 <Link 
                   href={item.path} 
-                  className={`py-3 flex items-center transition-colors ${
-                    item.title === "Events" 
-                      ? "px-4 rounded-md text-white"
-                      : `hover:text-orange-400 ${isActivePath(item.path) ? "text-orange-400" : ""}`
+                  className={`py-3 flex items-center relative transition-all duration-300 font-bold uppercase ${
+                    item.title === "Competition" 
+                      ? "px-4 text-white"
+                      : item.title === "Events"
+                      ? "text-white border-t-[3px] border-transparent hover:border-[#FFA000]"
+                      : `text-white border-t-[3px] ${
+                          isActivePath(item.path)
+                            ? "border-[#FFA000]"
+                            : "border-transparent hover:border-[#FFA000]"
+                        }`
                   }`}
-                  style={item.title === "Events" ? { backgroundColor: '#FFA000' } : {}}
+                  style={item.title === "Competition" ? { backgroundColor: '#FFA000' } : {}}
                 >
                   {item.title}
                   {item.submenu.length > 0 && <ChevronDown size={16} className="ml-1" />}
@@ -127,7 +138,7 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
                         <Link
                           key={subItem.title}
                           href={subItem.path}
-                          className="block px-4 py-2 hover:bg-gray-800 hover:text-orange-400 transition-colors"
+                          className="block px-4 py-2 hover:bg-gray-800 hover:text-[#FFA000] transition-colors"
                         >
                           {subItem.title}
                         </Link>
@@ -159,12 +170,18 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
                 >
                   <Link
                     href={item.path}
-                    className={`block transition-colors ${
-                      item.title === "Events"
-                        ? "px-4 py-2 rounded-md text-white"
-                        : `hover:text-orange-400 ${isActivePath(item.path) ? "text-orange-400" : ""}`
+                    className={`block relative transition-all duration-300 font-bold uppercase ${
+                      item.title === "Competition"
+                        ? "px-4 py-2 text-white"
+                        : item.title === "Events"
+                        ? "text-white border-t-[3px] border-transparent hover:border-[#FFA000]"
+                        : `text-white border-t-[3px] ${
+                            isActivePath(item.path)
+                              ? "border-[#FFA000]"
+                              : "border-transparent hover:border-[#FFA000]"
+                          }`
                     }`}
-                    style={item.title === "Events" ? { backgroundColor: '#FFA000' } : {}}
+                    style={item.title === "Competition" ? { backgroundColor: '#FFA000' } : {}}
                     onClick={(e) => item.submenu.length > 0 && e.preventDefault()}
                   >
                     {item.title}
@@ -183,7 +200,7 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
                       <Link 
                         key={subItem.title} 
                         href={subItem.path} 
-                        className="block py-2 hover:text-orange-400 transition-colors"
+                        className="block py-2 hover:text-[#FFA000] transition-colors"
                       >
                         {subItem.title}
                       </Link>

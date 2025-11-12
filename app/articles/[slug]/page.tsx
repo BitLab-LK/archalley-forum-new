@@ -21,6 +21,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
   }
 
+  // Title and excerpt are already decoded by getProjectBySlug
   const title = post.title.rendered.replace(/<[^>]*>/g, '')
   const excerpt = post.excerpt.rendered.replace(/<[^>]*>/g, '')
 

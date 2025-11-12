@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Search, User, ChevronDown } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -21,6 +22,7 @@ import { Crown, Shield, LogOut } from "lucide-react"
 export default function TopBar() {
   const [searchQuery, setSearchQuery] = useState("")
   const router = useRouter()
+  const pathname = usePathname()
   const { user, isAuthenticated, isLoading } = useAuth()
 
   const handleSearch = (e: React.FormEvent) => {
@@ -65,43 +67,39 @@ export default function TopBar() {
     <div className="bg-gray-800 text-white py-2">
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center">
-          {/* Search Box */}
-          <div className="w-full md:w-auto mb-2 md:mb-0">
-            <form onSubmit={handleSearch} className="flex items-center">
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-gray-700 text-white px-3 py-1 rounded-l-md focus:outline-none text-sm w-full md:w-64"
-              />
-              <button 
-                type="submit" 
-                className="bg-gray-700 text-white px-2 py-1 rounded-r-md hover:bg-gray-600 transition-colors"
-              >
-                <Search size={18} />
-              </button>
-            </form>
-          </div>
-
           {/* Top Menu */}
-          <div className="flex space-x-4 text-sm">
-            <Link href="/about" className="hover:text-orange-400 transition-colors">
+          <div className="flex space-x-4 text-sm order-2 md:order-1">
+            <Link 
+              href="/about" 
+              className={`transition-colors ${
+                pathname === "/about" ? "text-[#FFA000]" : "text-white hover:text-[#FFA000]"
+              }`}
+            >
               About
             </Link>
-            <Link href="/contact" className="hover:text-orange-400 transition-colors">
+            <Link 
+              href="/contact" 
+              className={`transition-colors ${
+                pathname === "/contact" ? "text-[#FFA000]" : "text-white hover:text-[#FFA000]"
+              }`}
+            >
               Contact
             </Link>
-            <Link href="/terms-conditions" className="hover:text-orange-400 transition-colors">
+            <Link 
+              href="/terms-conditions" 
+              className={`transition-colors ${
+                pathname === "/terms-conditions" ? "text-[#FFA000]" : "text-white hover:text-[#FFA000]"
+              }`}
+            >
               T&C
             </Link>
             {isLoading ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-400"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#FFA000]"></div>
             ) : isAuthenticated ? (
               <div className="relative group">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="text-white hover:text-orange-400 hover:bg-gray-700 p-0 h-auto">
+                    <Button variant="ghost" className="text-white hover:text-[#FFA000] hover:bg-gray-700 p-0 h-auto">
                       <div className="flex items-center gap-1">
                         <User size={16} />
                         <span>{user?.name?.split(" ")[0] || "User"}</span>
@@ -158,10 +156,34 @@ export default function TopBar() {
                 </DropdownMenu>
               </div>
             ) : (
-              <Link href="/auth/register?tab=login" className="hover:text-orange-400 transition-colors">
+              <Link 
+                href="/auth/register?tab=login" 
+                className={`transition-colors ${
+                  pathname?.includes("/auth") ? "text-[#FFA000]" : "text-white hover:text-[#FFA000]"
+                }`}
+              >
                 Login
               </Link>
             )}
+          </div>
+
+          {/* Search Box */}
+          <div className="w-full md:w-auto mb-2 md:mb-0 order-1 md:order-2">
+            <form onSubmit={handleSearch} className="flex items-center">
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-gray-700 text-white px-3 py-1 rounded-l-md focus:outline-none text-sm w-full md:w-64"
+              />
+              <button 
+                type="submit" 
+                className="bg-gray-700 text-white px-2 py-1 rounded-r-md hover:bg-gray-600 transition-colors"
+              >
+                <Search size={18} />
+              </button>
+            </form>
           </div>
         </div>
       </div>
