@@ -498,8 +498,8 @@ export function getRegistrationPeriod(
   standardEnd: Date,
   lateStart: Date,
   lateEnd: Date,
-  kidsStart: Date,
-  kidsEnd: Date
+  _kidsStart: Date, // Kept for backward compatibility but not used
+  _kidsEnd: Date    // Kept for backward compatibility but not used
 ): RegistrationPeriod {
   const now = getCurrentDateInSriLanka();
   const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
