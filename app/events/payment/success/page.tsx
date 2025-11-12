@@ -8,6 +8,8 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import Link from 'next/link';
+import { prisma } from '@/lib/prisma';
+import PaymentSuccessTracker from './payment-success-tracker';
 
 export const metadata: Metadata = {
   title: 'Payment Successful - Archalley Forum',
@@ -28,10 +30,49 @@ export default async function PaymentSuccessPage({
   const resolvedSearchParams = await searchParams;
   const orderId = resolvedSearchParams.order_id;
 
+  // Fetch order details for analytics
+  let orderAmount = 0;
+  let itemCount = 0;
+
+  if (orderId) {
+    try {
+      const payment = await prisma.competitionPayment.findUnique({
+        where: { orderId: orderId },
+        select: {
+          amount: true,
+          items: true,
+        },
+      });
+
+      if (payment) {
+        orderAmount = payment.amount;
+        // Parse items JSON to get count
+        try {
+          const items = typeof payment.items === 'string' 
+            ? JSON.parse(payment.items) 
+            : payment.items;
+          itemCount = Array.isArray(items) ? items.length : 0;
+        } catch {
+          itemCount = 0;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching order for analytics:', error);
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="container mx-auto px-4 max-w-2xl">
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+    <>
+      {/* Track payment success */}
+      <PaymentSuccessTracker 
+        orderId={orderId} 
+        amount={orderAmount}
+        itemCount={itemCount}
+      />
+      
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
           {/* Success Icon */}
           <div className="mb-6">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
@@ -110,6 +151,7 @@ export default async function PaymentSuccessPage({
           </p>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -10,6 +10,7 @@ import { CartWithItems } from '@/types/competition';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useCountdown } from '@/hooks/useCountdown';
+import { event } from '@/lib/google-analytics';
 
 interface Props {
   onCartUpdate: () => void;
@@ -180,6 +181,14 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
       toast.error('Please agree to the Terms & Conditions to proceed');
       return;
     }
+
+    // Track checkout initiation
+    event({
+      action: 'begin_checkout',
+      category: 'ecommerce',
+      label: 'competition_registration',
+      value: totalAmount,
+    });
 
     setIsCheckingOut(true);
     router.push('/events/checkout');

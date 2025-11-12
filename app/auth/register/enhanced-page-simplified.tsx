@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { trackSignup, trackLogin } from "@/lib/google-analytics"
 
 // Declare grecaptcha type for TypeScript
 declare global {
@@ -747,6 +748,10 @@ export default function SimplifiedEnhancedRegisterPage() {
         throw new Error(data.error || "Registration failed")
       }
 
+      // Track successful registration
+      const registrationMethod = isSocialRegistration ? provider || 'social' : 'email';
+      trackSignup(registrationMethod);
+
       // Check if email verification is required
       const needsVerification = data.requiresVerification === true
       setRequiresEmailVerification(needsVerification)
@@ -826,6 +831,9 @@ export default function SimplifiedEnhancedRegisterPage() {
     try {
       console.log(`Attempting ${provider} login...`)
       
+      // Track social login attempt
+      trackLogin(provider);
+      
       // Set OAuth attempt flags before redirecting (with shorter timeout)
       localStorage.setItem('oauth_attempt', provider)
       localStorage.setItem('oauth_timestamp', Date.now().toString())
@@ -888,6 +896,10 @@ export default function SimplifiedEnhancedRegisterPage() {
         }
       } else if (result?.ok) {
         console.log("[Login] Login successful (no 2FA)")
+        
+        // Track successful login
+        trackLogin('email');
+        
         // Get last URL from sessionStorage, clear it, and redirect
         const lastUrl = getLastUrl()
         clearLastUrl()

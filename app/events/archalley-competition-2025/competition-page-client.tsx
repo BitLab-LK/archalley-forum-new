@@ -4,11 +4,21 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect, useRef } from "react"
+import { event } from "@/lib/google-analytics"
 
 export default function CompetitionPageClient() {
   const [isSticky, setIsSticky] = useState(false)
   const [navHeight, setNavHeight] = useState(0)
   const navRef = useRef<HTMLElement>(null)
+
+  // Track competition page view
+  useEffect(() => {
+    event({
+      action: 'view_competition',
+      category: 'competition',
+      label: 'archalley_competition_2025',
+    });
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
