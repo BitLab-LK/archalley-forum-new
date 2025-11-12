@@ -11,7 +11,6 @@ import { BadgeNotificationHandler } from "@/components/badge-notifications"
 import { Toaster } from "@/components/ui/toaster"
 import { ConfirmDialogProvider } from "@/hooks/use-confirm-dialog"
 import { SessionMonitor } from "@/hooks/use-session-monitor"
-import GoogleAnalytics from "@/components/google-analytics"
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["300", "400", "500", "700"] })
 
@@ -74,9 +73,20 @@ export default function RootLayout({
             }
           }
         `}</style>
+        {/* Google tag (gtag.js) - Direct in head for Google detection */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-JQPH81Z02Y"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-JQPH81Z02Y');
+            `,
+          }}
+        />
       </head>
       <body className={`${roboto.className} ${aquire.variable}`} suppressHydrationWarning>
-        <GoogleAnalytics />
         <Providers>
           <ConfirmDialogProvider>
             <SessionMonitor>
