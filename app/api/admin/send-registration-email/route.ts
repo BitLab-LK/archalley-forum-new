@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
             </p>
             
             <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
-              Your bank transfer details for <strong>${competitionTitle}</strong> have been successfully submitted and are awaiting verification.
+              Your bank transfer details for <strong>Christmas in Future</strong> have been successfully submitted and are awaiting verification.
             </p>
             
             <!-- Registration Info Box -->
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
             </p>
 
             <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
-              We regret to inform you that we were unable to verify your bank transfer payment for <strong>${competitionTitle}</strong>.
+              We regret to inform you that we were unable to verify your bank transfer payment for <strong>Christmas in Future</strong>.
             </p>
             
             <!-- Registration Info Box -->
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
               </tr>
               <tr style="background: #f9f9f9;">
                 <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px;">Competition</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #333; font-size: 14px; font-weight: 500;">${competitionTitle}</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #333; font-size: 14px; font-weight: 500;">Christmas in Future</td>
               </tr>
               <tr>
                 <td style="padding: 12px 15px; color: #666; font-size: 14px;">Status</td>
@@ -260,7 +260,7 @@ export async function POST(request: NextRequest) {
             </p>
             
             <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
-              Great news! Your bank transfer has been verified and your registration for <strong>${competitionTitle}</strong> is now confirmed.
+              Great news! Your bank transfer has been verified and your registration for <strong>Christmas in Future</strong> is now confirmed.
             </p>
             
             <!-- Registration Info Box -->
@@ -271,7 +271,7 @@ export async function POST(request: NextRequest) {
               </tr>
               <tr style="background: #f9f9f9;">
                 <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px;">Competition</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #333; font-size: 14px; font-weight: 500;">${competitionTitle}</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #333; font-size: 14px; font-weight: 500;">Christmas in Future</td>
               </tr>
               <tr>
                 <td style="padding: 12px 15px; color: #666; font-size: 14px;">Status</td>
@@ -342,7 +342,7 @@ export async function POST(request: NextRequest) {
             </p>
             
             <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
-              We are reaching out regarding your registration for <strong>${competitionTitle}</strong>.
+              We are reaching out regarding your registration for <strong>Christmas in Future</strong>.
             </p>
             
             <!-- Registration Info Box -->

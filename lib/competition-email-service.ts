@@ -93,7 +93,7 @@ export const sendRegistrationConfirmationEmail = async (data: RegistrationEmailD
       </p>
       
       <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-        Congratulations! Your registration for <strong>Archalley Competition 2025</strong> has been successfully confirmed. We're excited to see your creative work!
+        Congratulations! Your registration for <strong>Christmas in Future</strong> has been successfully confirmed. We're excited to see your creative work!
       </p>
 
       <!-- Registration Details Box -->
@@ -248,7 +248,7 @@ export const sendPaymentReceiptEmail = async (data: RegistrationEmailData) => {
       </p>
       
       <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
-        Thank you for your payment! This email confirms that we have successfully received your payment for <strong>Archalley Competition 2025</strong>.
+        Thank you for your payment! This email confirms that we have successfully received your payment for <strong>Christmas in Future</strong>.
       </p>
 
       <div style="background: #f9f9f9; padding: 25px; margin: 0 0 30px 0; border-radius: 8px;">
@@ -280,7 +280,7 @@ export const sendPaymentReceiptEmail = async (data: RegistrationEmailData) => {
           </tr>
           <tr style="border-bottom: 1px solid #e5e7eb;">
             <td style="padding: 12px; color: #333;">
-              <strong>Archalley Competition 2025</strong><br>
+              <strong>Christmas in Future</strong><br>
               <span style="font-size: 14px; color: #666;">${registrationType.name}</span>
             </td>
             <td style="padding: 12px; text-align: right; color: #333;">LKR ${registration.amountPaid.toLocaleString()}</td>
@@ -358,7 +358,7 @@ export const sendCompetitionGuidelinesEmail = async (data: RegistrationEmailData
       </p>
       
       <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
-        Here are the important guidelines and requirements for <strong>Archalley Competition 2025</strong>. Please read carefully to ensure your submission meets all requirements.
+        Here are the important guidelines and requirements for <strong>Christmas in Future</strong>. Please read carefully to ensure your submission meets all requirements.
       </p>
 
       <div style="background: #f9f9f9; padding: 25px; border-radius: 8px; margin: 0 0 30px 0;">
@@ -518,7 +518,7 @@ export const sendSubmissionReminderEmail = async (
       </p>
       
       <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
-        This is a friendly reminder that the submission deadline for <strong>Archalley Competition 2025</strong> is approaching. Don't miss your chance to showcase your creativity!
+        This is a friendly reminder that the submission deadline for <strong>Christmas in Future</strong> is approaching. Don't miss your chance to showcase your creativity!
       </p>
 
       <div style="background: #fff4e6; border: 3px solid #FFA000; padding: 30px; margin: 0 0 30px 0; border-radius: 12px; text-align: center;">
