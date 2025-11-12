@@ -114,6 +114,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [competitionFilter, setCompetitionFilter] = useState<string>('ALL');
   const [submissionFilter, setSubmissionFilter] = useState<string>('ALL');
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('ALL');
   const [selectedRegistrations, setSelectedRegistrations] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [viewingRegistration, setViewingRegistration] = useState<Registration | null>(null);
@@ -181,9 +182,13 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
       const matchesSubmission = 
         submissionFilter === 'ALL' || reg.submissionStatus === submissionFilter;
 
-      return matchesSearch && matchesStatus && matchesCompetition && matchesSubmission;
+      // Payment method filter
+      const matchesPaymentMethod = 
+        paymentMethodFilter === 'ALL' || reg.payment?.paymentMethod === paymentMethodFilter;
+
+      return matchesSearch && matchesStatus && matchesCompetition && matchesSubmission && matchesPaymentMethod;
     });
-  }, [registrations, searchQuery, statusFilter, competitionFilter, submissionFilter]);
+  }, [registrations, searchQuery, statusFilter, competitionFilter, submissionFilter, paymentMethodFilter]);
 
   // Handle select all
   const handleSelectAll = () => {
@@ -491,21 +496,53 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
 
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-3">
-            <FileText className="w-5 h-5 text-blue-600" />
+            <DollarSign className="w-5 h-5 text-blue-600" />
             <div>
-              <p className="text-sm text-gray-600">Submitted</p>
-              <p className="text-2xl font-semibold text-blue-600">{stats.submitted}</p>
+              <p className="text-sm text-gray-600">PayHere</p>
+              <p className="text-2xl font-semibold text-blue-600">
+                {registrations.filter(r => 
+                  r.payment?.paymentMethod === 'PAYHERE'
+                ).length}
+              </p>
             </div>
           </div>
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-3">
+            <FileText className="w-5 h-5 text-purple-600" />
+            <div>
+              <p className="text-sm text-gray-600">Submitted</p>
+              <p className="text-2xl font-semibold text-purple-600">{stats.submitted}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Second Row of Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
             <DollarSign className="w-5 h-5 text-orange-500" />
             <div>
-              <p className="text-sm text-gray-600">Revenue (LKR)</p>
+              <p className="text-sm text-gray-600">Total Revenue (LKR)</p>
               <p className="text-2xl font-semibold text-gray-900">
                 {stats.totalRevenue.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <DollarSign className="w-5 h-5 text-blue-500" />
+            <div>
+              <p className="text-sm text-gray-600">PayHere Revenue (LKR)</p>
+              <p className="text-2xl font-semibold text-blue-600">
+                {registrations
+                  .filter(r => r.payment?.paymentMethod === 'PAYHERE' && r.status === 'CONFIRMED')
+                  .reduce((sum, r) => sum + r.amountPaid, 0)
+                  .toLocaleString()}
               </p>
             </div>
           </div>
@@ -551,7 +588,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Status
@@ -565,6 +602,21 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
               <option value="CONFIRMED">Confirmed</option>
               <option value="PENDING">Pending</option>
               <option value="CANCELLED">Cancelled</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Payment Method
+            </label>
+            <select
+              value={paymentMethodFilter}
+              onChange={(e) => setPaymentMethodFilter(e.target.value)}
+              className="w-full px-3 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+            >
+              <option value="ALL">All Methods</option>
+              <option value="PAYHERE">PayHere</option>
+              <option value="BANK_TRANSFER">Bank Transfer</option>
             </select>
           </div>
 
@@ -634,9 +686,46 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
         )}
       </div>
 
-      {/* Results Count */}
-      <div className="mb-4 text-sm text-gray-600">
-        Showing {filteredRegistrations.length} of {registrations.length} registrations
+      {/* Results Count and Quick Filters */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="text-sm text-gray-600">
+          Showing {filteredRegistrations.length} of {registrations.length} registrations
+        </div>
+        
+        {/* Quick Payment Method Filters */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-700">Quick Filter:</span>
+          <button
+            onClick={() => setPaymentMethodFilter('ALL')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              paymentMethodFilter === 'ALL'
+                ? 'bg-orange-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            All Payments
+          </button>
+          <button
+            onClick={() => setPaymentMethodFilter('PAYHERE')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              paymentMethodFilter === 'PAYHERE'
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            PayHere Only ({registrations.filter(r => r.payment?.paymentMethod === 'PAYHERE').length})
+          </button>
+          <button
+            onClick={() => setPaymentMethodFilter('BANK_TRANSFER')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              paymentMethodFilter === 'BANK_TRANSFER'
+                ? 'bg-yellow-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Bank Transfer Only ({registrations.filter(r => r.payment?.paymentMethod === 'BANK_TRANSFER').length})
+          </button>
+        </div>
       </div>
 
       {/* Registrations Table */}
@@ -654,6 +743,9 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                   />
                 </th>
                 <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
+                  Reg Info
+                </th>
+                <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
                   User
                 </th>
                 <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
@@ -663,7 +755,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                   Type
                 </th>
                 <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
-                  Payment Status
+                  Payment
                 </th>
                 <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
                   Amount
@@ -679,7 +771,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
             <tbody className="divide-y divide-gray-200">
               {filteredRegistrations.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={9} className="px-4 py-12 text-center text-gray-500">
                     <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                     <p className="text-lg font-medium">No registrations found</p>
                     <p className="text-sm">Try adjusting your filters</p>
@@ -695,6 +787,18 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                         onChange={() => handleSelect(reg.id)}
                         className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
                       />
+                    </td>
+                    <td className="px-3 py-4">
+                      <div className="space-y-1">
+                        <div className="text-xs font-mono text-gray-900 font-semibold">
+                          #{reg.registrationNumber}
+                        </div>
+                        {reg.displayCode && (
+                          <div className="text-xs font-mono bg-orange-50 text-orange-700 px-2 py-0.5 rounded border border-orange-200 inline-block">
+                            🔒 {reg.displayCode}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-3 py-4">
                       <div className="flex items-center gap-3">
@@ -740,9 +844,46 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       )}
                     </td>
                     <td className="px-3 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(reg.status)}`}>
-                        {reg.status.replace('_', ' ')}
-                      </span>
+                      <div className="space-y-1">
+                        {/* Registration Status Badge */}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(reg.status)}`}>
+                          {reg.status.replace('_', ' ')}
+                        </span>
+                        
+                        {/* Payment Method & Order ID */}
+                        {reg.payment && (
+                          <>
+                            <div className={`text-xs font-medium ${
+                              reg.payment.paymentMethod === 'PAYHERE' ? 'text-blue-600' : 'text-yellow-600'
+                            }`}>
+                              {reg.payment.paymentMethod === 'PAYHERE' ? '💳 PayHere' : '🏦 Bank Transfer'}
+                            </div>
+                            <div className="text-xs text-gray-500 font-mono">
+                              {reg.payment.orderId}
+                            </div>
+                            
+                            {/* Payment Status for PayHere */}
+                            {reg.payment.paymentMethod === 'PAYHERE' && (
+                              <div className={`text-xs font-semibold ${
+                                reg.payment.status === 'COMPLETED' ? 'text-green-600' :
+                                reg.payment.status === 'PENDING' ? 'text-yellow-600' :
+                                reg.payment.status === 'FAILED' ? 'text-red-600' : 'text-gray-600'
+                              }`}>
+                                {reg.payment.status === 'COMPLETED' ? '✓ Success' :
+                                 reg.payment.status === 'PENDING' ? '⏳ Processing' :
+                                 reg.payment.status === 'FAILED' ? '✗ Failed' : reg.payment.status}
+                              </div>
+                            )}
+                            
+                            {/* Bank Transfer Status */}
+                            {reg.payment.paymentMethod === 'BANK_TRANSFER' && reg.payment.status === 'PENDING' && (
+                              <div className="text-xs text-yellow-600 font-semibold">
+                                ⏳ Awaiting Approval
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </td>
                     <td className="px-3 py-4">
                       <div className="text-sm font-medium text-gray-900">
@@ -1073,7 +1214,19 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
               {/* Payment Info */}
               {viewingRegistration.payment && (
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Payment Information</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    Payment Information
+                    {viewingRegistration.payment.paymentMethod === 'PAYHERE' && (
+                      <span className="text-sm font-medium bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                        💳 PayHere Payment
+                      </span>
+                    )}
+                    {viewingRegistration.payment.paymentMethod === 'BANK_TRANSFER' && (
+                      <span className="text-sm font-medium bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
+                        🏦 Bank Transfer
+                      </span>
+                    )}
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-gray-600">Amount Paid</p>
@@ -1085,19 +1238,89 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Order ID</p>
-                      <p className="text-base font-medium text-gray-900">{viewingRegistration.payment.orderId}</p>
+                      <p className="text-base font-medium text-gray-900 font-mono">{viewingRegistration.payment.orderId}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Payment Status</p>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
                         viewingRegistration.payment.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
                         viewingRegistration.payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
+                        viewingRegistration.payment.status === 'FAILED' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
                       }`}>
+                        {viewingRegistration.payment.status === 'COMPLETED' && '✓ '}
+                        {viewingRegistration.payment.status === 'FAILED' && '✗ '}
+                        {viewingRegistration.payment.status === 'PENDING' && '⏳ '}
                         {viewingRegistration.payment.status}
                       </span>
                     </div>
+                    {viewingRegistration.payment.completedAt && (
+                      <div className="col-span-2">
+                        <p className="text-sm text-gray-600">Payment Completed At</p>
+                        <p className="text-base font-medium text-gray-900">
+                          {format(new Date(viewingRegistration.payment.completedAt), 'MMM dd, yyyy HH:mm:ss')}
+                        </p>
+                      </div>
+                    )}
                   </div>
+
+                  {/* PayHere Specific Details */}
+                  {viewingRegistration.payment.paymentMethod === 'PAYHERE' && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <h4 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="text-blue-600">💳</span> PayHere Transaction Details
+                      </h4>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-gray-600">Transaction Status</p>
+                            <p className={`font-bold text-base ${
+                              viewingRegistration.payment.status === 'COMPLETED' ? 'text-green-600' :
+                              viewingRegistration.payment.status === 'FAILED' ? 'text-red-600' :
+                              'text-yellow-600'
+                            }`}>
+                              {viewingRegistration.payment.status === 'COMPLETED' && '✅ Payment Successful'}
+                              {viewingRegistration.payment.status === 'FAILED' && '❌ Payment Failed'}
+                              {viewingRegistration.payment.status === 'PENDING' && '⏳ Payment Processing'}
+                              {!['COMPLETED', 'FAILED', 'PENDING'].includes(viewingRegistration.payment.status) && viewingRegistration.payment.status}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Order Reference</p>
+                            <p className="font-medium text-gray-900 font-mono">{viewingRegistration.payment.orderId}</p>
+                          </div>
+                          {viewingRegistration.payment.metadata && (
+                            <>
+                              {(viewingRegistration.payment.metadata as any).payment_id && (
+                                <div>
+                                  <p className="text-gray-600">PayHere Payment ID</p>
+                                  <p className="font-medium text-gray-900 font-mono">{(viewingRegistration.payment.metadata as any).payment_id}</p>
+                                </div>
+                              )}
+                              {(viewingRegistration.payment.metadata as any).method && (
+                                <div>
+                                  <p className="text-gray-600">Payment Type</p>
+                                  <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).method}</p>
+                                </div>
+                              )}
+                              {(viewingRegistration.payment.metadata as any).card_holder_name && (
+                                <div>
+                                  <p className="text-gray-600">Card Holder</p>
+                                  <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).card_holder_name}</p>
+                                </div>
+                              )}
+                              {(viewingRegistration.payment.metadata as any).card_no && (
+                                <div>
+                                  <p className="text-gray-600">Card Number</p>
+                                  <p className="font-medium text-gray-900 font-mono">{(viewingRegistration.payment.metadata as any).card_no}</p>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Customer Details from Payment Metadata */}
                   {viewingRegistration.payment.metadata && 
