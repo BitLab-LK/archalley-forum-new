@@ -545,7 +545,7 @@ export function getRegistrationPeriod(
  * - Early Bird (Nov 11-20): Single Entry 2,000, Group Entry 4,000
  * - Standard (Nov 21-Dec 20): Student Entry 2,000, Single Entry 3,000, Group Entry 5,000
  * - Late (Dec 21-24): Student Entry 2,000, Single Entry 5,000, Group Entry 8,000
- * - Kids' Tree Category (Nov 21-Dec 21): Single Entry 2,000
+ * - Kids' Tree Category (Nov 11-Dec 21): Single Entry 2,000 (always)
  */
 export function calculateRegistrationPrice(
   registrationType: 'INDIVIDUAL' | 'TEAM' | 'COMPANY' | 'STUDENT' | 'KIDS',

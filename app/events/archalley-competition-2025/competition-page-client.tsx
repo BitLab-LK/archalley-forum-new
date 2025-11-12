@@ -1012,7 +1012,7 @@ export default function CompetitionPageClient() {
               {/* Kids' Tree Category Registration */}
               <div>
                 <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Kids' Tree Category Registration</h3>
-                <p className="text-gray-300 text-lg mb-4">(21<sup>st</sup> November to 21<sup>st</sup> December)</p>
+                <p className="text-gray-300 text-lg mb-4">(11<sup>th</sup> November to 21<sup>st</sup> December)</p>
                 <div className="space-y-2 text-white mb-3">
                   <div className="flex justify-between items-center">
                     <span>Single Entry:</span>

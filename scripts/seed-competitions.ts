@@ -181,7 +181,7 @@ async function main() {
             earlybird: { start: '2025-11-11', end: '2025-11-20' },
             standard: { start: '2025-11-21', end: '2025-12-20' },
             late: { start: '2025-12-21', end: '2025-12-24' },
-            kids: { start: '2025-11-21', end: '2025-12-21' },
+            kids: { start: '2025-11-11', end: '2025-12-21' }, // Kids can register from Nov 11 to Dec 21
           },
           submissions: {
             start: '2025-12-11',
@@ -230,7 +230,7 @@ async function main() {
             earlybird: { start: '2025-11-11', end: '2025-11-20' }, // Early bird: 11th - 20th November 2025
             standard: { start: '2025-11-21', end: '2025-12-20' }, // Standard: 21st November - 20th December 2025
             late: { start: '2025-12-21', end: '2025-12-24' }, // Late: 21st - 24th December 2025
-            kids: { start: '2025-11-21', end: '2025-12-21' }, // Kids' Category: 21st November - 21st December 2025
+            kids: { start: '2025-11-11', end: '2025-12-21' }, // Kids' Category: 11th November - 21st December 2025
           },
           submissions: {
             start: '2025-12-11', // Submission Start: 11th December 2025
