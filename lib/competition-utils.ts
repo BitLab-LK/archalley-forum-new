@@ -473,12 +473,23 @@ export function getDaysRemaining(deadline: Date): number {
 
 /**
  * Registration period types
+ * Note: KIDS is NOT a period - it's a registration type that's available Nov 21-Dec 21
+ * During that time, kids use their own pricing, but other types use STANDARD/LATE pricing
  */
-export type RegistrationPeriod = 'EARLY_BIRD' | 'STANDARD' | 'LATE' | 'KIDS';
+export type RegistrationPeriod = 'EARLY_BIRD' | 'STANDARD' | 'LATE';
 
 /**
  * Determine the current registration period based on dates
  * Returns the period that applies to the current date in Sri Lanka timezone
+ * 
+ * Period Priority (checked in this order):
+ * 1. Early Bird: Nov 11-20
+ * 2. Late: Dec 21-24
+ * 3. Standard: Nov 21-Dec 20
+ * 4. Default: STANDARD (fallback)
+ * 
+ * Note: Kids category (Nov 21-Dec 21) is a separate registration type, not a period.
+ * Kids pricing is always 2000 regardless of period.
  */
 export function getRegistrationPeriod(
   earlyBirdStart: Date,
@@ -505,27 +516,23 @@ export function getRegistrationPeriod(
   const standardEndDate = compareDate(standardEnd);
   const lateStartDate = compareDate(lateStart);
   const lateEndDate = compareDate(lateEnd);
-  const kidsStartDate = compareDate(kidsStart);
-  const kidsEndDate = compareDate(kidsEnd);
+  // Kids dates are tracked but don't define a period
+  // const kidsStartDate = compareDate(kidsStart);
+  // const kidsEndDate = compareDate(kidsEnd);
   
-  // Check if we're in early bird period
+  // Check if we're in early bird period (Nov 11-20)
   if (currentDate >= earlyBirdStartDate && currentDate <= earlyBirdEndDate) {
     return 'EARLY_BIRD';
   }
   
-  // Check if we're in late period
+  // Check if we're in late period (Dec 21-24)
   if (currentDate >= lateStartDate && currentDate <= lateEndDate) {
     return 'LATE';
   }
   
-  // Check if we're in standard period
+  // Check if we're in standard period (Nov 21-Dec 20)
   if (currentDate >= standardStartDate && currentDate <= standardEndDate) {
     return 'STANDARD';
-  }
-  
-  // Check if we're in kids period (can overlap with standard/late)
-  if (currentDate >= kidsStartDate && currentDate <= kidsEndDate) {
-    return 'KIDS';
   }
   
   // Default to standard if none match
