@@ -11,6 +11,7 @@ import { BadgeNotificationHandler } from "@/components/badge-notifications"
 import { Toaster } from "@/components/ui/toaster"
 import { ConfirmDialogProvider } from "@/hooks/use-confirm-dialog"
 import { SessionMonitor } from "@/hooks/use-session-monitor"
+import GoogleAnalytics from "@/components/google-analytics"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -75,6 +76,7 @@ export default function RootLayout({
         `}</style>
       </head>
       <body className={`${inter.className} ${aquire.variable}`} suppressHydrationWarning>
+        <GoogleAnalytics />
         <Providers>
           <ConfirmDialogProvider>
             <SessionMonitor>
