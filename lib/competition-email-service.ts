@@ -81,7 +81,7 @@ export const sendRegistrationConfirmationEmail = async (data: RegistrationEmailD
 
   console.log('📧 Sending Registration Confirmation Email to:', userEmail);
   
-  const subject = `Registration Confirmed - Archalley Competition 2025 🎉`;
+  const subject = `Registration Confirmed - Christmas in Future 🎉`;
 
   const html = `
     ${getEmailHeader()}
@@ -236,7 +236,7 @@ Follow us on:
 export const sendPaymentReceiptEmail = async (data: RegistrationEmailData) => {
   const { registration, registrationType, userName, userEmail, paymentOrderId } = data;
 
-  const subject = `Payment Receipt - Archalley Competition 2025 💳`;
+  const subject = `Payment Receipt - Christmas in Future 💳`;
 
   const html = `
     ${getEmailHeader()}
@@ -346,7 +346,7 @@ Follow us on:
 export const sendCompetitionGuidelinesEmail = async (data: RegistrationEmailData) => {
   const { competition, userName, userEmail, registration } = data;
 
-  const subject = `Competition Guidelines - Archalley Competition 2025 📋`;
+  const subject = `Competition Guidelines - Christmas in Future 📋`;
 
   const html = `
     ${getEmailHeader()}
@@ -506,7 +506,7 @@ export const sendSubmissionReminderEmail = async (
   registrationNumber: string,
   daysRemaining: number
 ) => {
-  const subject = `Reminder: ${daysRemaining} Days Left - Archalley Competition 2025 ⏰`;
+  const subject = `Reminder: ${daysRemaining} Days Left - Christmas in Future ⏰`;
 
   const html = `
     ${getEmailHeader()}

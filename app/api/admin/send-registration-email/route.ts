@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     console.log('📧 [EMAIL API] Reject Reason:', rejectReason || 'N/A');
     
     if (template === 'BANK_TRANSFER_PENDING') {
-      subject = `Payment Pending - Archalley Competition 2025`;
+      subject = `Payment Pending - Christmas in Future`;
       message = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
           <!-- Header -->
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
         </div>
       `;
     } else if (template === 'PAYMENT_REJECTED') {
-      subject = `Payment Issue - Archalley Competition 2025`;
+      subject = `Payment Issue - Christmas in Future`;
       message = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
           <!-- Header -->
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
         </div>
       `;
     } else if (template === 'PAYMENT_VERIFIED') {
-      subject = `Payment Confirmed - Archalley Competition 2025`;
+      subject = `Payment Confirmed - Christmas in Future`;
       message = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
           <!-- Header -->
@@ -325,7 +325,7 @@ export async function POST(request: NextRequest) {
       `;
     } else {
       // Generic message for other statuses
-      subject = `Update on Your Registration - Archalley Competition 2025`;
+      subject = `Update on Your Registration - Christmas in Future`;
       message = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
           <!-- Header -->
