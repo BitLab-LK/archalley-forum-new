@@ -432,22 +432,28 @@ export default function CompetitionPageClient() {
                 <div className="mb-6"></div>
                 
                 <div className="text-gray-300 text-base md:text-lg space-y-4">
-                  <p>
+                  <div>
                     <h4 className="text-[1.25rem] font-bold text-white">Who Can Join</h4>
-                    Open to all enthusiasts<br />
-                    Students | Professionals | Creatives | Anyone with a Vision
-                  </p>
+                    <p>
+                      Open to all enthusiasts<br />
+                      Students | Professionals | Creatives | Anyone with a Vision
+                    </p>
+                  </div>
                   
-                  <p>
+                  <div>
                     <h4 className="text-[1.25rem] font-bold text-white">Creative Freedom</h4>
-                        No limits on size, color, materials, or format; as long as it reflects the futuristic theme.
-                      </p>
+                    <p>
+                      No limits on size, color, materials, or format; as long as it reflects the futuristic theme.
+                    </p>
+                  </div>
                   
-                  <p>
+                  <div>
                     <h4 className="text-[1.25rem] font-bold text-white">Global Participation</h4>
-                        Entries accepted locally and internationally. All formats must be submitted online.
-                      </p>
-                    </div>
+                    <p>
+                      Entries accepted locally and internationally. All formats must be submitted online.
+                    </p>
+                  </div>
+                </div>
                 
                 <div className="mb-6"></div>
                 
