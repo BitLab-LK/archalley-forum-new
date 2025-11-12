@@ -11,11 +11,8 @@ import { BadgeNotificationHandler } from "@/components/badge-notifications"
 import { Toaster } from "@/components/ui/toaster"
 import { ConfirmDialogProvider } from "@/hooks/use-confirm-dialog"
 import { SessionMonitor } from "@/hooks/use-session-monitor"
-import { GoogleAnalytics } from "@/components/google-analytics"
-import Script from "next/script"
 
 const inter = Inter({ subsets: ["latin"] })
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
 
 // Aquire font family
 // Font files should be placed in the root-level 'fonts' directory
@@ -63,29 +60,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Google Analytics */}
-        {GA_MEASUREMENT_ID && (
-          <>
-            <Script
-              strategy="afterInteractive"
-              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-            />
-            <Script
-              id="google-analytics"
-              strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', '${GA_MEASUREMENT_ID}', {
-                    page_path: window.location.pathname,
-                  });
-                `,
-              }}
-            />
-          </>
-        )}
         <style>{`
           .loading-skeleton {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -104,7 +78,6 @@ export default function RootLayout({
         <Providers>
           <ConfirmDialogProvider>
             <SessionMonitor>
-              <GoogleAnalytics />
               <div className="min-h-screen flex flex-col">
                 <div className="relative z-50">
                   <TopBar />

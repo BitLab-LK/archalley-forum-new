@@ -68,7 +68,6 @@ import PostImage from "@/components/post-image"
 import { PostBadges } from "./post-badges"
 import ShareDropdown from "./share-dropdown"
 import { ReportPostModal } from "./report-post-modal"
-import { event } from "@/lib/google-analytics"
 
 // ============================================================================
 // TYPE DEFINITIONS AND INTERFACES
@@ -533,13 +532,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }
       downvotes: newDownvotes,
       userVote: newUserVote
     })
-    
-    // Track vote event
-    event({
-      action: newUserVote === null ? 'remove_vote' : (newUserVote === type ? 'change_vote' : 'vote'),
-      category: 'engagement',
-      label: `post_${post.id}_${type}vote`,
-    });
     
     try {
       // Send to server

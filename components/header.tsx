@@ -23,7 +23,6 @@ import { Search, Moon, Sun, LogOut, User, Shield, Home, Crown, ChevronDown, Fold
 import { useTheme } from "next-themes"
 import { useAuth } from "@/lib/auth-context"
 import NotificationDropdown from "@/components/notification-dropdown"
-import { trackSearch } from "@/lib/google-analytics"
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -35,7 +34,6 @@ export default function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      trackSearch(searchQuery.trim());
       router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
     }
   }
