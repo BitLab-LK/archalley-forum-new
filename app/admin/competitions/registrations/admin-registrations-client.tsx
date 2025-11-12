@@ -383,10 +383,44 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
 
   // Bulk delete registrations
   const handleBulkDelete = async () => {
-    console.log('Delete:', selectedRegistrations);
-    toast.info('Delete feature coming soon');
-    setShowDeleteDialog(false);
-    // TODO: Implement bulk delete API endpoint
+    if (selectedRegistrations.length === 0) {
+      toast.error('No registrations selected');
+      return;
+    }
+
+    setIsRefreshing(true);
+    
+    try {
+      const response = await fetch('/api/admin/competitions/delete-registrations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          registrationIds: selectedRegistrations,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to delete registrations');
+      }
+
+      toast.success(data.message || `Successfully deleted ${data.deletedCount} registration(s)`);
+      
+      // Clear selections
+      setSelectedRegistrations([]);
+      setShowDeleteDialog(false);
+      
+      // Refresh the data
+      await refreshData();
+    } catch (error) {
+      console.error('Error deleting registrations:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete registrations');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   // Open revert dialog
@@ -440,7 +474,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
   };
 
   return (
-    <div className="mx-auto px-4 py-8 max-w-[1600px]">
+    <div className="mx-auto px-4 py-8 max-w-[1800px]">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Competition Registrations</h1>
@@ -743,9 +777,6 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                   />
                 </th>
                 <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
-                  Reg Info
-                </th>
-                <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
                   User
                 </th>
                 <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
@@ -771,7 +802,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
             <tbody className="divide-y divide-gray-200">
               {filteredRegistrations.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
                     <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                     <p className="text-lg font-medium">No registrations found</p>
                     <p className="text-sm">Try adjusting your filters</p>
@@ -787,18 +818,6 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                         onChange={() => handleSelect(reg.id)}
                         className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
                       />
-                    </td>
-                    <td className="px-3 py-4">
-                      <div className="space-y-1">
-                        <div className="text-xs font-mono text-gray-900 font-semibold">
-                          #{reg.registrationNumber}
-                        </div>
-                        {reg.displayCode && (
-                          <div className="text-xs font-mono bg-orange-50 text-orange-700 px-2 py-0.5 rounded border border-orange-200 inline-block">
-                            🔒 {reg.displayCode}
-                          </div>
-                        )}
-                      </div>
                     </td>
                     <td className="px-3 py-4">
                       <div className="flex items-center gap-3">
@@ -830,20 +849,46 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       </div>
                       <div className="text-sm text-gray-500">{reg.competition.year}</div>
                     </td>
-                    <td className="px-3 py-4">
-                      <div className="text-sm text-gray-900">{reg.registrationType.name}</div>
+                    <td className="px-3 py-4 min-w-[180px]">
+                      {/* Show all registration types for the same payment */}
+                      {(() => {
+                        // Find all registrations with the same paymentId
+                        const relatedRegs = reg.payment 
+                          ? registrations.filter(r => r.payment?.id === reg.payment?.id)
+                          : [reg];
+                        
+                        const uniqueTypes = Array.from(new Set(relatedRegs.map(r => r.registrationType.name)));
+                        
+                        return (
+                          <div className="space-y-1">
+                            {uniqueTypes.map((typeName, index) => (
+                              <div key={index} className="text-sm text-gray-900">
+                                {uniqueTypes.length > 1 && `${index + 1}. `}
+                                {typeName}
+                              </div>
+                            ))}
+                            {uniqueTypes.length > 1 && (
+                              <div className="text-xs text-blue-600 font-medium mt-1">
+                                ({uniqueTypes.length} types)
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* Team/Company Info */}
                       {reg.teamName && (
-                        <div className="text-xs text-gray-500 mt-0.5">
+                        <div className="text-xs text-gray-500 mt-1">
                           🏆 {reg.teamName}
                         </div>
                       )}
                       {reg.companyName && (
-                        <div className="text-xs text-gray-500 mt-0.5">
+                        <div className="text-xs text-gray-500 mt-1">
                           🏢 {reg.companyName}
                         </div>
                       )}
                     </td>
-                    <td className="px-3 py-4">
+                    <td className="px-3 py-4 min-w-[200px]">
                       <div className="space-y-1">
                         {/* Registration Status Badge */}
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(reg.status)}`}>
@@ -886,12 +931,34 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       </div>
                     </td>
                     <td className="px-3 py-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {reg.amountPaid.toLocaleString()}
-                      </div>
-                      {reg.payment && (
-                        <div className="text-xs text-gray-500">{reg.payment.paymentMethod}</div>
-                      )}
+                      {/* Show total amount if multiple registrations in same payment */}
+                      {(() => {
+                        if (!reg.payment) {
+                          return (
+                            <div className="text-sm font-medium text-gray-900">
+                              {reg.amountPaid.toLocaleString()}
+                            </div>
+                          );
+                        }
+                        
+                        // Calculate total for all registrations with same paymentId
+                        const relatedRegs = registrations.filter(r => r.payment?.id === reg.payment?.id);
+                        const totalAmount = relatedRegs.reduce((sum, r) => sum + r.amountPaid, 0);
+                        const hasMultiple = relatedRegs.length > 1;
+                        
+                        return (
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {totalAmount.toLocaleString()}
+                            </div>
+                            {hasMultiple && (
+                              <div className="text-xs text-gray-500">
+                                ({relatedRegs.length} items)
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-3 py-4">
                       <div className="text-xs text-gray-700">
