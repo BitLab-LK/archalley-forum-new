@@ -4,7 +4,7 @@
  */
 
 import { RegistrationType } from '@prisma/client';
-import { REGISTRATION_TYPE_CODES, RegistrationNumberComponents } from '@/types/competition';
+import { RegistrationNumberComponents } from '@/types/competition';
 import crypto from 'crypto';
 
 // ============================================
@@ -12,59 +12,75 @@ import crypto from 'crypto';
 // ============================================
 
 /**
- * Generate a unique registration number
- * Format: AC{YEAR}-{TYPE}-{SEQUENCE}
- * Example: AC2025-IND-00001
+ * Generate a unique random registration number
+ * Format: Random 6-character alphanumeric string
+ * Example: X7K9P2
+ * 
+ * Uses cryptographically secure random generation.
+ * Excludes similar-looking characters (0, O, I, l, 1) for clarity.
  */
-export function generateRegistrationNumber(
-  type: RegistrationType,
-  sequence: number,
-  year?: number
-): string {
-  const currentYear = year || new Date().getFullYear();
-  const competitionCode = `AC${currentYear}`; // Archalley Competition + Year
-  const typeCode = REGISTRATION_TYPE_CODES[type];
-  const paddedSequence = sequence.toString().padStart(5, '0');
+export function generateRegistrationNumber(): string {
+  // Use clear characters only: 2-9 and A-Z (excluding O and I)
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // 32 characters
+  const randomBytes = crypto.randomBytes(6);
   
-  return `${competitionCode}-${typeCode}-${paddedSequence}`;
+  let registrationNumber = '';
+  for (let i = 0; i < 6; i++) {
+    registrationNumber += chars[randomBytes[i] % chars.length];
+  }
+  
+  return registrationNumber;
+}
+
+/**
+ * Generate a unique registration number and verify it doesn't exist in database
+ * Retries up to 10 times if collision occurs (extremely unlikely with 6 chars)
+ */
+export async function generateUniqueRegistrationNumber(
+  prisma: any,
+  maxRetries: number = 10
+): Promise<string> {
+  for (let i = 0; i < maxRetries; i++) {
+    const registrationNumber = generateRegistrationNumber();
+    
+    // Check if registration number already exists
+    const existing = await prisma.competitionRegistration.findFirst({
+      where: { registrationNumber },
+    });
+    
+    if (!existing) {
+      return registrationNumber;
+    }
+    
+    // If exists, try again (very rare)
+    console.log(`Registration number collision detected: ${registrationNumber}, retrying...`);
+  }
+  
+  throw new Error('Failed to generate unique registration number after multiple attempts');
 }
 
 /**
  * Parse registration number into components
+ * @deprecated No longer needed with random format
  */
 export function parseRegistrationNumber(
-  registrationNumber: string
+  _registrationNumber: string
 ): RegistrationNumberComponents | null {
-  const pattern = /^AC(\d{4})-([A-Z]+)-(\d{5})$/;
-  const match = registrationNumber.match(pattern);
-  
-  if (!match) {
-    return null;
-  }
-  
-  return {
-    year: parseInt(match[1], 10),
-    typeCode: match[2],
-    sequence: parseInt(match[3], 10),
-  };
+  // Random format doesn't have structured components
+  return null;
 }
 
 /**
  * Get next sequence number for registration type
+ * @deprecated No longer needed with random format
  */
 export async function getNextSequenceNumber(
-  prisma: any,
-  competitionId: string,
-  type: RegistrationType
+  _prisma: any,
+  _competitionId: string,
+  _type: RegistrationType
 ): Promise<number> {
-  const count = await prisma.competitionRegistration.count({
-    where: {
-      competitionId,
-      participantType: type,
-    },
-  });
-  
-  return count + 1;
+  // Random format doesn't use sequences
+  return 0;
 }
 
 // ============================================

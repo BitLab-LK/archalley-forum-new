@@ -7,8 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import {
   verifyPayHereSignature,
-  generateRegistrationNumber,
-  getNextSequenceNumber,
+  generateUniqueRegistrationNumber,
   generateUniqueDisplayCode,
 } from '@/lib/competition-utils';
 import { getPayHereConfig } from '@/lib/payhere-config';
@@ -174,19 +173,8 @@ async function handleSuccessfulPayment(
     // Create registrations for each cart item
     const registrations = await Promise.all(
       cartItems.map(async (item) => {
-        // Get next sequence number
-        const sequence = await getNextSequenceNumber(
-          prisma,
-          item.competitionId,
-          item.participantType
-        );
-
-        // Generate registration number
-        const registrationNumber = generateRegistrationNumber(
-          item.participantType,
-          sequence,
-          item.competition.year
-        );
+        // Generate unique random registration number
+        const registrationNumber = await generateUniqueRegistrationNumber(prisma);
 
         // Generate unique anonymous display code for public entry display
         const displayCode = await generateUniqueDisplayCode(
@@ -194,7 +182,7 @@ async function handleSuccessfulPayment(
           item.competition.year
         );
 
-        console.log(`✅ Generated display code for ${registrationNumber}: ${displayCode}`);
+        console.log(`✅ Generated registration number: ${registrationNumber} with display code: ${displayCode}`);
 
         // Create registration
         return prisma.competitionRegistration.create({

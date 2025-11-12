@@ -17,8 +17,7 @@ import {
   getNextOrderSequence,
   generatePayHereHash,
   isCartExpired,
-  generateRegistrationNumber,
-  getNextSequenceNumber,
+  generateUniqueRegistrationNumber,
 } from '@/lib/competition-utils';
 import { getPayHereConfig } from '@/lib/payhere-config';
 
@@ -181,19 +180,10 @@ export async function POST(
           
           console.log(`Mapping registration type: "${item.registrationType.name}" -> "${participantType}"`);
           
-          // Get next sequence number for this competition and type
-          const sequence = await getNextSequenceNumber(
-            prisma,
-            item.competitionId,
-            participantType
-          );
-
-          // Generate proper registration number using standard format
-          const regNumber = generateRegistrationNumber(
-            participantType,
-            sequence,
-            item.competition.year
-          );
+          // Generate unique random registration number
+          const regNumber = await generateUniqueRegistrationNumber(prisma);
+          
+          console.log(`✅ Generated registration number: ${regNumber}`);
           
           return prisma.competitionRegistration.create({
             data: {
