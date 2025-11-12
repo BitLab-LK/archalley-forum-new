@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     console.log('📧 [EMAIL API] Reject Reason:', rejectReason || 'N/A');
     
     if (template === 'BANK_TRANSFER_PENDING') {
-      subject = `Payment Pending - Christmas in Future`;
+      subject = `Payment Pending - Archalley Competition 2025 - Christmas in Future`;
       message = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
           <!-- Header -->
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
             </p>
             
             <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
-              Your bank transfer details for <strong>Christmas in Future</strong> have been successfully submitted and are awaiting verification.
+              Your bank transfer details for <strong>Archalley Competition 2025 - Christmas in Future</strong> have been successfully submitted and are awaiting verification.
             </p>
             
             <!-- Registration Info Box -->
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
         </div>
       `;
     } else if (template === 'PAYMENT_REJECTED') {
-      subject = `Payment Issue - Christmas in Future`;
+      subject = `Payment Issue - Archalley Competition 2025 - Christmas in Future`;
       message = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
           <!-- Header -->
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
             </p>
 
             <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
-              We regret to inform you that we were unable to verify your bank transfer payment for <strong>Christmas in Future</strong>.
+              We regret to inform you that we were unable to verify your bank transfer payment for <strong>Archalley Competition 2025 - Christmas in Future</strong>.
             </p>
             
             <!-- Registration Info Box -->
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
               </tr>
               <tr style="background: #f9f9f9;">
                 <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px;">Competition</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #333; font-size: 14px; font-weight: 500;">Christmas in Future</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #333; font-size: 14px; font-weight: 500;">Archalley Competition 2025 - Christmas in Future</td>
               </tr>
               <tr>
                 <td style="padding: 12px 15px; color: #666; font-size: 14px;">Status</td>
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
         </div>
       `;
     } else if (template === 'PAYMENT_VERIFIED') {
-      subject = `Payment Confirmed - Christmas in Future`;
+      subject = `Payment Confirmed - Archalley Competition 2025 - Christmas in Future`;
       message = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
           <!-- Header -->
@@ -260,7 +260,7 @@ export async function POST(request: NextRequest) {
             </p>
             
             <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
-              Great news! Your bank transfer has been verified and your registration for <strong>Christmas in Future</strong> is now confirmed.
+              Great news! Your bank transfer has been verified and your registration for <strong>Archalley Competition 2025 - Christmas in Future</strong> is now confirmed.
             </p>
             
             <!-- Registration Info Box -->
@@ -271,7 +271,7 @@ export async function POST(request: NextRequest) {
               </tr>
               <tr style="background: #f9f9f9;">
                 <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #666; font-size: 14px;">Competition</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #333; font-size: 14px; font-weight: 500;">Christmas in Future</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #e5e5e5; color: #333; font-size: 14px; font-weight: 500;">Archalley Competition 2025 - Christmas in Future</td>
               </tr>
               <tr>
                 <td style="padding: 12px 15px; color: #666; font-size: 14px;">Status</td>
@@ -325,7 +325,7 @@ export async function POST(request: NextRequest) {
       `;
     } else {
       // Generic message for other statuses
-      subject = `Update on Your Registration - Christmas in Future`;
+      subject = `Update on Your Registration - Archalley Competition 2025 - Christmas in Future`;
       message = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
           <!-- Header -->
@@ -342,7 +342,7 @@ export async function POST(request: NextRequest) {
             </p>
             
             <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
-              We are reaching out regarding your registration for <strong>Christmas in Future</strong>.
+              We are reaching out regarding your registration for <strong>Archalley Competition 2025 - Christmas in Future</strong>.
             </p>
             
             <!-- Registration Info Box -->
