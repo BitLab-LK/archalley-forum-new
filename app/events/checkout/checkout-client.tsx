@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Script from 'next/script';
 import { CartWithItems } from '@/types/competition';
 import { PayHerePaymentData } from '@/types/competition';
 import { toast } from 'sonner';
@@ -21,6 +22,7 @@ export default function CheckoutClient({ user }: Props) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'bank'>('card');
   const [bankSlipFile, setBankSlipFile] = useState<File | null>(null);
+  const [payHereLoaded, setPayHereLoaded] = useState(false);
   const [formData, setFormData] = useState({
     firstName: user?.name?.split(' ')[0] || '',
     lastName: user?.name?.split(' ').slice(1).join(' ') || '',
@@ -34,6 +36,72 @@ export default function CheckoutClient({ user }: Props) {
 
   useEffect(() => {
     fetchCart();
+    
+    // Load PayHere SDK if not already loaded
+    const loadPayHereSDK = () => {
+      if (typeof window === 'undefined') return;
+
+      // Check if already loaded
+      if (window.payhere) {
+        console.log('PayHere SDK already available');
+        setPayHereLoaded(true);
+        return;
+      }
+
+      // Check if script tag already exists
+      const existingScript = document.querySelector('script[src*="payhere.js"]');
+      if (existingScript) {
+        console.log('PayHere script tag exists, waiting for SDK to initialize');
+        // Poll for SDK availability
+        const interval = setInterval(() => {
+          if (window.payhere) {
+            console.log('PayHere SDK initialized');
+            setPayHereLoaded(true);
+            clearInterval(interval);
+          }
+        }, 200);
+
+        setTimeout(() => clearInterval(interval), 10000);
+        return;
+      }
+
+      // Load the script manually as fallback
+      console.log('Loading PayHere SDK manually');
+      const script = document.createElement('script');
+      script.src = 'https://www.payhere.lk/lib/payhere.js';
+      script.async = true;
+      script.onload = () => {
+        console.log('PayHere SDK script loaded manually');
+        // Wait a bit for initialization
+        setTimeout(() => {
+          if (window.payhere) {
+            console.log('PayHere SDK initialized after manual load');
+            setPayHereLoaded(true);
+          } else {
+            console.warn('PayHere SDK not available after manual load');
+            // Poll for it
+            const pollInterval = setInterval(() => {
+              if (window.payhere) {
+                console.log('PayHere SDK found on poll');
+                setPayHereLoaded(true);
+                clearInterval(pollInterval);
+              }
+            }, 200);
+            setTimeout(() => clearInterval(pollInterval), 5000);
+          }
+        }, 300);
+      };
+      script.onerror = () => {
+        console.error('Failed to load PayHere SDK manually');
+        setPayHereLoaded(false);
+      };
+      document.head.appendChild(script);
+    };
+
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(loadPayHereSDK, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const fetchCart = async () => {
@@ -145,6 +213,8 @@ export default function CheckoutClient({ user }: Props) {
   };
 
   const handleSubmit = async () => {
+    console.log('handleSubmit called', { paymentMethod, cartItems: cart?.items.length });
+    
     if (!cart || cart.items.length === 0) {
       toast.error('Your cart is empty');
       return;
@@ -152,6 +222,7 @@ export default function CheckoutClient({ user }: Props) {
 
     // Validate form data
     if (!validateForm()) {
+      console.log('Form validation failed');
       return;
     }
 
@@ -162,9 +233,11 @@ export default function CheckoutClient({ user }: Props) {
     }
 
     setIsProcessing(true);
+    console.log('Processing payment...', { paymentMethod });
 
     try {
       if (paymentMethod === 'card') {
+        console.log('Initiating card payment via PayHere');
         // Card payment via PayHere
         const response = await fetch('/api/competitions/checkout', {
           method: 'POST',
@@ -176,10 +249,13 @@ export default function CheckoutClient({ user }: Props) {
         });
 
         const result = await response.json();
+        console.log('Checkout API response:', { success: result.success, hasPaymentData: !!result.data?.paymentData });
 
         if (result.success && result.data?.paymentData) {
+          console.log('Calling initiatePayHerePayment');
           initiatePayHerePayment(result.data.paymentData);
         } else {
+          console.error('Checkout failed:', result.error);
           toast.error(result.error || 'Failed to initiate payment');
           setIsProcessing(false);
         }
@@ -265,20 +341,82 @@ export default function CheckoutClient({ user }: Props) {
   };
 
   const initiatePayHerePayment = (paymentData: PayHerePaymentData) => {
-    // Create hidden form
-    const form = document.createElement('form');
-    form.method = 'POST';
-    // Use sandbox URL for testing (you can add environment variable check here)
-    form.action = process.env.NEXT_PUBLIC_PAYHERE_MODE === 'live'
-      ? 'https://www.payhere.lk/pay/checkout'
-      : 'https://sandbox.payhere.lk/pay/checkout';
+    console.log('initiatePayHerePayment called', {
+      hasWindow: typeof window !== 'undefined',
+      hasPayHere: typeof window !== 'undefined' && !!window.payhere,
+      payHereLoaded,
+      paymentData: {
+        order_id: paymentData.order_id,
+        amount: paymentData.amount,
+        merchant_id: paymentData.merchant_id,
+      }
+    });
 
-    // Add all payment fields
-    const fields: Record<string, string> = {
+    // Check if payhere.js is loaded
+    if (typeof window === 'undefined') {
+      console.error('Window is undefined');
+      toast.error('Payment gateway is not available. Please refresh the page.');
+      setIsProcessing(false);
+      return;
+    }
+
+    if (!window.payhere) {
+      console.error('PayHere SDK not loaded. window.payhere is undefined');
+      toast.error('Payment gateway is loading. Please wait a moment and try again.');
+      setIsProcessing(false);
+      
+      // Try to wait and retry once
+      setTimeout(() => {
+        if (window.payhere) {
+          console.log('PayHere SDK loaded on retry, attempting payment again');
+          initiatePayHerePayment(paymentData);
+        } else {
+          toast.error('Payment gateway failed to load. Please refresh the page.');
+        }
+      }, 2000);
+      return;
+    }
+
+    if (!payHereLoaded) {
+      console.warn('PayHere SDK loaded but state not updated');
+      setPayHereLoaded(true);
+    }
+
+    // Set up PayHere event handlers
+    window.payhere.onCompleted = function onCompleted(orderId: string) {
+      console.log('Payment completed. OrderID:', orderId);
+      setIsProcessing(false);
+      
+      // Redirect to return URL after a short delay to allow notification to process
+      setTimeout(() => {
+        window.location.href = paymentData.return_url;
+      }, 1000);
+    };
+
+    window.payhere.onDismissed = function onDismissed() {
+      console.log('Payment dismissed');
+      setIsProcessing(false);
+      toast.info('Payment was cancelled. You can try again.');
+    };
+
+    window.payhere.onError = function onError(error: string) {
+      console.log('Payment error:', error);
+      setIsProcessing(false);
+      toast.error(`Payment error: ${error}`);
+    };
+
+    // Prepare payment object for PayHere SDK
+    const payment = {
+      sandbox: process.env.NEXT_PUBLIC_PAYHERE_MODE !== 'live',
       merchant_id: paymentData.merchant_id,
-      return_url: paymentData.return_url,
-      cancel_url: paymentData.cancel_url,
+      return_url: undefined, // Important: set to undefined for Onsite Checkout
+      cancel_url: undefined, // Important: set to undefined for Onsite Checkout
       notify_url: paymentData.notify_url,
+      order_id: paymentData.order_id,
+      items: paymentData.items,
+      amount: paymentData.amount,
+      currency: paymentData.currency,
+      hash: paymentData.hash,
       first_name: paymentData.first_name,
       last_name: paymentData.last_name,
       email: paymentData.email,
@@ -286,23 +424,25 @@ export default function CheckoutClient({ user }: Props) {
       address: paymentData.address || '',
       city: paymentData.city || '',
       country: paymentData.country || 'Sri Lanka',
-      order_id: paymentData.order_id,
-      items: paymentData.items,
-      currency: paymentData.currency,
-      amount: paymentData.amount,
-      hash: paymentData.hash,
     };
 
-    Object.entries(fields).forEach(([key, value]) => {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = key;
-      input.value = value;
-      form.appendChild(input);
-    });
-
-    document.body.appendChild(form);
-    form.submit();
+    // Start the payment popup
+    try {
+      console.log('Calling payhere.startPayment with:', {
+        sandbox: payment.sandbox,
+        merchant_id: payment.merchant_id,
+        order_id: payment.order_id,
+        amount: payment.amount,
+        hasHash: !!payment.hash,
+      });
+      
+      window.payhere.startPayment(payment);
+      console.log('payhere.startPayment called successfully');
+    } catch (error) {
+      console.error('Error starting payment:', error);
+      setIsProcessing(false);
+      toast.error(`Failed to start payment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   if (isLoading) {
@@ -327,8 +467,41 @@ export default function CheckoutClient({ user }: Props) {
   const competitionTitle = cart.items[0]?.competition?.title || 'Archalley Competition 2025';
 
   return (
-    <div className="min-h-screen bg-white py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <>
+      {/* PayHere JavaScript SDK */}
+      <Script 
+        src="https://www.payhere.lk/lib/payhere.js" 
+        strategy="afterInteractive"
+        onLoad={() => {
+          console.log('PayHere SDK script loaded');
+          // Wait a bit for the SDK to initialize
+          setTimeout(() => {
+            if (typeof window !== 'undefined' && window.payhere) {
+              console.log('PayHere SDK initialized successfully');
+              setPayHereLoaded(true);
+            } else {
+              console.warn('PayHere SDK script loaded but window.payhere not available yet');
+              // Try again after a short delay
+              setTimeout(() => {
+                if (typeof window !== 'undefined' && window.payhere) {
+                  console.log('PayHere SDK initialized on retry');
+                  setPayHereLoaded(true);
+                } else {
+                  console.error('PayHere SDK failed to initialize');
+                }
+              }, 1000);
+            }
+          }, 100);
+        }}
+        onError={(e) => {
+          console.error('Failed to load PayHere SDK script:', e);
+          setPayHereLoaded(false);
+          toast.error('Failed to load payment gateway. Please refresh the page.');
+        }}
+      />
+      
+      <div className="min-h-screen bg-white py-8">
+        <div className="container mx-auto px-4 max-w-4xl">
         {/* Back Button */}
         <button
           onClick={() => router.back()}
@@ -569,7 +742,7 @@ export default function CheckoutClient({ user }: Props) {
             {isProcessing 
               ? 'Processing...' 
               : paymentMethod === 'card' 
-                ? 'Proceed to PayHere Gateway →' 
+                ? 'Pay Securely with PayHere' 
                 : 'Submit Bank Transfer Details →'}
           </button>
 
@@ -581,11 +754,12 @@ export default function CheckoutClient({ user }: Props) {
 
           {paymentMethod === 'card' && (
             <p className="text-xs text-gray-500 text-center mt-3">
-              You will be redirected to PayHere secure payment gateway
+              Secure payment will open in a popup window
             </p>
           )}
         </div>
       </div>
     </div>
+    </>
   );
 }
