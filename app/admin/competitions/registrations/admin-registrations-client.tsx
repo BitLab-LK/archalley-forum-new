@@ -603,10 +603,31 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
             <div>
               <p className="text-sm text-gray-600">PayHere Revenue (LKR)</p>
               <p className="text-2xl font-semibold text-blue-600">
-                {registrations
-                  .filter(r => r.payment?.paymentMethod === 'PAYHERE' && r.status === 'CONFIRMED')
-                  .reduce((sum, r) => sum + r.amountPaid, 0)
-                  .toLocaleString()}
+                {(() => {
+                  // Group by payment ID to avoid double counting
+                  const paymentGroups = new Map<string, typeof registrations>();
+                  registrations.forEach(r => {
+                    if (r.payment?.paymentMethod === 'PAYHERE') {
+                      const key = r.payment.id;
+                      if (!paymentGroups.has(key)) {
+                        paymentGroups.set(key, []);
+                      }
+                      paymentGroups.get(key)!.push(r);
+                    }
+                  });
+                  
+                  // Calculate total by summing each payment group once
+                  let total = 0;
+                  paymentGroups.forEach(group => {
+                    const hasConfirmed = group.some(r => r.status === 'CONFIRMED');
+                    if (hasConfirmed) {
+                      const groupTotal = group.reduce((sum, r) => sum + r.amountPaid, 0);
+                      total += groupTotal;
+                    }
+                  });
+                  
+                  return total.toLocaleString();
+                })()}
               </p>
             </div>
           </div>

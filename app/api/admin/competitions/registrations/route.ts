@@ -114,15 +114,35 @@ export async function GET() {
       },
     });
 
-    // Calculate statistics
+    // Calculate statistics - Group by payment to avoid double counting
+    // Group registrations by payment ID to get unique transactions
+    const paymentGroups = new Map<string, typeof registrations>();
+    registrations.forEach(reg => {
+      const key = reg.payment?.id || `no-payment-${reg.id}`;
+      if (!paymentGroups.has(key)) {
+        paymentGroups.set(key, []);
+      }
+      paymentGroups.get(key)!.push(reg);
+    });
+
+    // Calculate total revenue by summing each payment group once
+    let totalRevenue = 0;
+    paymentGroups.forEach(group => {
+      // Check if at least one registration in the group is CONFIRMED
+      const hasConfirmed = group.some(r => r.status === 'CONFIRMED');
+      if (hasConfirmed) {
+        // Sum all amounts in this payment group (they're part of same transaction)
+        const groupTotal = group.reduce((sum, r) => sum + r.amountPaid, 0);
+        totalRevenue += groupTotal;
+      }
+    });
+
     const stats = {
       total: registrations.length,
       confirmed: registrations.filter(r => r.status === 'CONFIRMED').length,
       pending: registrations.filter(r => r.status === 'PENDING').length,
       submitted: registrations.filter(r => r.submissionStatus === 'SUBMITTED').length,
-      totalRevenue: registrations
-        .filter(r => r.status === 'CONFIRMED')
-        .reduce((sum, r) => sum + r.amountPaid, 0),
+      totalRevenue: totalRevenue,
     };
 
     return NextResponse.json({
