@@ -1013,9 +1013,9 @@ export default function CompetitionPageClient() {
             <div className="space-y-8 pl-6 md:pl-8 lg:pl-12">
               {/* Early bird Registration */}
               <div>
-                <h3 className="text-xl md:text-3xl font-bold text-white mb-2">Early bird Registration</h3>
-                <p className="text-gray-300 text-[14.4px] md:text-lg mb-4 leading-[20px] md:leading-normal">(11<sup>th</sup> November - 20<sup>th</sup> November)</p>
-                <div className="space-y-2 text-white">
+                <h3 className="text-base md:text-3xl font-bold text-white mb-2">Early bird Registration</h3>
+                <p className="text-gray-300 text-xs md:text-lg mb-4 leading-[20px] md:leading-normal">(11<sup>th</sup> November - 20<sup>th</sup> November)</p>
+                <div className="space-y-2 text-white text-sm md:text-base">
                   <div className="flex justify-between items-center">
                     <span>Single Entry:</span>
                     <span className="font-semibold">LKR 2,000</span>
@@ -1029,9 +1029,9 @@ export default function CompetitionPageClient() {
 
               {/* Standard Registration */}
               <div>
-                <h3 className="text-xl md:text-3xl font-bold text-white mb-2">Standard Registration</h3>
-                <p className="text-gray-300 text-[14.4px] md:text-lg mb-4 leading-[20px] md:leading-normal">(21<sup>st</sup> November - 20<sup>th</sup> December)</p>
-                <div className="space-y-2 text-white">
+                <h3 className="text-base md:text-3xl font-bold text-white mb-2">Standard Registration</h3>
+                <p className="text-gray-300 text-xs md:text-lg mb-4 leading-[20px] md:leading-normal">(21<sup>st</sup> November - 20<sup>th</sup> December)</p>
+                <div className="space-y-2 text-white text-sm md:text-base">
                   <div className="flex justify-between items-center">
                     <span>Student Entry:</span>
                     <span className="font-semibold">LKR 2,000</span>
@@ -1049,9 +1049,9 @@ export default function CompetitionPageClient() {
 
               {/* Late Registration */}
               <div>
-                <h3 className="text-xl md:text-3xl font-bold text-white mb-2">Late Registration</h3>
-                <p className="text-gray-300 text-[14.4px] md:text-lg mb-4 leading-[20px] md:leading-normal">(21<sup>st</sup> December - 24<sup>th</sup> December)</p>
-                <div className="space-y-2 text-white">
+                <h3 className="text-base md:text-3xl font-bold text-white mb-2">Late Registration</h3>
+                <p className="text-gray-300 text-xs md:text-lg mb-4 leading-[20px] md:leading-normal">(21<sup>st</sup> December - 24<sup>th</sup> December)</p>
+                <div className="space-y-2 text-white text-sm md:text-base">
                   <div className="flex justify-between items-center">
                     <span>Student Entry:</span>
                     <span className="font-semibold">LKR 2,000</span>
@@ -1069,12 +1069,12 @@ export default function CompetitionPageClient() {
 
               {/* Kids' Tree Category Registration */}
               <div>
-                <h3 className="text-xl md:text-3xl font-bold text-white mb-2">Kids' Tree Category Registration</h3>
-                <p className="text-gray-300 text-[14.4px] md:text-lg mb-4 leading-[20px] md:leading-normal">(11<sup>th</sup> November to 21<sup>st</sup> December)</p>
-                <div className="space-y-2 text-white mb-3">
+                <h3 className="text-base md:text-3xl font-bold text-white mb-2">Kids' Tree Category Registration</h3>
+                <p className="text-gray-300 text-xs md:text-lg mb-4 leading-[20px] md:leading-normal">(11<sup>th</sup> November to 21<sup>st</sup> December)</p>
+                <div className="space-y-2 text-white text-sm md:text-base mb-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-base leading-[20px]">Single Entry:</span>
-                    <span className="font-semibold text-base leading-[20px]">LKR 2,000</span>
+                    <span className="leading-[20px]">Single Entry:</span>
+                    <span className="font-semibold leading-[20px]">LKR 2,000</span>
                   </div>
                 </div>
                 <p className="text-gray-400 text-[11.2px] md:text-sm italic leading-[20px] md:leading-normal">*Only single entries are allowed in kids' category.</p>
