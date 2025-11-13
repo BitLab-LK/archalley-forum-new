@@ -507,10 +507,10 @@ export default function CheckoutClient({ user }: Props) {
                 <div className="mt-4 ml-7 p-3 bg-white border border-gray-200 rounded space-y-2">
                   <h4 className="font-medium text-black text-sm mb-2">Bank Account Details:</h4>
                   <div className="text-xs space-y-1">
-                    <p><span className="font-medium">Bank Name:</span> {process.env.NEXT_PUBLIC_BANK_NAME || 'Bank of Ceylon'}</p>
-                    <p><span className="font-medium">Account Name:</span> {process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || 'Archalley Forum'}</p>
-                    <p><span className="font-medium">Account Number:</span> {process.env.NEXT_PUBLIC_BANK_ACCOUNT_NUMBER || '1234567890'}</p>
-                    <p><span className="font-medium">Branch:</span> {process.env.NEXT_PUBLIC_BANK_BRANCH || 'Colombo Main'}</p>
+                    <p><span className="font-medium">Bank Name:</span> Sampath Bank</p>
+                    <p><span className="font-medium">Account Name:</span> Archalley (Pvt) Ltd</p>
+                    <p><span className="font-medium">Account Number:</span> 0034 1001 3958</p>
+                    <p><span className="font-medium">Branch:</span> Thimbirigasyaya</p>
                     <p><span className="font-medium">Amount:</span> <span className="text-orange-500 font-bold">LKR {totalAmount.toLocaleString()}</span></p>
                   </div>
 

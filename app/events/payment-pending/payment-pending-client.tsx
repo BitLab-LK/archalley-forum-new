@@ -49,17 +49,16 @@ export default function PaymentPendingClient({ user }: PaymentPendingClientProps
 
         {/* Registration Number */}
         {registrationNumber && (
-          <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6 mb-6">
+          <div className="bg-white border border-gray-300 rounded-md p-5 mb-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-orange-600 font-medium mb-1">
+              <div className="flex-1">
+                <p className="text-xs text-gray-500 font-medium mb-2 uppercase tracking-wide">
                   Registration Number
                 </p>
-                <p className="text-2xl font-bold text-orange-900">
+                <p className="text-xl font-semibold text-gray-900 tracking-wider">
                   {registrationNumber}
                 </p>
               </div>
-              <FileText className="w-10 h-10 text-orange-500" />
             </div>
           </div>
         )}
