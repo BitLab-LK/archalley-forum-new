@@ -224,11 +224,16 @@ export default function CheckoutClient({ user }: Props) {
         });
 
         const result = await response.json();
+        console.log('Bank transfer checkout response:', result);
 
         if (result.success) {
           toast.success('Bank transfer details submitted successfully!');
-          router.push(`/events/payment-pending?registrationNumber=${encodeURIComponent(result.registrationNumber || '')}`);
+          // API returns data in result.data.registrationNumber
+          const registrationNumber = result.data?.registrationNumber || result.registrationNumber || '';
+          console.log('Navigating to payment-pending with registration number:', registrationNumber);
+          router.push(`/events/payment-pending?registrationNumber=${encodeURIComponent(registrationNumber)}`);
         } else {
+          console.error('Bank transfer submission failed:', result.error);
           toast.error(result.error || 'Failed to submit bank transfer');
           setIsProcessing(false);
         }

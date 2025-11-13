@@ -106,7 +106,7 @@ export async function POST(
 
     // Generate order ID
     const orderSequence = await getNextOrderSequence(prisma);
-    const orderId = generateOrderId(orderSequence);
+    let orderId = generateOrderId(orderSequence); // Use 'let' to allow reassignment in retry logic
 
     // Get PayHere configuration
     const payHereConfig = getPayHereConfig();
@@ -129,38 +129,73 @@ export async function POST(
         // Get all unique competition IDs from cart
       const competitionIds = [...new Set(cart.items.map((item) => item.competitionId))];
       
-      // Create payment record with PENDING status for manual verification
-      const payment = await prisma.competitionPayment.create({
-        data: {
-          orderId,
-          userId: session.user.id,
-          competitionId: cart.items[0].competitionId, // Primary competition for compatibility
-          amount: totalAmount,
-          currency: 'LKR',
-          merchantId: payHereConfig.merchantId!,
-          status: 'PENDING',
-          paymentMethod: 'BANK_TRANSFER',
-          items: cart.items.map((item) => ({
-            id: item.id,
-            competitionTitle: item.competition.title,
-            registrationType: item.registrationType.name,
-            country: item.country,
-            memberCount: Array.isArray(item.members) ? (item.members as any[]).length : 0,
-            unitPrice: item.unitPrice,
-            subtotal: item.subtotal,
-          })),
-          customerDetails: body.customerInfo,
-          metadata: {
-            cartId: cart.id,
-            itemIds: cart.items.map((item) => item.id),
-            competitionIds: competitionIds, // Track all competitions
-            bankSlipUrl: body.bankSlipUrl,
-            bankSlipFileName: body.bankSlipFileName,
-            willSendViaWhatsApp: body.willSendViaWhatsApp,
-            paymentMethod: 'bank',
-          },
-        },
-      });
+      let payment;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      // Retry logic for handling potential duplicate orderId race conditions
+      while (retryCount < maxRetries) {
+        try {
+          // Create payment record with PENDING status for manual verification
+          payment = await prisma.competitionPayment.create({
+            data: {
+              orderId,
+              userId: session.user.id,
+              competitionId: cart.items[0].competitionId, // Primary competition for compatibility
+              amount: totalAmount,
+              currency: 'LKR',
+              merchantId: payHereConfig.merchantId!,
+              status: 'PENDING',
+              paymentMethod: 'BANK_TRANSFER',
+              items: cart.items.map((item) => ({
+                id: item.id,
+                competitionTitle: item.competition.title,
+                registrationType: item.registrationType.name,
+                country: item.country,
+                memberCount: Array.isArray(item.members) ? (item.members as any[]).length : 0,
+                unitPrice: item.unitPrice,
+                subtotal: item.subtotal,
+              })),
+              customerDetails: body.customerInfo,
+              metadata: {
+                cartId: cart.id,
+                itemIds: cart.items.map((item) => item.id),
+                competitionIds: competitionIds, // Track all competitions
+                bankSlipUrl: body.bankSlipUrl,
+                bankSlipFileName: body.bankSlipFileName,
+                willSendViaWhatsApp: body.willSendViaWhatsApp,
+                paymentMethod: 'bank',
+              },
+            },
+          });
+          break; // Success, exit retry loop
+        } catch (createError: any) {
+          // Check if it's a unique constraint error on orderId
+          if (createError?.code === 'P2002' && createError?.meta?.target?.includes('orderId')) {
+            retryCount++;
+            console.log(`⚠️ Duplicate orderId detected, retry ${retryCount}/${maxRetries}`);
+            
+            if (retryCount >= maxRetries) {
+              throw new Error('Failed to generate unique order ID after multiple attempts');
+            }
+            
+            // Generate a new orderId with updated timestamp
+            const newSequence = await getNextOrderSequence(prisma);
+            orderId = generateOrderId(newSequence);
+            console.log(`🔄 Generated new orderId: ${orderId}`);
+            
+            // Small delay to prevent rapid retries
+            await new Promise(resolve => setTimeout(resolve, 100));
+          } else {
+            // Different error, throw it
+            throw createError;
+          }
+        }
+      }
+      
+      if (!payment) {
+        throw new Error('Failed to create payment record');
+      }
 
       // Create registration records with PENDING status (awaiting bank transfer verification)
       const registrations = await Promise.all(

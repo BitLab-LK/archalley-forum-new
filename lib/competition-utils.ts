@@ -89,13 +89,15 @@ export async function getNextSequenceNumber(
 
 /**
  * Generate a unique order ID for payments
- * Format: ORDER-AC{YEAR}-{SEQUENCE}
- * Example: ORDER-AC2025-00123
+ * Format: ORDER-AC{YEAR}-{SEQUENCE}-{TIMESTAMP}
+ * Example: ORDER-AC2025-00123-456789
+ * Timestamp added to ensure uniqueness and prevent race conditions
  */
 export function generateOrderId(sequence: number, year?: number): string {
   const currentYear = year || new Date().getFullYear();
   const paddedSequence = sequence.toString().padStart(5, '0');
-  return `ORDER-AC${currentYear}-${paddedSequence}`;
+  const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+  return `ORDER-AC${currentYear}-${paddedSequence}-${timestamp}`;
 }
 
 /**
