@@ -401,7 +401,7 @@ export default function CheckoutClient({ user }: Props) {
                           {group.registrationType.name}
                         </td>
                         <td className="px-6 py-5 text-sm text-gray-700 text-right font-medium tabular-nums">
-                          {group.registrationType.fee.toLocaleString()} LKR
+                          {(group.totalAmount / group.count).toLocaleString()} LKR
                         </td>
                         <td className="px-6 py-5 text-center">
                           <span className="inline-flex items-center justify-center w-8 h-8 text-sm font-bold text-gray-900 bg-gray-100 rounded">

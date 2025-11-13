@@ -505,20 +505,20 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
 
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-3">
-            <Clock className="w-5 h-5 text-orange-500" />
+            <Clock className="w-5 h-5" style={{ color: '#FFA000' }} />
             <div>
               <p className="text-sm text-gray-600">Pending</p>
-              <p className="text-2xl font-semibold text-orange-500">{stats.pending}</p>
+              <p className="text-2xl font-semibold" style={{ color: '#FFA000' }}>{stats.pending}</p>
             </div>
           </div>
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-500" />
+            <AlertCircle className="w-5 h-5" style={{ color: '#FFA000' }} />
             <div>
               <p className="text-sm text-gray-600">Bank Transfers</p>
-              <p className="text-2xl font-semibold text-yellow-600">
+              <p className="text-2xl font-semibold" style={{ color: '#FFA000' }}>
                 {registrations.filter(r => 
                   r.payment?.paymentMethod === 'BANK_TRANSFER' && 
                   r.payment?.status === 'PENDING'
@@ -557,7 +557,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-3">
-            <DollarSign className="w-5 h-5 text-orange-500" />
+            <DollarSign className="w-5 h-5" style={{ color: '#FFA000' }} />
             <div>
               <p className="text-sm text-gray-600">Total Revenue (LKR)</p>
               <p className="text-2xl font-semibold text-gray-900">
@@ -595,7 +595,16 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                 placeholder="Search registrations..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                className="w-full pl-10 pr-4 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:border-gray-400"
+                style={{ outline: 'none' }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#FFA000';
+                  e.currentTarget.style.boxShadow = '0 0 0 1px #FFA000';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               />
             </div>
           </div>
@@ -604,7 +613,10 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
           <button
             onClick={handleExport}
             disabled={filteredRegistrations.length === 0}
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-base font-medium bg-black text-white rounded-lg hover:bg-orange-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-base font-medium bg-black text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ transition: 'background-color 0.3s' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FFA000'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'black'}
           >
             <Download className="w-5 h-5" />
             Export
@@ -614,7 +626,10 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
           <button
             onClick={refreshData}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-base font-medium bg-black text-white rounded-lg hover:bg-orange-500 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-base font-medium bg-black text-white rounded-lg transition-colors disabled:opacity-50"
+            style={{ transition: 'background-color 0.3s' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FFA000'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'black'}
           >
             <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
             {isRefreshing ? 'Refreshing...' : 'Refresh'}
@@ -630,7 +645,16 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full px-3 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:border-gray-400"
+              style={{ outline: 'none' }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#FFA000';
+                e.currentTarget.style.boxShadow = '0 0 0 1px #FFA000';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#d1d5db';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             >
               <option value="ALL">All Statuses</option>
               <option value="CONFIRMED">Confirmed</option>
@@ -646,7 +670,16 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
             <select
               value={paymentMethodFilter}
               onChange={(e) => setPaymentMethodFilter(e.target.value)}
-              className="w-full px-3 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full px-3 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:border-gray-400"
+              style={{ outline: 'none' }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#FFA000';
+                e.currentTarget.style.boxShadow = '0 0 0 1px #FFA000';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#d1d5db';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             >
               <option value="ALL">All Methods</option>
               <option value="PAYHERE">PayHere</option>
@@ -661,7 +694,16 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
             <select
               value={competitionFilter}
               onChange={(e) => setCompetitionFilter(e.target.value)}
-              className="w-full px-3 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full px-3 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:border-gray-400"
+              style={{ outline: 'none' }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#FFA000';
+                e.currentTarget.style.boxShadow = '0 0 0 1px #FFA000';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#d1d5db';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             >
               <option value="ALL">All Competitions</option>
               {competitions.map(comp => (
@@ -679,7 +721,16 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
             <select
               value={submissionFilter}
               onChange={(e) => setSubmissionFilter(e.target.value)}
-              className="w-full px-3 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full px-3 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:border-gray-400"
+              style={{ outline: 'none' }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#FFA000';
+                e.currentTarget.style.boxShadow = '0 0 0 1px #FFA000';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#d1d5db';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             >
               <option value="ALL">All</option>
               <option value="NOT_SUBMITTED">Not Submitted</option>
@@ -691,7 +742,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
 
         {/* Selected Actions */}
         {selectedRegistrations.length > 0 && (
-          <div className="mt-3 p-4 bg-orange-50 rounded-lg border border-orange-200">
+          <div className="mt-3 p-4 rounded-lg border" style={{ backgroundColor: '#FFF3E0', borderColor: '#FFE0B2' }}>
             <div className="flex items-center justify-between">
               <span className="text-base font-medium text-gray-900">
                 {selectedRegistrations.length} selected
@@ -702,7 +753,10 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                     console.log('Send email to:', selectedRegistrations);
                     toast.info('Email feature coming soon');
                   }}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-black text-white rounded-lg hover:bg-orange-500 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-black text-white rounded-lg transition-colors"
+                  style={{ transition: 'background-color 0.3s' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FFA000'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'black'}
                 >
                   <Mail className="w-4 h-4" />
                   Email
@@ -733,9 +787,10 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
             onClick={() => setPaymentMethodFilter('ALL')}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
               paymentMethodFilter === 'ALL'
-                ? 'bg-orange-500 text-white'
+                ? 'text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            style={paymentMethodFilter === 'ALL' ? { backgroundColor: '#FFA000' } : {}}
           >
             All Payments
           </button>
@@ -753,9 +808,10 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
             onClick={() => setPaymentMethodFilter('BANK_TRANSFER')}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
               paymentMethodFilter === 'BANK_TRANSFER'
-                ? 'bg-yellow-500 text-white'
+                ? 'text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
+            style={paymentMethodFilter === 'BANK_TRANSFER' ? { backgroundColor: '#FFA000' } : {}}
           >
             Bank Transfer Only ({registrations.filter(r => r.payment?.paymentMethod === 'BANK_TRANSFER').length})
           </button>
@@ -773,7 +829,8 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                     type="checkbox"
                     checked={selectedRegistrations.length === filteredRegistrations.length && filteredRegistrations.length > 0}
                     onChange={handleSelectAll}
-                    className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                    className="w-4 h-4 rounded border-gray-300"
+                    style={{ accentColor: '#FFA000' }}
                   />
                 </th>
                 <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">
@@ -816,7 +873,8 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                         type="checkbox"
                         checked={selectedRegistrations.includes(reg.id)}
                         onChange={() => handleSelect(reg.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                        className="w-4 h-4 rounded border-gray-300"
+                        style={{ accentColor: '#FFA000' }}
                       />
                     </td>
                     <td className="px-3 py-4">
@@ -861,32 +919,25 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                         
                         return (
                           <div className="space-y-1">
-                            {uniqueTypes.map((typeName, index) => (
-                              <div key={index} className="text-sm text-gray-900">
-                                {uniqueTypes.length > 1 && `${index + 1}. `}
-                                {typeName}
+                            {uniqueTypes.length === 1 ? (
+                              <div className="text-sm font-medium text-gray-900">
+                                {uniqueTypes[0]}
                               </div>
-                            ))}
-                            {uniqueTypes.length > 1 && (
-                              <div className="text-xs text-blue-600 font-medium mt-1">
-                                ({uniqueTypes.length} types)
-                              </div>
+                            ) : (
+                              <>
+                                {uniqueTypes.map((typeName, index) => (
+                                  <div key={index} className="text-xs text-gray-700">
+                                    • {typeName}
+                                  </div>
+                                ))}
+                                <div className="text-xs text-blue-600 font-medium mt-1">
+                                  {uniqueTypes.length} types
+                                </div>
+                              </>
                             )}
                           </div>
                         );
                       })()}
-                      
-                      {/* Team/Company Info */}
-                      {reg.teamName && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          🏆 {reg.teamName}
-                        </div>
-                      )}
-                      {reg.companyName && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          🏢 {reg.companyName}
-                        </div>
-                      )}
                     </td>
                     <td className="px-3 py-4 min-w-[200px]">
                       <div className="space-y-1">
@@ -895,16 +946,16 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                           {reg.status.replace('_', ' ')}
                         </span>
                         
-                        {/* Payment Method & Order ID */}
+                        {/* Payment Method & Registration Number */}
                         {reg.payment && (
                           <>
                             <div className={`text-xs font-medium ${
                               reg.payment.paymentMethod === 'PAYHERE' ? 'text-blue-600' : 'text-yellow-600'
                             }`}>
-                              {reg.payment.paymentMethod === 'PAYHERE' ? '💳 PayHere' : '🏦 Bank Transfer'}
+                              {reg.payment.paymentMethod === 'PAYHERE' ? 'PayHere' : 'Bank Transfer'}
                             </div>
                             <div className="text-xs text-gray-500 font-mono">
-                              {reg.payment.orderId}
+                              Reg.Number: {reg.registrationNumber}
                             </div>
                             
                             {/* Payment Status for PayHere */}
@@ -915,7 +966,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                                 reg.payment.status === 'FAILED' ? 'text-red-600' : 'text-gray-600'
                               }`}>
                                 {reg.payment.status === 'COMPLETED' ? '✓ Success' :
-                                 reg.payment.status === 'PENDING' ? '⏳ Processing' :
+                                 reg.payment.status === 'PENDING' ? ' Processing' :
                                  reg.payment.status === 'FAILED' ? '✗ Failed' : reg.payment.status}
                               </div>
                             )}
@@ -923,7 +974,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                             {/* Bank Transfer Status */}
                             {reg.payment.paymentMethod === 'BANK_TRANSFER' && reg.payment.status === 'PENDING' && (
                               <div className="text-xs text-yellow-600 font-semibold">
-                                ⏳ Awaiting Approval
+                                 Awaiting Approval
                               </div>
                             )}
                           </>
@@ -975,7 +1026,16 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                             e.preventDefault();
                             setViewingRegistration(reg);
                           }}
-                          className="p-2 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
+                          className="p-2 text-gray-500 rounded-lg transition-colors"
+                          style={{ transition: 'all 0.3s' }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#FFA000';
+                            e.currentTarget.style.backgroundColor = '#FFF3E0';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = '#6b7280';
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
                           title="View Details"
                         >
                           <Eye className="w-5 h-5" />
@@ -986,7 +1046,18 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                             handleSendEmail(reg);
                           }}
                           disabled={isSendingEmail}
-                          className="p-2 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2 text-gray-500 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{ transition: 'all 0.3s' }}
+                          onMouseEnter={(e) => {
+                            if (!isSendingEmail) {
+                              e.currentTarget.style.color = '#FFA000';
+                              e.currentTarget.style.backgroundColor = '#FFF3E0';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = '#6b7280';
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
                           title="Send Email"
                         >
                           <Send className={`w-5 h-5 ${isSendingEmail ? 'animate-pulse' : ''}`} />
@@ -1028,7 +1099,8 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                     <p className="text-sm text-gray-600">Display Code (Public/Anonymous)</p>
                     {viewingRegistration.displayCode ? (
                       <div className="flex items-center gap-2">
-                        <p className="text-base font-bold text-orange-600 font-mono bg-orange-50 px-3 py-1 rounded border border-orange-200">
+                        <p className="text-base font-bold font-mono px-3 py-1 rounded border" 
+                           style={{ color: '#FFA000', backgroundColor: '#FFF3E0', borderColor: '#FFE0B2' }}>
                           {viewingRegistration.displayCode}
                         </p>
                         <span className="text-xs text-gray-500" title="This code is used for anonymous public display">
@@ -1112,7 +1184,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       <>
                         <div>
                           <p className="text-sm text-gray-600">Team Name</p>
-                          <p className="text-base font-medium text-gray-900">🏆 {viewingRegistration.teamName}</p>
+                          <p className="text-base font-medium text-gray-900"> {viewingRegistration.teamName}</p>
                         </div>
                         {viewingRegistration.teamMembers && Array.isArray(viewingRegistration.teamMembers) && (
                           <div>
@@ -1126,7 +1198,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       <>
                         <div>
                           <p className="text-sm text-gray-600">Company Name</p>
-                          <p className="text-base font-medium text-gray-900">🏢 {viewingRegistration.companyName}</p>
+                          <p className="text-base font-medium text-gray-900"> {viewingRegistration.companyName}</p>
                         </div>
                         {viewingRegistration.businessRegistrationNo && (
                           <div>
@@ -1144,7 +1216,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
               {viewingRegistration.members && (
                 <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <span>📋 Participant Details</span>
+                    <span>Participant Details</span>
                     <span className="text-xs font-normal text-blue-600 bg-blue-100 px-2 py-1 rounded">
                       {viewingRegistration.participantType}
                     </span>
@@ -1156,7 +1228,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                     return members.map((member: any, index: number) => (
                       <div key={index} className="bg-white rounded-lg p-4 mb-3 last:mb-0">
                         <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          {viewingRegistration.participantType === 'KIDS' ? '👶 Child Information' : 
+                          {viewingRegistration.participantType === 'KIDS' ? ' Child Information' : 
                            viewingRegistration.participantType === 'TEAM' && index === 0 ? '👤 Team Leader' :
                            viewingRegistration.participantType === 'COMPANY' && index === 0 ? '👤 Company Representative' :
                            `👤 Member ${index + 1}`}
@@ -1186,7 +1258,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                           {/* Contact Info */}
                           {member.email && (
                             <div>
-                              <p className="text-gray-600">📧 Email</p>
+                              <p className="text-gray-600">Email</p>
                               <p className="font-medium text-gray-900">{member.email}</p>
                             </div>
                           )}
@@ -1200,7 +1272,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                           {/* Student Specific */}
                           {member.dateOfBirth && (
                             <div>
-                              <p className="text-gray-600">🎂 Date of Birth</p>
+                              <p className="text-gray-600"> Date of Birth</p>
                               <p className="font-medium text-gray-900">{member.dateOfBirth}</p>
                             </div>
                           )}
@@ -1234,7 +1306,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                             <div>
                               <p className="text-gray-600">Parent Consent</p>
                               <p className={`font-medium ${member.parentConsent ? 'text-green-600' : 'text-red-600'}`}>
-                                {member.parentConsent ? '✅ Provided' : '❌ Not Provided'}
+                                {member.parentConsent ? 'Provided' : 'Not Provided'}
                               </p>
                             </div>
                           )}
@@ -1243,7 +1315,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                           {member.parentFirstName && (
                             <>
                               <div className="col-span-2 mt-3 pt-3 border-t border-gray-200">
-                                <h5 className="font-semibold text-gray-900 mb-2">👨‍👩‍👧 Parent/Guardian Information</h5>
+                                <h5 className="font-semibold text-gray-900 mb-2"> Parent/Guardian Information</h5>
                               </div>
                               <div>
                                 <p className="text-gray-600">Parent First Name</p>
@@ -1254,11 +1326,11 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                                 <p className="font-medium text-gray-900">{member.parentLastName || 'N/A'}</p>
                               </div>
                               <div>
-                                <p className="text-gray-600">📧 Parent Email</p>
+                                <p className="text-gray-600"> Parent Email</p>
                                 <p className="font-medium text-gray-900">{member.parentEmail}</p>
                               </div>
                               <div>
-                                <p className="text-gray-600">📱 Parent Phone</p>
+                                <p className="text-gray-600"> Parent Phone</p>
                                 <p className="font-medium text-gray-900">{member.parentPhone}</p>
                               </div>
                             </>
@@ -1267,7 +1339,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                           {/* Address */}
                           {member.postalAddress && (
                             <div className="col-span-2">
-                              <p className="text-gray-600">📍 Postal Address</p>
+                              <p className="text-gray-600"> Postal Address</p>
                               <p className="font-medium text-gray-900">{member.postalAddress}</p>
                             </div>
                           )}
@@ -1285,12 +1357,12 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                     Payment Information
                     {viewingRegistration.payment.paymentMethod === 'PAYHERE' && (
                       <span className="text-sm font-medium bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                        💳 PayHere Payment
+                        PayHere Payment
                       </span>
                     )}
                     {viewingRegistration.payment.paymentMethod === 'BANK_TRANSFER' && (
                       <span className="text-sm font-medium bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
-                        🏦 Bank Transfer
+                        Bank Transfer
                       </span>
                     )}
                   </h3>
@@ -1335,7 +1407,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                   {viewingRegistration.payment.paymentMethod === 'PAYHERE' && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <h4 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <span className="text-blue-600">💳</span> PayHere Transaction Details
+                        PayHere Transaction Details
                       </h4>
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <div className="grid grid-cols-2 gap-3 text-sm">
@@ -1346,8 +1418,8 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                               viewingRegistration.payment.status === 'FAILED' ? 'text-red-600' :
                               'text-yellow-600'
                             }`}>
-                              {viewingRegistration.payment.status === 'COMPLETED' && '✅ Payment Successful'}
-                              {viewingRegistration.payment.status === 'FAILED' && '❌ Payment Failed'}
+                              {viewingRegistration.payment.status === 'COMPLETED' && 'Payment Successful'}
+                              {viewingRegistration.payment.status === 'FAILED' && 'Payment Failed'}
                               {viewingRegistration.payment.status === 'PENDING' && '⏳ Payment Processing'}
                               {!['COMPLETED', 'FAILED', 'PENDING'].includes(viewingRegistration.payment.status) && viewingRegistration.payment.status}
                             </p>
@@ -1459,7 +1531,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                               </span>
                             </div>
                             <p className="text-gray-600 ml-6">
-                              📧 {(viewingRegistration.payment.metadata as any).verifiedBy}
+                              {(viewingRegistration.payment.metadata as any).verifiedBy}
                             </p>
                             {(viewingRegistration.payment.metadata as any).verifiedAt && (
                               <p className="text-gray-600 ml-6">
@@ -1488,7 +1560,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                               </span>
                             </div>
                             <p className="text-gray-600 ml-6">
-                              📧 {(viewingRegistration.payment.metadata as any).revertedBy}
+                              {(viewingRegistration.payment.metadata as any).revertedBy}
                             </p>
                             {(viewingRegistration.payment.metadata as any).revertedAt && (
                               <p className="text-gray-600 ml-6">
@@ -1522,7 +1594,6 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                        !('bankSlipUrl' in viewingRegistration.payment.metadata) && (
                         <div className="mb-3 bg-amber-50 border-2 border-amber-400 rounded-lg p-4">
                           <div className="flex items-start gap-3">
-                            <span className="text-3xl">⚠️</span>
                             <div className="flex-1">
                               <h4 className="text-lg font-bold text-amber-900 mb-2 flex items-center gap-2">
                                 <span>NO BANK SLIP UPLOADED</span>
@@ -1530,7 +1601,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                               </h4>
                               <div className="space-y-2 text-sm">
                                 <p className="text-amber-900 font-medium text-base">
-                                  ⚠️ Customer chose to send bank slip via WhatsApp instead of uploading
+                                  Customer chose to send bank slip via WhatsApp instead of uploading
                                 </p>
                                 <div className="bg-white border border-amber-300 rounded p-3 mt-3">
                                   <p className="text-amber-900 font-semibold mb-2">📱 Contact Details:</p>
@@ -1570,7 +1641,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                                   )}
                                 </div>
                                 <div className="bg-green-100 border border-green-300 rounded p-3 mt-2">
-                                  <p className="text-green-900 font-semibold mb-1">✅ Action Required:</p>
+                                  <p className="text-green-900 font-semibold mb-1">Action Required:</p>
                                   <p className="text-green-800">Check your WhatsApp messages for the bank slip from this customer</p>
                                   {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER && (() => {
                                     const adminPhone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
@@ -1623,7 +1694,6 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                        !(viewingRegistration.payment.metadata as any).willSendViaWhatsApp && (
                         <div className="mb-3 bg-red-50 border-2 border-red-400 rounded-lg p-4">
                           <div className="flex items-start gap-3">
-                            <span className="text-3xl">❌</span>
                             <div className="flex-1">
                               <h4 className="text-lg font-bold text-red-900 mb-2">NO BANK SLIP UPLOADED</h4>
                               <p className="text-red-800 font-medium">
@@ -1819,7 +1889,10 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                     setViewingRegistration(null);
                   }}
                   disabled={isSendingEmail}
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-white rounded-lg hover:bg-orange-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ transition: 'background-color 0.3s' }}
+                  onMouseEnter={(e) => !isSendingEmail && (e.currentTarget.style.backgroundColor = '#FFA000')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'black')}
                 >
                   <Mail className={`w-5 h-5 ${isSendingEmail ? 'animate-pulse' : ''}`} />
                   {isSendingEmail ? 'Sending...' : 'Send Email'}
