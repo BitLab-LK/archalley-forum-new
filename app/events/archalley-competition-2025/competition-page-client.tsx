@@ -960,7 +960,7 @@ export default function CompetitionPageClient() {
               },
             ].map((jury, index) => (
               <div key={index} className="bg-slate-800/70 rounded-lg p-6 text-center">
-                <div className="relative w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden">
+                <div className="relative w-24 h-24 md:w-32 md:h-32 mx-auto mb-4 rounded-full overflow-hidden">
                   <Image
                     src={jury.image}
                     alt={jury.name}
@@ -981,7 +981,7 @@ export default function CompetitionPageClient() {
           {/* Alley - Centered Banner Row */}
           <div className="flex justify-center">
             <div className="bg-slate-800/70 rounded-lg p-6 text-center max-w-2xl w-full">
-              <div className="relative w-full h-32 md:h-40 mx-auto mb-4 rounded-lg overflow-hidden">
+              <div className="relative w-full h-24 md:h-40 mx-auto mb-4 rounded-lg overflow-hidden">
                 <Image
                   src="/uploads/alley-juror-2.webp"
                   alt="Alley"
