@@ -94,7 +94,7 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
   }
 
   return (
-    <nav className="bg-black text-white py-[30px]">
+    <nav className="bg-black text-white py-[20px]">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
           {/* Logo */}
@@ -104,7 +104,7 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
               alt="Archalley Logo"
               width={85}
               height={30}
-              className="h-[90px] w-auto"
+              className="h-[50px] w-auto"
             />
           </Link>
 

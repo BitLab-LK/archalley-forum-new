@@ -119,13 +119,23 @@ export default function AdBannerComponent({
   if (!banner) {
     // Show loading indicator while ads are being fetched (no text, just visual)
     return (
-      <div className={`${className} relative rounded-none overflow-visible`} style={{ width: fixedWidth, height: fixedHeight, margin: fixedWidth ? '0 auto' : undefined, borderRadius: 0, overflow: 'visible' }}>
+      <div 
+        className={`${className} relative rounded-none overflow-visible`} 
+        style={{ 
+          width: '100%',
+          maxWidth: isResponsive ? '100%' : (fixedWidth ? `${fixedWidth}px` : '100%'),
+          height: fixedHeight, 
+          margin: fixedWidth ? '0 auto' : undefined, 
+          borderRadius: 0, 
+          overflow: 'visible' 
+        }}
+      >
         <div 
           className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 flex items-center justify-center relative rounded-none"
           style={
             isResponsive
-              ? { aspectRatio: '1200/250', minHeight: '250px', borderRadius: 0 }
-              : { width: fixedWidth, height: fixedHeight, borderRadius: 0 }
+              ? { aspectRatio: '1200/250', minHeight: '250px', borderRadius: 0, width: '100%', maxWidth: '100%' }
+              : { width: '100%', maxWidth: fixedWidth ? `${fixedWidth}px` : '100%', height: fixedHeight, borderRadius: 0 }
           }
         >
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 dark:border-gray-500"></div>
@@ -148,7 +158,16 @@ export default function AdBannerComponent({
   const placeholderUrl = `https://via.placeholder.com/${size.replace('x', 'x')}/f0f0f0/666666?text=Advertisement`
 
   return (
-    <div className={`${className} relative group rounded-none overflow-visible`} style={{ width: fixedWidth, margin: fixedWidth ? '0 auto' : undefined, borderRadius: 0, overflow: 'visible' }}>
+    <div 
+      className={`${className} relative group rounded-none overflow-visible`} 
+      style={{ 
+        width: '100%',
+        maxWidth: isResponsive ? '100%' : (fixedWidth ? `${fixedWidth}px` : '100%'),
+        margin: fixedWidth ? '0 auto' : undefined, 
+        borderRadius: 0, 
+        overflow: 'visible' 
+      }}
+    >
       <Card 
         className={`overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 border-gray-200 rounded-none ${
           isRotating ? 'opacity-70' : 'opacity-100'
@@ -158,7 +177,8 @@ export default function AdBannerComponent({
           animation: `fadeInAd 0.8s ease-out forwards`,
           opacity: isRotating ? 0.7 : 1,
           transition: 'opacity 0.3s ease-in-out',
-          width: isResponsive ? '100%' : fixedWidth,
+          width: '100%',
+          maxWidth: isResponsive ? '100%' : (fixedWidth ? `${fixedWidth}px` : '100%'),
           margin: fixedWidth ? '0 auto' : 'auto',
           borderRadius: 0
         }}
@@ -167,8 +187,8 @@ export default function AdBannerComponent({
           className="relative overflow-hidden bg-gray-50 rounded-none"
           style={
             isResponsive
-              ? { aspectRatio: '1200/250', minHeight: '250px', borderRadius: 0 }
-              : { width: fixedWidth, height: fixedHeight, borderRadius: 0 }
+              ? { aspectRatio: '1200/250', minHeight: '250px', borderRadius: 0, width: '100%', maxWidth: '100%' }
+              : { width: '100%', maxWidth: fixedWidth ? `${fixedWidth}px` : '100%', height: fixedHeight, borderRadius: 0 }
           }
         >
           <Image
