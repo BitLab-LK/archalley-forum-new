@@ -30,8 +30,7 @@ import { RejectPaymentDialog } from '@/components/ui/reject-payment-dialog';
 
 interface Registration {
   id: string;
-  registrationNumber: string;
-  displayCode: string | null; // Anonymous code for public display
+  registrationNumber: string; // Used for both internal tracking and public display
   status: string;
   submissionStatus: string;
   country: string;
@@ -239,7 +238,6 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
     const csvData = filteredRegistrations.flatMap(group => 
       group.all.map(reg => ({
         'Registration Number': reg.registrationNumber,
-        'Display Code': reg.displayCode || 'N/A',
         'User Name': reg.user.name || 'N/A',
         'User Email': reg.user.email,
         'Competition': reg.competition.title,
@@ -1161,25 +1159,6 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                         <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
                           {reg.registrationType.name}
                         </span>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className={allRegs.length > 1 ? 'col-span-2' : ''}>
-                    <p className="text-sm text-gray-600">Display Code{allRegs.length > 1 ? 's' : ''} (Public/Anonymous)</p>
-                    {allRegs.map((reg: Registration, idx: number) => (
-                      <div key={idx} className="flex items-center gap-2 mb-1">
-                        {reg.displayCode ? (
-                          <>
-                            <p className="text-base font-bold font-mono px-3 py-1 rounded border" 
-                               style={{ color: '#FFA000', backgroundColor: '#FFF3E0', borderColor: '#FFE0B2' }}>
-                              {reg.displayCode}
-                            </p>
-                            <span className="text-xs text-gray-500">({reg.registrationType.name})</span>
-                          </>
-                        ) : (
-                          <p className="text-sm text-gray-500 italic">Not generated yet - {reg.registrationType.name}</p>
-                        )}
                       </div>
                     ))}
                   </div>

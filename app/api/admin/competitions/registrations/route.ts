@@ -33,7 +33,6 @@ export async function GET() {
       select: {
         id: true,
         registrationNumber: true,
-        displayCode: true,
         status: true,
         submissionStatus: true,
         country: true,
