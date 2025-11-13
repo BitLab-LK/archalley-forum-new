@@ -251,22 +251,22 @@ export default function CompetitionPageClient() {
             <h2 id="theme" className="text-2xl md:text-4xl font-bold text-white mb-6 uppercase tracking-wide text-center scroll-mt-20">
               <a href="#theme" >A THEME THAT REIMAGINES TRADITION</a>
             </h2>
-            <div className="text-xl md:text-3xl text-center mb-6">
+            <div className="text-base md:text-3xl text-center mb-6">
               <span className="text-red-500">
                 What will a Christmas tree look like in<br />
               </span>
-              <span className="text-red-500 text-2xl md:text-4xl font-bold">
+              <span className="text-red-500 text-lg md:text-4xl font-bold">
                 50 years?
               </span>
             </div>
-            <div className="text-base md:text-2xl text-gray-300 text-center mb-6 leading-[20px] md:leading-normal">
+            <div className="text-xs md:text-2xl text-gray-300 text-center mb-6 leading-[20px] md:leading-normal">
               Will it float, glow, or live in the metaverse? This year's<br />
               competition invites you to imagine the "tree of tomorrow."
             </div>
             
             <div className="mb-6"></div>
             
-            <div className="text-base text-gray-300 text-center mb-6 leading-[20px]">
+            <div className="text-xs md:text-base text-gray-300 text-center mb-6 leading-[20px]">
               Participants are encouraged to explore<br />
               <span className="text-red-500">unconventional, futuristic, and conceptual interpretations,</span><br />
               from virtual models to physical tree designs.
@@ -274,7 +274,7 @@ export default function CompetitionPageClient() {
             
             <div className="mb-6"></div>
             
-            <div className="text-base text-gray-300 text-center leading-[20px]">
+            <div className="text-xs md:text-base text-gray-300 text-center leading-[20px]">
               Your tree can be<br />
               either minimal or detailed, digital, tech-infused, or<br />
               completely surreal.<br />
@@ -322,13 +322,13 @@ export default function CompetitionPageClient() {
                 </h2>
                 
                 <div className="text-left">
-                  <p className="text-base text-white mb-4 leading-[20px]">
+                  <p className="text-xs md:text-base text-white mb-4 leading-[20px]">
                     <strong>15% of your fee supports SOS</strong>
                   </p>
-                  <p className="text-base text-white mb-4 leading-[20px]">
+                  <p className="text-xs md:text-base text-white mb-4 leading-[20px]">
                     <strong>Children's Villages Sri Lanka</strong>
                   </p>
-                  <p className="text-base text-white mb-6 leading-[20px]">
+                  <p className="text-xs md:text-base text-white mb-6 leading-[20px]">
                     nurturing children today and investing<br />in their futures.
                   </p>
                   
@@ -375,7 +375,7 @@ export default function CompetitionPageClient() {
           </h2>
                 </div>
                 <div>
-                  <p className="text-base md:text-2xl text-white italic leading-[20px] md:leading-normal">
+                  <p className="text-xs md:text-2xl text-white italic leading-[20px] md:leading-normal">
                     All entrants should respond to the Competition<br /> theme, "Christmas in future"
           </p>
                 </div>
@@ -383,7 +383,7 @@ export default function CompetitionPageClient() {
 
               {/* Right Column Content */}
               <div className="relative z-10 flex flex-col pl-6 md:pl-8 lg:pl-12">
-                <h3 className="text-xl md:text-3xl font-bold text-white mb-8">
+                <h3 className="text-base md:text-3xl font-bold text-white mb-8">
                   What makes a futuristic tree stand out?
                 </h3>
                 
@@ -391,10 +391,10 @@ export default function CompetitionPageClient() {
                 
                 <div className="space-y-6">
                   <div>
-                    <h4 className="text-base font-bold text-red-500 mb-2">
+                    <h4 className="text-xs md:text-base font-bold text-red-500 mb-2">
                       Concept & Originality
                     </h4>
-                <p className="text-base leading-[20px]">
+                <p className="text-xs md:text-base leading-[20px]">
                   The idea should be fresh, imaginative, and clearly aligned with the futuristic theme.
                 </p>
               </div>
@@ -402,10 +402,10 @@ export default function CompetitionPageClient() {
                   <div className="mb-6"></div>
                   
                   <div>
-                    <h4 className="text-base font-bold text-red-500 mb-2">
+                    <h4 className="text-xs md:text-base font-bold text-red-500 mb-2">
                       The design as a whole
                     </h4>
-                <p className="text-base leading-[20px]">
+                <p className="text-xs md:text-base leading-[20px]">
                   The product should be designed and composed as a whole relevant to the chosen category.
                 </p>
               </div>
@@ -413,10 +413,10 @@ export default function CompetitionPageClient() {
                   <div className="mb-6"></div>
                   
                   <div>
-                    <h4 className="text-base font-bold text-red-500 mb-2">
+                    <h4 className="text-xs md:text-base font-bold text-red-500 mb-2">
                       Theme Relevance
                     </h4>
-                <p className="text-base leading-[20px]">
+                <p className="text-xs md:text-base leading-[20px]">
                   The overall design must respond thoughtfully to the idea of "Christmas in the Future" - bold or subtle.
                 </p>
               </div>
@@ -424,10 +424,10 @@ export default function CompetitionPageClient() {
                   <div className="mb-6"></div>
                   
                   <div>
-                    <h4 className="text-base font-bold text-red-500 mb-2">
+                    <h4 className="text-xs md:text-base font-bold text-red-500 mb-2">
                       Visual Aesthetics
                     </h4>
-                <p className="text-base leading-[20px]">
+                <p className="text-xs md:text-base leading-[20px]">
                   The product should be aesthetically appealing while being innovative.
                 </p>
               </div>
@@ -435,10 +435,10 @@ export default function CompetitionPageClient() {
                   <div className="mb-6"></div>
                   
                   <div>
-                    <h4 className="text-base font-bold text-red-500 mb-2">
+                    <h4 className="text-xs md:text-base font-bold text-red-500 mb-2">
                       Material & Technique
                     </h4>
-                <p className="text-base leading-[20px]">
+                <p className="text-xs md:text-base leading-[20px]">
                   Use of unconventional, digital, or experimental methods is encouraged. Consider the lifecycle of your design and how it's made.
                 </p>
               </div>
@@ -464,7 +464,7 @@ export default function CompetitionPageClient() {
 
               {/* Right Column Content */}
               <div className="relative z-10 flex flex-col pl-6 md:pl-8 lg:pl-12 pb-0">
-                <ul className="space-y-4 mb-6 text-gray-300 text-[14.4px] md:text-xl list-disc list-inside leading-[20px] md:leading-normal">
+                <ul className="space-y-4 mb-6 text-gray-300 text-xs md:text-xl list-disc list-inside leading-[20px] md:leading-normal">
                   <li>Physical Tree Category</li>
                   <li>Digital Tree Category</li>
                   <li>Kid's Tree Category (Age under 12)</li>
@@ -472,9 +472,9 @@ export default function CompetitionPageClient() {
                 
                 <div className="mb-6"></div>
                 
-                <div className="text-gray-300 text-base md:text-lg space-y-4 leading-[20px] md:leading-normal">
+                <div className="text-gray-300 text-xs md:text-lg space-y-4 leading-[20px] md:leading-normal">
                   <div>
-                    <h4 className="text-base font-bold text-white">Who Can Join</h4>
+                    <h4 className="text-xs md:text-base font-bold text-white">Who Can Join</h4>
                     <p>
                       Open to all enthusiasts<br />
                       Students | Professionals | Creatives | Anyone with a Vision
@@ -518,50 +518,50 @@ export default function CompetitionPageClient() {
           
           <div className="space-y-6 text-gray-300">
             <div>
-              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
+              <h3 className="text-xs md:text-2xl font-bold text-red-500 mb-3">
                 01. Register for the Competition
               </h3>
               <ul className="list-disc list-inside ml-4 space-y-2">
-                <li className="text-base leading-[20px]">Sign in to the Archalley website and register between 11th November and 24th December 2025 by providing correct information & paying the registration fee.</li>
+                <li className="text-xs md:text-base leading-[20px]">Sign in to the Archalley website and register between 11th November and 24th December 2025 by providing correct information & paying the registration fee.</li>
               </ul>
               </div>
             
             <div>
-              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
+              <h3 className="text-xs md:text-2xl font-bold text-red-500 mb-3">
                 02. Chose your preferred category of participation
               </h3>
               <ul className="list-disc list-inside ml-4 space-y-2">
-                <li className="text-base leading-[20px]">Select one category - Physical, Digital, or Kids' Tree –and follow the terms & conditions for that category; non-compliance may lead to disqualification.</li>
+                <li className="text-xs md:text-base leading-[20px]">Select one category - Physical, Digital, or Kids' Tree –and follow the terms & conditions for that category; non-compliance may lead to disqualification.</li>
               </ul>
               </div>
             
             <div>
-              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
+              <h3 className="text-xs md:text-2xl font-bold text-red-500 mb-3">
                 03. Create/Design your Christmas tree
               </h3>
               <ul className="list-disc list-inside ml-4 space-y-2">
-                <li className="text-base leading-[20px]">Enjoy full creative freedom on color, materials, size, and decoration (In compliance with the terms & conditions for your selected category).</li>
-                <li className="text-base leading-[20px]">Ensure your design aligns with the Key Design Considerations of the competition.</li>
+                <li className="text-xs md:text-base leading-[20px]">Enjoy full creative freedom on color, materials, size, and decoration (In compliance with the terms & conditions for your selected category).</li>
+                <li className="text-xs md:text-base leading-[20px]">Ensure your design aligns with the Key Design Considerations of the competition.</li>
               </ul>
             </div>
             
             <div>
-              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
+              <h3 className="text-xs md:text-2xl font-bold text-red-500 mb-3">
                 04. Prepare Your Submission Materials
               </h3>
               <ul className="list-disc list-inside ml-4 space-y-2">
-                <li className="text-base leading-[20px]">Compile the require submission items for your selected category.</li>
-                <li className="text-base leading-[20px]">You may also add optional document or optional video (per the terms & conditions ) to strengthen your entry.</li>
+                <li className="text-xs md:text-base leading-[20px]">Compile the require submission items for your selected category.</li>
+                <li className="text-xs md:text-base leading-[20px]">You may also add optional document or optional video (per the terms & conditions ) to strengthen your entry.</li>
               </ul>
               </div>
             
             <div>
-              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
+              <h3 className="text-xs md:text-2xl font-bold text-red-500 mb-3">
                 05. Submission
               </h3>
               <ul className="list-disc list-inside ml-4 space-y-2">
-                <li className="text-base leading-[20px]">Kids' Tree Category - From 11th to 21st December 2025</li>
-                <li className="text-base leading-[20px]">Physical Tree Category & Digital Tree Category - From 11th to 24th December 2025</li>
+                <li className="text-xs md:text-base leading-[20px]">Kids' Tree Category - From 11th to 21st December 2025</li>
+                <li className="text-xs md:text-base leading-[20px]">Physical Tree Category & Digital Tree Category - From 11th to 24th December 2025</li>
               </ul>
               </div>
             </div>
@@ -581,53 +581,53 @@ export default function CompetitionPageClient() {
             <a href="#submission-requirements" >SUBMISSION REQUIREMENTS</a>
           </h2>
           <div className="max-w-7xl">
-            <div className="space-y-6 text-white text-[14.4px] md:text-lg text-left leading-[20px] md:leading-normal">
+            <div className="space-y-6 text-white text-xs md:text-lg text-left leading-[20px] md:leading-normal">
               <div>
-                <h3 className="text-base md:text-2xl font-bold text-white mb-2">
+                <h3 className="text-xs md:text-2xl font-bold text-white mb-2">
                   Key Photograph (JPG)
                 </h3>
-                <ul className="text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
+                <ul className="text-xs md:text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
                   <li>This will be the image published for most popular category voting, total product to be clearly visible</li>
                 </ul>
               </div>
               
               <div>
-                <h3 className="text-base md:text-2xl font-bold text-white mb-2">
+                <h3 className="text-xs md:text-2xl font-bold text-white mb-2">
                   Up to 4 other Photographs (JPG)
                 </h3>
-                <ul className="text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
+                <ul className="text-xs md:text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
                   <li>minimum of 2</li>
                 </ul>
               </div>
               
               <div>
-                <h3 className="text-base md:text-2xl font-bold text-white mb-2">
+                <h3 className="text-xs md:text-2xl font-bold text-white mb-2">
                   Description of your idea
                 </h3>
-                <ul className="text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
+                <ul className="text-xs md:text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
                   <li>50-200 words</li>
                 </ul>
-                <p className="text-base ml-4 italic text-white mt-2 leading-[20px]">Note: excluded for kids' tree category</p>
+                <p className="text-xs md:text-base ml-4 italic text-white mt-2 leading-[20px]">Note: excluded for kids' tree category</p>
               </div>
               
               <div>
-                <h3 className="text-base md:text-2xl font-bold text-white mb-2">
+                <h3 className="text-xs md:text-2xl font-bold text-white mb-2">
                   Optional document/panel submission (PDF)
                 </h3>
-                <ul className="text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
+                <ul className="text-xs md:text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
                   <li>Can include sketches, materials, process, etc.</li>
                   <li>The document should be less than 5 MB</li>
                 </ul>
-                <p className="text-base ml-4 italic text-white mt-2 leading-[20px]">Note: excluded for kids' tree category</p>
+                <p className="text-xs md:text-base ml-4 italic text-white mt-2 leading-[20px]">Note: excluded for kids' tree category</p>
               </div>
               <div>
-                <h3 className="text-base md:text-2xl font-bold text-white mb-2">
+                <h3 className="text-xs md:text-2xl font-bold text-white mb-2">
                   Optional Video (mp4)
                 </h3>
-                <ul className="text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
+                <ul className="text-xs md:text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
                   <li>The document should be less than 10 MB</li>
                 </ul>
-                <p className="text-base ml-4 italic text-white mt-2 leading-[20px]">Note: excluded for kids' tree category</p>
+                <p className="text-xs md:text-base ml-4 italic text-white mt-2 leading-[20px]">Note: excluded for kids' tree category</p>
               </div>
             </div>
             
@@ -648,13 +648,13 @@ export default function CompetitionPageClient() {
             <h2 id="awards" className="text-2xl md:text-4xl font-bold text-white mb-4 uppercase tracking-wide scroll-mt-20">
               <a href="#awards" >AWARDS</a>
           </h2>
-            <p className="text-[14.4px] md:text-xl text-gray-300 mb-2 leading-[20px] md:leading-normal">
+            <p className="text-xs md:text-xl text-gray-300 mb-2 leading-[20px] md:leading-normal">
               Total prize fund more than
             </p>
-            <p className="text-[28.8px] md:text-5xl font-bold text-red-500 mb-4">
+            <p className="text-xl md:text-5xl font-bold text-red-500 mb-4">
               LKR 500,000.00
             </p>
-            <p className="text-base md:text-lg text-gray-300 max-w-4xl mx-auto leading-[20px] md:leading-normal">
+            <p className="text-xs md:text-lg text-gray-300 max-w-4xl mx-auto leading-[20px] md:leading-normal">
               Archalley will award a total of LKR 325,000.00 in prize money to competition winners as follows:
           </p>
         </div>
@@ -663,38 +663,38 @@ export default function CompetitionPageClient() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 items-stretch">
             {/* Physical Category - Left Box */}
             <div className="rounded-lg flex flex-col h-full">
-              <h3 className="text-base md:text-2xl font-bold text-blue-400 mb-6 uppercase text-center">
+              <h3 className="text-base md:text-2xl font-bold text-white mb-6 uppercase text-center">
                 PHYSICAL CATEGORY
               </h3>
               <div className="space-y-3 flex-1 flex flex-col gap-2">
                 <div className="bg-red-900/80 p-6 text-center">
-                  <p className="text-white mb-2 text-base leading-[20px]">1st Prize</p>
-                  <p className="text-2xl md:text-4xl font-bold text-white">LKR 150,000.00</p>
+                  <p className="text-white mb-2 text-xs md:text-base leading-[20px]">1st Prize</p>
+                  <p className="text-lg md:text-4xl font-bold text-white">LKR 150,000.00</p>
                 </div>
                 <div className="bg-red-900/80 p-6 text-center">
-                  <p className="text-white mb-2 text-base leading-[20px]">2nd Prize</p>
-                  <p className="text-xl md:text-3xl font-bold text-white">LKR 50,000.00</p>
+                  <p className="text-white mb-2 text-xs md:text-base leading-[20px]">2nd Prize</p>
+                  <p className="text-base md:text-3xl font-bold text-white">LKR 50,000.00</p>
                 </div>
                 <div className="bg-red-900/80 p-6 text-center flex-1 flex flex-col justify-center">
-                  <p className="text-white mb-2 text-base leading-[20px]">3rd Prize</p>
-                  <p className="text-xl md:text-3xl font-bold text-white">LKR 25,000</p>
+                  <p className="text-white mb-2 text-xs md:text-base leading-[20px]">3rd Prize</p>
+                  <p className="text-base md:text-3xl font-bold text-white">LKR 25,000</p>
                 </div>
               </div>
             </div>
 
             {/* Digital Category - Right Box */}
             <div className="rounded-lg flex flex-col h-full">
-              <h3 className="text-base md:text-2xl font-bold text-blue-400 mb-6 uppercase text-center">
+              <h3 className="text-base md:text-2xl font-bold text-white mb-6 uppercase text-center">
                 DIGITAL CATEGORY
             </h3>
               <div className="flex-1 flex flex-col gap-4">
                 <div className="bg-red-900/80 p-6 text-center flex-1 flex flex-col justify-center">
-                  <p className="text-white mb-2 text-base leading-[20px]">1st Prize</p>
-                  <p className="text-2xl md:text-4xl font-bold text-white">TABLET</p>
+                  <p className="text-white mb-2 text-xs md:text-base leading-[20px]">1st Prize</p>
+                  <p className="text-lg md:text-4xl font-bold text-white">TABLET</p>
                 </div>
                 <div className="bg-red-900/80 p-6 text-center flex-1 flex flex-col justify-center">
-                  <p className="text-white mb-2 text-base leading-[20px]">2nd Prize</p>
-                  <p className="text-xl md:text-3xl font-bold text-white">DRAWING PAD</p>
+                  <p className="text-white mb-2 text-xs md:text-base leading-[20px]">2nd Prize</p>
+                  <p className="text-base md:text-3xl font-bold text-white">DRAWING PAD</p>
                 </div>
               </div>
             </div>
@@ -704,33 +704,33 @@ export default function CompetitionPageClient() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 items-stretch">
             {/* Archalley Most Popular Tree Award */}
             <div className="bg-red-900/80 p-6 text-center flex flex-col justify-center">
-              <p className="text-white mb-4 text-[14.4px] md:text-xl font-semibold leading-[20px] md:leading-normal">Archalley Most Popular Tree Award</p>
-              <p className="text-2xl md:text-4xl font-bold text-white">LKR 100,000.00</p>
+              <p className="text-white mb-4 text-xs md:text-xl font-semibold leading-[20px] md:leading-normal">Archalley Most Popular Tree Award</p>
+              <p className="text-lg md:text-4xl font-bold text-white">LKR 100,000.00</p>
             </div>
 
             {/* Kids' Category */}
             <div className="bg-red-900/80 p-6 text-center flex flex-col justify-center">
-              <p className="text-white mb-3 text-[14.4px] md:text-xl font-semibold leading-[20px] md:leading-normal">Kids' category</p>
-              <p className="text-white mb-2 text-base leading-[20px]">A Gift per each Submission</p>
-              <p className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Certificate of participation</p>
+              <p className="text-white mb-3 text-xs md:text-xl font-semibold leading-[20px] md:leading-normal">Kids' category</p>
+              <p className="text-white mb-2 text-xs md:text-base leading-[20px]">A Gift per each Submission</p>
+              <p className="text-white text-[10px] md:text-base leading-[20px] md:leading-normal">Certificate of participation</p>
             </div>
 
             {/* Honorable Mentions & Finalists - Two Stacked Blocks */}
             <div className="flex flex-col gap-3 h-full">
               <div className="bg-red-900/80 p-6 text-center flex-1 flex flex-col justify-center">
-                <p className="text-white mb-2 text-[14.4px] md:text-xl font-semibold leading-[20px] md:leading-normal">3 Honorable mentions</p>
-                <p className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Certificate of achievement</p>
+                <p className="text-white mb-2 text-xs md:text-xl font-semibold leading-[20px] md:leading-normal">3 Honorable mentions</p>
+                <p className="text-white text-[10px] md:text-base leading-[20px] md:leading-normal">Certificate of achievement</p>
               </div>
               <div className="bg-red-900/80 p-6 text-center flex-1 flex flex-col justify-center">
-                <p className="text-white mb-2 text-[14.4px] md:text-xl font-semibold leading-[20px] md:leading-normal">10 Finalists</p>
-                <p className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">From Each Category</p>
-                <p className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">will be announced</p>
+                <p className="text-white mb-2 text-xs md:text-xl font-semibold leading-[20px] md:leading-normal">10 Finalists</p>
+                <p className="text-white text-[10px] md:text-base leading-[20px] md:leading-normal">From Each Category</p>
+                <p className="text-white text-[10px] md:text-base leading-[20px] md:leading-normal">will be announced</p>
               </div>
             </div>
           </div>
 
           {/* Notes and Footer */}
-          <div className="space-y-4 text-gray-300 text-[11.2px] md:text-base leading-[20px] md:leading-normal">
+          <div className="space-y-4 text-gray-300 text-[10px] md:text-base leading-[20px] md:leading-normal">
             <ul className="list-disc list-inside space-y-2 max-w-4xl mx-auto">
               <li>All winners will receive a certificate of achievement in addition to their relevant prize money.</li>
               <li>All entrants will receive an E-certificate of participation.</li>
@@ -1128,7 +1128,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('physical-tree')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Physical Tree Category</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Physical Tree Category</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['physical-tree'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1153,7 +1153,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('digital-tree')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Digital Tree Category</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Digital Tree Category</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['digital-tree'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1177,7 +1177,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('kids-tree')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Kids' Tree Category</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Kids' Tree Category</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['kids-tree'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1203,7 +1203,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('submission-formats')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Submission Formats (All Categories)</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Submission Formats (All Categories)</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['submission-formats'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1229,7 +1229,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('optional-documents')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Optional Documents (Physical, Digital Tree Categories Only)</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Optional Documents (Physical, Digital Tree Categories Only)</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['optional-documents'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1253,7 +1253,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('group-entry')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Group Entry</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Group Entry</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['group-entry'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1277,7 +1277,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('registration-identification')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Registration & Identification</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Registration & Identification</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['registration-identification'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1302,7 +1302,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('submission-method')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Submission Method, Format & Deadline</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Submission Method, Format & Deadline</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['submission-method'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1325,7 +1325,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('multiple-entries')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Multiple Entries & Duplicate Products</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Multiple Entries & Duplicate Products</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['multiple-entries'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1348,7 +1348,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('judging-jury')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Judging & Jury Protocol</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Judging & Jury Protocol</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['judging-jury'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1372,7 +1372,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('verification-compliance')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Verification & Compliance</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Verification & Compliance</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['verification-compliance'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1394,7 +1394,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('intellectual-property')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Intellectual Property, Permissions & Indemnity</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Intellectual Property, Permissions & Indemnity</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['intellectual-property'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1417,7 +1417,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('archalley-rights')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Archalley Rights & Liability</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Archalley Rights & Liability</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['archalley-rights'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1442,7 +1442,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('winner-notification')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Winner Notification & Prizes</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Winner Notification & Prizes</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['winner-notification'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1464,7 +1464,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('license-winning')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">License for Winning Entries</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">License for Winning Entries</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['license-winning'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1485,7 +1485,7 @@ export default function CompetitionPageClient() {
                   onClick={() => toggleCard('acceptance-terms')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
                 >
-                  <h3 className="text-base md:text-xl font-bold text-white">Acceptance of Terms</h3>
+                  <h3 className="text-sm md:text-xl font-bold text-white">Acceptance of Terms</h3>
                   <svg 
                     className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['acceptance-terms'] ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -1513,64 +1513,64 @@ export default function CompetitionPageClient() {
           <div className="max-w-4xl mx-auto">
             <div className="space-y-6">
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-[14.4px] md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
+                <h3 className="text-xs md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
                   Q: Can I submit more than one entry?
                 </h3>
-                <p className="text-white text-base leading-[20px]">
+                <p className="text-white text-xs md:text-base leading-[20px]">
                   A: Yes! You can submit multiple entries, But each should go under separate registrations.
                 </p>
               </div>
               
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-[14.4px] md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
+                <h3 className="text-xs md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
                   Q: Can I collaborate with others?
                 </h3>
-                <p className="text-white text-base leading-[20px]">
+                <p className="text-white text-xs md:text-base leading-[20px]">
                   A: Yes. Group submissions are allowed as a team or a company.
                 </p>
               </div>
               
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-[14.4px] md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
+                <h3 className="text-xs md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
                   Q: Are international entries allowed?
                 </h3>
-                <p className="text-white text-base leading-[20px]">
+                <p className="text-white text-xs md:text-base leading-[20px]">
                   A: Absolutely. We welcome entries from around the world.
                 </p>
               </div>
               
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-[14.4px] md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
+                <h3 className="text-xs md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
                   Q: Do I have to build the physical model?
                 </h3>
-                <p className="text-white text-base leading-[20px]">
+                <p className="text-white text-xs md:text-base leading-[20px]">
                   A: Only if you choose the physical tree category. Digital entries are equally accepted.
                 </p>
               </div>
               
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-[14.4px] md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
+                <h3 className="text-xs md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
                   Q: What format should I submit digital work in?
                 </h3>
-                <p className="text-white text-base leading-[20px]">
+                <p className="text-white text-xs md:text-base leading-[20px]">
                   A: JPG format is the accepted format for all submissions, other than the optional documents.
                 </p>
               </div>
               
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-[14.4px] md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
+                <h3 className="text-xs md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
                   Q: Can the tree be of any size?
                 </h3>
-                <p className="text-white text-base leading-[20px]">
+                <p className="text-white text-xs md:text-base leading-[20px]">
                   A: Yes, There are no limitations for the sizes.
                 </p>
               </div>
               
               <div className="bg-slate-800/70 rounded-lg p-6">
-                <h3 className="text-[14.4px] md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
+                <h3 className="text-xs md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
                   Q: I'm 12 or younger. Can I join?
                 </h3>
-                <p className="text-white text-base leading-[20px]">
+                <p className="text-white text-xs md:text-base leading-[20px]">
                   A: Yes! Submit under the Kids' Category – any format is allowed.
                 </p>
               </div>
