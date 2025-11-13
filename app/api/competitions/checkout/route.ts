@@ -221,7 +221,7 @@ export async function POST(
           
           console.log(`✅ Generated registration number: ${regNumber}`);
           
-          return prisma.competitionRegistration.create({
+          const registration = await prisma.competitionRegistration.create({
             data: {
               userId: session.user.id,
               competitionId: item.competitionId,
@@ -237,6 +237,12 @@ export async function POST(
               paymentId: payment.id,
             },
           });
+          
+          // Return registration with type name for display
+          return {
+            ...registration,
+            typeName: item.registrationType.name,
+          };
         })
       );
 
@@ -294,7 +300,13 @@ export async function POST(
         success: true,
         data: {
           orderId,
-          registrationNumber: registrations[0].registrationNumber,
+          registrationNumber: registrations[0].registrationNumber, // For backward compatibility
+          registrationNumbers: registrations.map(r => r.registrationNumber),
+          registrations: registrations.map(r => ({
+            registrationNumber: r.registrationNumber,
+            registrationTypeId: r.registrationTypeId,
+            typeName: r.typeName,
+          })),
           paymentData: null as any,
           paymentUrl: '',
         },

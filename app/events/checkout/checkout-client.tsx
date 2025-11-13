@@ -228,10 +228,10 @@ export default function CheckoutClient({ user }: Props) {
 
         if (result.success) {
           toast.success('Bank transfer details submitted successfully!');
-          // API returns data in result.data.registrationNumber
-          const registrationNumber = result.data?.registrationNumber || result.registrationNumber || '';
-          console.log('Navigating to payment-pending with registration number:', registrationNumber);
-          router.push(`/events/payment-pending?registrationNumber=${encodeURIComponent(registrationNumber)}`);
+          // Get all registration data with type names
+          const registrations = result.data?.registrations || [];
+          console.log('Navigating to payment-pending with registrations:', registrations);
+          router.push(`/events/payment-pending?registrations=${encodeURIComponent(JSON.stringify(registrations))}`);
         } else {
           console.error('Bank transfer submission failed:', result.error);
           toast.error(result.error || 'Failed to submit bank transfer');

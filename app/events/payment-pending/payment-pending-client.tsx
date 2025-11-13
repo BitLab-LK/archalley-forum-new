@@ -15,6 +15,13 @@ export default function PaymentPendingClient({ user }: PaymentPendingClientProps
   const router = useRouter();
   const searchParams = useSearchParams();
   const registrationNumber = searchParams.get('registrationNumber');
+  const registrationsParam = searchParams.get('registrations');
+  
+  // Parse registrations array with type names or fallback to single registration number
+  const registrations = registrationsParam 
+    ? JSON.parse(decodeURIComponent(registrationsParam)) 
+    : (registrationNumber ? [{ registrationNumber, typeName: 'Registration' }] : []);
+  
   const [countdown, setCountdown] = useState(30);
 
   useEffect(() => {
@@ -47,18 +54,46 @@ export default function PaymentPendingClient({ user }: PaymentPendingClientProps
           </p>
         </div>
 
-        {/* Registration Number */}
-        {registrationNumber && (
+        {/* Registration Numbers */}
+        {registrations.length > 0 && (
           <div className="bg-white border border-gray-300 rounded-md p-5 mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs text-gray-500 font-medium mb-2 uppercase tracking-wide">
-                  Registration Number
-                </p>
-                <p className="text-xl font-semibold text-gray-900 tracking-wider">
-                  {registrationNumber}
-                </p>
-              </div>
+            <div className="flex-1">
+              <p className="text-xs text-gray-500 font-medium mb-3 uppercase tracking-wide">
+                Registration Number{registrations.length > 1 ? 's' : ''}
+              </p>
+              {registrations.length === 1 ? (
+                <div>
+                  <p className="text-xl font-semibold text-gray-900 tracking-wider mb-1">
+                    {registrations[0].registrationNumber}
+                  </p>
+                  {registrations[0].typeName && (
+                    <p className="text-sm text-gray-600">
+                      {registrations[0].typeName}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {registrations.map((reg: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <span className="text-lg font-semibold text-gray-900 tracking-wider block mb-1">
+                          {reg.registrationNumber}
+                        </span>
+                        <span className="text-sm text-gray-600">
+                          {reg.typeName}
+                        </span>
+                      </div>
+                      <span className="text-xs px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full font-medium">
+                        Type {index + 1}
+                      </span>
+                    </div>
+                  ))}
+                  <p className="text-sm text-gray-600 mt-3 pt-3 border-t border-gray-200">
+                    You registered for {registrations.length} types in one transaction
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
