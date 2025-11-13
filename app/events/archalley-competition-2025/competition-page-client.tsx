@@ -743,55 +743,62 @@ export default function CompetitionPageClient() {
             {/* Registration Phase */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Column 1 - Section Heading (only for first row) */}
-              <div className="flex items-center">
+              <div className="flex items-center md:col-span-1 col-span-1">
                 <h3 className="text-base md:text-2xl font-bold text-red-500 uppercase">Registration</h3>
               </div>
-              {/* Column 2 - Event Description */}
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Competition Registration starts</span>
-              </div>
-              {/* Column 3 - Date */}
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">11<sup>th</sup> November</span>
+              {/* Columns 2 & 3 - Event Description and Date (inline on mobile) */}
+              <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Competition Registration starts</span>
+                </div>
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">11<sup>th</sup> November</span>
+                </div>
               </div>
             </div>
 
             {/* Registration - Row 2 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center">
-                {/* Empty for section heading column */}
+              <div className="hidden md:flex items-center">
+                {/* Empty for section heading column on desktop */}
               </div>
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Early bird registration</span>
-              </div>
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">11<sup>th</sup> November -20<sup>th</sup> November</span>
+              <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Early bird registration</span>
+                </div>
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">11<sup>th</sup> November -20<sup>th</sup> November</span>
+                </div>
               </div>
             </div>
 
             {/* Registration - Row 3 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center">
-                {/* Empty for section heading column */}
+              <div className="hidden md:flex items-center">
+                {/* Empty for section heading column on desktop */}
               </div>
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Standard registration</span>
-              </div>
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">21<sup>st</sup> November -20<sup>th</sup> December</span>
+              <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Standard registration</span>
+                </div>
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">21<sup>st</sup> November -20<sup>th</sup> December</span>
+                </div>
               </div>
             </div>
 
             {/* Registration - Row 4 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center">
-                {/* Empty for section heading column */}
+              <div className="hidden md:flex items-center">
+                {/* Empty for section heading column on desktop */}
               </div>
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Late Registration</span>
-              </div>
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">21<sup>st</sup> December -24<sup>th</sup> December</span>
+              <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Late Registration</span>
+                </div>
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">21<sup>st</sup> December -24<sup>th</sup> December</span>
+                </div>
               </div>
             </div>
 
@@ -800,56 +807,63 @@ export default function CompetitionPageClient() {
             {/* Submissions Phase */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Column 1 - Section Heading (only for first row) */}
-              <div className="flex items-center">
+              <div className="flex items-center md:col-span-1 col-span-1">
                 <h3 className="text-base md:text-2xl font-bold text-red-500 uppercase">Submissions</h3>
               </div>
-              {/* Column 2 - Event Description */}
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Submission Start</span>
-              </div>
-              {/* Column 3 - Date */}
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">11<sup>th</sup> December</span>
+              {/* Columns 2 & 3 - Event Description and Date (inline on mobile) */}
+              <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Submission Start</span>
+                </div>
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">11<sup>th</sup> December</span>
+                </div>
               </div>
             </div>
 
             {/* Submissions - Row 2 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center">
-                {/* Empty for section heading column */}
+              <div className="hidden md:flex items-center">
+                {/* Empty for section heading column on desktop */}
               </div>
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Closing Date for FAQ</span>
-              </div>
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">20<sup>th</sup> December</span>
+              <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Closing Date for FAQ</span>
+                </div>
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">20<sup>th</sup> December</span>
+                </div>
               </div>
             </div>
 
             {/* Submissions - Row 3 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center">
-                {/* Empty for section heading column */}
+              <div className="hidden md:flex items-center">
+                {/* Empty for section heading column on desktop */}
               </div>
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Submission Deadline for Kids' Category</span>
+              <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Submission Deadline for Kids' Category</span>
                   </div>
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">21<sup>st</sup> December</span>
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">21<sup>st</sup> December</span>
                   </div>
+                </div>
                 </div>
 
             {/* Submissions - Row 4 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center">
-                {/* Empty for section heading column */}
+              <div className="hidden md:flex items-center">
+                {/* Empty for section heading column on desktop */}
               </div>
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Submission Deadline for other categories</span>
+              <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Submission Deadline for other categories</span>
                   </div>
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">24<sup>th</sup> December</span>
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">24<sup>th</sup> December</span>
                   </div>
+                </div>
                 </div>
 
             <hr className="my-6" />
@@ -857,29 +871,32 @@ export default function CompetitionPageClient() {
             {/* Voting & Results Phase */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Column 1 - Section Heading (only for first row) */}
-              <div className="flex items-center">
+              <div className="flex items-center md:col-span-1 col-span-1">
                 <h3 className="text-base md:text-2xl font-bold text-red-500 uppercase">Voting & Results</h3>
               </div>
-              {/* Column 2 - Event Description */}
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Most popular category voting</span>
+              {/* Columns 2 & 3 - Event Description and Date (inline on mobile) */}
+              <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Most popular category voting</span>
                   </div>
-              {/* Column 3 - Date */}
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">25<sup>th</sup> December to 4<sup>th</sup> January</span>
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">25<sup>th</sup> December to 4<sup>th</sup> January</span>
                   </div>
+                </div>
                 </div>
 
             {/* Voting & Results - Row 2 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center">
-                {/* Empty for section heading column */}
+              <div className="hidden md:flex items-center">
+                {/* Empty for section heading column on desktop */}
               </div>
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Announcement of the Winners</span>
-              </div>
-              <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
-                <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">10<sup>th</sup> January</span>
+              <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Announcement of the Winners</span>
+                </div>
+                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                  <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">10<sup>th</sup> January</span>
+                </div>
               </div>
             </div>
           </div>
