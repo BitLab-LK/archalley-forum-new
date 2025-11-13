@@ -20,6 +20,9 @@ import {
 } from '@/lib/competition-email-service';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  console.log('\n🔔 =============== PAYHERE NOTIFY ENDPOINT CALLED ===============');
+  console.log('⏰ Timestamp:', new Date().toISOString());
+  
   try {
     // Parse form data from PayHere
     const formData = await request.formData();
@@ -40,10 +43,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       custom_2: formData.get('custom_2') as string || undefined,
     };
 
-    console.log('PayHere IPN received:', {
+    console.log('✅ PayHere IPN received:', {
       order_id: payHereData.order_id,
       status_code: payHereData.status_code,
+      status_message: payHereData.status_message,
       amount: payHereData.payhere_amount,
+      method: payHereData.method,
+      payment_id: payHereData.payment_id,
     });
 
     // Find payment record

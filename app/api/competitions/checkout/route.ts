@@ -333,6 +333,7 @@ export async function POST(
         currency: 'LKR',
         merchantId: payHereConfig.merchantId!,
         status: 'PENDING',
+        paymentMethod: 'PAYHERE', // Set payment method for tracking
         items: cart.items.map((item) => ({
           id: item.id,
           competitionTitle: item.competition.title,
@@ -347,6 +348,7 @@ export async function POST(
           cartId: cart.id,
           itemIds: cart.items.map((item) => item.id),
           competitionIds: competitionIds, // Track all competitions
+          paymentMethod: 'card',
         },
       },
     });
