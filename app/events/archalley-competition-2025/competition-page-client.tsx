@@ -756,10 +756,10 @@ export default function CompetitionPageClient() {
               </div>
               {/* Columns 2 & 3 - Event Description and Date (inline on mobile) */}
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Competition Registration starts</span>
                 </div>
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">11<sup>th</sup> November</span>
                 </div>
               </div>
@@ -771,10 +771,10 @@ export default function CompetitionPageClient() {
                 {/* Empty for section heading column on desktop */}
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Early bird registration</span>
                 </div>
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">11<sup>th</sup> November -20<sup>th</sup> November</span>
                 </div>
               </div>
@@ -786,10 +786,10 @@ export default function CompetitionPageClient() {
                 {/* Empty for section heading column on desktop */}
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Standard registration</span>
                 </div>
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">21<sup>st</sup> November -20<sup>th</sup> December</span>
                 </div>
               </div>
@@ -801,10 +801,10 @@ export default function CompetitionPageClient() {
                 {/* Empty for section heading column on desktop */}
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Late Registration</span>
                 </div>
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">21<sup>st</sup> December -24<sup>th</sup> December</span>
                 </div>
               </div>
@@ -820,10 +820,10 @@ export default function CompetitionPageClient() {
               </div>
               {/* Columns 2 & 3 - Event Description and Date (inline on mobile) */}
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Submission Start</span>
                 </div>
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">11<sup>th</sup> December</span>
                 </div>
               </div>
@@ -835,10 +835,10 @@ export default function CompetitionPageClient() {
                 {/* Empty for section heading column on desktop */}
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Closing Date for FAQ</span>
                 </div>
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">20<sup>th</sup> December</span>
                 </div>
               </div>
@@ -850,10 +850,10 @@ export default function CompetitionPageClient() {
                 {/* Empty for section heading column on desktop */}
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Submission Deadline for Kids' Category</span>
                   </div>
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">21<sup>st</sup> December</span>
                   </div>
                 </div>
@@ -865,10 +865,10 @@ export default function CompetitionPageClient() {
                 {/* Empty for section heading column on desktop */}
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Submission Deadline for other categories</span>
                   </div>
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">24<sup>th</sup> December</span>
                   </div>
                 </div>
@@ -884,10 +884,10 @@ export default function CompetitionPageClient() {
               </div>
               {/* Columns 2 & 3 - Event Description and Date (inline on mobile) */}
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Most popular category voting</span>
                   </div>
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">25<sup>th</sup> December to 4<sup>th</sup> January</span>
                   </div>
                 </div>
@@ -899,10 +899,10 @@ export default function CompetitionPageClient() {
                 {/* Empty for section heading column on desktop */}
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Announcement of the Winners</span>
                 </div>
-                <div className="bg-slate-800/90 rounded-md p-4 flex items-center">
+                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">10<sup>th</sup> January</span>
                 </div>
               </div>
