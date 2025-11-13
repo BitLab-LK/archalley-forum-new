@@ -10,7 +10,7 @@ import { authOptions } from '@/lib/auth';
 import CheckoutClient from './checkout-client';
 
 export const metadata: Metadata = {
-  title: 'Checkout - Archalley Forum',
+  title: 'Checkout - Archalley',
   description: 'Complete your competition registration payment',
 };
 
