@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CheckCircle2, Clock, Mail, FileText, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Clock, Mail, ArrowRight } from 'lucide-react';
 
 interface PaymentPendingClientProps {
   user: {
