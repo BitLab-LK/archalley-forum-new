@@ -283,7 +283,7 @@ export default function CompetitionPageClient() {
         <div className="relative z-10 min-h-[720px] flex items-center px-4 md:px-6 lg:px-8 py-12 md:py-12">
           {/* Left side background image */}
           <div 
-            className="absolute inset-y-0 left-0 w-1/2 h-full"
+            className="absolute top-0 left-0 w-full md:w-1/2 h-1/2 md:h-full md:inset-y-0"
             style={{
               backgroundImage: 'url(/uploads/sos-bg-img-1.png)',
               backgroundSize: 'cover',
@@ -293,7 +293,7 @@ export default function CompetitionPageClient() {
           />
           {/* Right side background image and overlay */}
           <div 
-            className="absolute inset-y-0 right-0 w-1/2 h-full"
+            className="absolute bottom-0 right-0 w-full md:w-1/2 h-1/2 md:h-full md:inset-y-0"
             style={{
               backgroundImage: 'url(/uploads/tree-planting-1.png)',
               backgroundSize: 'cover',
