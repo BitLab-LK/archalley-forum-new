@@ -159,13 +159,40 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
     }
   };
 
-  // Filter registrations
+  // Group registrations by user + competition + payment
+  const groupedRegistrations = useMemo(() => {
+    const groups = new Map<string, Registration[]>();
+    
+    registrations.forEach(reg => {
+      // Create a key based on user, competition, and payment (if exists)
+      const key = reg.payment?.id 
+        ? `${reg.user.id}-${reg.competition.id}-${reg.payment.id}`
+        : `${reg.user.id}-${reg.competition.id}-${reg.id}`;
+      
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(reg);
+    });
+    
+    // Return array of grouped registrations, using the first registration as the primary one
+    return Array.from(groups.values()).map(group => ({
+      primary: group[0], // First registration in the group
+      all: group, // All registrations in the group
+      types: group.map(r => r.registrationType),
+      registrationNumbers: group.map(r => r.registrationNumber)
+    }));
+  }, [registrations]);
+
+  // Filter grouped registrations
   const filteredRegistrations = useMemo(() => {
-    return registrations.filter(reg => {
+    return groupedRegistrations.filter(group => {
+      const reg = group.primary;
+      
       // Search filter
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch = 
-        reg.registrationNumber.toLowerCase().includes(searchLower) ||
+        group.registrationNumbers.some(num => num.toLowerCase().includes(searchLower)) ||
         reg.user.name?.toLowerCase().includes(searchLower) ||
         reg.user.email.toLowerCase().includes(searchLower) ||
         reg.competition.title.toLowerCase().includes(searchLower) ||
@@ -188,14 +215,15 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
 
       return matchesSearch && matchesStatus && matchesCompetition && matchesSubmission && matchesPaymentMethod;
     });
-  }, [registrations, searchQuery, statusFilter, competitionFilter, submissionFilter, paymentMethodFilter]);
+  }, [groupedRegistrations, searchQuery, statusFilter, competitionFilter, submissionFilter, paymentMethodFilter]);
 
   // Handle select all
   const handleSelectAll = () => {
     if (selectedRegistrations.length === filteredRegistrations.length) {
       setSelectedRegistrations([]);
     } else {
-      setSelectedRegistrations(filteredRegistrations.map(r => r.id));
+      // Select all primary IDs from grouped registrations
+      setSelectedRegistrations(filteredRegistrations.map(g => g.primary.id));
     }
   };
 
@@ -208,22 +236,24 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
 
   // Export to CSV
   const handleExport = () => {
-    const csvData = filteredRegistrations.map(reg => ({
-      'Registration Number': reg.registrationNumber,
-      'Display Code': reg.displayCode || 'N/A',
-      'User Name': reg.user.name || 'N/A',
-      'User Email': reg.user.email,
-      'Competition': reg.competition.title,
-      'Registration Type': reg.registrationType.name,
-      'Status': reg.status,
-      'Submission Status': reg.submissionStatus,
-      'Amount Paid': reg.amountPaid,
-      'Country': reg.country,
-      'Payment Method': reg.payment?.paymentMethod || 'N/A',
-      'Payment Status': reg.payment?.status || 'N/A',
-      'Order ID': reg.payment?.orderId || 'N/A',
-      'Registered Date': format(new Date(reg.createdAt), 'yyyy-MM-dd HH:mm:ss'),
-    }));
+    const csvData = filteredRegistrations.flatMap(group => 
+      group.all.map(reg => ({
+        'Registration Number': reg.registrationNumber,
+        'Display Code': reg.displayCode || 'N/A',
+        'User Name': reg.user.name || 'N/A',
+        'User Email': reg.user.email,
+        'Competition': reg.competition.title,
+        'Registration Type': reg.registrationType.name,
+        'Status': reg.status,
+        'Submission Status': reg.submissionStatus,
+        'Amount Paid': reg.amountPaid,
+        'Country': reg.country,
+        'Payment Method': reg.payment?.paymentMethod || 'N/A',
+        'Payment Status': reg.payment?.status || 'N/A',
+        'Order ID': reg.payment?.orderId || 'N/A',
+        'Registered Date': format(new Date(reg.createdAt), 'yyyy-MM-dd HH:mm:ss'),
+      }))
+    );
 
     const csv = [
       Object.keys(csvData[0]).join(','),
@@ -777,7 +807,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
       {/* Results Count and Quick Filters */}
       <div className="mb-4 flex items-center justify-between">
         <div className="text-sm text-gray-600">
-          Showing {filteredRegistrations.length} of {registrations.length} registrations
+          Showing {filteredRegistrations.length} of {groupedRegistrations.length} registrations
         </div>
         
         {/* Quick Payment Method Filters */}
@@ -866,7 +896,9 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                   </td>
                 </tr>
               ) : (
-                filteredRegistrations.map((reg) => (
+                filteredRegistrations.map((group) => {
+                  const reg = group.primary; // Primary registration for display
+                  return (
                   <tr key={reg.id} className="hover:bg-gray-50">
                     <td className="px-3 py-4">
                       <input
@@ -908,36 +940,25 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       <div className="text-sm text-gray-500">{reg.competition.year}</div>
                     </td>
                     <td className="px-3 py-4 min-w-[180px]">
-                      {/* Show all registration types for the same payment */}
-                      {(() => {
-                        // Find all registrations with the same paymentId
-                        const relatedRegs = reg.payment 
-                          ? registrations.filter(r => r.payment?.id === reg.payment?.id)
-                          : [reg];
-                        
-                        const uniqueTypes = Array.from(new Set(relatedRegs.map(r => r.registrationType.name)));
-                        
-                        return (
-                          <div className="space-y-1">
-                            {uniqueTypes.length === 1 ? (
-                              <div className="text-sm font-medium text-gray-900">
-                                {uniqueTypes[0]}
-                              </div>
-                            ) : (
-                              <>
-                                {uniqueTypes.map((typeName, index) => (
-                                  <div key={index} className="text-xs text-gray-700">
-                                    • {typeName}
-                                  </div>
-                                ))}
-                                <div className="text-xs text-blue-600 font-medium mt-1">
-                                  {uniqueTypes.length} types
-                                </div>
-                              </>
-                            )}
+                      {/* Show all registration types from group */}
+                      <div className="space-y-1">
+                        {group.types.length === 1 ? (
+                          <div className="text-sm font-medium text-gray-900">
+                            {group.types[0].name}
                           </div>
-                        );
-                      })()}
+                        ) : (
+                          <>
+                            {group.types.map((type, index) => (
+                              <div key={index} className="text-xs text-gray-700">
+                                • {type.name}
+                              </div>
+                            ))}
+                            <div className="text-xs text-blue-600 font-medium mt-1">
+                              {group.types.length} types
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </td>
                     <td className="px-3 py-4 min-w-[200px]">
                       <div className="space-y-1">
@@ -946,7 +967,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                           {reg.status.replace('_', ' ')}
                         </span>
                         
-                        {/* Payment Method & Registration Number */}
+                        {/* Payment Method & Registration Numbers */}
                         {reg.payment && (
                           <>
                             <div className={`text-xs font-medium ${
@@ -955,7 +976,19 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                               {reg.payment.paymentMethod === 'PAYHERE' ? 'PayHere' : 'Bank Transfer'}
                             </div>
                             <div className="text-xs text-gray-500 font-mono">
-                              Reg.Number: {reg.registrationNumber}
+                              {group.registrationNumbers.length > 1 ? (
+                                <div>
+                                  Reg.Numbers: ({group.registrationNumbers.length})
+                                  {group.registrationNumbers.slice(0, 1).map(num => (
+                                    <div key={num}>{num}</div>
+                                  ))}
+                                  {group.registrationNumbers.length > 1 && (
+                                    <div className="text-xs text-blue-600">+{group.registrationNumbers.length - 1} more</div>
+                                  )}
+                                </div>
+                              ) : (
+                                `Reg.Number: ${reg.registrationNumber}`
+                              )}
                             </div>
                             
                             {/* Payment Status for PayHere */}
@@ -982,20 +1015,10 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       </div>
                     </td>
                     <td className="px-3 py-4">
-                      {/* Show total amount if multiple registrations in same payment */}
+                      {/* Show total amount for all types in group */}
                       {(() => {
-                        if (!reg.payment) {
-                          return (
-                            <div className="text-sm font-medium text-gray-900">
-                              {reg.amountPaid.toLocaleString()}
-                            </div>
-                          );
-                        }
-                        
-                        // Calculate total for all registrations with same paymentId
-                        const relatedRegs = registrations.filter(r => r.payment?.id === reg.payment?.id);
-                        const totalAmount = relatedRegs.reduce((sum, r) => sum + r.amountPaid, 0);
-                        const hasMultiple = relatedRegs.length > 1;
+                        const totalAmount = group.all.reduce((sum, r) => sum + r.amountPaid, 0);
+                        const hasMultiple = group.all.length > 1;
                         
                         return (
                           <div>
@@ -1004,7 +1027,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                             </div>
                             {hasMultiple && (
                               <div className="text-xs text-gray-500">
-                                ({relatedRegs.length} items)
+                                ({group.all.length} items)
                               </div>
                             )}
                           </div>
@@ -1024,7 +1047,8 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                         <button
                           onClick={(e) => {
                             e.preventDefault();
-                            setViewingRegistration(reg);
+                            // Pass all registrations in the group for viewing
+                            setViewingRegistration({ ...reg, _allRegistrations: group.all } as any);
                           }}
                           className="p-2 text-gray-500 rounded-lg transition-colors"
                           style={{ transition: 'all 0.3s' }}
@@ -1065,7 +1089,8 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -1073,7 +1098,12 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
       </div>
 
       {/* View Details Modal */}
-      {viewingRegistration && (
+      {viewingRegistration && (() => {
+        // Get all registrations in the group
+        const allRegs = (viewingRegistration as any)._allRegistrations || [viewingRegistration];
+        const primaryReg = allRegs[0];
+        
+        return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
@@ -1087,44 +1117,66 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Registration Info */}
+              {/* Registration Info - Show all registration numbers and types */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Registration Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Registration Number</p>
-                    <p className="text-base font-medium text-gray-900 font-mono">{viewingRegistration.registrationNumber}</p>
+                
+                {allRegs.length > 1 && (
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm font-medium text-blue-800 mb-2">
+                      ✓ This user registered for {allRegs.length} types in one transaction
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Display Code (Public/Anonymous)</p>
-                    {viewingRegistration.displayCode ? (
-                      <div className="flex items-center gap-2">
-                        <p className="text-base font-bold font-mono px-3 py-1 rounded border" 
-                           style={{ color: '#FFA000', backgroundColor: '#FFF3E0', borderColor: '#FFE0B2' }}>
-                          {viewingRegistration.displayCode}
+                )}
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className={allRegs.length > 1 ? 'col-span-2' : ''}>
+                    <p className="text-sm text-gray-600">Registration Number{allRegs.length > 1 ? 's' : ''}</p>
+                    {allRegs.map((reg: Registration, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2 mb-1">
+                        <p className="text-base font-medium text-gray-900 font-mono">
+                          {reg.registrationNumber}
                         </p>
-                        <span className="text-xs text-gray-500" title="This code is used for anonymous public display">
-                          🔒
+                        <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
+                          {reg.registrationType.name}
                         </span>
                       </div>
-                    ) : (
-                      <p className="text-sm text-gray-500 italic">Not generated yet</p>
-                    )}
+                    ))}
                   </div>
+                  
+                  <div className={allRegs.length > 1 ? 'col-span-2' : ''}>
+                    <p className="text-sm text-gray-600">Display Code{allRegs.length > 1 ? 's' : ''} (Public/Anonymous)</p>
+                    {allRegs.map((reg: Registration, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2 mb-1">
+                        {reg.displayCode ? (
+                          <>
+                            <p className="text-base font-bold font-mono px-3 py-1 rounded border" 
+                               style={{ color: '#FFA000', backgroundColor: '#FFF3E0', borderColor: '#FFE0B2' }}>
+                              {reg.displayCode}
+                            </p>
+                            <span className="text-xs text-gray-500">({reg.registrationType.name})</span>
+                          </>
+                        ) : (
+                          <p className="text-sm text-gray-500 italic">Not generated yet - {reg.registrationType.name}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  
                   <div>
                     <p className="text-sm text-gray-600">Country</p>
-                    <p className="text-base font-medium text-gray-900">{viewingRegistration.country}</p>
+                    <p className="text-base font-medium text-gray-900">{primaryReg.country}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Status</p>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(viewingRegistration.status)}`}>
-                      {viewingRegistration.status.replace('_', ' ')}
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(primaryReg.status)}`}>
+                      {primaryReg.status.replace('_', ' ')}
                     </span>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Submission Status</p>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getSubmissionStatusColor(viewingRegistration.submissionStatus)}`}>
-                      {viewingRegistration.submissionStatus.replace('_', ' ')}
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getSubmissionStatusColor(primaryReg.submissionStatus)}`}>
+                      {primaryReg.submissionStatus.replace('_', ' ')}
                     </span>
                   </div>
                 </div>
@@ -1134,76 +1186,78 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">User Information</h3>
                 <div className="flex items-center gap-4 mb-4">
-                  {viewingRegistration.user.image ? (
-                    <img src={viewingRegistration.user.image} alt={viewingRegistration.user.name || ''} className="w-16 h-16 rounded-full" />
+                  {primaryReg.user.image ? (
+                    <img src={primaryReg.user.image} alt={primaryReg.user.name || ''} className="w-16 h-16 rounded-full" />
                   ) : (
                     <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
                       <span className="text-xl font-medium text-gray-600">
-                        {viewingRegistration.user.name?.charAt(0) || viewingRegistration.user.email.charAt(0)}
+                        {primaryReg.user.name?.charAt(0) || primaryReg.user.email.charAt(0)}
                       </span>
                     </div>
                   )}
                   <div>
-                    <p className="text-lg font-medium text-gray-900">{viewingRegistration.user.name || 'N/A'}</p>
-                    <p className="text-base text-gray-600">{viewingRegistration.user.email}</p>
+                    <p className="text-lg font-medium text-gray-900">{primaryReg.user.name || 'N/A'}</p>
+                    <p className="text-base text-gray-600">{primaryReg.user.email}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Competition Info */}
+              {/* Competition Info - Show all types */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Competition Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">Competition</p>
-                    <p className="text-base font-medium text-gray-900">{viewingRegistration.competition.title}</p>
+                    <p className="text-base font-medium text-gray-900">{primaryReg.competition.title}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Year</p>
-                    <p className="text-base font-medium text-gray-900">{viewingRegistration.competition.year}</p>
+                    <p className="text-base font-medium text-gray-900">{primaryReg.competition.year}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Registration Type</p>
-                    <p className="text-base font-medium text-gray-900">{viewingRegistration.registrationType.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Fee</p>
-                    <p className="text-base font-medium text-gray-900">LKR {viewingRegistration.registrationType.fee.toLocaleString()}</p>
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-600 mb-2">Registration Type{allRegs.length > 1 ? 's' : ''}</p>
+                    <div className="space-y-2">
+                      {allRegs.map((reg: Registration, idx: number) => (
+                        <div key={idx} className="p-2 bg-white rounded border">
+                          <span className="text-base font-medium text-gray-900">{reg.registrationType.name}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Team/Company Info */}
-              {(viewingRegistration.teamName || viewingRegistration.companyName) && (
+              {(primaryReg.teamName || primaryReg.companyName) && (
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                    {viewingRegistration.teamName ? 'Team Information' : 'Company Information'}
+                    {primaryReg.teamName ? 'Team Information' : 'Company Information'}
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
-                    {viewingRegistration.teamName && (
+                    {primaryReg.teamName && (
                       <>
                         <div>
                           <p className="text-sm text-gray-600">Team Name</p>
-                          <p className="text-base font-medium text-gray-900"> {viewingRegistration.teamName}</p>
+                          <p className="text-base font-medium text-gray-900"> {primaryReg.teamName}</p>
                         </div>
-                        {viewingRegistration.teamMembers && Array.isArray(viewingRegistration.teamMembers) && (
+                        {primaryReg.teamMembers && Array.isArray(primaryReg.teamMembers) && (
                           <div>
                             <p className="text-sm text-gray-600">Team Members</p>
-                            <p className="text-base font-medium text-gray-900">{viewingRegistration.teamMembers.length} members</p>
+                            <p className="text-base font-medium text-gray-900">{primaryReg.teamMembers.length} members</p>
                           </div>
                         )}
                       </>
                     )}
-                    {viewingRegistration.companyName && (
+                    {primaryReg.companyName && (
                       <>
                         <div>
                           <p className="text-sm text-gray-600">Company Name</p>
-                          <p className="text-base font-medium text-gray-900"> {viewingRegistration.companyName}</p>
+                          <p className="text-base font-medium text-gray-900"> {primaryReg.companyName}</p>
                         </div>
-                        {viewingRegistration.businessRegistrationNo && (
+                        {primaryReg.businessRegistrationNo && (
                           <div>
                             <p className="text-sm text-gray-600">Business Registration No</p>
-                            <p className="text-base font-medium text-gray-900">{viewingRegistration.businessRegistrationNo}</p>
+                            <p className="text-base font-medium text-gray-900">{primaryReg.businessRegistrationNo}</p>
                           </div>
                         )}
                       </>
@@ -1212,27 +1266,47 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                 </div>
               )}
 
-              {/* CRITICAL: Member Details - All User-Filled Data */}
-              {viewingRegistration.members && (
+              {/* CRITICAL: Member Details - All User-Filled Data for Each Type */}
+              {allRegs.some((r: Registration) => r.members) && (
                 <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <span>Participant Details</span>
-                    <span className="text-xs font-normal text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                      {viewingRegistration.participantType}
-                    </span>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                    Participant Details (User-Filled Information)
                   </h3>
                   
-                  {(() => {
-                    const members = Array.isArray(viewingRegistration.members) ? viewingRegistration.members : [];
+                  {allRegs.map((reg: Registration, regIdx: number) => {
+                    if (!reg.members) return null;
                     
-                    return members.map((member: any, index: number) => (
-                      <div key={index} className="bg-white rounded-lg p-4 mb-3 last:mb-0">
-                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          {viewingRegistration.participantType === 'KIDS' ? ' Child Information' : 
-                           viewingRegistration.participantType === 'TEAM' && index === 0 ? '👤 Team Leader' :
-                           viewingRegistration.participantType === 'COMPANY' && index === 0 ? '👤 Company Representative' :
-                           `👤 Member ${index + 1}`}
-                        </h4>
+                    const members = Array.isArray(reg.members) ? reg.members : [];
+                    if (members.length === 0) return null;
+                    
+                    return (
+                      <div key={regIdx} className="mb-4 last:mb-0">
+                        {/* Type Header */}
+                        <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-l-4 border-orange-400 px-4 py-3 mb-3 rounded">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg font-bold text-orange-700">
+                                {reg.registrationType.name}
+                              </span>
+                              <span className="text-xs font-medium text-gray-600 bg-white px-3 py-1 rounded-full">
+                                {reg.participantType}
+                              </span>
+                            </div>
+                            <span className="text-xs font-mono text-gray-600">
+                              {reg.registrationNumber}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Members for this type */}
+                        {members.map((member: any, index: number) => (
+                          <div key={index} className="bg-white rounded-lg p-4 mb-3 last:mb-0 border border-gray-200">
+                            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                              {reg.participantType === 'KIDS' ? 'Child Information' : 
+                               reg.participantType === 'TEAM' && index === 0 ? 'Team Leader' :
+                               reg.participantType === 'COMPANY' && index === 0 ? 'Company Representative' :
+                               `Member ${index + 1}`}
+                            </h4>
                         
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           {/* Name */}
@@ -1264,7 +1338,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                           )}
                           {member.phone && (
                             <div>
-                              <p className="text-gray-600">📱 Phone</p>
+                              <p className="text-gray-600">Phone</p>
                               <p className="font-medium text-gray-900">{member.phone}</p>
                             </div>
                           )}
@@ -1272,7 +1346,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                           {/* Student Specific */}
                           {member.dateOfBirth && (
                             <div>
-                              <p className="text-gray-600"> Date of Birth</p>
+                              <p className="text-gray-600">Date of Birth</p>
                               <p className="font-medium text-gray-900">{member.dateOfBirth}</p>
                             </div>
                           )}
@@ -1284,7 +1358,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                           )}
                           {member.university && (
                             <div>
-                              <p className="text-gray-600">🎓 University</p>
+                              <p className="text-gray-600">University</p>
                               <p className="font-medium text-gray-900">{member.university}</p>
                             </div>
                           )}
@@ -1294,12 +1368,73 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                               <p className="font-medium text-gray-900">{member.studentId}</p>
                             </div>
                           )}
-                          {member.studentIdCard && (
+                          {member.role && (
+                            <div>
+                              <p className="text-gray-600">Role/Position</p>
+                              <p className="font-medium text-gray-900">{member.role}</p>
+                            </div>
+                          )}
+                          {member.institution && (
+                            <div>
+                              <p className="text-gray-600">Institution</p>
+                              <p className="font-medium text-gray-900">{member.institution}</p>
+                            </div>
+                          )}
+                          {member.studentEmail && (
+                            <div>
+                              <p className="text-gray-600">Student Email</p>
+                              <p className="font-medium text-gray-900">{member.studentEmail}</p>
+                            </div>
+                          )}
+                          {member.courseOfStudy && (
+                            <div>
+                              <p className="text-gray-600"> Course of Study</p>
+                              <p className="font-medium text-gray-900">{member.courseOfStudy}</p>
+                            </div>
+                          )}
+                          {(member.idCardUrl || member.studentIdCard) && (
                             <div className="col-span-2">
-                              <p className="text-gray-600 mb-1">Student ID Card</p>
-                              <a href={member.studentIdCard} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 text-xs">
-                                📎 View Uploaded Document
-                              </a>
+                              <p className="text-gray-600 mb-2">ID Card / NIC / Passport</p>
+                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                {(member.idCardUrl || member.studentIdCard)?.toLowerCase().endsWith('.pdf') ? (
+                                  <div className="flex items-center gap-3">
+                                    <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                                    </svg>
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium text-gray-900">PDF Document</p>
+                                      <a 
+                                        href={member.idCardUrl || member.studentIdCard} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                                      >
+                                        Open PDF Document
+                                      </a>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <img 
+                                      src={member.idCardUrl || member.studentIdCard} 
+                                      alt="ID Card" 
+                                      className="max-w-full h-auto rounded border border-gray-300 mb-2"
+                                      style={{ maxHeight: '300px' }}
+                                    />
+                                    <a 
+                                      href={member.idCardUrl || member.studentIdCard} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer" 
+                                      className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                      </svg>
+                                      View Full Size
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
                           {member.parentConsent !== undefined && (
@@ -1315,7 +1450,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                           {member.parentFirstName && (
                             <>
                               <div className="col-span-2 mt-3 pt-3 border-t border-gray-200">
-                                <h5 className="font-semibold text-gray-900 mb-2"> Parent/Guardian Information</h5>
+                                <h5 className="font-semibold text-gray-900 mb-2">Parent/Guardian Information</h5>
                               </div>
                               <div>
                                 <p className="text-gray-600">Parent First Name</p>
@@ -1326,11 +1461,11 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                                 <p className="font-medium text-gray-900">{member.parentLastName || 'N/A'}</p>
                               </div>
                               <div>
-                                <p className="text-gray-600"> Parent Email</p>
+                                <p className="text-gray-600">Parent Email</p>
                                 <p className="font-medium text-gray-900">{member.parentEmail}</p>
                               </div>
                               <div>
-                                <p className="text-gray-600"> Parent Phone</p>
+                                <p className="text-gray-600">Parent Phone</p>
                                 <p className="font-medium text-gray-900">{member.parentPhone}</p>
                               </div>
                             </>
@@ -1339,72 +1474,97 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                           {/* Address */}
                           {member.postalAddress && (
                             <div className="col-span-2">
-                              <p className="text-gray-600"> Postal Address</p>
+                              <p className="text-gray-600">Postal Address</p>
                               <p className="font-medium text-gray-900">{member.postalAddress}</p>
                             </div>
                           )}
                         </div>
                       </div>
-                    ));
-                  })()}
+                        ))}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
               {/* Payment Info */}
-              {viewingRegistration.payment && (
+              {primaryReg.payment && (
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                     Payment Information
-                    {viewingRegistration.payment.paymentMethod === 'PAYHERE' && (
+                    {primaryReg.payment.paymentMethod === 'PAYHERE' && (
                       <span className="text-sm font-medium bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
                         PayHere Payment
                       </span>
                     )}
-                    {viewingRegistration.payment.paymentMethod === 'BANK_TRANSFER' && (
+                    {primaryReg.payment.paymentMethod === 'BANK_TRANSFER' && (
                       <span className="text-sm font-medium bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
                         Bank Transfer
                       </span>
                     )}
                   </h3>
+                  
+                  {/* Show individual amounts for each type */}
+                  {allRegs.length > 1 && (
+                    <div className="mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Payment Breakdown:</p>
+                      <div className="space-y-1">
+                        {allRegs.map((reg: Registration, idx: number) => (
+                          <div key={idx} className="flex justify-between text-sm">
+                            <span className="text-gray-600">{reg.registrationType.name}</span>
+                            <span className="font-medium text-gray-900">LKR {reg.amountPaid.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-gray-600">Amount Paid</p>
-                      <p className="text-base font-medium text-gray-900">LKR {viewingRegistration.amountPaid.toLocaleString()}</p>
+                      <p className="text-sm text-gray-600">Total Amount Paid</p>
+                      <p className="text-base font-medium text-gray-900">
+                        LKR {allRegs.reduce((sum: number, r: Registration) => sum + r.amountPaid, 0).toLocaleString()}
+                      </p>
+                      {allRegs.length > 1 && (
+                        <p className="text-xs text-blue-600 mt-1 font-medium">
+                          {allRegs.length} types in one payment
+                        </p>
+                      )}
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Payment Method</p>
-                      <p className="text-base font-medium text-gray-900">{viewingRegistration.payment.paymentMethod}</p>
+                      <p className="text-base font-medium text-gray-900">{primaryReg.payment.paymentMethod}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Order ID</p>
-                      <p className="text-base font-medium text-gray-900 font-mono">{viewingRegistration.payment.orderId}</p>
+                      <p className="text-base font-medium text-gray-900 font-mono">{primaryReg.payment.orderId}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Payment Status</p>
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
-                        viewingRegistration.payment.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                        viewingRegistration.payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                        viewingRegistration.payment.status === 'FAILED' ? 'bg-red-100 text-red-800' :
+                        primaryReg.payment.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                        primaryReg.payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                        primaryReg.payment.status === 'FAILED' ? 'bg-red-100 text-red-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {viewingRegistration.payment.status === 'COMPLETED' && '✓ '}
-                        {viewingRegistration.payment.status === 'FAILED' && '✗ '}
-                        {viewingRegistration.payment.status === 'PENDING' && '⏳ '}
-                        {viewingRegistration.payment.status}
+                        {primaryReg.payment.status === 'COMPLETED' && '✓ '}
+                        {primaryReg.payment.status === 'FAILED' && '✗ '}
+                        {primaryReg.payment.status === 'PENDING' && '⏳ '}
+                        {primaryReg.payment.status}
                       </span>
                     </div>
-                    {viewingRegistration.payment.completedAt && (
+                    {primaryReg.payment.completedAt && (
                       <div className="col-span-2">
                         <p className="text-sm text-gray-600">Payment Completed At</p>
                         <p className="text-base font-medium text-gray-900">
-                          {format(new Date(viewingRegistration.payment.completedAt), 'MMM dd, yyyy HH:mm:ss')}
+                          {format(new Date(primaryReg.payment.completedAt), 'MMM dd, yyyy HH:mm:ss')}
                         </p>
                       </div>
                     )}
                   </div>
 
                   {/* PayHere Specific Details */}
-                  {viewingRegistration.payment.paymentMethod === 'PAYHERE' && (
+                  {primaryReg.payment.paymentMethod === 'PAYHERE' && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <h4 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         PayHere Transaction Details
@@ -1414,44 +1574,44 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                           <div>
                             <p className="text-gray-600">Transaction Status</p>
                             <p className={`font-bold text-base ${
-                              viewingRegistration.payment.status === 'COMPLETED' ? 'text-green-600' :
-                              viewingRegistration.payment.status === 'FAILED' ? 'text-red-600' :
+                              primaryReg.payment.status === 'COMPLETED' ? 'text-green-600' :
+                              primaryReg.payment.status === 'FAILED' ? 'text-red-600' :
                               'text-yellow-600'
                             }`}>
-                              {viewingRegistration.payment.status === 'COMPLETED' && 'Payment Successful'}
-                              {viewingRegistration.payment.status === 'FAILED' && 'Payment Failed'}
-                              {viewingRegistration.payment.status === 'PENDING' && '⏳ Payment Processing'}
-                              {!['COMPLETED', 'FAILED', 'PENDING'].includes(viewingRegistration.payment.status) && viewingRegistration.payment.status}
+                              {primaryReg.payment.status === 'COMPLETED' && 'Payment Successful'}
+                              {primaryReg.payment.status === 'FAILED' && 'Payment Failed'}
+                              {primaryReg.payment.status === 'PENDING' && ' Payment Processing'}
+                              {!['COMPLETED', 'FAILED', 'PENDING'].includes(primaryReg.payment.status) && primaryReg.payment.status}
                             </p>
                           </div>
                           <div>
                             <p className="text-gray-600">Order Reference</p>
-                            <p className="font-medium text-gray-900 font-mono">{viewingRegistration.payment.orderId}</p>
+                            <p className="font-medium text-gray-900 font-mono">{primaryReg.payment.orderId}</p>
                           </div>
-                          {viewingRegistration.payment.metadata && (
+                          {primaryReg.payment.metadata && (
                             <>
-                              {(viewingRegistration.payment.metadata as any).payment_id && (
+                              {(primaryReg.payment.metadata as any).payment_id && (
                                 <div>
                                   <p className="text-gray-600">PayHere Payment ID</p>
-                                  <p className="font-medium text-gray-900 font-mono">{(viewingRegistration.payment.metadata as any).payment_id}</p>
+                                  <p className="font-medium text-gray-900 font-mono">{(primaryReg.payment.metadata as any).payment_id}</p>
                                 </div>
                               )}
-                              {(viewingRegistration.payment.metadata as any).method && (
+                              {(primaryReg.payment.metadata as any).method && (
                                 <div>
                                   <p className="text-gray-600">Payment Type</p>
-                                  <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).method}</p>
+                                  <p className="font-medium text-gray-900">{(primaryReg.payment.metadata as any).method}</p>
                                 </div>
                               )}
-                              {(viewingRegistration.payment.metadata as any).card_holder_name && (
+                              {(primaryReg.payment.metadata as any).card_holder_name && (
                                 <div>
                                   <p className="text-gray-600">Card Holder</p>
-                                  <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).card_holder_name}</p>
+                                  <p className="font-medium text-gray-900">{(primaryReg.payment.metadata as any).card_holder_name}</p>
                                 </div>
                               )}
-                              {(viewingRegistration.payment.metadata as any).card_no && (
+                              {(primaryReg.payment.metadata as any).card_no && (
                                 <div>
                                   <p className="text-gray-600">Card Number</p>
-                                  <p className="font-medium text-gray-900 font-mono">{(viewingRegistration.payment.metadata as any).card_no}</p>
+                                  <p className="font-medium text-gray-900 font-mono">{(primaryReg.payment.metadata as any).card_no}</p>
                                 </div>
                               )}
                             </>
@@ -1462,40 +1622,40 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                   )}
 
                   {/* Customer Details from Payment Metadata */}
-                  {viewingRegistration.payment.metadata && 
-                   typeof viewingRegistration.payment.metadata === 'object' && 
-                   'customerDetails' in viewingRegistration.payment.metadata && (
+                  {primaryReg.payment.metadata && 
+                   typeof primaryReg.payment.metadata === 'object' && 
+                   'customerDetails' in primaryReg.payment.metadata && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <h4 className="text-base font-semibold text-gray-900 mb-3">Customer Contact Details</h4>
                       <div className="grid grid-cols-2 gap-3 text-sm">
-                        {(viewingRegistration.payment.metadata as any).customerDetails.name && (
+                        {(primaryReg.payment.metadata as any).customerDetails.name && (
                           <div>
                             <p className="text-gray-600">Name</p>
-                            <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).customerDetails.name}</p>
+                            <p className="font-medium text-gray-900">{(primaryReg.payment.metadata as any).customerDetails.name}</p>
                           </div>
                         )}
-                        {(viewingRegistration.payment.metadata as any).customerDetails.email && (
+                        {(primaryReg.payment.metadata as any).customerDetails.email && (
                           <div>
                             <p className="text-gray-600"> Email</p>
-                            <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).customerDetails.email}</p>
+                            <p className="font-medium text-gray-900">{(primaryReg.payment.metadata as any).customerDetails.email}</p>
                           </div>
                         )}
-                        {(viewingRegistration.payment.metadata as any).customerDetails.phone && (
+                        {(primaryReg.payment.metadata as any).customerDetails.phone && (
                           <div>
                             <p className="text-gray-600"> Phone</p>
-                            <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).customerDetails.phone}</p>
+                            <p className="font-medium text-gray-900">{(primaryReg.payment.metadata as any).customerDetails.phone}</p>
                           </div>
                         )}
-                        {(viewingRegistration.payment.metadata as any).customerDetails.address && (
+                        {(primaryReg.payment.metadata as any).customerDetails.address && (
                           <div>
                             <p className="text-gray-600"> Address</p>
-                            <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).customerDetails.address}</p>
+                            <p className="font-medium text-gray-900">{(primaryReg.payment.metadata as any).customerDetails.address}</p>
                           </div>
                         )}
-                        {(viewingRegistration.payment.metadata as any).customerDetails.country && (
+                        {(primaryReg.payment.metadata as any).customerDetails.country && (
                           <div>
                             <p className="text-gray-600"> Country</p>
-                            <p className="font-medium text-gray-900">{(viewingRegistration.payment.metadata as any).customerDetails.country}</p>
+                            <p className="font-medium text-gray-900">{(primaryReg.payment.metadata as any).customerDetails.country}</p>
                           </div>
                         )}
                       </div>
@@ -1503,9 +1663,9 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                   )}
 
                   {/* Audit Trail - Show verification/rejection history */}
-                  {viewingRegistration.payment.metadata && 
-                   ((viewingRegistration.payment.metadata as any).verifiedBy || 
-                    (viewingRegistration.payment.metadata as any).revertedBy) && (
+                  {primaryReg.payment.metadata && 
+                   ((primaryReg.payment.metadata as any).verifiedBy || 
+                    (primaryReg.payment.metadata as any).revertedBy) && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <h4 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1515,40 +1675,40 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       </h4>
                       <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
                         {/* Verification Info */}
-                        {(viewingRegistration.payment.metadata as any).verifiedBy && (
+                        {(primaryReg.payment.metadata as any).verifiedBy && (
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              {(viewingRegistration.payment.metadata as any).action === 'APPROVED' ? (
+                              {(primaryReg.payment.metadata as any).action === 'APPROVED' ? (
                                 <CheckCircle className="w-4 h-4 text-green-600" />
                               ) : (
                                 <X className="w-4 h-4 text-red-600" />
                               )}
                               <span className="font-semibold text-gray-900">
-                                {(viewingRegistration.payment.metadata as any).action === 'APPROVED' ? 'Approved' : 'Rejected'} by:
+                                {(primaryReg.payment.metadata as any).action === 'APPROVED' ? 'Approved' : 'Rejected'} by:
                               </span>
                               <span className="text-gray-700">
-                                {(viewingRegistration.payment.metadata as any).verifiedByName || 'Unknown'}
+                                {(primaryReg.payment.metadata as any).verifiedByName || 'Unknown'}
                               </span>
                             </div>
                             <p className="text-gray-600 ml-6">
-                              {(viewingRegistration.payment.metadata as any).verifiedBy}
+                              {(primaryReg.payment.metadata as any).verifiedBy}
                             </p>
-                            {(viewingRegistration.payment.metadata as any).verifiedAt && (
+                            {(primaryReg.payment.metadata as any).verifiedAt && (
                               <p className="text-gray-600 ml-6">
-                                🕒 {format(new Date((viewingRegistration.payment.metadata as any).verifiedAt), 'MMM dd, yyyy HH:mm:ss')}
+                                🕒 {format(new Date((primaryReg.payment.metadata as any).verifiedAt), 'MMM dd, yyyy HH:mm:ss')}
                               </p>
                             )}
-                            {(viewingRegistration.payment.metadata as any).rejectReason && (
+                            {(primaryReg.payment.metadata as any).rejectReason && (
                               <div className="ml-6 mt-2 bg-red-50 border border-red-200 rounded p-2">
                                 <p className="text-xs font-medium text-red-900 mb-1">Rejection Reason:</p>
-                                <p className="text-sm text-red-800">{(viewingRegistration.payment.metadata as any).rejectReason}</p>
+                                <p className="text-sm text-red-800">{(primaryReg.payment.metadata as any).rejectReason}</p>
                               </div>
                             )}
                           </div>
                         )}
 
                         {/* Revert Info */}
-                        {(viewingRegistration.payment.metadata as any).revertedBy && (
+                        {(primaryReg.payment.metadata as any).revertedBy && (
                           <div className="space-y-1 mt-3 pt-3 border-t border-gray-300">
                             <div className="flex items-center gap-2">
                               <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1556,26 +1716,26 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                               </svg>
                               <span className="font-semibold text-gray-900">Reverted by:</span>
                               <span className="text-gray-700">
-                                {(viewingRegistration.payment.metadata as any).revertedByName || 'Unknown'}
+                                {(primaryReg.payment.metadata as any).revertedByName || 'Unknown'}
                               </span>
                             </div>
                             <p className="text-gray-600 ml-6">
-                              {(viewingRegistration.payment.metadata as any).revertedBy}
+                              {(primaryReg.payment.metadata as any).revertedBy}
                             </p>
-                            {(viewingRegistration.payment.metadata as any).revertedAt && (
+                            {(primaryReg.payment.metadata as any).revertedAt && (
                               <p className="text-gray-600 ml-6">
-                                🕒 {format(new Date((viewingRegistration.payment.metadata as any).revertedAt), 'MMM dd, yyyy HH:mm:ss')}
+                                🕒 {format(new Date((primaryReg.payment.metadata as any).revertedAt), 'MMM dd, yyyy HH:mm:ss')}
                               </p>
                             )}
-                            {(viewingRegistration.payment.metadata as any).previousStatus && (
+                            {(primaryReg.payment.metadata as any).previousStatus && (
                               <p className="text-gray-600 ml-6">
-                                📝 Previous Status: <span className="font-medium">{(viewingRegistration.payment.metadata as any).previousStatus}</span>
+                                📝 Previous Status: <span className="font-medium">{(primaryReg.payment.metadata as any).previousStatus}</span>
                               </p>
                             )}
-                            {(viewingRegistration.payment.metadata as any).revertReason && (
+                            {(primaryReg.payment.metadata as any).revertReason && (
                               <div className="ml-6 mt-2 bg-amber-50 border border-amber-200 rounded p-2">
                                 <p className="text-xs font-medium text-amber-900 mb-1">Revert Reason:</p>
-                                <p className="text-sm text-amber-800">{(viewingRegistration.payment.metadata as any).revertReason}</p>
+                                <p className="text-sm text-amber-800">{(primaryReg.payment.metadata as any).revertReason}</p>
                               </div>
                             )}
                           </div>
@@ -1585,13 +1745,13 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                   )}
 
                   {/* Bank Transfer Section */}
-                  {viewingRegistration.payment.paymentMethod === 'BANK_TRANSFER' && 
-                   viewingRegistration.payment.metadata && 
-                   typeof viewingRegistration.payment.metadata === 'object' && (
+                  {primaryReg.payment.paymentMethod === 'BANK_TRANSFER' && 
+                   primaryReg.payment.metadata && 
+                   typeof primaryReg.payment.metadata === 'object' && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       {/* WhatsApp-Only (No Upload) - Most Prominent */}
-                      {(viewingRegistration.payment.metadata as any).willSendViaWhatsApp && 
-                       !('bankSlipUrl' in viewingRegistration.payment.metadata) && (
+                      {(primaryReg.payment.metadata as any).willSendViaWhatsApp && 
+                       !('bankSlipUrl' in primaryReg.payment.metadata) && (
                         <div className="mb-3 bg-amber-50 border-2 border-amber-400 rounded-lg p-4">
                           <div className="flex items-start gap-3">
                             <div className="flex-1">
@@ -1605,8 +1765,8 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                                 </p>
                                 <div className="bg-white border border-amber-300 rounded p-3 mt-3">
                                   <p className="text-amber-900 font-semibold mb-2">📱 Contact Details:</p>
-                                  {(viewingRegistration.payment.metadata as any).customerDetails?.phone && (() => {
-                                    const rawPhone = (viewingRegistration.payment.metadata as any).customerDetails.phone;
+                                  {(primaryReg.payment.metadata as any).customerDetails?.phone && (() => {
+                                    const rawPhone = (primaryReg.payment.metadata as any).customerDetails.phone;
                                     const formattedPhone = formatPhoneForWhatsApp(rawPhone);
                                     return (
                                       <p className="text-amber-900 mb-1">
@@ -1628,14 +1788,14 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                                       </p>
                                     );
                                   })()}
-                                  {(viewingRegistration.payment.metadata as any).customerDetails?.email && (
+                                  {(primaryReg.payment.metadata as any).customerDetails?.email && (
                                     <p className="text-amber-900">
                                       <span className="font-medium">Email:</span>{' '}
                                       <a 
-                                        href={`mailto:${(viewingRegistration.payment.metadata as any).customerDetails.email}`}
+                                        href={`mailto:${(primaryReg.payment.metadata as any).customerDetails.email}`}
                                         className="text-blue-600 hover:text-blue-700 underline"
                                       >
-                                        {(viewingRegistration.payment.metadata as any).customerDetails.email}
+                                        {(primaryReg.payment.metadata as any).customerDetails.email}
                                       </a>
                                     </p>
                                   )}
@@ -1674,8 +1834,8 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       )}
 
                       {/* WhatsApp + Upload (Both methods) */}
-                      {(viewingRegistration.payment.metadata as any).willSendViaWhatsApp && 
-                       (viewingRegistration.payment.metadata as any).bankSlipUrl && (
+                      {(primaryReg.payment.metadata as any).willSendViaWhatsApp && 
+                       (primaryReg.payment.metadata as any).bankSlipUrl && (
                         <div className="mb-3 bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
                           <div className="flex items-start gap-3">
                             <span className="text-2xl">💬</span>
@@ -1690,8 +1850,8 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       )}
 
                       {/* No Slip Uploaded at All (not WhatsApp-only, just nothing) */}
-                      {!(viewingRegistration.payment.metadata as any).bankSlipUrl && 
-                       !(viewingRegistration.payment.metadata as any).willSendViaWhatsApp && (
+                      {!(primaryReg.payment.metadata as any).bankSlipUrl && 
+                       !(primaryReg.payment.metadata as any).willSendViaWhatsApp && (
                         <div className="mb-3 bg-red-50 border-2 border-red-400 rounded-lg p-4">
                           <div className="flex items-start gap-3">
                             <div className="flex-1">
@@ -1706,23 +1866,23 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                                   <li>Check if slip was sent through other channels</li>
                                   <li>Verify payment received in bank account before approving</li>
                                 </ul>
-                                {(viewingRegistration.payment.metadata as any).customerDetails?.phone && (
+                                {(primaryReg.payment.metadata as any).customerDetails?.phone && (
                                   <div className="mt-2 pt-2 border-t border-red-200">
                                     <p className="text-red-900 text-sm">
                                       <span className="font-medium">📱 Phone:</span>{' '}
-                                      {(viewingRegistration.payment.metadata as any).customerDetails.phone}
+                                      {(primaryReg.payment.metadata as any).customerDetails.phone}
                                     </p>
                                   </div>
                                 )}
-                                {(viewingRegistration.payment.metadata as any).customerDetails?.email && (
+                                {(primaryReg.payment.metadata as any).customerDetails?.email && (
                                   <div className="mt-1">
                                     <p className="text-red-900 text-sm">
                                       <span className="font-medium">📧 Email:</span>{' '}
                                       <a 
-                                        href={`mailto:${(viewingRegistration.payment.metadata as any).customerDetails.email}`}
+                                        href={`mailto:${(primaryReg.payment.metadata as any).customerDetails.email}`}
                                         className="text-blue-600 hover:text-blue-700 underline"
                                       >
-                                        {(viewingRegistration.payment.metadata as any).customerDetails.email}
+                                        {(primaryReg.payment.metadata as any).customerDetails.email}
                                       </a>
                                     </p>
                                   </div>
@@ -1734,11 +1894,11 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       )}
 
                       {/* Bank Slip if uploaded */}
-                      {(viewingRegistration.payment.metadata as any).bankSlipUrl && (
+                      {(primaryReg.payment.metadata as any).bankSlipUrl && (
                         <>
                           <div className="flex items-center justify-between mb-3">
                             <h4 className="text-base font-semibold text-gray-900">Bank Transfer Slip</h4>
-                        {viewingRegistration.payment.status === 'PENDING' && (
+                        {primaryReg.payment.status === 'PENDING' && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                             Awaiting Verification
                           </span>
@@ -1748,13 +1908,13 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                       {/* Bank Slip Image */}
                       <div className="mb-4">
                         <a 
-                          href={(viewingRegistration.payment.metadata as any).bankSlipUrl} 
+                          href={(primaryReg.payment.metadata as any).bankSlipUrl} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="block border-2 border-gray-200 rounded-lg overflow-hidden hover:border-orange-500 transition-colors"
                         >
                           <img 
-                            src={(viewingRegistration.payment.metadata as any).bankSlipUrl} 
+                            src={(primaryReg.payment.metadata as any).bankSlipUrl} 
                             alt="Bank Transfer Slip" 
                             className="w-full h-auto max-h-96 object-contain bg-gray-50"
                             onError={(e) => {
@@ -1775,12 +1935,12 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                           />
                         </a>
                         <p className="text-xs text-gray-500 mt-2">
-                          File: {(viewingRegistration.payment.metadata as any).bankSlipFileName || 'bank-slip'}
+                          File: {(primaryReg.payment.metadata as any).bankSlipFileName || 'bank-slip'}
                         </p>
                       </div>
 
                       {/* Verification Buttons */}
-                      {viewingRegistration.payment.status === 'PENDING' && (
+                      {primaryReg.payment.status === 'PENDING' && (
                         <div className="flex gap-3">
                           <button
                             onClick={() => {
@@ -1804,7 +1964,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                         </div>
                       )}
 
-                      {viewingRegistration.payment.status === 'COMPLETED' && (
+                      {primaryReg.payment.status === 'COMPLETED' && (
                         <div className="space-y-3">
                           <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                             <div className="flex items-center gap-2 text-green-800">
@@ -1825,7 +1985,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                         </div>
                       )}
 
-                      {viewingRegistration.payment.status === 'FAILED' && (
+                      {primaryReg.payment.status === 'FAILED' && (
                         <div className="space-y-3">
                           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                             <div className="flex items-center gap-2 text-red-800">
@@ -1859,22 +2019,22 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                   <div>
                     <p className="text-sm text-gray-600">Created At</p>
                     <p className="text-base font-medium text-gray-900">
-                      {format(new Date(viewingRegistration.createdAt), 'MMM dd, yyyy HH:mm')}
+                      {format(new Date(primaryReg.createdAt), 'MMM dd, yyyy HH:mm')}
                     </p>
                   </div>
-                  {viewingRegistration.confirmedAt && (
+                  {primaryReg.confirmedAt && (
                     <div>
                       <p className="text-sm text-gray-600">Confirmed At</p>
                       <p className="text-base font-medium text-green-600">
-                        {format(new Date(viewingRegistration.confirmedAt), 'MMM dd, yyyy HH:mm')}
+                        {format(new Date(primaryReg.confirmedAt), 'MMM dd, yyyy HH:mm')}
                       </p>
                     </div>
                   )}
-                  {viewingRegistration.submittedAt && (
+                  {primaryReg.submittedAt && (
                     <div>
                       <p className="text-sm text-gray-600">Submitted At</p>
                       <p className="text-base font-medium text-blue-600">
-                        {format(new Date(viewingRegistration.submittedAt), 'MMM dd, yyyy HH:mm')}
+                        {format(new Date(primaryReg.submittedAt), 'MMM dd, yyyy HH:mm')}
                       </p>
                     </div>
                   )}
@@ -1907,7 +2067,8 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Revert Payment Dialog */}
       <RevertPaymentDialog
@@ -1945,3 +2106,4 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
     </div>
   );
 }
+
