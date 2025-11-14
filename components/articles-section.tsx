@@ -131,7 +131,7 @@ function ArticleCard({ article }: { article: WordPressPost }) {
           <h3 className="text-lg font-semibold group-hover:[color:#FFA000]">{title}</h3>
         </Link>
         <div className="text-sm text-gray-500 mb-2">{date}</div>
-        <p className="text-gray-700 mb-3">{excerpt.substring(0, 450)}...</p>
+        <p className="text-gray-700 mb-3 text-justify">{excerpt.substring(0, 450)}...</p>
       </div>
 
       <div className="mt-auto">

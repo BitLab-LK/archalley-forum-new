@@ -73,7 +73,7 @@ export default function RootLayout({
             }
           }
         `}</style>
-        {/* Google tag (gtag.js) - Direct in head for Google detection */}
+        {/* Google tag (gtag.js) */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-JQPH81Z02Y"></script>
         <script
           dangerouslySetInnerHTML={{
@@ -81,6 +81,7 @@ export default function RootLayout({
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
+
               gtag('config', 'G-JQPH81Z02Y');
             `,
           }}
