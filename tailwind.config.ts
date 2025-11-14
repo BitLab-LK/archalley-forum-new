@@ -85,7 +85,7 @@ const config: Config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#FFA500",
+          DEFAULT: "#FFA000",
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
@@ -113,9 +113,11 @@ const config: Config = {
           foreground: "hsl(var(--card-foreground))",
         },
         yellow: {
-          400: "#FFD700",
-          600: "#D4AF37",
-          700: "#B8860B",
+          400: "#FFA000",
+          500: "#FFA000",
+          600: "#FFA000",
+          700: "#FFA000",
+          800: "#FFA000",
         },
         archalley: {
           black: "#000000",

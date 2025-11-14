@@ -62,9 +62,12 @@ export default function SidebarFacebook({ className }: SidebarFacebookProps) {
   return (
     <Card className={`${className} border-0 shadow-sm bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm overflow-hidden`}>
       <CardHeader className="pb-2 px-4 pt-4">
-        <CardTitle className="text-base text-gray-900 dark:text-gray-100">
-          Follow us on Facebook
-        </CardTitle>
+        <div className="flex items-center">
+          <CardTitle className="text-base text-gray-900 dark:text-gray-100 mr-3 whitespace-nowrap">
+            Follow us on Facebook
+          </CardTitle>
+          <div className="flex-1 border-b-[5px] border-black"></div>
+        </div>
       </CardHeader>
       <CardContent className="px-4 pb-4">
         {/* Live Facebook Page Plugin - Scrollable */}

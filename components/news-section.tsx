@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
 import { 
   getPostsByCategory,
   getAllCategories,
@@ -85,7 +84,10 @@ export default function NewsSection({ initialNews = [], initialCategories = [] }
 
   return (
     <div className="mb-8">
-      <h2 className="text-2xl font-bold mb-6 pb-2 border-b border-gray-200">News</h2>
+      <div className="flex items-center mb-6 pb-2">
+        <h2 className="text-2xl font-bold mr-4 whitespace-nowrap">News</h2>
+        <div className="flex-1 border-b-[5px] border-black"></div>
+      </div>
 
       <div className="space-y-6">
         {news.map((newsItem) => (
@@ -106,7 +108,7 @@ function NewsCard({ news }: { news: WordPressPost }) {
     <div className="flex flex-col md:flex-row gap-4 border-b border-gray-200 pb-6">
       <div className="md:w-1/3">
         <Link href={`/${news.slug}`}>
-          <div className="relative h-48 w-full overflow-hidden rounded">
+          <div className="relative w-full overflow-hidden rounded" style={{ aspectRatio: '7/5' }}>
             <Image
               src={imageUrl || "/placeholder.svg"}
               alt={title}
@@ -119,15 +121,16 @@ function NewsCard({ news }: { news: WordPressPost }) {
 
       <div className="md:w-2/3">
         <Link href={`/${news.slug}`} className="block group">
-          <h3 className="text-xl font-semibold group-hover:text-yellow-600">{title}</h3>
+          <h3 className="text-xl font-semibold group-hover:[color:#FFA000]">{title}</h3>
         </Link>
         <div className="text-sm text-gray-500 mb-2">{date}</div>
-        <p className="text-gray-700 mb-3">{excerpt.substring(0, 150)}...</p>
+        <p className="text-gray-700 mb-3">{excerpt.substring(0, 450)}...</p>
         <Link
           href={`/${news.slug}`}
-          className="inline-flex items-center text-sm font-medium text-yellow-600 hover:text-yellow-800"
+          className="inline-block uppercase tracking-wider text-[11px] mt-[15px] px-[18px] py-[6px] border border-[#e0e0e0] transition-all duration-300 whitespace-nowrap text-[#1f2026] no-underline mb-[5px] hover:border-[#FFA000] hover:text-[#FFA000]"
+          style={{ letterSpacing: '0.05em' }}
         >
-          Read More <ArrowRight size={16} className="ml-1" />
+          Read More
         </Link>
       </div>
     </div>

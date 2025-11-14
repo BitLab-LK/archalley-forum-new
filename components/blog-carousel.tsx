@@ -27,6 +27,12 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
   const [isPaused, setIsPaused] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(true)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // Mouse drag state
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState(0)
+  const [dragOffset, setDragOffset] = useState(0)
+  const carouselRef = useRef<HTMLDivElement>(null)
 
   // Create duplicated posts for infinite scroll
   const duplicatedPosts = posts.length > 0 ? [...posts, ...posts, ...posts] : []
@@ -117,6 +123,59 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
     setIsPaused(false)
   }
 
+  // Mouse drag handlers
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return
+      const diff = e.clientX - dragStart
+      setDragOffset(diff)
+    }
+
+    const handleGlobalMouseUp = () => {
+      if (!isDragging) return
+      
+      setIsDragging(false)
+      setIsTransitioning(true)
+      
+      // Calculate how many posts to move based on drag distance
+      if (carouselRef.current) {
+        const cardWidth = carouselRef.current.offsetWidth / visiblePosts
+        const threshold = cardWidth * 0.3 // 30% of card width to trigger slide
+        
+        if (Math.abs(dragOffset) > threshold) {
+          if (dragOffset > 0) {
+            // Dragged right, go to previous
+            setCurrentIndex((prev) => Math.max(0, prev - 1))
+          } else {
+            // Dragged left, go to next
+            setCurrentIndex((prev) => prev + 1)
+          }
+        }
+      }
+      
+      setDragOffset(0)
+      setIsPaused(false)
+    }
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleGlobalMouseMove)
+      document.addEventListener('mouseup', handleGlobalMouseUp)
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove)
+      document.removeEventListener('mouseup', handleGlobalMouseUp)
+    }
+  }, [isDragging, dragStart, dragOffset, visiblePosts])
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true)
+    setDragStart(e.clientX)
+    setDragOffset(0)
+    setIsTransitioning(false)
+    setIsPaused(true)
+  }
+
   const fetchPosts = async () => {
     setIsLoading(true)
     setError(null)
@@ -156,32 +215,46 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
     return null
   }
 
-  return (
-    <div className="relative bg-white py-12">
-      <div className="w-full max-w-[1600px] mx-auto">
-        <div className="flex items-center justify-between mb-8 px-6">
-          <h2 className="text-3xl font-bold">Latest Posts</h2>
-        </div>
+  // Calculate transform with partials and drag offset
+  const getTransform = () => {
+    if (!carouselRef.current) return 'translateX(0)'
+    
+    const containerWidth = carouselRef.current.offsetWidth
+    const paddingLeft = (containerWidth * 100) / (visiblePosts * 4) / containerWidth * 100
+    const cardWidthPercent = 100 / visiblePosts
+    const baseTransform = -(currentIndex * cardWidthPercent)
+    const centerOffset = (100 - cardWidthPercent) / 2
+    const dragTransform = dragOffset ? (dragOffset / containerWidth) * 100 : 0
+    
+    return `translateX(calc(${baseTransform}% + ${centerOffset}% + ${dragTransform}%))`
+  }
 
+  return (
+    <div className="relative bg-white py-12 overflow-x-hidden">
+      <div className="container mx-auto px-4">
         <div 
-          className="relative"
+          className="relative flex justify-center"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          <div className="overflow-hidden">
+          <div 
+            ref={carouselRef}
+            className="overflow-hidden w-full max-w-full cursor-grab active:cursor-grabbing select-none"
+            onMouseDown={handleMouseDown}
+          >
             {/* 
-              Slide by 1 full post at a time with partials always visible:
-              - Each slide moves exactly 1 full card width
-              - Offset ensures partials are visible on both left and right
-              - Transform calculation moves by full card width
-              - Padding creates space for partial visibility
+              Slide by 1 full post at a time with partials visible:
+              - Padding shows partials from first and last slides
+              - Transform calculation centers the visible posts
+              - Drag offset allows smooth dragging
             */}
             <div
-              className={`flex ${isTransitioning ? 'transition-transform duration-500 ease-in-out' : ''}`}
+              className={`flex ${isTransitioning && !isDragging ? 'transition-transform duration-500 ease-in-out' : ''}`}
               style={{ 
-                transform: `translateX(calc(-${(currentIndex * 100) / visiblePosts}% + ${100 / (visiblePosts * 2)}%))`,
+                transform: getTransform(),
                 paddingLeft: `${100 / (visiblePosts * 4)}%`,
-                paddingRight: `${100 / (visiblePosts * 4)}%`
+                paddingRight: `${100 / (visiblePosts * 4)}%`,
+                gap: '5px'
               }}
             >
               {duplicatedPosts.map((post, index) => {
@@ -191,9 +264,17 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
                 const date = formatDate(post.date)
 
                 return (
-                  <div key={`${post.id}-${index}`} className="flex-shrink-0 px-0.5" style={{ width: `${100 / visiblePosts}%` }}>
-                    <Link href={`/${post.slug}`} className="block group">
-                      <div className="relative w-full overflow-hidden border-4 border-white shadow-xl hover:shadow-2xl transition-shadow duration-300" style={{ paddingBottom: '140%' }}>
+                  <div key={`${post.id}-${index}`} className="flex-shrink-0" style={{ width: `${100 / visiblePosts}%` }}>
+                    <Link 
+                      href={`/${post.slug}`} 
+                      className="block group"
+                      onClick={(e) => {
+                        if (isDragging || Math.abs(dragOffset) > 10) {
+                          e.preventDefault()
+                        }
+                      }}
+                    >
+                      <div className="relative w-full overflow-hidden border-4 border-white shadow-xl hover:shadow-2xl transition-shadow duration-300" style={{ aspectRatio: '9/12' }}>
                         <Image
                           src={imageUrl || "/placeholder.svg"}
                           alt={title}
@@ -208,8 +289,8 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
                         {/* Content overlay */}
                         <div className="absolute inset-0 flex flex-col justify-end p-6">
                           {/* Category Badge */}
-                          <div className="mb-3">
-                            <span className="inline-block px-4 py-2 bg-orange-500 text-white text-xs font-bold uppercase tracking-wider shadow-lg">
+                          <div className="mb-2">
+                            <span className="inline-block px-2 py-1 text-white text-[10px] font-semibold uppercase tracking-wide shadow-md" style={{ backgroundColor: '#FFA000' }}>
                               {decodeHtmlEntities(category.name)}
                             </span>
                           </div>

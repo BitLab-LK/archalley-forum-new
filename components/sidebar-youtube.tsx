@@ -56,9 +56,12 @@ export default function SidebarYouTube({ className }: SidebarYouTubeProps) {
   return (
     <Card className={`${className} border-0 shadow-sm bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm`}>
       <CardHeader className="pb-2 px-4 pt-4">
-        <CardTitle className="text-base text-gray-900 dark:text-gray-100">
-          We're on YouTube
-        </CardTitle>
+        <div className="flex items-center">
+          <CardTitle className="text-base text-gray-900 dark:text-gray-100 mr-3 whitespace-nowrap">
+            We're on YouTube
+          </CardTitle>
+          <div className="flex-1 border-b-[5px] border-black"></div>
+        </div>
       </CardHeader>
       <CardContent className="px-4 pb-4 space-y-3">
         {/* Video Thumbnail/Embed */}

@@ -156,17 +156,18 @@ function ArchAlleySidebar() {
       {/* 4. Trending WordPress Posts */}
       <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-orange-50/30 dark:from-gray-900 dark:to-orange-900/10 smooth-transition hover-lift animate-fade-in-up">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between text-lg font-semibold">
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center">
+            <CardTitle className="flex items-center space-x-2 text-lg font-semibold mr-3">
               <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/30">
                 <TrendingUp className={cn("w-4 h-4 text-orange-600 dark:text-orange-400", isWordPressLoading && "animate-pulse")} />
               </div>
-              <span className="text-gray-900 dark:text-gray-100">Trending</span>
-            </div>
+              <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap">Trending</span>
+            </CardTitle>
+            <div className="flex-1 border-b-[5px] border-black"></div>
             {isWordPressLoading && (
-              <div className="w-4 h-4 border-2 border-orange-200 border-t-orange-600 rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-orange-200 border-t-orange-600 rounded-full animate-spin ml-3" />
             )}
-          </CardTitle>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4 pt-0">
           {isWordPressLoading ? (

@@ -7,6 +7,8 @@ import AdBannerComponent from "@/components/ad-banner"
 import { AdSessionManager } from "@/components/ad-session-manager"
 import SiteLayout from "@/components/site-layout"
 import { getAllPosts, getPostsByCategory, type WordPressPost } from "@/lib/wordpress-api"
+import Image from "next/image"
+import Link from "next/link"
 
 export default async function MainPage() {
   // Fetch latest posts from multiple WordPress categories
@@ -90,16 +92,28 @@ export default async function MainPage() {
         <ServerNewsSection />
       </SiteLayout>
 
-      {/* Horizontal Ad Banner */}
+      {/* Static Bottom Ad Banner */}
       <div className="container mx-auto px-4 py-8">
-        <AdBannerComponent 
-          size="970x180" 
-          className="w-full rounded-lg overflow-hidden" 
-          positionId="horizontal-ad-2"
-          autoRotate={true}
-          rotationInterval={60}
-          showLabel={false}
-        />
+        <div className="w-full flex flex-col items-center">
+          <Link 
+            href="https://www.jaquar.lk/en/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="block"
+          >
+            <div className="relative overflow-hidden" style={{ width: '970px', height: '180px', maxWidth: '100%' }}>
+              <Image
+                src="https://wp.archalley.com/wp-content/uploads/2025/02/Exel-Banner-970-x-180-footer-banner.webp"
+                alt="Exel Advertisement"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 970px"
+                priority={false}
+              />
+            </div>
+          </Link>
+          <div className="text-center mt-2 text-xs uppercase tracking-[0.35em] text-gray-500">ADVERTISEMENT</div>
+        </div>
       </div>
 
       {/* Instagram Slider */}
