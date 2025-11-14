@@ -21,6 +21,7 @@ import { Crown, Shield, LogOut } from "lucide-react"
 
 export default function TopBar() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [showMobileSearch, setShowMobileSearch] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const { user, isAuthenticated, isLoading } = useAuth()
@@ -64,11 +65,11 @@ export default function TopBar() {
   }
 
   return (
-    <div className="bg-gray-800 text-white py-2">
+    <div className="bg-gray-800 text-white py-2 relative">
       <div className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          {/* Top Menu */}
-          <div className="flex space-x-4 text-sm order-2 md:order-1">
+        <div className="flex flex-row justify-between items-center">
+          {/* Top Menu - Left side on mobile */}
+          <div className="flex space-x-4 text-sm flex-1 md:flex-none justify-start">
             <Link 
               href="/about" 
               className={`transition-colors ${
@@ -167,15 +168,30 @@ export default function TopBar() {
             )}
           </div>
 
-          {/* Search Box */}
-          <div className="w-full md:w-auto mb-2 md:mb-0 order-1 md:order-2">
-            <form onSubmit={handleSearch} className="flex items-center">
+          {/* Search Icon on Mobile - Right side */}
+          <div className="md:hidden ml-4">
+            <button
+              onClick={() => setShowMobileSearch(!showMobileSearch)}
+              className="text-white hover:text-[#FFA000] transition-colors p-2"
+              aria-label="Search"
+            >
+              <Search size={20} />
+            </button>
+          </div>
+
+          {/* Search Box - Desktop always visible, Mobile only when icon clicked */}
+          <div className={`w-full md:w-auto mb-2 md:mb-0 absolute md:relative top-full left-0 right-0 md:top-auto md:left-auto md:right-auto bg-gray-800 px-4 py-2 md:bg-transparent md:px-0 md:py-0 ${showMobileSearch ? 'block' : 'hidden md:block'}`}>
+            <form onSubmit={(e) => {
+              handleSearch(e)
+              setShowMobileSearch(false)
+            }} className="flex items-center">
               <input
                 type="text"
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-gray-700 text-white px-3 py-1 rounded-l-md focus:outline-none text-sm w-full md:w-64"
+                autoFocus={showMobileSearch}
               />
               <button 
                 type="submit" 

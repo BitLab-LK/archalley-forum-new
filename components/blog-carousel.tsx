@@ -33,6 +33,7 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
   const [dragStart, setDragStart] = useState(0)
   const [dragOffset, setDragOffset] = useState(0)
   const carouselRef = useRef<HTMLDivElement>(null)
+  const [isMobile, setIsMobile] = useState(false)
 
   // Create duplicated posts for infinite scroll
   const duplicatedPosts = posts.length > 0 ? [...posts, ...posts, ...posts] : []
@@ -51,13 +52,17 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 640) {
-        setVisiblePosts(1.5) // Show 1 full + partials on mobile
-      } else if (window.innerWidth < 768) {
-        setVisiblePosts(2.3) // Show 2 full + partials on small tablets
-      } else if (window.innerWidth < 1024) {
-        setVisiblePosts(3.5) // Show 3 full + partials on tablets
+        setVisiblePosts(1) // Show 1 full slide on mobile
+        setIsMobile(true)
       } else {
-        setVisiblePosts(4.8) // Show 4-5 full + partials on all larger screens
+        setIsMobile(false)
+        if (window.innerWidth < 768) {
+          setVisiblePosts(2.3) // Show 2 full + partials on small tablets
+        } else if (window.innerWidth < 1024) {
+          setVisiblePosts(3.5) // Show 3 full + partials on tablets
+        } else {
+          setVisiblePosts(4.8) // Show 4-5 full + partials on all larger screens
+        }
       }
     }
 
@@ -220,6 +225,14 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
     if (!carouselRef.current) return 'translateX(0)'
     
     const containerWidth = carouselRef.current.offsetWidth
+    
+    // On mobile, show only full slide with no offset
+    if (isMobile) {
+      const dragTransform = dragOffset ? (dragOffset / containerWidth) * 100 : 0
+      return `translateX(calc(-${currentIndex * 100}% + ${dragTransform}%))`
+    }
+    
+    // Desktop: show partials with centering
     const cardWidthPercent = 100 / visiblePosts
     const baseTransform = -(currentIndex * cardWidthPercent)
     const centerOffset = (100 - cardWidthPercent) / 2
@@ -251,9 +264,9 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
               className={`flex ${isTransitioning && !isDragging ? 'transition-transform duration-500 ease-in-out' : ''}`}
               style={{ 
                 transform: getTransform(),
-                paddingLeft: `${100 / (visiblePosts * 4)}%`,
-                paddingRight: `${100 / (visiblePosts * 4)}%`,
-                gap: '5px'
+                paddingLeft: isMobile ? '0' : `${100 / (visiblePosts * 4)}%`,
+                paddingRight: isMobile ? '0' : `${100 / (visiblePosts * 4)}%`,
+                gap: isMobile ? '0' : '5px'
               }}
             >
               {duplicatedPosts.map((post, index) => {
@@ -273,7 +286,7 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
                         }
                       }}
                     >
-                      <div className="relative w-full overflow-hidden border-4 border-white shadow-xl hover:shadow-2xl transition-shadow duration-300" style={{ aspectRatio: '9/12' }}>
+                      <div className="relative w-full overflow-hidden border-4 border-white shadow-xl hover:shadow-2xl transition-shadow duration-300" style={{ aspectRatio: isMobile ? '325/450' : '9/12' }}>
                         <Image
                           src={imageUrl || "/placeholder.svg"}
                           alt={title}

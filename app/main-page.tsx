@@ -99,9 +99,9 @@ export default async function MainPage() {
             href="https://www.jaquar.lk/en/" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="block"
+            className="block w-full"
           >
-            <div className="relative overflow-hidden" style={{ width: '970px', height: '180px', maxWidth: '100%' }}>
+            <div className="relative overflow-hidden w-full" style={{ maxWidth: '970px', aspectRatio: '970/180' }}>
               <Image
                 src="https://wp.archalley.com/wp-content/uploads/2025/02/Exel-Banner-970-x-180-footer-banner.webp"
                 alt="Exel Advertisement"
