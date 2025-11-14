@@ -220,7 +220,6 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
     if (!carouselRef.current) return 'translateX(0)'
     
     const containerWidth = carouselRef.current.offsetWidth
-    const paddingLeft = (containerWidth * 100) / (visiblePosts * 4) / containerWidth * 100
     const cardWidthPercent = 100 / visiblePosts
     const baseTransform = -(currentIndex * cardWidthPercent)
     const centerOffset = (100 - cardWidthPercent) / 2
