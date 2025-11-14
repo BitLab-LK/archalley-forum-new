@@ -9,7 +9,9 @@ import {
   getAllCategories,
   getFeaturedImageUrl, 
   cleanText,
-  formatDate, 
+  formatDate,
+  getPostCategory,
+  decodeHtmlEntities,
   type WordPressPost,
   type WordPressCategory
 } from "@/lib/wordpress-api"
@@ -132,18 +134,25 @@ function ProjectCard({ project }: { project: WordPressPost }) {
   const title = cleanText(project.title.rendered)
   const excerpt = cleanText(project.excerpt.rendered)
   const date = formatDate(project.date)
+  const category = getPostCategory(project)
 
   return (
     <div className="flex flex-col md:flex-row gap-4 border-b border-gray-200 pb-6">
       <div className="md:w-1/3">
         <Link href={`/${project.slug}`}>
-          <div className="relative w-full overflow-hidden rounded" style={{ aspectRatio: '7/5' }}>
+          <div className="relative w-full overflow-hidden" style={{ aspectRatio: '7/5' }}>
             <Image
               src={imageUrl || "/placeholder.svg"}
               alt={title}
               fill
               className="object-cover transition-transform duration-300 hover:scale-105"
             />
+            {/* Category Badge - Top Left */}
+            <div className="absolute top-0 left-0 p-2">
+              <span className="inline-block px-2 py-1 text-white text-[10px] font-semibold uppercase tracking-wide shadow-md" style={{ backgroundColor: '#FFA000' }}>
+                {decodeHtmlEntities(category.name)}
+              </span>
+            </div>
           </div>
         </Link>
       </div>

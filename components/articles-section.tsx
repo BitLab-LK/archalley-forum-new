@@ -8,7 +8,9 @@ import {
   getAllCategories,
   getFeaturedImageUrl, 
   cleanText,
-  formatDate, 
+  formatDate,
+  getPostCategory,
+  decodeHtmlEntities,
   type WordPressPost,
   type WordPressCategory
 } from "@/lib/wordpress-api"
@@ -103,17 +105,24 @@ function ArticleCard({ article }: { article: WordPressPost }) {
   const title = cleanText(article.title.rendered)
   const excerpt = cleanText(article.excerpt.rendered)
   const date = formatDate(article.date)
+  const category = getPostCategory(article)
 
   return (
     <div className="flex flex-col h-full border-b border-gray-200 pb-6">
       <Link href={`/${article.slug}`}>
-        <div className="relative w-full overflow-hidden rounded mb-4" style={{ aspectRatio: '7/5' }}>
+        <div className="relative w-full overflow-hidden mb-4" style={{ aspectRatio: '7/5' }}>
           <Image
             src={imageUrl || "/placeholder.svg"}
             alt={title}
             fill
             className="object-cover transition-transform duration-300 hover:scale-105"
           />
+          {/* Category Badge - Top Left */}
+          <div className="absolute top-0 left-0 p-2">
+            <span className="inline-block px-2 py-1 text-white text-[10px] font-semibold uppercase tracking-wide shadow-md" style={{ backgroundColor: '#FFA000' }}>
+              {decodeHtmlEntities(category.name)}
+            </span>
+          </div>
         </div>
       </Link>
 

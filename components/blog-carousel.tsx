@@ -299,25 +299,28 @@ export default function BlogCarousel({ initialPosts = [], autoPlayInterval = 300
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/20" />
                         
                         {/* Content overlay */}
-                        <div className="absolute inset-0 flex flex-col justify-end p-6">
-                          {/* Category Badge */}
-                          <div className="mb-2">
+                        <div className="absolute inset-0 flex flex-col justify-between p-2">
+                          {/* Category Badge - Top */}
+                          <div>
                             <span className="inline-block px-2 py-1 text-white text-[10px] font-semibold uppercase tracking-wide shadow-md" style={{ backgroundColor: '#FFA000' }}>
                               {decodeHtmlEntities(category.name)}
                             </span>
                           </div>
                           
-                          {/* Title */}
-                          <h3 className="font-bold text-2xl leading-tight line-clamp-2 mb-3 text-white drop-shadow-lg">
-                            {title}
-                          </h3>
-                          
-                          {/* Date */}
-                          <div className="flex items-center text-sm text-white/95 font-medium">
-                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                            </svg>
-                            {date.toUpperCase()}
+                          {/* Title and Date - Bottom */}
+                          <div>
+                            {/* Title */}
+                            <h3 className="font-bold text-xl leading-tight line-clamp-2 mb-3 text-white drop-shadow-lg">
+                              {title}
+                            </h3>
+                            
+                            {/* Date */}
+                            <div className="flex items-center text-xs text-white/95 font-medium">
+                              <svg className="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                              </svg>
+                              {date.toUpperCase()}
+                            </div>
                           </div>
                         </div>
                       </div>

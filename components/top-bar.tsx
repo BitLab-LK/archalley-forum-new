@@ -190,12 +190,12 @@ export default function TopBar() {
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-gray-700 text-white px-3 py-1 rounded-l-md focus:outline-none text-sm w-full md:w-64"
+                className="bg-gray-700 text-white px-3 h-8 rounded-none focus:outline-none text-sm w-full md:w-64"
                 autoFocus={showMobileSearch}
               />
               <button 
                 type="submit" 
-                className="bg-gray-700 text-white px-2 py-1 rounded-r-md hover:bg-gray-600 transition-colors"
+                className="bg-gray-700 text-white px-2 h-8 rounded-none hover:bg-gray-600 transition-colors flex items-center justify-center"
               >
                 <Search size={18} />
               </button>

@@ -153,7 +153,7 @@ export function getPostCategory(post: WordPressPost): { name: string; slug: stri
   const primaryCategory = categories?.find(term => term.taxonomy === 'category')
   
   return {
-    name: primaryCategory?.name || 'Uncategorized',
+    name: primaryCategory?.name ? decodeHtmlEntities(primaryCategory.name) : 'Uncategorized',
     slug: primaryCategory?.slug || 'uncategorized'
   }
 }
@@ -276,7 +276,12 @@ export async function getAllCategories(): Promise<WordPressCategory[]> {
     }
     
     const categories: WordPressCategory[] = await response.json()
-    return categories
+    // Decode HTML entities in category names
+    return categories.map(cat => ({
+      ...cat,
+      name: decodeHtmlEntities(cat.name),
+      description: decodeHtmlEntities(cat.description)
+    }))
   } catch (error) {
     console.error('Error fetching WordPress categories:', error)
     return []
@@ -314,7 +319,16 @@ export async function getCategoryBySlug(slug: string): Promise<WordPressCategory
     }
     
     const categories: WordPressCategory[] = await response.json()
-    return categories.length > 0 ? categories[0] : null
+    if (categories.length > 0) {
+      const category = categories[0]
+      // Decode HTML entities in category name and description
+      return {
+        ...category,
+        name: decodeHtmlEntities(category.name),
+        description: decodeHtmlEntities(category.description)
+      }
+    }
+    return null
   } catch (error) {
     console.error(`Error fetching WordPress category by slug "${slug}":`, error)
     return null

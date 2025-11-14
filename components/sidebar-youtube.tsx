@@ -65,7 +65,7 @@ export default function SidebarYouTube({ className }: SidebarYouTubeProps) {
       </CardHeader>
       <CardContent className="px-4 pb-4 space-y-3">
         {/* Video Thumbnail/Embed */}
-        <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden">
+        <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-none overflow-hidden">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />

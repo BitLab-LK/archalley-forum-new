@@ -25,9 +25,7 @@ import {
   type WordPressPost,
   type WordPressCategory
 } from "@/lib/wordpress-api"
-import AdBannerComponent from "@/components/ad-banner"
-import SidebarYouTube from "@/components/sidebar-youtube"
-import SidebarFacebook from "@/components/sidebar-facebook"
+import ArchAlleySidebar from "@/components/archalley-sidebar"
 
 interface NewsPageClientProps {
   initialNews?: WordPressPost[]
@@ -299,25 +297,7 @@ export default function NewsPageClient({ initialNews = [], initialCategories = [
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="sticky top-8 space-y-8">
-              {/* Square Ad in Sidebar */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm p-1">
-                <AdBannerComponent 
-                  size="320x320" 
-                  className="w-full" 
-                  positionId="sidebar-square-news"
-                  autoRotate={true}
-                  rotationInterval={30}
-                  showLabel={false}
-                />
-              </div>
-
-              {/* YouTube Section */}
-              <SidebarYouTube />
-
-              {/* Facebook Section */}
-              <SidebarFacebook />
-            </div>
+            <ArchAlleySidebar />
           </div>
         </div>
       </div>

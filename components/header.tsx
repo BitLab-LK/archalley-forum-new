@@ -259,7 +259,7 @@ export default function Header() {
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 border-0 bg-muted/50 focus:bg-background transition-all duration-300 ease-in-out focus:shadow-md focus:scale-105 hover:bg-muted/70"
+                className="pl-10 border-0 bg-muted/50 focus:bg-background transition-all duration-300 ease-in-out focus:shadow-md focus:scale-105 hover:bg-muted/70 rounded-none"
               />
             </form>
           </div>
@@ -487,7 +487,7 @@ export default function Header() {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-11 h-11 text-base rounded-xl border-2 focus:border-primary transition-colors"
+              className="pl-11 h-11 text-base rounded-none border-2 focus:border-primary transition-colors"
             />
           </form>
         </div>

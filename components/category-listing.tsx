@@ -1,6 +1,5 @@
 import SiteLayout from "@/components/site-layout"
 import CategoryGridClient from "@/components/category-grid-client"
-import AdBannerComponent from "@/components/ad-banner"
 
 interface CategoryListingProps {
   categoryId: number
@@ -26,7 +25,7 @@ export default async function CategoryListing({ categoryId, title, basePath, pag
   }
 
   const page = Math.max(parseInt(pageParam || '1', 10) || 1, 1)
-  const perPage = 10
+  const perPage = 15
 
   const url = `${WORDPRESS_API_URL}/posts?_embed=wp:featuredmedia,wp:term&categories=${categoryId}&page=${page}&per_page=${perPage}&status=publish&orderby=date&order=desc`
   
@@ -92,9 +91,6 @@ export default async function CategoryListing({ categoryId, title, basePath, pag
         <div className="space-y-8">
           <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
           <CategoryGridClient posts={posts} currentPage={page} totalPages={totalPages} basePath={basePath} />
-          <div className="mt-12">
-            <AdBannerComponent size="970x180" className="w-full rounded-lg overflow-hidden" positionId="category-bottom-banner" autoRotate={true} rotationInterval={60} showLabel={false} />
-          </div>
         </div>
       </SiteLayout>
     </>

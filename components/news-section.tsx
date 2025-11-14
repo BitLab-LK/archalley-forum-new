@@ -8,7 +8,9 @@ import {
   getAllCategories,
   getFeaturedImageUrl, 
   cleanText,
-  formatDate, 
+  formatDate,
+  getPostCategory,
+  decodeHtmlEntities,
   type WordPressPost,
   type WordPressCategory
 } from "@/lib/wordpress-api"
@@ -60,13 +62,13 @@ export default function NewsSection({ initialNews = [], initialCategories = [] }
       <div className="mb-8">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-24 mb-6"></div>
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="flex gap-4">
-                <div className="w-1/3 h-48 bg-gray-200 rounded"></div>
-                <div className="w-2/3 space-y-2">
+              <div key={i} className="flex flex-col h-full border-b border-gray-200 pb-6">
+                <div className="h-48 bg-gray-200 rounded mb-4"></div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
                   <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                   <div className="h-4 bg-gray-200 rounded w-full"></div>
                   <div className="h-4 bg-gray-200 rounded w-2/3"></div>
                 </div>
@@ -89,7 +91,7 @@ export default function NewsSection({ initialNews = [], initialCategories = [] }
         <div className="flex-1 border-b-[5px] border-black"></div>
       </div>
 
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {news.map((newsItem) => (
           <NewsCard key={newsItem.id} news={newsItem} />
         ))}
@@ -103,28 +105,36 @@ function NewsCard({ news }: { news: WordPressPost }) {
   const title = cleanText(news.title.rendered)
   const excerpt = cleanText(news.excerpt.rendered)
   const date = formatDate(news.date)
+  const category = getPostCategory(news)
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 border-b border-gray-200 pb-6">
-      <div className="md:w-1/3">
-        <Link href={`/${news.slug}`}>
-          <div className="relative w-full overflow-hidden rounded" style={{ aspectRatio: '7/5' }}>
-            <Image
-              src={imageUrl || "/placeholder.svg"}
-              alt={title}
-              fill
-              className="object-cover transition-transform duration-300 hover:scale-105"
-            />
+    <div className="flex flex-col h-full border-b border-gray-200 pb-6">
+      <Link href={`/${news.slug}`}>
+        <div className="relative w-full overflow-hidden mb-4" style={{ aspectRatio: '7/5' }}>
+          <Image
+            src={imageUrl || "/placeholder.svg"}
+            alt={title}
+            fill
+            className="object-cover transition-transform duration-300 hover:scale-105"
+          />
+          {/* Category Badge - Top Left */}
+          <div className="absolute top-0 left-0 p-2">
+            <span className="inline-block px-2 py-1 text-white text-[10px] font-semibold uppercase tracking-wide shadow-md" style={{ backgroundColor: '#FFA000' }}>
+              {decodeHtmlEntities(category.name)}
+            </span>
           </div>
-        </Link>
-      </div>
+        </div>
+      </Link>
 
-      <div className="md:w-2/3">
+      <div className="flex-grow">
         <Link href={`/${news.slug}`} className="block group">
-          <h3 className="text-xl font-semibold group-hover:[color:#FFA000]">{title}</h3>
+          <h3 className="text-lg font-semibold group-hover:[color:#FFA000]">{title}</h3>
         </Link>
         <div className="text-sm text-gray-500 mb-2">{date}</div>
         <p className="text-gray-700 mb-3">{excerpt.substring(0, 450)}...</p>
+      </div>
+
+      <div className="mt-auto">
         <Link
           href={`/${news.slug}`}
           className="inline-block uppercase tracking-wider text-[11px] mt-[15px] px-[18px] py-[6px] border border-[#e0e0e0] transition-all duration-300 whitespace-nowrap text-[#1f2026] no-underline mb-[5px] hover:border-[#FFA000] hover:text-[#FFA000]"

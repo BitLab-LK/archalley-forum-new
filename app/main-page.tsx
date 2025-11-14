@@ -2,13 +2,10 @@ import ServerBlogCarousel from "@/components/server-blog-carousel"
 import ServerProjectsSection from "@/components/server-projects-section"
 import ServerArticlesSection from "@/components/server-articles-section"
 import ServerNewsSection from "@/components/server-news-section"
-import ServerInstagramSlider from "@/components/server-instagram-slider"
 import AdBannerComponent from "@/components/ad-banner"
 import { AdSessionManager } from "@/components/ad-session-manager"
 import SiteLayout from "@/components/site-layout"
 import { getAllPosts, getPostsByCategory, type WordPressPost } from "@/lib/wordpress-api"
-import Image from "next/image"
-import Link from "next/link"
 
 export default async function MainPage() {
   // Fetch latest posts from multiple WordPress categories
@@ -73,51 +70,22 @@ export default async function MainPage() {
         
         {/* Articles Section */}
         <ServerArticlesSection />
-      </SiteLayout>
+        
+        {/* Horizontal Ad Banner */}
+        <div className="my-8">
+          <AdBannerComponent 
+            size="970x180" 
+            className="w-full rounded-lg overflow-hidden" 
+            positionId="horizontal-ad-1"
+            autoRotate={true}
+            rotationInterval={60}
+            showLabel={false}
+          />
+        </div>
 
-      {/* Horizontal Ad Banner */}
-      <div className="container mx-auto px-4 py-8">
-        <AdBannerComponent 
-          size="970x180" 
-          className="w-full rounded-lg overflow-hidden" 
-          positionId="horizontal-ad-1"
-          autoRotate={true}
-          rotationInterval={60}
-          showLabel={false}
-        />
-      </div>
-
-      {/* News Section */}
-      <SiteLayout showSidebar={false}>
+        {/* News Section */}
         <ServerNewsSection />
       </SiteLayout>
-
-      {/* Static Bottom Ad Banner */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="w-full flex flex-col items-center">
-          <Link 
-            href="https://www.jaquar.lk/en/" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="block w-full"
-          >
-            <div className="relative overflow-hidden w-full" style={{ maxWidth: '970px', aspectRatio: '970/180' }}>
-              <Image
-                src="https://wp.archalley.com/wp-content/uploads/2025/02/Exel-Banner-970-x-180-footer-banner.webp"
-                alt="Exel Advertisement"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 970px"
-                priority={false}
-              />
-            </div>
-          </Link>
-          <div className="text-center mt-2 text-xs uppercase tracking-[0.35em] text-gray-500">ADVERTISEMENT</div>
-        </div>
-      </div>
-
-      {/* Instagram Slider */}
-      <ServerInstagramSlider />
     </main>
   )
 }

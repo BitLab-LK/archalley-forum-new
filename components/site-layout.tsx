@@ -16,7 +16,7 @@ export default function SiteLayout({ children, showSidebar = true }: SiteLayoutP
           {children}
         </div>
         {/* Keep sidebar space but conditionally render sidebar content */}
-        <div className="w-full lg:w-1/4 self-start">
+        <div className="w-full lg:w-1/4">
           {showSidebar ? <ArchAlleySidebar /> : <div className="hidden lg:block" aria-hidden="true" />}
         </div>
       </div>

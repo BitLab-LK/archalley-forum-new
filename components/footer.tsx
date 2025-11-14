@@ -6,7 +6,32 @@ import { SOCIAL_MEDIA } from "@/lib/constants"
 
 export default function Footer() {
   return (
-    <footer className="bg-black text-white">
+    <>
+      {/* Static Bottom Ad Banner - Site Wide */}
+      <div className="container mx-auto px-4 py-8">
+        <div className="w-full flex flex-col items-center">
+          <Link 
+            href="https://www.jaquar.lk/en/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="block w-full max-w-[970px]"
+          >
+            <div className="relative overflow-hidden w-full" style={{ aspectRatio: '970/180' }}>
+              <Image
+                src="https://wp.archalley.com/wp-content/uploads/2025/02/Exel-Banner-970-x-180-footer-banner.webp"
+                alt="Exel Advertisement"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 970px"
+                priority={false}
+              />
+            </div>
+          </Link>
+          <div className="text-center mt-2 text-xs uppercase tracking-[0.35em] text-gray-500">ADVERTISEMENT</div>
+        </div>
+      </div>
+
+      <footer className="bg-black text-white">
       {/* Social Media Links */}
       <div className="container mx-auto px-4 py-8 border-b border-gray-800">
         <div className="flex flex-wrap justify-center gap-10">
@@ -168,7 +193,7 @@ export default function Footer() {
             <div className="mt-8">
               <Link
                 href="/projects/submit"
-                className="inline-block bg-[#FFA000] hover:bg-[#e08f00] text-white px-6 py-3 rounded-md font-medium transition-colors"
+                className="inline-block bg-[#FFA000] hover:bg-[#e08f00] text-white px-6 py-3 rounded-none font-medium transition-colors"
               >
                 Submit Your Project
               </Link>
@@ -185,5 +210,6 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+    </>
   )
 }

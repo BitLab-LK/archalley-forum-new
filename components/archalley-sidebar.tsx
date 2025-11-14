@@ -135,7 +135,7 @@ function ArchAlleySidebar() {
     <div className="space-y-6 sticky top-8">
       {/* 1. 1x1 Ad Banner */}
       <AnimatedContentWrapper direction="fade" delay={150}>
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm p-1">
+        <div className="bg-white dark:bg-gray-800 rounded-none shadow-sm w-full">
           <AdBannerComponent 
             size="320x320" 
             className="w-full" 
@@ -158,7 +158,7 @@ function ArchAlleySidebar() {
         <CardHeader className="pb-3">
           <div className="flex items-center">
             <CardTitle className="flex items-center space-x-2 text-lg font-semibold mr-3">
-              <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+              <div className="p-1.5 rounded-none bg-orange-100 dark:bg-orange-900/30">
                 <TrendingUp className={cn("w-4 h-4 text-orange-600 dark:text-orange-400", isWordPressLoading && "animate-pulse")} />
               </div>
               <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap">Trending</span>
@@ -173,7 +173,7 @@ function ArchAlleySidebar() {
           {isWordPressLoading ? (
             Array.from({ length: 4 }).map((_, index) => (
               <div key={index} className="animate-pulse">
-                <div className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg mb-2" />
+                <div className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-none mb-2" />
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-1" />
                 <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
               </div>
@@ -195,7 +195,7 @@ function ArchAlleySidebar() {
                   rel="noopener noreferrer"
                   className="group block"
                 >
-                  <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 animate-slide-in-up hover-lift smooth-transition"
+                  <div className="relative aspect-video rounded-none overflow-hidden bg-gray-100 dark:bg-gray-800 animate-slide-in-up hover-lift smooth-transition"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <Image
