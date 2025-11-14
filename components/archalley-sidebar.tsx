@@ -1,9 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp } from "lucide-react"
 import { useEffect, useState, memo } from "react"
-import { cn } from "@/lib/utils"
 import AdBannerComponent from "@/components/ad-banner"
 import { AnimatedContentWrapper } from "@/components/animated-wrappers"
 import SidebarYouTube from "@/components/sidebar-youtube"
@@ -158,9 +156,6 @@ function ArchAlleySidebar() {
         <CardHeader className="pb-3">
           <div className="flex items-center">
             <CardTitle className="flex items-center space-x-2 text-lg font-semibold mr-3">
-              <div className="p-1.5 rounded-none bg-orange-100 dark:bg-orange-900/30">
-                <TrendingUp className={cn("w-4 h-4 text-orange-600 dark:text-orange-400", isWordPressLoading && "animate-pulse")} />
-              </div>
               <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap">Trending</span>
             </CardTitle>
             <div className="flex-1 border-b-[5px] border-black"></div>

@@ -10,7 +10,7 @@ import {
   getFeaturedImageUrl, 
   cleanText,
   formatDate,
-  getPostCategory,
+  getPostCategoryExcludingProjects,
   decodeHtmlEntities,
   type WordPressPost,
   type WordPressCategory
@@ -134,7 +134,7 @@ function ProjectCard({ project }: { project: WordPressPost }) {
   const title = cleanText(project.title.rendered)
   const excerpt = cleanText(project.excerpt.rendered)
   const date = formatDate(project.date)
-  const category = getPostCategory(project)
+  const category = getPostCategoryExcludingProjects(project)
 
   return (
     <div className="flex flex-col md:flex-row gap-4 border-b border-gray-200 pb-6">

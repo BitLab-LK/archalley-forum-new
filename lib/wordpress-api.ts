@@ -159,6 +159,39 @@ export function getPostCategory(post: WordPressPost): { name: string; slug: stri
 }
 
 /**
+ * Extract category from WordPress post, excluding "projects" category if other categories exist
+ * Used specifically for ProjectsSection to show alternative category badges
+ * @param post - WordPress post object
+ * @returns Category object or default
+ */
+export function getPostCategoryExcludingProjects(post: WordPressPost): { name: string; slug: string } {
+  const categories = post._embedded?.['wp:term']?.[0]?.filter(term => term.taxonomy === 'category') || []
+  
+  // If there are multiple categories, try to find a non-"projects" category
+  if (categories.length > 1) {
+    const nonProjectsCategory = categories.find(term => 
+      term.slug.toLowerCase() !== 'projects' && term.name.toLowerCase() !== 'projects'
+    )
+    
+    // If found a non-projects category, use it
+    if (nonProjectsCategory) {
+      return {
+        name: decodeHtmlEntities(nonProjectsCategory.name),
+        slug: nonProjectsCategory.slug
+      }
+    }
+  }
+  
+  // Fallback: use the first category (even if it's "projects") or default
+  const primaryCategory = categories[0]
+  
+  return {
+    name: primaryCategory?.name ? decodeHtmlEntities(primaryCategory.name) : 'Uncategorized',
+    slug: primaryCategory?.slug || 'uncategorized'
+  }
+}
+
+/**
  * Strip HTML tags from WordPress content
  * @param html - HTML string
  * @returns Clean text

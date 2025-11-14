@@ -104,7 +104,7 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
               alt="Archalley Logo"
               width={85}
               height={30}
-              className="h-[50px] w-auto"
+              className="h-[50px] lg:h-[70px] w-auto"
             />
           </Link>
 
