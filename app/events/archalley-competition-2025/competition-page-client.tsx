@@ -200,7 +200,7 @@ export default function CompetitionPageClient() {
                   </div>
                 </div>
               </div>
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center md:w-full md:justify-end mb-6 md:mb-0">
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center md:w-full md:justify-end mb-6 md:mb-12 lg:mb-0">
               <Button
                 asChild
                 className="bg-red-500 hover:bg-red-600 text-white px-8 py-6 text-[14.4px] md:text-lg w-48 md:w-auto rounded-none"
@@ -227,7 +227,7 @@ export default function CompetitionPageClient() {
       </section>
 
       {/* Navigation Bar */}
-      <div className="relative mt-4 md:mt-0">
+      <div className="relative mt-4 md:mt-12 lg:mt-0">
         <nav 
           ref={navRef}
           className={`w-full bg-white/80 text-black z-50 transition-all duration-300 ${
