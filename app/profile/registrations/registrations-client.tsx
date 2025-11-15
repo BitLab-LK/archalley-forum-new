@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { RegistrationWithDetails } from '@/types/competition';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -21,6 +21,11 @@ export default function RegistrationsClient({ user: _user }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<RegistrationStatus>('all');
 
+  // Ensure registrations is always an array
+  const safeRegistrations = useMemo(() => {
+    return Array.isArray(registrations) ? registrations : [];
+  }, [registrations]);
+
   useEffect(() => {
     fetchRegistrations();
   }, []);
@@ -31,13 +36,15 @@ export default function RegistrationsClient({ user: _user }: Props) {
       const data = await response.json();
 
       if (data.success) {
-        setRegistrations(data.registrations);
+        setRegistrations(data.data || []);
       } else {
         toast.error('Failed to load registrations');
+        setRegistrations([]);
       }
     } catch (error) {
       console.error('Error fetching registrations:', error);
       toast.error('An error occurred while loading registrations');
+      setRegistrations([]);
     } finally {
       setIsLoading(false);
     }
@@ -71,10 +78,12 @@ export default function RegistrationsClient({ user: _user }: Props) {
     }
   };
 
-  const filteredRegistrations = registrations.filter((reg) => {
-    if (filter === 'all') return true;
-    return reg.status === filter;
-  });
+  const filteredRegistrations = useMemo(() => {
+    return safeRegistrations.filter((reg) => {
+      if (filter === 'all') return true;
+      return reg.status === filter;
+    });
+  }, [safeRegistrations, filter]);
 
   if (isLoading) {
     return (
@@ -109,7 +118,7 @@ export default function RegistrationsClient({ user: _user }: Props) {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              All ({registrations.length})
+              All ({safeRegistrations.length})
             </button>
             <button
               onClick={() => setFilter('CONFIRMED')}
@@ -119,7 +128,7 @@ export default function RegistrationsClient({ user: _user }: Props) {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Confirmed ({registrations.filter((r) => r.status === 'CONFIRMED').length})
+              Confirmed ({safeRegistrations.filter((r) => r.status === 'CONFIRMED').length})
             </button>
             <button
               onClick={() => setFilter('PENDING')}
@@ -129,7 +138,7 @@ export default function RegistrationsClient({ user: _user }: Props) {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Pending ({registrations.filter((r) => r.status === 'PENDING').length})
+              Pending ({safeRegistrations.filter((r) => r.status === 'PENDING').length})
             </button>
             <button
               onClick={() => setFilter('SUBMITTED')}
@@ -139,7 +148,7 @@ export default function RegistrationsClient({ user: _user }: Props) {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Submitted ({registrations.filter((r) => r.status === 'SUBMITTED').length})
+              Submitted ({safeRegistrations.filter((r) => r.status === 'SUBMITTED').length})
             </button>
           </div>
         </div>
