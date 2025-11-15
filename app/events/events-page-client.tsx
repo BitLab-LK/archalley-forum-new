@@ -86,14 +86,14 @@ const architecturalEvent2025: WordPressPost = {
   _embedded: {
     'wp:featuredmedia': [{
       id: 0,
-      source_url: '/uploads/tree-2025-2.webp',
+      source_url: '/uploads/tree-2025-3.webp',
       alt_text: 'Innovative Design Challenge 2025',
       media_details: {
         width: 800,
         height: 600,
         sizes: {
           large: {
-            source_url: '/uploads/tree-2025-2.webp',
+            source_url: '/uploads/tree-2025-3.webp',
             width: 800,
             height: 600
           }
@@ -274,7 +274,7 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
             <h1 className="text-5xl md:text-6xl font-bold tracking-tight">Events</h1>
           </div>
           <p className="text-muted-foreground mb-8 text-lg">{error}</p>
-          <Button onClick={fetchEventsData} variant="ghost" className="rounded-full">
+          <Button onClick={fetchEventsData} variant="ghost" className="rounded-none">
             Try Again
           </Button>
         </div>
@@ -319,13 +319,13 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
         {isLoading && events.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
             {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="animate-pulse bg-muted/30 border-0 flex flex-col">
+              <Card key={i} className="animate-pulse bg-muted/30 border-0 rounded-none flex flex-col">
                 <div className="aspect-video bg-muted/50"></div>
                 <div className="p-6 flex flex-col">
-                  <div className="h-6 bg-muted/50 rounded w-3/4 mb-3"></div>
-                  <div className="h-4 bg-muted/50 rounded w-full mb-2"></div>
-                  <div className="h-4 bg-muted/50 rounded w-2/3 mb-6"></div>
-                  <div className="h-10 bg-muted/50 rounded"></div>
+                  <div className="h-6 bg-muted/50 rounded-none w-3/4 mb-3"></div>
+                  <div className="h-4 bg-muted/50 rounded-none w-full mb-2"></div>
+                  <div className="h-4 bg-muted/50 rounded-none w-2/3 mb-6"></div>
+                  <div className="h-10 bg-muted/50 rounded-none"></div>
                 </div>
               </Card>
             ))}
@@ -349,7 +349,7 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
               variant="ghost" 
               size="lg"
               disabled={isLoading}
-              className="hover:bg-muted/50 transition-all duration-300"
+              className="hover:bg-muted/50 transition-all duration-300 rounded-none"
             >
               {isLoading ? (
                 <>
@@ -374,7 +374,7 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
 
       {/* Event Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden p-0 border-0 bg-white/95 backdrop-blur-sm">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden p-0 border-0 rounded-none bg-white/95 backdrop-blur-sm">
           {selectedEvent && (
             <>
               <DialogHeader className="sr-only">
@@ -409,7 +409,7 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
 
                 {/* Content */}
                 <div 
-                  className="prose prose-base max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-p:text-foreground/85 prose-p:leading-relaxed prose-p:mb-4 prose-strong:text-foreground prose-strong:font-semibold prose-a:text-primary prose-a:no-underline hover:prose-a:text-primary/80 hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-primary/30 prose-blockquote:bg-muted/30 prose-blockquote:rounded-lg prose-blockquote:py-3 prose-ul:text-foreground/85 prose-ol:text-foreground/85 prose-li:mb-1"
+                  className="prose prose-base max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-p:text-foreground/85 prose-p:leading-relaxed prose-p:mb-4 prose-strong:text-foreground prose-strong:font-semibold prose-a:text-primary prose-a:no-underline hover:prose-a:text-primary/80 hover:prose-a:underline prose-img:rounded-none prose-img:shadow-md prose-blockquote:border-primary/30 prose-blockquote:bg-muted/30 prose-blockquote:rounded-none prose-blockquote:py-3 prose-ul:text-foreground/85 prose-ol:text-foreground/85 prose-li:mb-1"
                   dangerouslySetInnerHTML={{ 
                     __html: selectedEvent.content.rendered 
                   }}
@@ -475,7 +475,7 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
         }
         .modal-content::-webkit-scrollbar-thumb {
           background: rgba(0, 0, 0, 0.2);
-          border-radius: 3px;
+          border-radius: 0;
         }
         .modal-content::-webkit-scrollbar-thumb:hover {
           background: rgba(0, 0, 0, 0.3);
@@ -484,7 +484,7 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
         /* Enhanced prose styling for modal */
         .prose img {
           margin: 1.5rem auto;
-          border-radius: 0.5rem;
+          border-radius: 0;
           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
         .prose h1, .prose h2, .prose h3 {
@@ -519,20 +519,22 @@ function EventCard({
   // Check if this is a static event (id === -1, -2, or -3)
   const isStaticEvent = event.id === -1 || event.id === -2 || event.id === -3
   const eventLink = isStaticEvent ? event.link : null
+  
+  // For Innovative Design Challenge - 2025 (id === -2), use different images for mobile/desktop
+  const isArchitecturalEvent2025 = event.id === -2
+  const mobileImageUrl = isArchitecturalEvent2025 ? '/uploads/tree-2025-2.webp' : imageUrl
+  const desktopImageUrl = isArchitecturalEvent2025 ? '/uploads/tree-2025-3.webp' : imageUrl
 
-  // Wide layout: horizontal (image left, content right)
+  // Wide layout: horizontal (background image covers whole container, content in right column) - Desktop only
+  // On mobile, use regular vertical layout
   if (isWide) {
-    return (
-      <Card 
-        className="group hover:shadow-lg transition-all duration-500 ease-in-out hover:-translate-y-1 bg-white/50 backdrop-blur-sm border-0 overflow-hidden animate-slide-in flex flex-col md:flex-row"
-        style={{
-          animationDelay: `${Math.min(index * 150, 1000)}ms`, // Cap delay at 1000ms
-        } as React.CSSProperties}
-      >
-        {/* Thumbnail - takes up 50% width on desktop */}
-        <div className="relative w-full md:w-1/2 aspect-video md:h-[500px] overflow-hidden flex-shrink-0">
+    // Mobile layout: Regular vertical card (image top, content bottom)
+    const mobileCardContent = (
+      <>
+        {/* Thumbnail */}
+        <div className="relative aspect-video overflow-hidden md:hidden">
           <Image
-            src={imageUrl}
+            src={mobileImageUrl}
             alt={imageAlt}
             fill
             className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-105"
@@ -541,58 +543,127 @@ function EventCard({
         </div>
 
         {/* Content */}
-        <div className="p-6 md:p-8 flex flex-col flex-grow justify-center md:h-[500px]">
+        <div className="p-6 flex flex-col flex-grow md:hidden">
           {/* Title */}
-          <h3 className="text-2xl md:text-3xl font-bold mb-3 group-hover:text-primary transition-colors duration-300 leading-tight">
+          <h3 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-primary transition-colors duration-300 leading-tight">
             {title}
           </h3>
 
           {/* Description */}
-          <p className="text-muted-foreground mb-6 leading-relaxed text-base md:text-lg">
+          <p className="text-muted-foreground mb-6 line-clamp-3 leading-relaxed text-sm flex-grow">
             {excerpt}
           </p>
 
           {/* View Event Button */}
-          {isStaticEvent && eventLink ? (
-            <Button 
-              variant="default" 
-              size="lg" 
-              asChild
-              className="w-full md:w-auto self-start"
-            >
-              <Link href={eventLink}>
-                <span className="inline-flex items-center">
-                  View Event
-                  <ExternalLink className="ml-2 h-4 w-4" />
-                </span>
-              </Link>
-            </Button>
-          ) : (
-            <Button 
-              variant="default" 
-              size="lg" 
-              onClick={() => onReadMore(event)}
-              className="w-full md:w-auto self-start"
-            >
-              <span className="inline-flex items-center">
-                View Event
-                <ExternalLink className="ml-2 h-4 w-4" />
-              </span>
-            </Button>
-          )}
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="w-full rounded-none pointer-events-none"
+          >
+            <span className="inline-flex items-center">
+              View Event
+              <ExternalLink className="ml-2 h-4 w-4" />
+            </span>
+          </Button>
         </div>
+      </>
+    )
+
+    // Desktop layout: Background image with content overlay
+    const desktopCardContent = (
+      <>
+        {/* Overlay for better text readability */}
+        <div className="hidden md:block absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-all duration-500" />
+        
+        {/* Left spacer - empty on desktop, takes up 50% width */}
+        <div className="hidden md:block w-1/2 flex-shrink-0" />
+        
+        {/* Content - Right column */}
+        <div className="hidden md:flex relative z-10 p-6 md:p-8 flex-col flex-grow justify-center md:h-[500px] md:w-1/2">
+          {/* Title */}
+          <h3 className="text-2xl md:text-3xl font-bold mb-3 text-white group-hover:text-yellow-400 transition-colors duration-300 leading-tight">
+            {title}
+          </h3>
+
+          {/* Description */}
+          <p className="text-white/90 mb-6 leading-relaxed text-base md:text-lg">
+            {excerpt}
+          </p>
+
+          {/* View Event Button */}
+          <Button 
+            variant="default" 
+            size="lg" 
+            className="w-full md:w-auto self-start bg-yellow-400 hover:bg-yellow-500 text-black rounded-none pointer-events-none"
+          >
+            <span className="inline-flex items-center">
+              View Event
+              <ExternalLink className="ml-2 h-4 w-4" />
+            </span>
+          </Button>
+        </div>
+      </>
+    )
+
+    if (isStaticEvent && eventLink) {
+      return (
+        <Link href={eventLink} className="block">
+          <Card 
+            className="group hover:shadow-lg transition-all duration-500 ease-in-out hover:-translate-y-1 bg-white/50 backdrop-blur-sm border-0 rounded-none overflow-hidden animate-slide-in flex flex-col md:flex-row relative cursor-pointer"
+            style={{
+              animationDelay: `${Math.min(index * 150, 1000)}ms`, // Cap delay at 1000ms
+              backgroundImage: 'none',
+            } as React.CSSProperties}
+          >
+            {/* Mobile layout */}
+            {mobileCardContent}
+            
+            {/* Desktop layout with background image */}
+            <div 
+              className="hidden md:block absolute inset-0"
+              style={{
+                backgroundImage: `url(${desktopImageUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+              } as React.CSSProperties}
+            />
+            {desktopCardContent}
+          </Card>
+        </Link>
+      )
+    }
+
+    return (
+      <Card 
+        className="group hover:shadow-lg transition-all duration-500 ease-in-out hover:-translate-y-1 bg-white/50 backdrop-blur-sm border-0 rounded-none overflow-hidden animate-slide-in flex flex-col md:flex-row relative cursor-pointer"
+        onClick={() => onReadMore(event)}
+        style={{
+          animationDelay: `${Math.min(index * 150, 1000)}ms`, // Cap delay at 1000ms
+          backgroundImage: 'none',
+        } as React.CSSProperties}
+      >
+        {/* Mobile layout */}
+        {mobileCardContent}
+        
+        {/* Desktop layout with background image */}
+        <div 
+          className="hidden md:block absolute inset-0"
+          style={{
+            backgroundImage: `url(${imageUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          } as React.CSSProperties}
+        />
+        {desktopCardContent}
       </Card>
     )
   }
 
   // Regular layout: vertical (image top, content bottom)
-  return (
-    <Card 
-      className="group hover:shadow-lg transition-all duration-500 ease-in-out hover:-translate-y-1 bg-white/50 backdrop-blur-sm border-0 overflow-hidden animate-slide-in flex flex-col"
-      style={{
-        animationDelay: `${Math.min(index * 150, 1000)}ms`, // Cap delay at 1000ms
-      } as React.CSSProperties}
-    >
+  const regularCardContent = (
+    <>
       {/* Thumbnail */}
       <div className="relative aspect-video overflow-hidden">
         <Image
@@ -621,22 +692,18 @@ function EventCard({
           <Button 
             variant="default" 
             size="sm" 
-            asChild
-            className="w-full"
+            className="w-full rounded-none pointer-events-none"
           >
-            <Link href={eventLink}>
-              <span className="inline-flex items-center">
-                View Event
-                <ExternalLink className="ml-2 h-4 w-4" />
-              </span>
-            </Link>
+            <span className="inline-flex items-center">
+              View Event
+              <ExternalLink className="ml-2 h-4 w-4" />
+            </span>
           </Button>
         ) : (
           <Button 
             variant="default" 
             size="sm" 
-            onClick={() => onReadMore(event)}
-            className="w-full"
+            className="w-full rounded-none pointer-events-none"
           >
             <span className="inline-flex items-center">
               View Event
@@ -645,6 +712,33 @@ function EventCard({
           </Button>
         )}
       </div>
+    </>
+  )
+
+  if (isStaticEvent && eventLink) {
+    return (
+      <Link href={eventLink} className="block">
+        <Card 
+          className="group hover:shadow-lg transition-all duration-500 ease-in-out hover:-translate-y-1 bg-white/50 backdrop-blur-sm border-0 rounded-none overflow-hidden animate-slide-in flex flex-col cursor-pointer"
+          style={{
+            animationDelay: `${Math.min(index * 150, 1000)}ms`, // Cap delay at 1000ms
+          } as React.CSSProperties}
+        >
+          {regularCardContent}
+        </Card>
+      </Link>
+    )
+  }
+
+  return (
+    <Card 
+      className="group hover:shadow-lg transition-all duration-500 ease-in-out hover:-translate-y-1 bg-white/50 backdrop-blur-sm border-0 rounded-none overflow-hidden animate-slide-in flex flex-col cursor-pointer"
+      onClick={() => onReadMore(event)}
+      style={{
+        animationDelay: `${Math.min(index * 150, 1000)}ms`, // Cap delay at 1000ms
+      } as React.CSSProperties}
+    >
+      {regularCardContent}
     </Card>
   )
 }

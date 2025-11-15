@@ -260,7 +260,7 @@ export default function CompetitionPageClient() {
             <h2 id="theme" className="text-2xl md:text-4xl font-bold text-white mb-6 uppercase tracking-wide text-center scroll-mt-20">
               <a href="#theme" >A THEME THAT REIMAGINES TRADITION</a>
             </h2>
-            <div className="text-base text-center mb-6">
+            <div className="text-base text-center mb-6 leading-6">
               <span className="text-red-500">
                 What will a Christmas tree look like in<br />
               </span>
@@ -268,14 +268,14 @@ export default function CompetitionPageClient() {
                 50 years?
               </span>
             </div>
-            <div className="text-base text-gray-300 text-center mb-6 leading-[20px]">
+            <div className="text-base text-gray-300 text-center mb-6 leading-6">
               Will it float, glow, or live in the metaverse? This year's<br />
               competition invites you to imagine the "tree of tomorrow."
             </div>
             
             <div className="mb-6"></div>
             
-            <div className="text-base text-gray-300 text-center mb-6 leading-[20px]">
+            <div className="text-base text-gray-300 text-center mb-6 leading-6">
               Participants are encouraged to explore<br />
               <span className="text-red-500">unconventional, futuristic, and conceptual interpretations,</span><br />
               from virtual models to physical tree designs.
@@ -283,7 +283,7 @@ export default function CompetitionPageClient() {
             
             <div className="mb-6"></div>
             
-            <div className="text-base text-gray-300 text-center leading-[20px]">
+            <div className="text-base text-gray-300 text-center leading-6">
               Your tree can be<br />
               either minimal or detailed, digital, tech-infused, or<br />
               completely surreal.<br />

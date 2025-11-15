@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Menu, X, ChevronDown } from "lucide-react"
@@ -21,6 +21,12 @@ export default function NavigationBar({ categories: _categories = [] }: Navigati
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null)
   const pathname = usePathname()
+
+  // Close mobile menu when pathname changes (navigation occurs)
+  useEffect(() => {
+    setMobileMenuOpen(false)
+    setActiveSubmenu(null)
+  }, [pathname])
 
   // Organize categories into a menu structure
   const menuItems = [
