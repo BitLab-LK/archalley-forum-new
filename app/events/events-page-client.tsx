@@ -251,7 +251,7 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
 
   if (isLoading && events.length === 0) {
     return (
-      <div className="min-h-screen py-16">
+      <div className="min-h-screen pt-16 pb-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="flex items-center justify-center mb-8">
@@ -268,7 +268,7 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
 
   if (error && events.length === 0) {
     return (
-      <div className="min-h-screen py-16">
+      <div className="min-h-screen pt-16 pb-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center mb-8">
             <h1 className="text-5xl md:text-6xl font-bold tracking-tight">Events</h1>
@@ -283,7 +283,7 @@ export default function EventsPageClient({ initialEvents = [], initialCategories
   }
 
   return (
-    <div className="min-h-screen py-16">
+    <div className="min-h-screen pt-16 pb-8">
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Main Content */}

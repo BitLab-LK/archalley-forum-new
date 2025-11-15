@@ -98,7 +98,7 @@ export default function RootLayout({
                 <div className="relative z-50">
                   <NavigationBar />
                 </div>
-                <main className="flex-1 pb-20 md:pb-0 relative z-10">{children}</main>
+                <main className="flex-1 pb-8 md:pb-0 relative z-10">{children}</main>
                 <div className="relative z-50">
                   <Footer />
                 </div>
