@@ -153,7 +153,7 @@ function ArchAlleySidebar() {
 
       {/* 4. Trending WordPress Posts */}
       <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-orange-50/30 dark:from-gray-900 dark:to-orange-900/10 smooth-transition hover-lift animate-fade-in-up">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 px-0">
           <div className="flex items-center">
             <CardTitle className="flex items-center space-x-2 text-lg font-semibold mr-3">
               <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap">Trending</span>
@@ -164,11 +164,11 @@ function ArchAlleySidebar() {
             )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 pt-0">
+        <CardContent className="space-y-4 pt-0 px-0">
           {isWordPressLoading ? (
             Array.from({ length: 4 }).map((_, index) => (
               <div key={index} className="animate-pulse">
-                <div className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-none mb-2" />
+                <div className="aspect-[7/5] bg-gray-200 dark:bg-gray-700 rounded-none mb-2" />
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-1" />
                 <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
               </div>
@@ -190,7 +190,7 @@ function ArchAlleySidebar() {
                   rel="noopener noreferrer"
                   className="group block"
                 >
-                  <div className="relative aspect-video rounded-none overflow-hidden bg-gray-100 dark:bg-gray-800 animate-slide-in-up hover-lift smooth-transition"
+                  <div className="relative aspect-[7/5] rounded-none overflow-hidden bg-gray-100 dark:bg-gray-800 animate-slide-in-up hover-lift smooth-transition"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <Image

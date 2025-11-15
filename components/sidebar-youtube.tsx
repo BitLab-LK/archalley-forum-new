@@ -31,7 +31,7 @@ export default function SidebarYouTube({ className }: SidebarYouTubeProps) {
           setVideoData({
             videoId: 'D0A-MIeq9gw',
             title: 'Latest Video from ArchAlley',
-            channelUrl: 'https://www.youtube.com/@archalleytube',
+            channelUrl: 'https://www.youtube.com/channel/UCfN-mp1PZ63YQ5BB11RJ-eg',
           })
         }
       } catch (error) {
@@ -40,7 +40,7 @@ export default function SidebarYouTube({ className }: SidebarYouTubeProps) {
         setVideoData({
           videoId: 'D0A-MIeq9gw',
           title: 'Latest Video from ArchAlley',
-          channelUrl: 'https://www.youtube.com/@archalleytube',
+          channelUrl: 'https://www.youtube.com/channel/UCfN-mp1PZ63YQ5BB11RJ-eg',
         })
       } finally {
         setIsLoading(false)
@@ -51,11 +51,11 @@ export default function SidebarYouTube({ className }: SidebarYouTubeProps) {
   }, [])
 
   const videoId = videoData?.videoId || 'D0A-MIeq9gw'
-  const channelUrl = videoData?.channelUrl || 'https://www.youtube.com/@archalleytube'
+  const channelUrl = videoData?.channelUrl || 'https://www.youtube.com/channel/UCfN-mp1PZ63YQ5BB11RJ-eg'
 
   return (
     <Card className={`${className} border-0 shadow-sm bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm`}>
-      <CardHeader className="pb-2 px-4 pt-4">
+      <CardHeader className="pb-2 px-0 pt-4">
         <div className="flex items-center">
           <CardTitle className="text-base text-gray-900 dark:text-gray-100 mr-3 whitespace-nowrap">
             We're on YouTube
@@ -63,7 +63,7 @@ export default function SidebarYouTube({ className }: SidebarYouTubeProps) {
           <div className="flex-1 border-b-[5px] border-black"></div>
         </div>
       </CardHeader>
-      <CardContent className="px-4 pb-4 space-y-3">
+      <CardContent className="px-0 pb-4 space-y-3">
         {/* Video Thumbnail/Embed */}
         <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 rounded-none overflow-hidden">
           {isLoading ? (

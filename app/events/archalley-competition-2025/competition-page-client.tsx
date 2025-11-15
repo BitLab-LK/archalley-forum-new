@@ -100,7 +100,16 @@ export default function CompetitionPageClient() {
   ]
 
   return (
-    <div className="min-h-screen bg-slate-900 text-gray-200 scroll-smooth relative">
+    <div className="competition-page-2025 min-h-screen bg-slate-900 text-gray-200 scroll-smooth relative">
+      {/* Global style to ensure all elements have sharp borders, except circular profile pictures */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .competition-page-2025 * {
+          border-radius: 0 !important;
+        }
+        .competition-page-2025 .rounded-full {
+          border-radius: 9999px !important;
+        }
+      `}} />
       {/* Fixed Background Image - Sticky behind all sections except hero */}
       <div 
         className="fixed inset-0 z-[1] pointer-events-none"
@@ -194,7 +203,7 @@ export default function CompetitionPageClient() {
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center md:w-full md:justify-end">
               <Button
                 asChild
-                className="bg-red-500 hover:bg-red-600 text-white px-8 py-6 text-[14.4px] md:text-lg w-48 md:w-auto"
+                className="bg-red-500 hover:bg-red-600 text-white px-8 py-6 text-[14.4px] md:text-lg w-48 md:w-auto rounded-none"
               >
                 <Link href="/events/archalley-competition-2025/register">
                   Register Now
@@ -202,7 +211,7 @@ export default function CompetitionPageClient() {
               </Button>
               <Button
                 asChild
-                className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-6 text-[14.4px] md:text-lg w-48 md:w-auto"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-6 text-[14.4px] md:text-lg w-48 md:w-auto rounded-none"
               >
                 <a 
                   href="/downloads/Christmas Tree Competition 2025 - Brief.pdf"
@@ -251,22 +260,22 @@ export default function CompetitionPageClient() {
             <h2 id="theme" className="text-2xl md:text-4xl font-bold text-white mb-6 uppercase tracking-wide text-center scroll-mt-20">
               <a href="#theme" >A THEME THAT REIMAGINES TRADITION</a>
             </h2>
-            <div className="text-base md:text-3xl text-center mb-6">
+            <div className="text-base text-center mb-6">
               <span className="text-red-500">
                 What will a Christmas tree look like in<br />
               </span>
-              <span className="text-red-500 text-lg md:text-4xl font-bold">
+              <span className="text-red-500 text-xl font-bold">
                 50 years?
               </span>
             </div>
-            <div className="text-xs md:text-2xl text-gray-300 text-center mb-6 leading-[20px] md:leading-normal">
+            <div className="text-base text-gray-300 text-center mb-6 leading-[20px]">
               Will it float, glow, or live in the metaverse? This year's<br />
               competition invites you to imagine the "tree of tomorrow."
             </div>
             
             <div className="mb-6"></div>
             
-            <div className="text-xs md:text-base text-gray-300 text-center mb-6 leading-[20px]">
+            <div className="text-base text-gray-300 text-center mb-6 leading-[20px]">
               Participants are encouraged to explore<br />
               <span className="text-red-500">unconventional, futuristic, and conceptual interpretations,</span><br />
               from virtual models to physical tree designs.
@@ -274,7 +283,7 @@ export default function CompetitionPageClient() {
             
             <div className="mb-6"></div>
             
-            <div className="text-xs md:text-base text-gray-300 text-center leading-[20px]">
+            <div className="text-base text-gray-300 text-center leading-[20px]">
               Your tree can be<br />
               either minimal or detailed, digital, tech-infused, or<br />
               completely surreal.<br />
@@ -662,7 +671,7 @@ export default function CompetitionPageClient() {
           {/* Main Prize Categories - Two Columns with Equal Height */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 items-stretch">
             {/* Physical Category - Left Box */}
-            <div className="rounded-lg flex flex-col h-full">
+            <div className="rounded-none flex flex-col h-full">
               <h3 className="text-base md:text-2xl font-bold text-white mb-6 uppercase text-center">
                 PHYSICAL CATEGORY
               </h3>
@@ -683,7 +692,7 @@ export default function CompetitionPageClient() {
             </div>
 
             {/* Digital Category - Right Box */}
-            <div className="rounded-lg flex flex-col h-full">
+            <div className="rounded-none flex flex-col h-full">
               <h3 className="text-base md:text-2xl font-bold text-white mb-6 uppercase text-center">
                 DIGITAL CATEGORY
             </h3>
@@ -756,10 +765,10 @@ export default function CompetitionPageClient() {
               </div>
               {/* Columns 2 & 3 - Event Description and Date (inline on mobile) */}
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Competition Registration starts</span>
                 </div>
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">11<sup>th</sup> November</span>
                 </div>
               </div>
@@ -771,10 +780,10 @@ export default function CompetitionPageClient() {
                 {/* Empty for section heading column on desktop */}
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Early bird registration</span>
                 </div>
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">11<sup>th</sup> November -20<sup>th</sup> November</span>
                 </div>
               </div>
@@ -786,10 +795,10 @@ export default function CompetitionPageClient() {
                 {/* Empty for section heading column on desktop */}
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Standard registration</span>
                 </div>
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">21<sup>st</sup> November -20<sup>th</sup> December</span>
                 </div>
               </div>
@@ -801,10 +810,10 @@ export default function CompetitionPageClient() {
                 {/* Empty for section heading column on desktop */}
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Late Registration</span>
                 </div>
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">21<sup>st</sup> December -24<sup>th</sup> December</span>
                 </div>
               </div>
@@ -820,10 +829,10 @@ export default function CompetitionPageClient() {
               </div>
               {/* Columns 2 & 3 - Event Description and Date (inline on mobile) */}
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Submission Start</span>
                 </div>
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">11<sup>th</sup> December</span>
                 </div>
               </div>
@@ -835,10 +844,10 @@ export default function CompetitionPageClient() {
                 {/* Empty for section heading column on desktop */}
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Closing Date for FAQ</span>
                 </div>
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">20<sup>th</sup> December</span>
                 </div>
               </div>
@@ -850,10 +859,10 @@ export default function CompetitionPageClient() {
                 {/* Empty for section heading column on desktop */}
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Submission Deadline for Kids' Category</span>
                   </div>
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">21<sup>st</sup> December</span>
                   </div>
                 </div>
@@ -865,10 +874,10 @@ export default function CompetitionPageClient() {
                 {/* Empty for section heading column on desktop */}
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Submission Deadline for other categories</span>
                   </div>
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">24<sup>th</sup> December</span>
                   </div>
                 </div>
@@ -884,10 +893,10 @@ export default function CompetitionPageClient() {
               </div>
               {/* Columns 2 & 3 - Event Description and Date (inline on mobile) */}
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Most popular category voting</span>
                   </div>
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">25<sup>th</sup> December to 4<sup>th</sup> January</span>
                   </div>
                 </div>
@@ -899,10 +908,10 @@ export default function CompetitionPageClient() {
                 {/* Empty for section heading column on desktop */}
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-2">
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white text-[11.2px] md:text-base leading-[20px] md:leading-normal">Announcement of the Winners</span>
                 </div>
-                <div className="bg-slate-800/90 rounded-md p-3 flex items-center">
+                <div className="bg-slate-800/90 rounded-none p-3 flex items-center">
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">10<sup>th</sup> January</span>
                 </div>
               </div>
@@ -959,8 +968,8 @@ export default function CompetitionPageClient() {
                 image: "/uploads/kamal-wasala.jpg",
               },
             ].map((jury, index) => (
-              <div key={index} className="bg-slate-800/70 rounded-lg p-6 text-center">
-                <div className="relative w-24 h-24 md:w-32 md:h-32 mx-auto mb-4 rounded-full overflow-hidden">
+              <div key={index} className="bg-slate-800/70 rounded-none p-6 text-center">
+                <div className={`relative w-24 h-24 md:w-32 md:h-32 mx-auto mb-4 overflow-hidden ${index < 4 ? 'rounded-full' : 'rounded-none'}`}>
                   <Image
                     src={jury.image}
                     alt={jury.name}
@@ -980,8 +989,8 @@ export default function CompetitionPageClient() {
           
           {/* Alley - Centered Banner Row */}
           <div className="flex justify-center">
-            <div className="bg-slate-800/70 rounded-lg p-6 text-center max-w-2xl w-full">
-              <div className="relative w-full h-24 md:h-40 mx-auto mb-4 rounded-lg overflow-hidden">
+            <div className="bg-slate-800/70 rounded-none p-6 text-center w-full max-w-[calc(50%-0.75rem)] lg:max-w-[calc((1280px-3*1.5rem)/2+1.5rem)]">
+              <div className="relative w-full h-24 md:h-40 mx-auto mb-4 rounded-none overflow-hidden">
                 <Image
                   src="/uploads/alley-juror-2.webp"
                   alt="Alley"
@@ -1091,7 +1100,7 @@ export default function CompetitionPageClient() {
               <div className="pt-4">
                 <Button
                   asChild
-                  className="bg-red-500 hover:bg-red-600 text-white px-8 py-6 text-[14.4px] md:text-lg"
+                  className="bg-red-500 hover:bg-red-600 text-white px-8 py-6 text-[14.4px] md:text-lg rounded-none"
                 >
                   <Link href="/events/archalley-competition-2025/register">
                     Register Now
@@ -1123,7 +1132,7 @@ export default function CompetitionPageClient() {
             {/* Terms in Grid Layout */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Physical Tree Category */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('physical-tree')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1148,7 +1157,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* Digital Tree Category */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('digital-tree')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1172,7 +1181,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* Kids' Tree Category */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('kids-tree')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1198,7 +1207,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* Submission Formats */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('submission-formats')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1224,7 +1233,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* Optional Documents */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('optional-documents')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1248,7 +1257,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* Group Entry */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('group-entry')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1272,7 +1281,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* Registration & Identification */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('registration-identification')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1297,7 +1306,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* Submission Method, Format & Deadline */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('submission-method')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1320,7 +1329,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* Multiple Entries & Duplicate Products */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('multiple-entries')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1343,7 +1352,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* Judging & Jury Protocol */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('judging-jury')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1367,7 +1376,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* Verification & Compliance */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('verification-compliance')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1389,7 +1398,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* Intellectual Property, Permissions & Indemnity */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('intellectual-property')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1412,7 +1421,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* Archalley Rights & Liability */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('archalley-rights')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1437,7 +1446,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* Winner Notification & Prizes */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('winner-notification')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1459,7 +1468,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* License for Winning Entries */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('license-winning')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1480,7 +1489,7 @@ export default function CompetitionPageClient() {
               </div>
               
               {/* Acceptance of Terms */}
-              <div className="bg-slate-800/70 rounded-lg overflow-hidden">
+              <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('acceptance-terms')}
                   className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
@@ -1512,7 +1521,7 @@ export default function CompetitionPageClient() {
           </h2>
           <div className="max-w-4xl mx-auto">
             <div className="space-y-6">
-              <div className="bg-slate-800/70 rounded-lg p-6">
+              <div className="bg-slate-800/70 rounded-none p-6">
                 <h3 className="text-xs md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
                   Q: Can I submit more than one entry?
                 </h3>
@@ -1521,7 +1530,7 @@ export default function CompetitionPageClient() {
                 </p>
               </div>
               
-              <div className="bg-slate-800/70 rounded-lg p-6">
+              <div className="bg-slate-800/70 rounded-none p-6">
                 <h3 className="text-xs md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
                   Q: Can I collaborate with others?
                 </h3>
@@ -1530,7 +1539,7 @@ export default function CompetitionPageClient() {
                 </p>
               </div>
               
-              <div className="bg-slate-800/70 rounded-lg p-6">
+              <div className="bg-slate-800/70 rounded-none p-6">
                 <h3 className="text-xs md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
                   Q: Are international entries allowed?
                 </h3>
@@ -1539,7 +1548,7 @@ export default function CompetitionPageClient() {
                 </p>
               </div>
               
-              <div className="bg-slate-800/70 rounded-lg p-6">
+              <div className="bg-slate-800/70 rounded-none p-6">
                 <h3 className="text-xs md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
                   Q: Do I have to build the physical model?
                 </h3>
@@ -1548,7 +1557,7 @@ export default function CompetitionPageClient() {
                 </p>
               </div>
               
-              <div className="bg-slate-800/70 rounded-lg p-6">
+              <div className="bg-slate-800/70 rounded-none p-6">
                 <h3 className="text-xs md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
                   Q: What format should I submit digital work in?
                 </h3>
@@ -1557,7 +1566,7 @@ export default function CompetitionPageClient() {
                 </p>
               </div>
               
-              <div className="bg-slate-800/70 rounded-lg p-6">
+              <div className="bg-slate-800/70 rounded-none p-6">
                 <h3 className="text-xs md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
                   Q: Can the tree be of any size?
                 </h3>
@@ -1566,7 +1575,7 @@ export default function CompetitionPageClient() {
                 </p>
               </div>
               
-              <div className="bg-slate-800/70 rounded-lg p-6">
+              <div className="bg-slate-800/70 rounded-none p-6">
                 <h3 className="text-xs md:text-xl font-bold text-white mb-3 leading-[20px] md:leading-normal">
                   Q: I'm 12 or younger. Can I join?
                 </h3>

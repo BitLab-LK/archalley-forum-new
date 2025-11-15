@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { FACEBOOK_APP_ID } from "@/lib/constants"
 
 interface SidebarFacebookProps {
   className?: string
@@ -34,7 +35,7 @@ export default function SidebarFacebook({ className }: SidebarFacebookProps) {
       // Insert Facebook SDK script with official configuration
       const script = document.createElement('script')
       script.id = 'facebook-jssdk'
-      script.src = 'https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v24.0&appId=1075191320881967'
+      script.src = `https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v24.0&appId=${FACEBOOK_APP_ID}`
       script.async = true
       script.defer = true
       script.crossOrigin = 'anonymous'
@@ -61,7 +62,7 @@ export default function SidebarFacebook({ className }: SidebarFacebookProps) {
 
   return (
     <Card className={`${className} border-0 shadow-sm bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm overflow-hidden`}>
-      <CardHeader className="pb-2 px-4 pt-4">
+      <CardHeader className="pb-2 px-0 pt-4">
         <div className="flex items-center">
           <CardTitle className="text-base text-gray-900 dark:text-gray-100 mr-3 whitespace-nowrap">
             Follow us on Facebook
@@ -69,22 +70,22 @@ export default function SidebarFacebook({ className }: SidebarFacebookProps) {
           <div className="flex-1 border-b-[5px] border-black"></div>
         </div>
       </CardHeader>
-      <CardContent className="px-4 pb-4">
+      <CardContent className="px-0 pb-4">
         {/* Live Facebook Page Plugin - Scrollable */}
         <div className="w-full">
           <div 
             className="fb-page" 
-            data-href="https://web.facebook.com/1823509644579642"
+            data-href="https://www.facebook.com/archalley/"
             data-tabs="timeline"
-            data-width=""
-            data-height=""
-            data-small-header="true"
+            data-width="400"
+            data-height="700"
+            data-small-header="false"
             data-adapt-container-width="true"
             data-hide-cover="false"
             data-show-facepile="true"
           >
-            <blockquote cite="https://web.facebook.com/1823509644579642" className="fb-xfbml-parse-ignore">
-              <a href="https://web.facebook.com/1823509644579642">Archalley</a>
+            <blockquote cite="https://www.facebook.com/archalley/" className="fb-xfbml-parse-ignore">
+              <a href="https://www.facebook.com/archalley/">Archalley</a>
             </blockquote>
           </div>
         </div>
