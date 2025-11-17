@@ -10,7 +10,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -22,8 +22,10 @@ export async function GET(
       );
     }
 
+    const { orderId } = await params;
+
     const payment = await prisma.competitionPayment.findUnique({
-      where: { orderId: params.orderId },
+      where: { orderId },
       select: {
         id: true,
         status: true,

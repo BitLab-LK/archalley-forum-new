@@ -12,11 +12,8 @@ import {
 import { getPayHereConfig } from '@/lib/payhere-config';
 import { PayHereResponse } from '@/types/competition';
 import {
-  sendRegistrationConfirmationEmail,
-  sendPaymentReceiptEmail,
-  sendCompetitionGuidelinesEmail,
-  sendConsolidatedRegistrationConfirmationEmail,
-  sendConsolidatedPaymentReceiptEmail,
+  sendComprehensiveConfirmationEmail,
+  sendComprehensiveConsolidatedConfirmationEmail,
 } from '@/lib/competition-email-service';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -245,75 +242,66 @@ async function handleSuccessfulPayment(
     console.log(`📧 Sending emails to competition registration email: ${customerEmail}`);
     
     try {
-      // Calculate total amount
-      const totalAmount = registrations.reduce((sum, reg) => sum + Number(reg.amountPaid), 0);
+      // Fetch full registration details with actual registrationType from database
+      const fullRegistrations = await prisma.competitionRegistration.findMany({
+        where: {
+          id: { in: registrations.map(r => r.id) },
+        },
+        include: {
+          registrationType: true,
+          competition: true,
+        },
+      });
       
-      // Use consolidated emails if multiple registrations, otherwise use individual emails
-      if (registrations.length > 1) {
-        console.log(`📧 Using CONSOLIDATED emails (${registrations.length} registrations, total: LKR ${totalAmount.toLocaleString()})`);
+      // Calculate total amount
+      const totalAmount = fullRegistrations.reduce((sum, reg) => sum + Number(reg.amountPaid), 0);
+      
+      // Use consolidated email if multiple registrations, otherwise use single comprehensive email
+      if (fullRegistrations.length > 1) {
+        console.log(`📧 Sending COMPREHENSIVE CONSOLIDATED email (${fullRegistrations.length} registrations, total: LKR ${totalAmount.toLocaleString()})`);
         
         // Prepare consolidated data
         const consolidatedData = {
-          registrations: registrations.map(reg => {
-            const item = cartItems.find(i => i.competitionId === reg.competitionId);
+          registrations: fullRegistrations.map(reg => {
             return {
               registration: reg,
-              registrationType: item!.registrationType,
-              members: (item?.members as any) || [],
+              registrationType: reg.registrationType,
+              members: (reg.members as any) || [],
             };
           }),
-          competition: cartItems[0].competition,
+          competition: fullRegistrations[0].competition,
           userName: customerName,
           userEmail: customerEmail,
           paymentOrderId: payment.orderId,
+          paymentMethod: 'PayHere',
           totalAmount,
         };
         
-        // Send consolidated emails
-        await Promise.all([
-          sendConsolidatedRegistrationConfirmationEmail(consolidatedData),
-          sendConsolidatedPaymentReceiptEmail(consolidatedData),
-          sendCompetitionGuidelinesEmail({
-            registration: registrations[0],
-            competition: cartItems[0].competition,
-            registrationType: cartItems[0].registrationType,
-            userName: customerName,
-            userEmail: customerEmail,
-            members: [],
-            paymentOrderId: payment.orderId,
-          }),
-        ]);
+        // Send single comprehensive consolidated email
+        await sendComprehensiveConsolidatedConfirmationEmail(consolidatedData);
         
-        console.log(`✅ Consolidated emails sent successfully`);
+        console.log(`✅ Comprehensive consolidated email sent successfully`);
       } else {
-        console.log(`📧 Using INDIVIDUAL emails (single registration)`);
+        console.log(`📧 Sending COMPREHENSIVE email (single registration)`);
         
-        // Send individual emails for single registration
-        const registration = registrations[0];
-        const item = cartItems.find(i => i.competitionId === registration.competitionId);
-        
-        if (!item) {
-          throw new Error('Cart item not found for registration');
-        }
+        // Send comprehensive email for single registration
+        const fullRegistration = fullRegistrations[0];
 
         const emailData = {
-          registration,
-          competition: item.competition,
-          registrationType: item.registrationType,
+          registration: fullRegistration,
+          competition: fullRegistration.competition,
+          registrationType: fullRegistration.registrationType,
           userName: customerName,
           userEmail: customerEmail,
-          members: (item.members as any) || [],
+          members: (fullRegistration.members as any) || [],
           paymentOrderId: payment.orderId,
+          paymentMethod: 'PayHere',
         };
 
-        // Send all three emails
-        await Promise.all([
-          sendRegistrationConfirmationEmail(emailData),
-          sendPaymentReceiptEmail(emailData),
-          sendCompetitionGuidelinesEmail(emailData),
-        ]);
+        // Send single comprehensive email
+        await sendComprehensiveConfirmationEmail(emailData);
 
-        console.log(`✅ Individual emails sent for registration: ${registration.registrationNumber}`);
+        console.log(`✅ Comprehensive email sent for registration: ${fullRegistration.registrationNumber}`);
       }
     } catch (emailError) {
       console.error(`❌ Failed to send emails:`, emailError);

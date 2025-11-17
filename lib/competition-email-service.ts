@@ -1490,6 +1490,284 @@ We apologize for any inconvenience. Please contact us if you have any questions.
   return sendEmail(userEmail, subject, html, text);
 };
 
+// NEW: Comprehensive confirmation email (replaces 3 separate emails)
+export const sendComprehensiveConfirmationEmail = async (data: RegistrationEmailData & { paymentMethod?: string }) => {
+  const { registration, competition, registrationType, userName, userEmail, members, paymentOrderId, paymentMethod = 'PayHere' } = data;
+
+  console.log('📧 Sending Comprehensive Confirmation Email to:', userEmail);
+  
+  const subject = `Registration Confirmed - Archalley Competition 2025 `;
+
+  const html = `
+    ${getEmailHeader()}
+    
+    <!-- Main Content -->
+    <div style="padding: 30px 20px;">
+      <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+        Hi ${userName},
+      </p>
+      
+      <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+        Congratulations! Your registration for <strong>Archalley Competition 2025 - Christmas in Future</strong> has been successfully confirmed. We're excited to see your creative work!
+      </p>
+
+      <!-- Registration Details -->
+      <div style="background: #f9f9f9; padding: 25px; border-radius: 8px; margin: 30px 0;">
+        <h3 style="color: #333; font-size: 18px; margin: 0 0 15px 0;">Registration Details</h3>
+        <table style="width: 100%; color: #333; font-size: 14px; line-height: 1.8;">
+          <tr>
+            <td style="padding: 8px 0;"><strong>Registration Number:</strong></td>
+            <td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: bold; color: #FFA000;">${registration.registrationNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0;"><strong>Category:</strong></td>
+            <td style="padding: 8px 0; text-align: right;">${registrationType.name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0;"><strong>Amount Paid:</strong></td>
+            <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #FFA000;">LKR ${registration.amountPaid.toLocaleString()}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0;"><strong>Payment Method:</strong></td>
+            <td style="padding: 8px 0; text-align: right;">${paymentMethod}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0;"><strong>Order ID:</strong></td>
+            <td style="padding: 8px 0; text-align: right; font-family: monospace; font-size: 12px;">${paymentOrderId}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0;"><strong>Country:</strong></td>
+            <td style="padding: 8px 0; text-align: right;">${registration.country}</td>
+          </tr>
+        </table>
+      </div>
+
+      ${members && members.length > 1 ? `
+        <div style="background: #f9f9f9; padding: 25px; border-radius: 8px; margin: 30px 0;">
+          <h3 style="color: #333; font-size: 18px; margin: 0 0 15px 0;">Team Members (${members.length})</h3>
+          ${members.map((member: any, idx: number) => `
+            <div style="padding: 12px 0; ${idx < members.length - 1 ? 'border-bottom: 1px solid #e5e7eb;' : ''}">
+              <strong style="color: #333; font-size: 14px;">${idx === 0 ? '👤 Team Lead: ' : '👥 Member: '}${member.name}</strong><br>
+              <span style="color: #666; font-size: 14px;">${member.email}</span>
+              ${member.phone ? `<br><span style="color: #999; font-size: 13px;">Phone: ${member.phone}</span>` : ''}
+              ${member.role ? `<br><span style="color: #999; font-size: 13px;">Role: ${member.role}</span>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <!-- What's Next -->
+      <div style="margin: 30px 0;">
+        <h3 style="color: #333; font-size: 18px; margin: 0 0 15px 0;">What's Next?</h3>
+        <ul style="color: #666; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+          <li>Review the competition guidelines and requirements carefully</li>
+          <li>Prepare your design submission according to specifications</li>
+          <li>Submit your work through your profile dashboard before the deadline</li>
+          <li>Wait for results announcement and check the leaderboard</li>
+        </ul>
+      </div>
+
+      <!-- Important Note -->
+      <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 30px 0;">
+        <p style="color: #1565c0; margin: 0; line-height: 1.6; font-size: 13px;">
+          <strong>Important:</strong> Please save this email for your records. You'll need your registration number (${registration.registrationNumber}) for any inquiries about your submission.
+        </p>
+      </div>
+    </div>
+    
+    ${getEmailFooter()}
+  `;
+
+  const text = `
+Hi ${userName},
+
+Congratulations! Your registration for Archalley Competition 2025 - Innovative Christmas Tree has been successfully confirmed.
+
+Registration Details:
+- Registration Number: ${registration.registrationNumber}
+- Category: ${registrationType.name}
+- Amount Paid: LKR ${registration.amountPaid.toLocaleString()}
+- Payment Method: ${paymentMethod}
+- Order ID: ${paymentOrderId}
+- Country: ${registration.country}
+
+${members && members.length > 0 ? `
+Team Members:
+${members.map((m: any, i: number) => `${i + 1}. ${m.name} (${m.email})${m.phone ? ` - ${m.phone}` : ''}${m.role ? ` - ${m.role}` : ''}`).join('\n')}
+` : ''}
+
+Important Dates:
+- Submission Deadline: ${new Date(competition.endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+- Competition Period: ${new Date(competition.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${new Date(competition.endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+
+What's Next?
+1. Review the competition guidelines and requirements carefully
+2. Prepare your design submission according to specifications
+3. Submit your work through your profile dashboard before the deadline
+4. Wait for results announcement and check the leaderboard
+
+Important: Please save this email for your records. You'll need your registration number (${registration.registrationNumber}) for any inquiries about your submission.
+
+Need help? Contact us at projects@archalley.com
+
+Follow us on:
+- Facebook: https://facebook.com/archalley
+- Instagram: https://www.instagram.com/archalley_insta/
+- LinkedIn: https://www.linkedin.com/company/archalleypage/
+
+© ${new Date().getFullYear()} Archalley. All rights reserved.
+  `;
+
+  return sendEmail(userEmail, subject, html, text);
+};
+
+// NEW: Comprehensive consolidated confirmation for multiple registrations
+export const sendComprehensiveConsolidatedConfirmationEmail = async (
+  data: ConsolidatedRegistrationData & { paymentOrderId: string; paymentMethod?: string }
+) => {
+  const { registrations, competition, userName, userEmail, totalAmount, paymentOrderId, paymentMethod = 'PayHere' } = data;
+
+  console.log('📧 Sending Comprehensive Consolidated Confirmation Email to:', userEmail);
+  console.log('   Registration count:', registrations.length);
+  
+  const subject = `Registration Confirmed - Archalley Competition 2025`;
+
+  // Build registration list HTML
+  const registrationListHTML = registrations.map((item, index) => {
+    // Extract participant info from members array
+    const participantInfo = item.members && item.members.length > 0 ? item.members[0] : null;
+    const participantName = participantInfo?.name || '';
+    
+    return `
+    <div style="background: ${index % 2 === 0 ? '#f9f9f9' : '#fff'}; padding: 20px; border-radius: 8px; margin: ${index > 0 ? '15px' : '0'} 0; border: 1px solid #e5e7eb;">
+      <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid #FFA000;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h4 style="color: #333; font-size: 16px; margin: 0;">${item.registrationType.name}</h4>
+          <p style="color: #FFA000; font-size: 18px; font-weight: bold; margin: 0;">
+            LKR ${item.registration.amountPaid.toLocaleString()}
+          </p>
+        </div>
+        <p style="color: #666; font-size: 13px; margin: 0;">
+          <strong>Registration #:</strong> 
+          <span style="font-family: monospace; color: #FFA000; font-weight: bold;">${item.registration.registrationNumber}</span>
+        </p>
+        ${participantName ? `
+          <p style="color: #666; font-size: 13px; margin: 5px 0 0 0;">
+            <strong>Participant:</strong> ${participantName}
+          </p>
+        ` : ''}
+      </div>
+      
+      ${item.members && item.members.length > 1 ? `
+        <div style="padding-top: 10px;">
+          <p style="color: #666; font-size: 13px; margin: 0 0 10px 0; font-weight: 600;">Team Members (${item.members.length}):</p>
+          ${item.members.map((member: any, idx: number) => `
+            <div style="padding: 6px 0; ${idx < item.members.length - 1 ? 'border-bottom: 1px dashed #e5e7eb;' : ''}">
+              <span style="color: #333; font-size: 13px;">${idx === 0 ? '👤 Lead: ' : '👥 ' }${member.name}</span><br>
+              <span style="color: #999; font-size: 12px;">${member.email}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+  }).join('');
+
+  const html = `
+    ${getEmailHeader()}
+    
+    <!-- Main Content -->
+    <div style="padding: 30px 20px;">
+      <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+        Hi ${userName},
+      </p>
+      
+      <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+        Congratulations! Your registration for <strong>Archalley Competition 2025 - Christmas in Future</strong> has been successfully confirmed. We're excited to see your creative work!
+      </p>
+
+      <!-- Payment Summary -->
+      <div style="background: #fff4e6; border-left: 4px solid #FFA000; padding: 20px; margin: 30px 0; border-radius: 4px;">
+        <h3 style="color: #FFA000; margin: 0 0 10px 0; font-size: 18px;">Payment Confirmed</h3>
+        <p style="color: #666; font-size: 13px; margin: 0 0 15px 0;">
+          Order ID: <span style="font-family: monospace;">${paymentOrderId}</span> | Payment Method: ${paymentMethod}
+        </p>
+        <p style="color: #666; font-size: 14px; margin: 0;">
+          <strong>Total Amount Paid:</strong> <span style="color: #FFA000; font-size: 20px; font-weight: bold;">LKR ${totalAmount.toLocaleString()}</span>
+        </p>
+      </div>
+
+      <!-- Registration Details -->
+      <h3 style="color: #333; font-size: 18px; margin: 30px 0 15px 0;">Your Registrations (${registrations.length} ${registrations.length === 1 ? 'Entry' : 'Entries'})</h3>
+      ${registrationListHTML}
+
+      <!-- What's Next -->
+      <div style="margin: 30px 0;">
+        <h3 style="color: #333; font-size: 18px; margin: 0 0 15px 0;">What's Next?</h3>
+        <ul style="color: #666; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+          <li>Review the competition guidelines and requirements carefully</li>
+          <li>Prepare your design submissions according to specifications</li>
+          <li>Submit your work through your profile dashboard before the deadline</li>
+          <li>Wait for results announcement and check the leaderboard</li>
+        </ul>
+      </div>
+
+      <!-- Important Note -->
+      <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 30px 0;">
+        <p style="color: #1565c0; margin: 0; line-height: 1.6; font-size: 13px;">
+          <strong>Important:</strong> Please save this email for your records. You'll need your registration numbers for any inquiries about your submissions.
+        </p>
+      </div>
+    </div>
+    
+    ${getEmailFooter()}
+  `;
+
+  const regListText = registrations.map((item, index) => `
+${index + 1}. ${item.registrationType.name}
+   Registration #: ${item.registration.registrationNumber}
+   Amount: LKR ${item.registration.amountPaid.toLocaleString()}
+   ${item.members && item.members.length > 0 ? `Team Members: ${item.members.map((m: any) => m.name).join(', ')}` : ''}
+  `).join('\n');
+
+  const text = `
+Hi ${userName},
+
+Congratulations! Your registration for Archalley Competition 2025 - Innovative Christmas Tree has been successfully confirmed.
+
+Payment Confirmed:
+- Order ID: ${paymentOrderId}
+- Payment Method: ${paymentMethod}
+- Total Amount Paid: LKR ${totalAmount.toLocaleString()}
+
+Your Registrations (${registrations.length} ${registrations.length === 1 ? 'Entry' : 'Entries'}):
+${regListText}
+
+Important Dates:
+- Submission Deadline: ${new Date(competition.endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+- Competition Period: ${new Date(competition.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${new Date(competition.endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+
+What's Next?
+1. Review the competition guidelines and requirements carefully
+2. Prepare your design submissions according to specifications
+3. Submit your work through your profile dashboard before the deadline
+4. Wait for results announcement and check the leaderboard
+
+Important: Please save this email for your records. You'll need your registration numbers for any inquiries about your submissions.
+
+Need help? Contact us at projects@archalley.com
+
+Follow us on:
+- Facebook: https://facebook.com/archalley
+- Instagram: https://www.instagram.com/archalley_insta/
+- LinkedIn: https://www.linkedin.com/company/archalleypage/
+
+© ${new Date().getFullYear()} Archalley. All rights reserved.
+  `;
+
+  return sendEmail(userEmail, subject, html, text);
+};
+
 export default {
   sendRegistrationConfirmationEmail,
   sendPaymentReceiptEmail,
@@ -1501,5 +1779,7 @@ export default {
   sendConsolidatedBankTransferPendingEmail,
   sendPaymentVerifiedEmail,
   sendPaymentRejectedEmail,
+  sendComprehensiveConfirmationEmail,
+  sendComprehensiveConsolidatedConfirmationEmail,
 };
 

@@ -94,6 +94,7 @@ export default function CheckoutClient({ user }: Props) {
       script.onerror = () => {
         console.error('Failed to load PayHere SDK manually');
         setPayHereLoaded(false);
+        toast.error('Failed to load payment system. Please refresh the page.');
       };
       document.head.appendChild(script);
     };
@@ -196,9 +197,16 @@ export default function CheckoutClient({ user }: Props) {
 
     // Validate phone (if provided)
     if (formData.phone && formData.phone.trim().length > 0) {
-      const phoneRegex = /^\+\d{1,3}\d{9,14}$/;
-      if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
-        toast.error('Please enter a valid phone number with country code (e.g., +94771234567)');
+      const phone = formData.phone.replace(/[\s\-()]/g, ''); // Remove spaces, dashes, parentheses
+      
+      // Check if phone starts with + or just digits
+      const hasCountryCode = phone.startsWith('+');
+      const phoneRegex = hasCountryCode 
+        ? /^\+\d{10,15}$/ // International format
+        : /^0?\d{9,10}$/;  // Local format (with or without leading 0)
+      
+      if (!phoneRegex.test(phone)) {
+        toast.error('Please enter a valid phone number (e.g., 0771234567 or +94771234567)');
         return false;
       }
     }
@@ -217,6 +225,12 @@ export default function CheckoutClient({ user }: Props) {
     
     if (!cart || cart.items.length === 0) {
       toast.error('Your cart is empty');
+      return;
+    }
+
+    // Prevent double submission
+    if (isProcessing) {
+      console.log('Already processing, ignoring duplicate submission');
       return;
     }
 
@@ -385,12 +399,14 @@ export default function CheckoutClient({ user }: Props) {
     // Set up PayHere event handlers
     window.payhere.onCompleted = function onCompleted(orderId: string) {
       console.log('Payment completed. OrderID:', orderId);
-      setIsProcessing(false);
+      console.log('⚠️ Note: Payment submitted to PayHere, waiting for server confirmation...');
       
-      // Redirect to return URL after a short delay to allow notification to process
+      // Don't set isProcessing to false - keep it true while redirecting
+      // Redirect to processing page to wait for PayHere notify webhook
+      // This is critical because onCompleted fires BEFORE PayHere confirms the payment
       setTimeout(() => {
-        window.location.href = paymentData.return_url;
-      }, 1000);
+        router.push(`/competitions/payment/processing/${orderId}`);
+      }, 500);
     };
 
     window.payhere.onDismissed = function onDismissed() {
@@ -407,7 +423,7 @@ export default function CheckoutClient({ user }: Props) {
 
     // Prepare payment object for PayHere SDK
     const payment = {
-      sandbox: process.env.NEXT_PUBLIC_PAYHERE_MODE !== 'live',
+      sandbox: paymentData.sandbox, // CRITICAL: Tell PayHere to use sandbox mode
       merchant_id: paymentData.merchant_id,
       return_url: undefined, // Important: set to undefined for Onsite Checkout
       cancel_url: undefined, // Important: set to undefined for Onsite Checkout
@@ -428,16 +444,25 @@ export default function CheckoutClient({ user }: Props) {
 
     // Start the payment popup
     try {
-      console.log('Calling payhere.startPayment with:', {
+      console.log('🚀 Starting PayHere payment with full details:', {
         sandbox: payment.sandbox,
         merchant_id: payment.merchant_id,
         order_id: payment.order_id,
         amount: payment.amount,
-        hasHash: !!payment.hash,
+        currency: payment.currency,
+        items: payment.items,
+        hash: payment.hash,
+        notify_url: payment.notify_url,
+        first_name: payment.first_name,
+        last_name: payment.last_name,
+        email: payment.email,
+        country: payment.country,
       });
       
+      console.log('📋 Complete payment object:', JSON.stringify(payment, null, 2));
+      
       window.payhere.startPayment(payment);
-      console.log('payhere.startPayment called successfully');
+      console.log('✅ payhere.startPayment called successfully');
     } catch (error) {
       console.error('Error starting payment:', error);
       setIsProcessing(false);

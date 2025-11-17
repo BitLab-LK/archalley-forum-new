@@ -7,13 +7,13 @@ export const PAYHERE_CONFIG = {
   // Merchant Configuration
   merchantId:
     process.env.PAYHERE_MODE === 'live'
-      ? process.env.PAYHERE_MERCHANT_ID
-      : process.env.PAYHERE_SANDBOX_MERCHANT_ID || '1221149',
+      ? process.env.PAYHERE_MERCHANT_ID?.trim()
+      : (process.env.PAYHERE_SANDBOX_MERCHANT_ID || process.env.PAYHERE_MERCHANT_ID)?.trim() || '1221149',
   
   merchantSecret:
     process.env.PAYHERE_MODE === 'live'
-      ? process.env.PAYHERE_MERCHANT_SECRET
-      : process.env.PAYHERE_SANDBOX_MERCHANT_SECRET || 'test_secret',
+      ? process.env.PAYHERE_MERCHANT_SECRET?.trim()
+      : (process.env.PAYHERE_SANDBOX_MERCHANT_SECRET || process.env.PAYHERE_MERCHANT_SECRET)?.trim() || 'test_secret',
   
   // Payment Configuration
   currency: 'LKR',
@@ -64,13 +64,6 @@ export function getPayHereConfig() {
   }
   
   return PAYHERE_CONFIG;
-}
-
-/**
- * Check if PayHere is in sandbox mode
- */
-export function isPayHereSandbox(): boolean {
-  return PAYHERE_CONFIG.mode === 'sandbox';
 }
 
 /**

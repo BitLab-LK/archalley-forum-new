@@ -7,6 +7,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generateUniqueRegistrationNumber } from '@/lib/competition-utils';
+import {
+  sendComprehensiveConfirmationEmail,
+  sendComprehensiveConsolidatedConfirmationEmail,
+} from '@/lib/competition-email-service';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   console.log('\n🔙 Payment Return Handler Called');
@@ -132,6 +136,84 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
               console.log(`✅ FALLBACK SUCCESS: Created ${registrations.length} registration(s)`);
               registrations.forEach(reg => console.log(`   - ${reg.registrationNumber}`));
 
+              // Send confirmation emails
+              console.log('📧 Sending confirmation emails...');
+              try {
+                // Extract customer details from payment
+                const customerDetails = payment.customerDetails as any;
+                const customerEmail = customerDetails?.email || payment.user.email;
+                const customerName = customerDetails?.firstName && customerDetails?.lastName
+                  ? `${customerDetails.firstName} ${customerDetails.lastName}`
+                  : payment.user.name || 'Participant';
+                
+                console.log(`📧 Sending emails to: ${customerEmail}`);
+                
+                // Fetch full registration details with actual registrationType from database
+                const fullRegistrations = await prisma.competitionRegistration.findMany({
+                  where: {
+                    id: { in: registrations.map(r => r.id) },
+                  },
+                  include: {
+                    registrationType: true,
+                    competition: true,
+                  },
+                });
+                
+                // Calculate total amount
+                const totalAmount = fullRegistrations.reduce((sum, reg) => sum + Number(reg.amountPaid), 0);
+                
+                // Use consolidated email if multiple registrations, otherwise use single comprehensive email
+                if (fullRegistrations.length > 1) {
+                  console.log(`📧 Sending COMPREHENSIVE CONSOLIDATED email (${fullRegistrations.length} registrations)`);
+                  
+                  // Prepare consolidated data
+                  const consolidatedData = {
+                    registrations: fullRegistrations.map(reg => {
+                      return {
+                        registration: reg,
+                        registrationType: reg.registrationType,
+                        members: (reg.members as any) || [],
+                      };
+                    }),
+                    competition: fullRegistrations[0].competition,
+                    userName: customerName,
+                    userEmail: customerEmail,
+                    paymentOrderId: payment.orderId,
+                    paymentMethod: 'PayHere',
+                    totalAmount,
+                  };
+                  
+                  // Send single comprehensive consolidated email
+                  await sendComprehensiveConsolidatedConfirmationEmail(consolidatedData);
+                  
+                  console.log(`✅ Comprehensive consolidated email sent successfully`);
+                } else {
+                  console.log(`📧 Sending COMPREHENSIVE email (single registration)`);
+                  
+                  // Send comprehensive email for single registration
+                  const fullRegistration = fullRegistrations[0];
+                  
+                  const emailData = {
+                    registration: fullRegistration,
+                    competition: fullRegistration.competition,
+                    registrationType: fullRegistration.registrationType,
+                    userName: customerName,
+                    userEmail: customerEmail,
+                    members: (fullRegistration.members as any) || [],
+                    paymentOrderId: payment.orderId,
+                    paymentMethod: 'PayHere',
+                  };
+
+                  // Send single comprehensive email
+                  await sendComprehensiveConfirmationEmail(emailData);
+
+                  console.log(`✅ Comprehensive email sent for registration: ${fullRegistration.registrationNumber}`);
+                }
+              } catch (emailError) {
+                console.error(`❌ Failed to send emails:`, emailError);
+                // Don't throw - registration is already created
+              }
+
               // Redirect to success page
               return NextResponse.redirect(
                 new URL(`/competitions/payment/success/${orderId}`, request.url)
@@ -166,3 +248,4 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 }
+

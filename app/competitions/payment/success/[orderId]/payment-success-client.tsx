@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Mail, FileText, ArrowRight, Award, Calendar } from 'lucide-react';
+import { CheckCircle2, Mail, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface PaymentSuccessClientProps {
@@ -60,7 +60,7 @@ export default function PaymentSuccessClient({
             <CheckCircle2 className="w-12 h-12 text-green-600" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Payment Successful! 🎉
+            Payment Successful!
           </h1>
           <p className="text-lg text-gray-600">
             Thank you, {user.name}! Your registration is confirmed.
@@ -95,7 +95,7 @@ export default function PaymentSuccessClient({
               <div className="flex justify-between">
                 <span className="text-gray-600">Status:</span>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                  ✓ Confirmed
+                  Confirmed
                 </span>
               </div>
             </div>
@@ -106,31 +106,28 @@ export default function PaymentSuccessClient({
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Your Registrations
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {registrations.map((registration) => (
                 <div
                   key={registration.registrationNumber}
-                  className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg p-5"
+                  className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <p className="text-sm text-orange-600 font-medium mb-1">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium mb-1">
                         Registration Number
                       </p>
-                      <p className="text-2xl font-bold text-orange-900 font-mono">
+                      <p className="text-xl font-bold text-gray-900 font-mono tracking-wide">
                         {registration.registrationNumber}
                       </p>
                     </div>
-                    <FileText className="w-8 h-8 text-orange-500" />
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm">
-                      <Award className="w-4 h-4 text-gray-500 mr-2" />
-                      <span className="text-gray-700">{registration.competition.title}</span>
+                  <div className="space-y-1.5 text-sm">
+                    <div className="text-gray-700">
+                      {registration.competition.title}
                     </div>
-                    <div className="flex items-center text-sm">
-                      <Calendar className="w-4 h-4 text-gray-500 mr-2" />
-                      <span className="text-gray-700">{registration.registrationType.name}</span>
+                    <div className="text-gray-500">
+                      {registration.registrationType.name}
                     </div>
                   </div>
                 </div>
@@ -145,18 +142,19 @@ export default function PaymentSuccessClient({
             <Mail className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
             <div>
               <h3 className="font-semibold text-blue-900 mb-2">
-                Confirmation Emails Sent
+                Confirmation Email Sent
               </h3>
               <p className="text-sm text-blue-800 mb-2">
-                We've sent the following emails to <strong>{user.email}</strong>:
+                A comprehensive confirmation email has been sent to <strong>{user.email}</strong> with:
               </p>
               <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
-                <li>Registration confirmation with all details</li>
-                <li>Payment receipt for your records</li>
-                <li>Competition guidelines and submission instructions</li>
+                <li>All registration details and numbers</li>
+                <li>Payment information and receipt</li>
+                <li>Competition guidelines and deadlines</li>
+                <li>Next steps and submission instructions</li>
               </ul>
               <p className="text-xs text-blue-600 mt-3">
-                💡 Can't find the emails? Check your spam/junk folder.
+                Can't find the email? Check your spam/junk folder.
               </p>
             </div>
           </div>
@@ -204,17 +202,10 @@ export default function PaymentSuccessClient({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <button
-            onClick={() => router.push('/profile/registrations')}
-            className="flex-1 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
-          >
-            View My Registrations
-            <ArrowRight className="w-5 h-5" />
-          </button>
+        <div className="flex justify-center mb-6">
           <button
             onClick={() => router.push('/events')}
-            className="flex-1 bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+            className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
           >
             Browse More Events
             <ArrowRight className="w-5 h-5" />

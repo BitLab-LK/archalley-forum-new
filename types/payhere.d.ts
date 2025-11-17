@@ -15,7 +15,7 @@ declare global {
 }
 
 export interface PayHerePaymentObject {
-  sandbox: boolean;
+  sandbox?: boolean; // Optional: defaults to false (live mode)
   merchant_id: string;
   return_url?: string;
   cancel_url?: string;

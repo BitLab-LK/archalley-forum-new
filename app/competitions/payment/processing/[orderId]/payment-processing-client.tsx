@@ -14,15 +14,23 @@ export default function PaymentProcessingClient({ orderId }: Props) {
 
   // Check payment status every 3 seconds
   useEffect(() => {
+    let pollCount = 0;
+    const maxPolls = 5; // Maximum 5 polls (15 seconds)
+    
     const checkStatus = async () => {
       try {
         setChecking(true);
+        pollCount++;
+        console.log(`📊 Polling payment status (${pollCount}/${maxPolls})...`);
+        
         const response = await fetch(`/api/competitions/payment/status/${orderId}`);
         const data = await response.json();
 
         if (data.status === 'COMPLETED') {
+          console.log('✅ Payment confirmed as COMPLETED');
           router.push(`/competitions/payment/success/${orderId}`);
         } else if (data.status === 'FAILED' || data.status === 'CANCELLED') {
+          console.log('❌ Payment FAILED or CANCELLED');
           router.push(`/competitions/payment/failed/${orderId}`);
         }
       } catch (error) {
@@ -35,7 +43,17 @@ export default function PaymentProcessingClient({ orderId }: Props) {
     const interval = setInterval(checkStatus, 3000);
     checkStatus(); // Initial check
 
-    return () => clearInterval(interval);
+    // Fallback: After 15 seconds, redirect to return URL to trigger fallback mechanism
+    // This handles cases where PayHere notify webhook cannot reach localhost
+    const fallbackTimeout = setTimeout(() => {
+      console.log('⏱️ Timeout reached, redirecting to return URL for fallback...');
+      window.location.href = `/api/competitions/payment/return?order_id=${orderId}`;
+    }, 15000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(fallbackTimeout);
+    };
   }, [orderId, router]);
 
   return (

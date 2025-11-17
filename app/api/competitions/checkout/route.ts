@@ -358,6 +358,18 @@ export async function POST(
       .map((item) => `${item.competition.title} - ${item.registrationType.name}`)
       .join(', ');
 
+    console.log('🔐 Generating PayHere hash with:', {
+      merchantId: payHereConfig.merchantId,
+      orderId,
+      amount: totalAmount.toFixed(2),
+      currency: payHereConfig.currency,
+      merchantSecretLength: payHereConfig.merchantSecret?.length,
+      merchantSecretFirst10: payHereConfig.merchantSecret?.substring(0, 10),
+      merchantSecretLast10: payHereConfig.merchantSecret?.substring(payHereConfig.merchantSecret.length - 10),
+      mode: payHereConfig.mode,
+      paymentUrl: payHereConfig.paymentUrl
+    });
+
     const hash = generatePayHereHash(
       payHereConfig.merchantId!,
       orderId,
@@ -366,7 +378,17 @@ export async function POST(
       payHereConfig.merchantSecret!
     );
 
+    console.log('✅ Generated hash:', hash);
+    console.log('📝 Hash generation inputs:', {
+      format: 'MD5(merchant_id + order_id + amount + currency + MD5(merchant_secret))',
+      merchant_id: payHereConfig.merchantId,
+      order_id: orderId,
+      amount: totalAmount.toFixed(2),
+      currency: payHereConfig.currency,
+    });
+
     const paymentData = {
+      sandbox: payHereConfig.mode === 'sandbox', // Add sandbox flag for PayHere
       merchant_id: payHereConfig.merchantId!,
       return_url: payHereConfig.returnUrl,
       cancel_url: payHereConfig.cancelUrl,

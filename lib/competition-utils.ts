@@ -189,19 +189,35 @@ export function generatePayHereHash(
   currency: string,
   merchantSecret: string
 ): string {
+  console.log('🔐 Generating PayHere hash with inputs:', {
+    merchantId,
+    orderId,
+    amount,
+    currency,
+    merchantSecretLength: merchantSecret?.length,
+    merchantSecretPreview: merchantSecret?.substring(0, 10) + '...'
+  });
+
   const hashedSecret = crypto
     .createHash('md5')
     .update(merchantSecret)
     .digest('hex')
     .toUpperCase();
   
-  const hashString = `${merchantId}${orderId}${amount}${currency}${hashedSecret}`;
+  console.log('🔑 Hashed secret (MD5):', hashedSecret);
   
-  return crypto
+  const hashString = `${merchantId}${orderId}${amount}${currency}${hashedSecret}`;
+  console.log('📝 Hash string to be MD5\'d:', hashString);
+  
+  const finalHash = crypto
     .createHash('md5')
     .update(hashString)
     .digest('hex')
     .toUpperCase();
+  
+  console.log('✅ Final hash generated:', finalHash);
+  
+  return finalHash;
 }
 
 /**
@@ -236,10 +252,8 @@ export function verifyPayHereSignature(
 /**
  * Get PayHere payment URL based on mode
  */
-export function getPayHereUrl(mode: 'sandbox' | 'live' = 'sandbox'): string {
-  return mode === 'live'
-    ? 'https://www.payhere.lk/pay/checkout'
-    : 'https://sandbox.payhere.lk/pay/checkout';
+export function getPayHereUrl(): string {
+  return 'https://www.payhere.lk/pay/checkout';
 }
 
 // ============================================

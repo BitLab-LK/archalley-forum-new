@@ -136,6 +136,7 @@ export interface CartItemSummary {
 // ============================================
 
 export interface PayHerePaymentData {
+  sandbox?: boolean; // Enable sandbox mode for testing
   merchant_id: string;
   return_url: string;
   cancel_url: string;
