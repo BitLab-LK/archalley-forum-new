@@ -62,23 +62,23 @@ export default function SidebarFacebook({ className }: SidebarFacebookProps) {
 
   return (
     <Card className={`${className} border-0 shadow-sm bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm overflow-hidden`}>
-      <CardHeader className="pb-2 px-0 pt-4">
+      <CardHeader className="pb-3 px-0 pt-4">
         <div className="flex items-center">
-          <CardTitle className="text-base text-gray-900 dark:text-gray-100 mr-3 whitespace-nowrap">
-            Follow us on Facebook
+          <CardTitle className="flex items-center space-x-2 text-lg font-semibold mr-3">
+            <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap">Follow us on Facebook</span>
           </CardTitle>
           <div className="flex-1 border-b-[5px] border-black"></div>
         </div>
       </CardHeader>
       <CardContent className="px-0 pb-4">
-        {/* Live Facebook Page Plugin - Scrollable */}
-        <div className="w-full">
+        {/* Live Facebook Page Plugin - Centered on Tablet */}
+        <div className="w-full flex justify-center md:justify-center lg:justify-start">
           <div 
             className="fb-page" 
             data-href="https://www.facebook.com/archalley/"
             data-tabs="timeline"
             data-width="400"
-            data-height="700"
+            data-height="500"
             data-small-header="false"
             data-adapt-container-width="true"
             data-hide-cover="false"

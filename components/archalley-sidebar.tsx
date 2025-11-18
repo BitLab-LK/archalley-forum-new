@@ -130,10 +130,10 @@ function ArchAlleySidebar() {
   }, [hasLoadedInitialData])
 
   return (
-    <div className="space-y-6 sticky top-8">
+    <div className="space-y-4 md:space-y-6 md:sticky md:top-8">
       {/* 1. 1x1 Ad Banner */}
       <AnimatedContentWrapper direction="fade" delay={150}>
-        <div className="bg-white dark:bg-gray-800 rounded-none shadow-sm w-full">
+        <div className="bg-white dark:bg-gray-800 rounded-none shadow-sm w-full md:max-w-xl md:mx-auto lg:max-w-none">
           <AdBannerComponent 
             size="320x320" 
             className="w-full" 
@@ -148,7 +148,7 @@ function ArchAlleySidebar() {
       {/* 2. YouTube Section */}
       <SidebarYouTube />
 
-      {/* 3. Facebook Section */}
+      {/* 3. Facebook Section - Optimized for tablet */}
       <SidebarFacebook />
 
       {/* 4. Trending WordPress Posts */}
