@@ -360,7 +360,7 @@ export default function CompetitionPageClient() {
               </div>
 
               {/* Right Column Content */}
-              <div className="relative z-10 flex flex-col justify-end pb-0 pl-0 md:pl-[5rem]">
+              <div className="relative z-10 flex flex-col justify-end pb-0 pl-0 md:pl-8 lg:pl-[5rem]">
                 <p className="text-base text-white text-left leading-[20px]">
                   For <strong>every entry submitted</strong>, we will <strong>plant a tree</strong>,<br />helping rebuild the planet's future canopy.
                 </p>
@@ -377,7 +377,7 @@ export default function CompetitionPageClient() {
           <div className="max-w-7xl mx-auto w-full">
             <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[600px]">
               {/* Left Column Content */}
-              <div className="relative z-10 flex flex-col justify-start md:justify-between pr-6 md:pr-8 lg:pr-12 text-left md:text-right order-1 lg:order-1">
+              <div className="relative z-10 flex flex-col justify-start md:justify-between pr-6 md:pr-0 lg:pr-12 text-left md:text-left lg:text-right order-1 lg:order-1">
                 <div className="order-1">
                   <h2 id="design-considerations" className="text-2xl md:text-4xl font-bold text-white uppercase tracking-wide scroll-mt-20">
                     <a href="#design-considerations" >DESIGN CONSIDERATIONS</a>
@@ -392,7 +392,7 @@ export default function CompetitionPageClient() {
               </div>
 
               {/* Right Column Content */}
-              <div className="relative z-10 flex flex-col pl-0 md:pl-8 lg:pl-12 order-2 lg:order-2">
+              <div className="relative z-10 flex flex-col pl-0 md:pl-0 lg:pl-12 order-2 lg:order-2">
                 <h3 className="text-base md:text-3xl font-bold text-white mb-8">
                   What makes a futuristic tree stand out?
                 </h3>
@@ -473,14 +473,14 @@ export default function CompetitionPageClient() {
           <div className="max-w-7xl mx-auto w-full">
             <div className="grid grid-cols-1 lg:grid-cols-2">
               {/* Left Column Content */}
-              <div className="relative z-10 flex flex-col pr-6 md:pr-8 lg:pr-12 text-left md:text-right order-1 lg:order-1">
+              <div className="relative z-10 flex flex-col pr-6 md:pr-0 lg:pr-12 text-left md:text-left lg:text-right order-1 lg:order-1">
                 <h2 id="submission-categories" className="text-2xl md:text-4xl font-bold text-white mb-6 uppercase tracking-wide scroll-mt-20">
                   <a href="#submission-categories" >SUBMISSION CATEGORIES</a>
                 </h2>
               </div>
 
               {/* Right Column Content */}
-              <div className="relative z-10 flex flex-col pl-0 md:pl-8 lg:pl-12 pb-0 order-2 lg:order-2">
+              <div className="relative z-10 flex flex-col pl-0 md:pl-0 lg:pl-12 pb-0 order-2 lg:order-2">
                 <ul className="space-y-4 mb-6 text-gray-300 text-base md:text-xl list-disc list-inside leading-[20px] md:leading-normal">
                   <li>Physical Tree Category</li>
                   <li>Digital Tree Category</li>
@@ -1019,14 +1019,14 @@ export default function CompetitionPageClient() {
         <div className="max-w-7xl mx-auto relative">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
             {/* Left Side - Title */}
-            <div className="flex flex-col justify-start pr-0 md:pr-8 lg:pr-12">
-              <h2 id="registration" className="text-2xl md:text-4xl font-bold text-white mb-4 md:mb-12 uppercase tracking-wide text-left md:text-right scroll-mt-20">
+            <div className="flex flex-col justify-start pr-0 md:pr-0 lg:pr-12">
+              <h2 id="registration" className="text-2xl md:text-4xl font-bold text-white mb-4 md:mb-12 uppercase tracking-wide text-left md:text-left lg:text-right scroll-mt-20">
                 <a href="#registration" >REGISTRATION</a>
               </h2>
             </div>
 
             {/* Right Side - Registration Content */}
-            <div className="space-y-8 pl-0 md:pl-8 lg:pl-12">
+            <div className="space-y-8 pl-0 md:pl-0 lg:pl-12">
               {/* Early bird Registration */}
               <div>
                 <h3 className="text-base md:text-3xl font-bold text-white mb-2">Early bird Registration</h3>
