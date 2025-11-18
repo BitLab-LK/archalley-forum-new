@@ -1142,11 +1142,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('physical-tree')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Physical Tree Category</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['physical-tree'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['physical-tree'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1154,7 +1154,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['physical-tree'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['physical-tree'] ? 'block' : 'hidden'}`}>
                   <p><strong>Build it for real:</strong> The tree must be a physically made product (in 2D or 3D form) and photographed for submission.</p>
                   <p><strong>Real photos only:</strong> Upload actual photographs of the built tree. Post-processing is limited to basic global color/exposure correction and cropping.</p>
                   <p><strong>Strictly no AI or graphic edits:</strong> AI-generated/AI-modified images, graphically enhances, compositing, retouching, or graphic enhancements are not permitted and may lead to disqualification.</p>
@@ -1167,11 +1167,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('digital-tree')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Digital Tree Category</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['digital-tree'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['digital-tree'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1179,7 +1179,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['digital-tree'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['digital-tree'] ? 'block' : 'hidden'}`}>
                   <p><strong>Digital Tree Category - Accepted Formats:</strong> Paintings, drawings, digital illustrations, mixed media, AI-generated or AI-enhanced images, 3D-rendered images, and graphical representations created using 3D modeling software.</p>
                   <p><strong>Originality & rights:</strong> The entry must be your original work or use assets you are legally licensed to use. Do not include copyrighted logos/characters or third-party assets without written permission. You are responsible for all rights and clearances.</p>
                   <p><strong>AI usage disclosure:</strong> AI-assisted work is allowed. By submitting, you warrant that no third-party rights are infringed and that any model/assets/prompts used are permitted for this purpose.</p>
@@ -1191,11 +1191,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('kids-tree')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Kids' Tree Category</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['kids-tree'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['kids-tree'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1203,7 +1203,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['kids-tree'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['kids-tree'] ? 'block' : 'hidden'}`}>
                   <p><strong>No winners selected:</strong> This category will not be judged by the jury and is not eligible for popularity voting or prizes.</p>
                   <p><strong>Participation recognition:</strong> Each completed submission receives one gift and a certificate of participation.</p>
                   <p><strong>Single entry policy:</strong> Only one (1) entry per participant is permitted.</p>
@@ -1217,11 +1217,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('submission-formats')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Submission Formats (All Categories)</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['submission-formats'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['submission-formats'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1229,7 +1229,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['submission-formats'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['submission-formats'] ? 'block' : 'hidden'}`}>
                   <p>Submit files via the Archalley web portal only (no external links or email). Do not include names, logos, watermarks, or identifying marks on images or filenames.</p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
                     <li><strong>Key Photograph (JPG, max 5 MB)</strong> — required; whole product must be clearly visible; used for Most Popular voting.</li>
@@ -1243,11 +1243,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('optional-documents')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Optional Documents (Physical, Digital Tree Categories Only)</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['optional-documents'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['optional-documents'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1255,7 +1255,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['optional-documents'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['optional-documents'] ? 'block' : 'hidden'}`}>
                   <p><strong>Optional PDF:</strong> Entrants may upload one (1) additional PDF (sketches, materials, drawings, graphics, process documentation), max 5 MB.</p>
                   <p><strong>Optional Video:</strong> Entrants may upload one (1) additional video (e.g., physical tree clip, AI video, animated walkthrough), max 10 MB.</p>
                   <p><strong>Submission channel:</strong> Only files uploaded via the Archalley web portal will be considered. External links (e.g., Google Drive), emails, or other reference documents/links will not be accepted for evaluation.</p>
@@ -1267,11 +1267,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('group-entry')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Group Entry</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['group-entry'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['group-entry'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1279,7 +1279,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['group-entry'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['group-entry'] ? 'block' : 'hidden'}`}>
                   <p><strong>Eligibility.</strong> Under Group entry, teams, and company entries are permitted. A team may include up to ten (10) participants.</p>
                   <p>If entering under a company name, the entrant represents and warrants that (i) the company has authorized participation in the competition; and (ii) the entrant has the right and authority to submit the entry and all related materials on the company's behalf. Archalley is not liable for any unauthorized submissions, fraud, or misrepresentation by the entrant or team and may, at its discretion, disqualify the entry and recover any costs or damages arising therefrom.</p>
                   <p><strong>Documentation.</strong> Archalley may request supporting documents to verify company authorization and authenticity. Failure to provide satisfactory documentation may result in disqualification.</p>
@@ -1291,11 +1291,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('registration-identification')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Registration & Identification</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['registration-identification'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['registration-identification'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1303,7 +1303,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['registration-identification'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['registration-identification'] ? 'block' : 'hidden'}`}>
                   <p>After your registration has been approved, you will be sent a unique identification number for your entry, which will be necessary to submit your proposal. If you haven't received a confirmation within two business days, please contact us at projects@archalley.com</p>
                   <p>For kid's category the guardian is liable for entering the details of the kid & his submission & address & other details.</p>
                   <p>The registration number and the name are the only forms of identification for the entries.</p>
@@ -1316,11 +1316,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('submission-method')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Submission Method, Format & Deadline</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['submission-method'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['submission-method'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1328,7 +1328,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['submission-method'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['submission-method'] ? 'block' : 'hidden'}`}>
                   <p>Entries must be registered and submitted only via the Archalley web portal.</p>
                   <p>Entries must be submitted as JPG and must not exceed 5 MB per upload in the portal.</p>
                   <p>The submission deadline is 11:59 PM IST, 24 December 2025. Submissions after this deadline will not be considered.</p>
@@ -1339,11 +1339,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('multiple-entries')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Multiple Entries & Duplicate Products</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['multiple-entries'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['multiple-entries'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1351,7 +1351,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['multiple-entries'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['multiple-entries'] ? 'block' : 'hidden'}`}>
                   <p>Participants are free to submit multiple entries with different products, but each entry must be registered separately.</p>
                   <p>Multiple submissions by the same entrant with the same product may result in rejection of all relevant entries.</p>
                   <p>Multiple submissions of the same product by different participants may result in rejection of all relevant entries.</p>
@@ -1362,11 +1362,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('judging-jury')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Judging & Jury Protocol</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['judging-jury'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['judging-jury'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1374,7 +1374,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['judging-jury'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['judging-jury'] ? 'block' : 'hidden'}`}>
                   <p>Entries will be judged on their artistic merit and creative responses to the requirement to design a Christmas tree based on the theme "Christmas in future."</p>
                   <p>Entries will be presented anonymously for judging purposes.</p>
                   <p>The judges' decisions will be final and binding in all matters, and no correspondence will be entered into.</p>
@@ -1386,11 +1386,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('verification-compliance')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Verification & Compliance</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['verification-compliance'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['verification-compliance'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1398,7 +1398,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['verification-compliance'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['verification-compliance'] ? 'block' : 'hidden'}`}>
                   <p><strong>Verification:</strong> Archalley reserves the right to request additional proof of physical fabrication (e.g., build photos, process images) and to disqualify any entry that does not conform to these terms.</p>
                   <p><strong>Non-compliance:</strong> Entries that do not meet the above will be disqualified.</p>
                 </div>
@@ -1408,11 +1408,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('intellectual-property')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Intellectual Property, Permissions & Indemnity</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['intellectual-property'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['intellectual-property'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1420,7 +1420,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['intellectual-property'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['intellectual-property'] ? 'block' : 'hidden'}`}>
                   <p>All copyright and any other intellectual property rights in the product photographs are vested in the entrant. The entrant confirms they have not assigned, licensed, disposed of, or otherwise encumbered any of their rights in the product.</p>
                   <p>The entrant warrants that the entry does not infringe the intellectual property rights of any third party. The entrant(s) will indemnify Archalley against any claims made by third parties in respect of such infringement.</p>
                   <p>By entering the competition, the entrant confirms and warrants that they have the permission of any persons pictured in the product photographs (if any); where the photograph includes a person under the age of 18, the entrant has obtained the consent of the parent or legal guardian for the photo to be published and used by Archalley as contemplated by these terms and conditions.</p>
@@ -1431,11 +1431,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('archalley-rights')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Archalley Rights & Liability</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['archalley-rights'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['archalley-rights'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1443,7 +1443,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['archalley-rights'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['archalley-rights'] ? 'block' : 'hidden'}`}>
                   <p>Archalley reserves the right to amend the competition schedule or cancel the competition at any point if it deems such action necessary or for reasons beyond its reasonable control. Archalley will not be liable to entrants for any such cancellation; however, entry fees will be refunded in such events.</p>
                   <p>Archalley reserves the right to disqualify, refuse entry or refuse to award the prize to anyone in breach of these terms and conditions.</p>
                   <p>Archalley will not be liable for any loss or damage to any entries and bears no responsibility for incomplete or delayed entries.</p>
@@ -1456,11 +1456,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('winner-notification')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Winner Notification & Prizes</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['winner-notification'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['winner-notification'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1468,7 +1468,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['winner-notification'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['winner-notification'] ? 'block' : 'hidden'}`}>
                   <p>Winning entrants will be notified via email or phone using the contact information provided. If Archalley is unable to contact any winner, or if the prize is not accepted within two days of being notified, the winner will be deemed to have forfeited the prize, and Archalley reserves the right to determine a new winner for that prize or cancel the prize.</p>
                   <p>The winning entrants will receive prize money/gift as announced by Archalley. There will be no alternative to the prizes/gifts.</p>
                 </div>
@@ -1478,11 +1478,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('license-winning')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">License for Winning Entries</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['license-winning'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['license-winning'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1490,7 +1490,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['license-winning'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['license-winning'] ? 'block' : 'hidden'}`}>
                   <p>By entering the competition, each winning entrant grants Archalley, the competition sponsors, and all media partners an irrevocable, perpetual license to reproduce, enlarge, publish, or exhibit the product; the entrant's name; product images; product detail documents; and a self-picture of the entrant, mechanically or electronically, on any media worldwide (including the internet).</p>
                 </div>
               </div>
@@ -1499,11 +1499,11 @@ export default function CompetitionPageClient() {
               <div className="bg-slate-800/70 rounded-none overflow-hidden">
                 <button 
                   onClick={() => toggleCard('acceptance-terms')}
-                  className="w-full p-6 text-left flex justify-between items-center md:cursor-default"
+                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
                 >
                   <h3 className="text-sm md:text-xl font-bold text-white">Acceptance of Terms</h3>
                   <svg 
-                    className={`w-5 h-5 text-white transition-transform md:hidden ${expandedCards['acceptance-terms'] ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-white transition-transform ${expandedCards['acceptance-terms'] ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -1511,7 +1511,7 @@ export default function CompetitionPageClient() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['acceptance-terms'] ? 'block' : 'hidden md:block'}`}>
+                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['acceptance-terms'] ? 'block' : 'hidden'}`}>
                   <p>Submitting an entry to the competition indicates acceptance of these terms and conditions.</p>
                 </div>
               </div>
