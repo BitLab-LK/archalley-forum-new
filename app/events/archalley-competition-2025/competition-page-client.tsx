@@ -180,7 +180,7 @@ export default function CompetitionPageClient() {
               <div className="mb-12 md:mb-16">
                 <h3 className="text-[14.4px] md:text-xl font-bold text-white mb-4">Official Partners</h3>
                 <div className="flex flex-wrap justify-center items-center gap-6">
-                  <div className="h-16 md:h-20 flex items-center">
+                  <div className="h-12 md:h-14 lg:h-20 flex items-center">
                     <Image
                       src="/uploads/A-Plus-Logo.jpg"
                       alt="A PLUS"
@@ -189,7 +189,7 @@ export default function CompetitionPageClient() {
                       className="object-contain h-full w-auto"
                     />
                   </div>
-                  <div className="h-16 md:h-20 flex items-center">
+                  <div className="h-12 md:h-14 lg:h-20 flex items-center">
                     <Image
                       src="/uploads/ABrand-Logo.jpg"
                       alt="A BRAND"
