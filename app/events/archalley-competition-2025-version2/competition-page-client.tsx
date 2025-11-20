@@ -11,6 +11,7 @@ export default function CompetitionPageClient() {
   const [navHeight, setNavHeight] = useState(0)
   const navRef = useRef<HTMLElement>(null)
   const [timelineProgress, setTimelineProgress] = useState(0)
+  const [activePopup, setActivePopup] = useState<string | null>(null)
 
   // Calculate timeline progress
   useEffect(() => {
@@ -361,48 +362,157 @@ export default function CompetitionPageClient() {
                 <div className="flex items-center gap-3">
                   <span className="text-gray-300 text-base md:text-xl leading-[20px] md:leading-normal font-bold flex-1 text-left">• Physical Tree Category</span>
                   <Button
-                    asChild
+                    onClick={() => setActivePopup('physical')}
                     className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm rounded-none whitespace-nowrap"
                   >
-                    <a 
-                      href="/downloads/PHYSICAL TREE.pdf"
-                      download="PHYSICAL TREE.pdf"
-                    >
-                      Download Brief
-                    </a>
+                    Click for more
                   </Button>
                 </div>
                 
                 <div className="flex items-center gap-3">
                   <span className="text-gray-300 text-base md:text-xl leading-[20px] md:leading-normal font-bold flex-1 text-left">• Digital Tree Category</span>
                   <Button
-                    asChild
+                    onClick={() => setActivePopup('digital')}
                     className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm rounded-none whitespace-nowrap"
                   >
-                    <a 
-                      href="/downloads/DIGITAL TREE.pdf"
-                      download="DIGITAL TREE.pdf"
-                    >
-                      Download Brief
-                    </a>
+                    Click for more
                   </Button>
                 </div>
                 
                 <div className="flex items-center gap-3">
                   <span className="text-gray-300 text-base md:text-xl leading-[20px] md:leading-normal font-bold flex-1 text-left">• Kid's Tree Category (Age under 12)</span>
                   <Button
-                    asChild
+                    onClick={() => setActivePopup('kids')}
                     className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm rounded-none whitespace-nowrap"
                   >
-                    <a 
-                      href="/downloads/KIDS.pdf"
-                      download="KIDS.pdf"
-                    >
-                      Download Brief
-                    </a>
+                    Click for more
                   </Button>
                 </div>
               </div>
+
+              {/* Category Information Popups */}
+              {activePopup && (
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setActivePopup(null)}>
+                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-600 max-w-4xl w-full max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
+                    
+                    {/* Close Button */}
+                    <button 
+                      onClick={() => setActivePopup(null)} 
+                      className="absolute top-2 right-2 z-10 text-gray-400 hover:text-white text-2xl font-light bg-black/50 w-8 h-8 flex items-center justify-center hover:bg-black/70 transition-colors rounded-full"
+                    >
+                      ×
+                    </button>
+
+                    {/* Header Section */}
+                    <div className="relative p-8 pb-6">
+                      {/* Background decoration similar to PDF */}
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-purple-500/20 to-transparent"></div>
+                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-blue-500/20 to-transparent"></div>
+                      </div>
+                      
+                      <div className="relative">
+                        <p className="text-right text-gray-400 text-sm italic mb-2">Archalley Competition 2025</p>
+                        <h3 className="text-2xl md:text-3xl font-bold text-white text-center underline decoration-2 underline-offset-4 mb-6 tracking-wide">
+                          {activePopup === 'physical' && 'PHYSICAL TREE CATEGORY'}
+                          {activePopup === 'digital' && 'DIGITAL TREE CATEGORY'}
+                          {activePopup === 'kids' && "KIDS' TREE CATEGORY"}
+                        </h3>
+                      </div>
+                    </div>
+                    
+                    {/* Content Section */}
+                    <div className="px-8 pb-8">
+                      <div className="text-gray-200 space-y-4 text-base leading-relaxed">
+                        {activePopup === 'physical' && (
+                          <>
+                            <div className="flex flex-col space-y-3 text-left">
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Build it for real:</strong> The tree must be a physically made product (in 2D or 3D form) and photographed for submission.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Real photos only:</strong> Upload actual photographs of the built tree. Post-processing is limited to basic global color/exposure correction and cropping.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Strictly no AI or graphic edits:</strong> AI-generated/AI-modified images, graphically enhances, compositing, retouching, or graphic enhancements are <strong className="text-red-400">not permitted</strong> and may lead to disqualification.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left">Graphical representations using 3D modeling software, 3D renders, Drawings, printed graphics will <strong className="text-red-400">not be accepted</strong> as the product under this category.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Physical Tree Category - Accepted Formats:</strong> Sewing / Fabric crafts, Sculptures, Crafted trees / Tree models</span>
+                              </p>
+                            </div>
+                          </>
+                        )}
+                        
+                        {activePopup === 'digital' && (
+                          <>
+                            <div className="flex flex-col space-y-3 text-left">
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Digital Tree Category - Accepted Formats:</strong> Paintings, drawings, digital illustrations, mixed media, AI-generated or AI-enhanced images, 3D-rendered images, and graphical representations created using 3D modeling software.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Originality & rights:</strong> The entry must be your original work or use assets you are legally licensed to use. Do not include copyrighted logos/characters or third-party assets without written permission. You are responsible for all rights and clearances.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">AI usage disclosure:</strong> AI-assisted work is allowed. By submitting, you <strong className="text-blue-400">warrant</strong> that no third-party rights are infringed and that any model/assets/prompts used are permitted for this purpose.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Compliance:</strong> Entries that breach these terms or the general competition rules may be <strong className="text-red-400">disqualified</strong>.</span>
+                              </p>
+                            </div>
+                          </>
+                        )}
+                        
+                        {activePopup === 'kids' && (
+                          <>
+                            <div className="flex flex-col space-y-3 text-left">
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">No winners selected:</strong> This category will <strong className="text-red-400">not</strong> be judged by the jury and is <strong className="text-red-400">not eligible</strong> for popularity voting or prizes.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Participation recognition:</strong> Each <strong className="text-green-400">completed submission</strong> receives one gift and a <strong className="text-green-400">certificate of participation</strong>.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Single entry policy:</strong> Only one (1) entry per participant is permitted.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">No group entries:</strong> Group/team entries are <strong className="text-red-400">not allowed</strong> in the Kids' Category.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Parent/Guardian responsibility:</strong> The parent/guardian is responsible for entering the child's accurate details, submission, and <strong className="text-yellow-400">delivery address</strong>, including a <strong className="text-yellow-400">valid phone number</strong>.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Delivery address required:</strong> A correct, complete delivery address and phone number are <strong className="text-yellow-400">mandatory</strong>. Archalley is <strong className="text-red-400">not liable</strong> for non-delivery, delays, misplacement, or damage arising from incorrect/incomplete details or third-party courier issues.</span>
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Footer with vertical line */}
+                      <div className="mt-8 pt-6 border-t border-slate-600">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
