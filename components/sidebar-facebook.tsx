@@ -77,7 +77,7 @@ export default function SidebarFacebook({ className }: SidebarFacebookProps) {
             className="fb-page" 
             data-href="https://www.facebook.com/archalley/"
             data-tabs="timeline"
-            data-width="400"
+            data-width="500"
             data-height="500"
             data-small-header="false"
             data-adapt-container-width="true"
