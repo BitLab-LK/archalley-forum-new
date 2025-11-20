@@ -12,6 +12,31 @@ export default function CompetitionPageClient() {
   const navRef = useRef<HTMLElement>(null)
   const [timelineProgress, setTimelineProgress] = useState(0)
   const [activePopup, setActivePopup] = useState<string | null>(null)
+  const [activeMobileTab, setActiveMobileTab] = useState('challenge')
+
+  // Function to handle tab change and scroll to respective section
+  const handleTabChange = (tab: string) => {
+    setActiveMobileTab(tab)
+    
+    // Scroll to the respective section based on tab
+    setTimeout(() => {
+      let targetSection = ''
+      if (tab === 'challenge') {
+        targetSection = '#theme'
+      } else if (tab === 'awards') {
+        targetSection = '#awards'
+      } else if (tab === 'jury') {
+        targetSection = '#jury-panel'
+      }
+      
+      if (targetSection) {
+        const element = document.querySelector(targetSection)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }
+    }, 100)
+  }
 
   // Calculate timeline progress
   useEffect(() => {
@@ -41,6 +66,19 @@ export default function CompetitionPageClient() {
       label: 'archalley_competition_2025',
     });
   }, []);
+
+  // Prevent body scroll when popup is open
+  useEffect(() => {
+    if (activePopup) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [activePopup]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -253,8 +291,8 @@ export default function CompetitionPageClient() {
         </div>
       </section>
 
-      {/* Navigation Bar */}
-      <div className="relative mt-4 md:mt-12 lg:mt-0">
+      {/* Navigation Bar - Hidden on mobile */}
+      <div className="relative mt-4 md:mt-12 lg:mt-0 hidden md:block">
         <nav 
           ref={navRef}
           className={`w-full bg-white/80 text-black z-50 transition-all duration-300 ${
@@ -280,7 +318,56 @@ export default function CompetitionPageClient() {
         {isSticky && navHeight > 0 && <div style={{ height: `${navHeight}px` }} />}
       </div>
 
-      {/* Theme Section */}
+      {/* Mobile Tabs - Only visible on mobile */}
+      <div className="md:hidden bg-slate-900 sticky top-0 z-40 border-b border-gray-600">
+        <div className="flex">
+          <button
+            onClick={() => handleTabChange('challenge')}
+            className={`flex-1 py-4 px-4 text-center font-medium transition-colors relative ${
+              activeMobileTab === 'challenge'
+                ? 'text-white'
+                : 'text-gray-300 hover:text-white'
+            }`}
+          >
+            Challenge
+            {activeMobileTab === 'challenge' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"></div>
+            )}
+          </button>
+          <button
+            onClick={() => handleTabChange('awards')}
+            className={`flex-1 py-4 px-4 text-center font-medium transition-colors relative ${
+              activeMobileTab === 'awards'
+                ? 'text-white'
+                : 'text-gray-300 hover:text-white'
+            }`}
+          >
+            Awards
+            {activeMobileTab === 'awards' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"></div>
+            )}
+          </button>
+          <button
+            onClick={() => handleTabChange('jury')}
+            className={`flex-1 py-4 px-4 text-center font-medium transition-colors relative ${
+              activeMobileTab === 'jury'
+                ? 'text-white'
+                : 'text-gray-300 hover:text-white'
+            }`}
+          >
+            Jury
+            {activeMobileTab === 'jury' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"></div>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop: Show all sections normally, Mobile: Show based on active tab */}
+      <div className="md:block">
+        {/* Challenge Content - Always visible on desktop, conditionally on mobile */}
+        <div className={`md:block ${activeMobileTab === 'challenge' ? 'block' : 'hidden'}`}>
+          {/* Theme Section */}
       <section id="theme" className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 z-20">
         <div className="max-w-7xl mx-auto relative">
           <div className="max-w-4xl mx-auto">
@@ -392,13 +479,13 @@ export default function CompetitionPageClient() {
 
               {/* Category Information Popups */}
               {activePopup && (
-                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setActivePopup(null)}>
-                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-600 max-w-4xl w-full max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 py-8 md:py-4 overflow-y-auto" onClick={() => setActivePopup(null)}>
+                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-600 max-w-4xl w-full max-h-[80vh] md:max-h-[90vh] overflow-y-auto relative my-auto" onClick={(e) => e.stopPropagation()}>
                     
                     {/* Close Button */}
                     <button 
                       onClick={() => setActivePopup(null)} 
-                      className="absolute top-2 right-2 z-10 text-gray-400 hover:text-white text-2xl font-light bg-black/50 w-8 h-8 flex items-center justify-center hover:bg-black/70 transition-colors rounded-full"
+                      className="sticky top-2 right-2 z-10 text-gray-400 hover:text-white text-2xl font-light bg-black/50 w-8 h-8 flex items-center justify-center hover:bg-black/70 transition-colors rounded-full ml-auto mr-2"
                     >
                       ×
                     </button>
@@ -517,8 +604,11 @@ export default function CompetitionPageClient() {
           </div>
         </div>
       </section>
+        </div>
 
-      {/* Awards Section */}
+        {/* Awards Content - Only visible on Awards tab (mobile) or always on desktop */}
+        <div className={`md:block ${activeMobileTab === 'awards' ? 'block' : 'hidden'}`}>
+          {/* Awards Section */}
       <section className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
         <div className="max-w-7xl mx-auto relative">
           {/* Top Section */}
@@ -635,6 +725,123 @@ export default function CompetitionPageClient() {
           </div>
         </div>
       </section>
+        </div>
+
+        {/* Jury Content - Only visible on Jury tab (mobile) or always on desktop */}
+        <div className={`md:block ${activeMobileTab === 'jury' ? 'block' : 'hidden'}`}>
+          {/* Jury Section */}
+      <section className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
+        <div className="max-w-7xl mx-auto relative">
+          <h2 id="jury-panel" className="text-2xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
+            <a href="#jury-panel">JURY PANEL</a>
+          </h2>
+          {/* First 4 Jurors - Top Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            {[
+              {
+                name: "Prof. Narein Perera",
+                bio: [
+                  "Head,",
+                  "Department of Architecture,",
+                  "University of Moratuwa",
+                  "Sri Lanka.",
+                ],
+                image: "/uploads/narein-perera.jpg",
+              },
+              {
+                name: "Dinesh Chandrasena",
+                bio: [
+                  "Designer & Academic Director of",
+                  "College of Fashion and Design,",
+                  "Colombo, Sri Lanka.",
+                ],
+                image: "/uploads/dinesh-chandrasena.jpg",
+              },
+              {
+                name: "Yasodhara Pathanjali",
+                bio: [
+                  "Principal and Co-Founder of",
+                  "Independent Collective School,",
+                  "Colombo, Sri Lanka.",
+                ],
+                image: "/uploads/yashodara-pathanjali.png",
+              },
+              {
+                name: "Dr. Kamal Wasala",
+                bio: [
+                  "Senior Lecturer",
+                  "in Industrial/ Product Design,",
+                  "Department of Integrated Design,",
+                  "University of Moratuwa, Sri Lanka.",
+                ],
+                image: "/uploads/kamal-wasala.jpg",
+              },
+            ].map((jury, index) => (
+              <div key={index} className="bg-slate-800/70 rounded-none p-6 text-center">
+                <div className={`relative w-24 h-24 md:w-32 md:h-32 mx-auto mb-4 overflow-hidden ${index < 4 ? 'rounded-full' : 'rounded-none'}`}>
+                  <Image
+                    src={jury.image}
+                    alt={jury.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <h3 className="text-[14.4px] md:text-lg font-bold text-white mb-2 leading-[20px] md:leading-normal">{jury.name}</h3>
+                <div className="text-[11.2px] md:text-sm space-y-1 leading-[20px] md:leading-normal" style={{ color: '#FFA000' }}>
+                  {jury.bio.map((line, bioIndex) => (
+                    <p key={bioIndex}>{line}</p>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Alley - Centered Banner Row */}
+          <div className="flex justify-center">
+            <div className="bg-slate-800/70 rounded-none p-6 text-center w-full md:max-w-[calc(50%-0.75rem)] lg:max-w-[calc((1280px-3*1.5rem)/2+1.5rem)]">
+              <div className="relative w-full h-24 md:h-40 mx-auto mb-4 rounded-none overflow-hidden">
+                <Image
+                  src="/uploads/alley-juror-2.webp"
+                  alt="Alley"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <h3 className="text-[14.4px] md:text-lg font-bold text-white mb-2 leading-[20px] md:leading-normal">Alley</h3>
+              <div className="text-[11.2px] md:text-sm space-y-1 leading-[20px] md:leading-normal" style={{ color: '#FFA000' }}>
+                <p>Non Biological Juror</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mt-24 md:mt-12">
+            <Button
+              asChild
+              className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+            >
+              <Link href="/events/archalley-competition-2025/register">
+                Register Now
+              </Link>
+            </Button>
+            <Button
+              asChild
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+            >
+              <a 
+                href="/downloads/Christmas Tree Competition 2025 - Brief.pdf"
+                download="Christmas Tree Competition 2025 - Brief.pdf"
+              >
+                Download Brief
+              </a>
+            </Button>
+          </div>
+        </div>
+      </section>
+        </div>
+
+        {/* Shared Sections - Timeline + How to Join + FAQ + Contact + Partners + Footer */}
+        <div className="md:block block">
 
       {/* Timeline Section */}
       <section className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 z-20">
@@ -874,95 +1081,11 @@ export default function CompetitionPageClient() {
             </div>
       </section>
 
-      {/* Jury Section */}
-      <section className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
-        <div className="max-w-7xl mx-auto relative">
-          <h2 id="jury-panel" className="text-2xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
-            <a href="#jury-panel">JURY PANEL</a>
-          </h2>
-          {/* First 4 Jurors - Top Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            {[
-              {
-                name: "Prof. Narein Perera",
-                bio: [
-                  "Head,",
-                  "Department of Architecture,",
-                  "University of Moratuwa",
-                  "Sri Lanka.",
-                ],
-                image: "/uploads/narein-perera.jpg",
-              },
-              {
-                name: "Dinesh Chandrasena",
-                bio: [
-                  "Designer & Academic Director of",
-                  "College of Fashion and Design,",
-                  "Colombo, Sri Lanka.",
-                ],
-                image: "/uploads/dinesh-chandrasena.jpg",
-              },
-              {
-                name: "Yasodhara Pathanjali",
-                bio: [
-                  "Principal and Co-Founder of",
-                  "Independent Collective School,",
-                  "Colombo, Sri Lanka.",
-                ],
-                image: "/uploads/yashodara-pathanjali.png",
-              },
-              {
-                name: "Dr. Kamal Wasala",
-                bio: [
-                  "Senior Lecturer",
-                  "in Industrial/ Product Design,",
-                  "Department of Integrated Design,",
-                  "University of Moratuwa, Sri Lanka.",
-                ],
-                image: "/uploads/kamal-wasala.jpg",
-              },
-            ].map((jury, index) => (
-              <div key={index} className="bg-slate-800/70 rounded-none p-6 text-center">
-                <div className={`relative w-24 h-24 md:w-32 md:h-32 mx-auto mb-4 overflow-hidden ${index < 4 ? 'rounded-full' : 'rounded-none'}`}>
-                  <Image
-                    src={jury.image}
-                    alt={jury.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <h3 className="text-[14.4px] md:text-lg font-bold text-white mb-2 leading-[20px] md:leading-normal">{jury.name}</h3>
-                <div className="text-[11.2px] md:text-sm space-y-1 leading-[20px] md:leading-normal" style={{ color: '#FFA000' }}>
-                  {jury.bio.map((line, bioIndex) => (
-                    <p key={bioIndex}>{line}</p>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {/* Alley - Centered Banner Row */}
-          <div className="flex justify-center">
-            <div className="bg-slate-800/70 rounded-none p-6 text-center w-full md:max-w-[calc(50%-0.75rem)] lg:max-w-[calc((1280px-3*1.5rem)/2+1.5rem)]">
-              <div className="relative w-full h-24 md:h-40 mx-auto mb-4 rounded-none overflow-hidden">
-                <Image
-                  src="/uploads/alley-juror-2.webp"
-                  alt="Alley"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <h3 className="text-[14.4px] md:text-lg font-bold text-white mb-2 leading-[20px] md:leading-normal">Alley</h3>
-              <div className="text-[11.2px] md:text-sm space-y-1 leading-[20px] md:leading-normal" style={{ color: '#FFA000' }}>
-                <p>Non Biological Juror</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+        {/* Shared Sections - Always visible on desktop, visible on all tabs on mobile */}
+        <div className="md:block block">
 
       {/* FAQ Section */}
-      <section className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
+      <section className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 z-20">
         <div className="max-w-7xl mx-auto relative">
           <h2 id="faq" className="text-2xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
             <a href="#faq">FAQ</a>
@@ -1153,6 +1276,9 @@ export default function CompetitionPageClient() {
           </div>
         </div>
       </footer>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
