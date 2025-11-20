@@ -2,34 +2,43 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import { usePathname } from "next/navigation"
 import { SOCIAL_MEDIA } from "@/lib/constants"
 
-export default function Footer() {
+interface FooterProps {
+  hideAdvertisement?: boolean
+}
+
+export default function Footer({ hideAdvertisement = false }: FooterProps) {
+  const pathname = usePathname()
+  const isCompetitionPage = pathname === '/events/archalley-competition-2025'
   return (
     <>
       {/* Static Bottom Ad Banner - Site Wide */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="w-full flex flex-col items-center">
-          <Link 
-            href="https://www.jaquar.lk/en/" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="block w-full max-w-[970px]"
-          >
-            <div className="relative overflow-hidden w-full" style={{ aspectRatio: '970/180' }}>
-              <Image
-                src="https://wp.archalley.com/wp-content/uploads/2025/02/Exel-Banner-970-x-180-footer-banner.webp"
-                alt="Exel Advertisement"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 970px"
-                priority={false}
-              />
-            </div>
-          </Link>
-          <div className="text-center mt-2 text-xs uppercase tracking-[0.35em] text-gray-500">ADVERTISEMENT</div>
+      {!hideAdvertisement && !isCompetitionPage && (
+        <div className="container mx-auto px-4 py-8">
+          <div className="w-full flex flex-col items-center">
+            <Link 
+              href="https://www.jaquar.lk/en/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block w-full max-w-[970px]"
+            >
+              <div className="relative overflow-hidden w-full" style={{ aspectRatio: '970/180' }}>
+                <Image
+                  src="https://wp.archalley.com/wp-content/uploads/2025/02/Exel-Banner-970-x-180-footer-banner.webp"
+                  alt="Exel Advertisement"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 970px"
+                  priority={false}
+                />
+              </div>
+            </Link>
+            <div className="text-center mt-2 text-xs uppercase tracking-[0.35em] text-gray-500">ADVERTISEMENT</div>
+          </div>
         </div>
-      </div>
+      )}
 
       <footer className="bg-black text-white">
       {/* Social Media Links */}

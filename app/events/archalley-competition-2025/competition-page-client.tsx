@@ -10,14 +10,28 @@ export default function CompetitionPageClient() {
   const [isSticky, setIsSticky] = useState(false)
   const [navHeight, setNavHeight] = useState(0)
   const navRef = useRef<HTMLElement>(null)
-  const [expandedCards, setExpandedCards] = useState<{[key: string]: boolean}>({})
+  const [timelineProgress, setTimelineProgress] = useState(0)
+  const [activePopup, setActivePopup] = useState<string | null>(null)
 
-  const toggleCard = (cardId: string) => {
-    setExpandedCards(prev => ({
-      ...prev,
-      [cardId]: !prev[cardId]
-    }))
-  }
+  // Calculate timeline progress
+  useEffect(() => {
+    const calculateProgress = () => {
+      const startDate = new Date('2025-11-11').getTime()
+      const endDate = new Date('2025-12-24').getTime()
+      const currentDate = new Date().getTime()
+      
+      const totalDuration = endDate - startDate
+      const elapsed = currentDate - startDate
+      const progress = Math.min(Math.max((elapsed / totalDuration) * 100, 0), 100)
+      
+      setTimelineProgress(progress)
+    }
+
+    calculateProgress()
+    const interval = setInterval(calculateProgress, 1000 * 60 * 60) // Update every hour
+    
+    return () => clearInterval(interval)
+  }, [])
 
   // Track competition page view
   useEffect(() => {
@@ -87,16 +101,11 @@ export default function CompetitionPageClient() {
 
   const navLinks = [
     { href: '#theme', label: 'Theme' },
-    { href: '#contribution', label: 'Contribution' },
-    { href: '#design-considerations', label: 'Design Considerations' },
     { href: '#submission-categories', label: 'Categories' },
     { href: '#how-to-join', label: 'How to Join' },
-    { href: '#submission-requirements', label: 'Submission Requirements' },
     { href: '#awards', label: 'Awards' },
     { href: '#timeline', label: 'Timeline' },
-    { href: '#registration', label: 'Registration' },
     { href: '#jury-panel', label: 'Jury' },
-    { href: '#terms-conditions', label: 'T&C' },
   ]
 
   return (
@@ -126,8 +135,8 @@ export default function CompetitionPageClient() {
       <section id="introduction" className="relative w-full z-30">
           <div className="relative w-full min-h-[600px] md:h-[700px] lg:h-[800px]">
             <div className="absolute inset-0 bg-gradient-to-br from-slate-900/30 via-slate-900/60 to-slate-900/30" />
-          <div className="absolute inset-0 flex items-start md:items-center px-4 pt-12 pb-6 md:px-6 md:py-0 lg:px-8">
-            <div className="container mx-auto flex flex-col items-center text-center space-y-6 md:space-y-10 lg:space-y-12">
+          <div className="absolute inset-0 flex items-center justify-center px-4 py-6 md:px-6 md:py-0 lg:px-8">
+            <div className="container mx-auto flex flex-col items-center text-center space-y-2 md:space-y-6 lg:space-y-8 -mt-32 md:-mt-40 lg:-mt-48">
               <style>{`
                 @media (max-width: 767px) {
                   .christmas-word,
@@ -139,7 +148,7 @@ export default function CompetitionPageClient() {
                   }
                 }
               `}</style>
-              <h1 className="font-aquire uppercase mb-6 md:mb-12">
+              <h1 className="font-aquire uppercase mb-4 md:mb-8">
                 <span className="block">
                   <span
                     className="christmas-word inline-block text-4xl md:text-7xl lg:text-8xl bg-clip-text text-transparent"
@@ -172,38 +181,56 @@ export default function CompetitionPageClient() {
                   </span>
                 </span>
               </h1>
-              <div className="text-base md:text-2xl lg:text-3xl text-gray-300 leading-[20px] md:leading-normal">
-                <p className="mb-4 md:mb-5">Innovative Christmas Tree</p>
-                <p className="mb-4 md:mb-5">"Design, Create & Decorate"</p>
-                <p className="mb-12 md:mb-24">Competition</p>
+              <div className="text-base md:text-2xl lg:text-3xl text-gray-300 leading-[20px] md:leading-normal mt-56 pt-12 md:mt-0 md:pt-0">
+                <p className="mb-0 md:mb-0">Innovative Christmas Tree Competition 2025</p>
+                <p className="mb-1 md:mb-2 font-light">Edition #2</p>
+                <p className="mb-1 md:mb-2">TOTAL PRICE - LKR 500,000.00</p>
               </div>
-              <div className="mb-12 md:mb-16">
-                <h3 className="text-[14.4px] md:text-xl font-bold text-white mb-4">Official Partners</h3>
-                <div className="flex flex-wrap justify-center items-center gap-6">
-                  <div className="h-12 md:h-14 lg:h-20 flex items-center">
-                    <Image
-                      src="/uploads/A-Plus-Logo.jpg"
-                      alt="A PLUS"
-                      width={150}
-                      height={80}
-                      className="object-contain h-full w-auto"
-                    />
+
+              {/* Live Timeline */}
+              <div className="w-full max-w-3xl mx-auto px-4 mb-4 md:mb-6">
+                <div className="bg-transparent p-2 md:p-4">
+                  {/* Date Labels */}
+                  <div className="relative mb-3">
+                    <div className="absolute left-0 text-left">
+                      <p className="text-[10px] md:text-sm text-gray-400">Nov 11</p>
+                    </div>
+                    <div 
+                      className="absolute text-center"
+                      style={{ 
+                        left: `${Math.max(25, Math.min(timelineProgress, 75))}%`,
+                        transform: 'translateX(-50%)'
+                      }}
+                    >
+                      <p className="text-[10px] md:text-sm font-medium text-white bg-slate-900/50 px-1 rounded">
+                        {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </p>
+                    </div>
+                    <div className="absolute right-0 text-right">
+                      <p className="text-[10px] md:text-sm text-gray-400">Dec 24</p>
+                    </div>
+                    <div style={{ height: '20px' }}></div>
                   </div>
-                  <div className="h-12 md:h-14 lg:h-20 flex items-center">
-                    <Image
-                      src="/uploads/ABrand-Logo.jpg"
-                      alt="A BRAND"
-                      width={150}
-                      height={80}
-                      className="object-contain h-full w-auto"
+                  
+                  {/* Progress Bar */}
+                  <div className="relative w-full h-1 bg-gray-700">
+                    <div 
+                      className="absolute left-0 top-0 h-full bg-white transition-all duration-1000"
+                      style={{ width: `${timelineProgress}%` }}
+                    />
+                    <div 
+                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white"
+                      style={{ left: `calc(${timelineProgress}% - 6px)` }}
                     />
                   </div>
                 </div>
               </div>
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center md:w-full md:justify-end mb-6 md:mb-12 lg:mb-0">
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-2 md:mb-4 mt-16 md:mt-8">
               <Button
                 asChild
-                className="bg-red-500 hover:bg-red-600 text-white px-8 py-6 text-[14.4px] md:text-lg w-48 md:w-auto rounded-none"
+                className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
               >
                 <Link href="/events/archalley-competition-2025/register">
                   Register Now
@@ -211,7 +238,7 @@ export default function CompetitionPageClient() {
               </Button>
               <Button
                 asChild
-                className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-6 text-[14.4px] md:text-lg w-48 md:w-auto rounded-none"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
               >
                 <a 
                   href="/downloads/Christmas Tree Competition 2025 - Brief.pdf"
@@ -257,8 +284,11 @@ export default function CompetitionPageClient() {
       <section id="theme" className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 z-20">
         <div className="max-w-7xl mx-auto relative">
           <div className="max-w-4xl mx-auto">
+            <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-red-500 uppercase tracking-widest text-center mb-6 md:mb-8">
+              Challenge
+            </p>
             <h2 id="theme" className="text-2xl md:text-4xl font-bold text-white mb-6 uppercase tracking-wide text-center scroll-mt-20">
-              <a href="#theme" >A THEME THAT REIMAGINES TRADITION</a>
+              <a href="#theme">A THEME THAT REIMAGINES TRADITION</a>
             </h2>
             <div className="text-base text-center mb-6 leading-6">
               <span className="text-red-500">
@@ -289,178 +319,30 @@ export default function CompetitionPageClient() {
               completely surreal.<br />
               There are no rules... Only imagination.
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Contribution Section */}
-      <section className="relative min-h-[720px] bg-slate-800/50 z-20 overflow-hidden">
-        
-        {/* Content - Constrained to default width */}
-        <div className="relative z-10 min-h-[720px] flex items-center px-4 md:px-6 lg:px-8 py-4">
-          {/* Left side background image - sos-bg-img-1.png for THE SPIRIT OF GIVING section */}
-          <div 
-            className="absolute top-0 left-0 w-full md:w-1/2 h-1/2 md:h-full md:inset-y-0 z-0"
-            style={{
-              backgroundImage: 'url(/uploads/sos-bg-img-1.png)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat'
-            }}
-          />
-          {/* Right side background image - tree-planting-1.png with overlay for "plant a tree" section */}
-          <div 
-            className="absolute bottom-0 right-0 w-full md:w-1/2 h-1/2 md:h-full md:inset-y-0 z-0"
-            style={{
-              backgroundImage: 'url(/uploads/tree-planting-1.png)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat'
-            }}
-          >
-            {/* Dark red transparent overlay - darker and more transparent */}
-            <div className="absolute inset-0 bg-red-950/50" />
-          </div>
-          
-          <div className="max-w-7xl mx-auto w-full relative z-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 min-h-[720px]">
-              {/* Left Column Content */}
-              <div className="relative z-10 flex flex-col justify-start pt-4 md:pt-6 lg:pt-8 pr-4 md:pr-6 lg:pr-8">
-                <h2 id="contribution" className="text-2xl md:text-4xl font-bold text-white mb-12 md:mb-16 uppercase tracking-wide scroll-mt-20">
-                  <a href="#contribution" >THE SPIRIT OF GIVING</a>
-                </h2>
-                
-                <div className="text-left">
-                  <p className="text-base text-white mb-4 leading-[20px]">
-                    <strong>15% of your fee supports SOS</strong>
-                  </p>
-                  <p className="text-base text-white mb-4 leading-[20px]">
-                    <strong>Children's Villages Sri Lanka</strong>
-                  </p>
-                  <p className="text-base text-white mb-6 leading-[20px]">
-                    nurturing children today and investing<br />in their futures.
-                  </p>
-                  
-                  <div className="mb-6 flex justify-start">
-                    <Image
-                      src="/uploads/SOS-Logo-new.webp"
-                      alt="SOS Children's Villages"
-                      width={200}
-                      height={200}
-                      className="object-contain"
-                    />
-                  </div>
-                  
-                  <div className="mb-6"></div>
-                  
-                  <p className="text-base text-white mb-16 md:mb-20 leading-[20px]">
-                    Your creativity doesn't just shine, it <strong>gives back</strong> to people and the planet.
-                  </p>
-                </div>
-              </div>
-
-              {/* Right Column Content */}
-              <div className="relative z-10 flex flex-col justify-end pb-0 pl-0 md:pl-8 lg:pl-[5rem]">
-                <p className="text-base text-white text-left leading-[20px]">
-                  For <strong>every entry submitted</strong>, we will <strong>plant a tree</strong>,<br />helping rebuild the planet's future canopy.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Design Considerations Section */}
-      <section className="relative min-h-[600px] z-20 overflow-hidden">
-        {/* Content - Constrained to default width */}
-        <div className="relative z-10 min-h-[600px] flex items-center px-4 md:px-6 lg:px-8 pt-12 md:pt-12 pb-12 md:pb-12">
-          <div className="max-w-7xl mx-auto w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[600px]">
-              {/* Left Column Content */}
-              <div className="relative z-10 flex flex-col justify-start md:justify-between pr-6 md:pr-0 lg:pr-12 text-left md:text-left lg:text-right order-1 lg:order-1">
-                <div className="order-1">
-                  <h2 id="design-considerations" className="text-2xl md:text-4xl font-bold text-white uppercase tracking-wide scroll-mt-20">
-                    <a href="#design-considerations" >DESIGN CONSIDERATIONS</a>
-          </h2>
-                </div>
-                {/* This will be moved to order-3 on mobile via a wrapper */}
-                <div className="hidden md:block order-2">
-                  <p className="text-base md:text-2xl text-white italic leading-[20px] md:leading-normal">
-                    All entrants should respond to the Competition<br /> theme, "Christmas in future"
-          </p>
-                </div>
-              </div>
-
-              {/* Right Column Content */}
-              <div className="relative z-10 flex flex-col pl-0 md:pl-0 lg:pl-12 order-2 lg:order-2">
-                <h3 className="text-base md:text-3xl font-bold text-white mb-8">
-                  What makes a futuristic tree stand out?
-                </h3>
-                
-                <div className="mb-8"></div>
-                
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-base font-bold text-red-500 mb-2">
-                      Concept & Originality
-                    </h4>
-                <p className="text-base leading-[20px]">
-                  The idea should be fresh, imaginative, and clearly aligned with the futuristic theme.
-                </p>
-              </div>
-                  
-                  <div className="mb-6"></div>
-                  
-                  <div>
-                    <h4 className="text-base font-bold text-red-500 mb-2">
-                      The design as a whole
-                    </h4>
-                <p className="text-base leading-[20px]">
-                  The product should be designed and composed as a whole relevant to the chosen category.
-                </p>
-              </div>
-                  
-                  <div className="mb-6"></div>
-                  
-                  <div>
-                    <h4 className="text-base font-bold text-red-500 mb-2">
-                      Theme Relevance
-                    </h4>
-                <p className="text-base leading-[20px]">
-                  The overall design must respond thoughtfully to the idea of "Christmas in the Future" - bold or subtle.
-                </p>
-              </div>
-                  
-                  <div className="mb-6"></div>
-                  
-                  <div>
-                    <h4 className="text-base font-bold text-red-500 mb-2">
-                      Visual Aesthetics
-                    </h4>
-                <p className="text-base leading-[20px]">
-                  The product should be aesthetically appealing while being innovative.
-                </p>
-              </div>
-                  
-                  <div className="mb-6"></div>
-                  
-                  <div>
-                    <h4 className="text-base font-bold text-red-500 mb-2">
-                      Material & Technique
-                    </h4>
-                <p className="text-base leading-[20px]">
-                  Use of unconventional, digital, or experimental methods is encouraged. Consider the lifecycle of your design and how it's made.
-                </p>
-              </div>
-            </div>
-              </div>
-            </div>
             
-            {/* Mobile-only: "All entrants..." text at bottom of section */}
-            <div className="relative z-10 md:hidden mt-8 pl-0 text-left">
-              <p className="text-base text-white italic leading-[20px]">
-                All entrants should respond to the Competition<br /> theme, "Christmas in future"
-              </p>
+            <div className="mb-8"></div>
+            
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
+              <Button
+                asChild
+                className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+              >
+                <Link href="/events/archalley-competition-2025/register">
+                  Register Now
+                </Link>
+              </Button>
+              <Button
+                asChild
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+              >
+                <a 
+                  href="/downloads/Christmas Tree Competition 2025 - Brief.pdf"
+                  download="Christmas Tree Competition 2025 - Brief.pdf"
+                >
+                  Download Brief
+                </a>
+              </Button>
             </div>
           </div>
         </div>
@@ -471,187 +353,166 @@ export default function CompetitionPageClient() {
         {/* Content - Constrained to default width */}
         <div className="relative z-10 min-h-[600px] flex items-center px-4 md:px-6 lg:px-8 pt-12 md:pt-12 pb-12 md:pb-12">
           <div className="max-w-7xl mx-auto w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-2">
-              {/* Left Column Content */}
-              <div className="relative z-10 flex flex-col pr-6 md:pr-0 lg:pr-12 text-left md:text-left lg:text-right order-1 lg:order-1">
-                <h2 id="submission-categories" className="text-2xl md:text-4xl font-bold text-white mb-6 uppercase tracking-wide scroll-mt-20">
-                  <a href="#submission-categories" >SUBMISSION CATEGORIES</a>
-                </h2>
-              </div>
-
-              {/* Right Column Content */}
-              <div className="relative z-10 flex flex-col pl-0 md:pl-0 lg:pl-12 pb-0 order-2 lg:order-2">
-                <ul className="space-y-4 mb-6 text-gray-300 text-base md:text-xl list-disc list-inside leading-[20px] md:leading-normal">
-                  <li>Physical Tree Category</li>
-                  <li>Digital Tree Category</li>
-                  <li>Kid's Tree Category (Age under 12)</li>
-                </ul>
-                
-                <div className="mb-6"></div>
-                
-                <div className="text-gray-300 text-base md:text-lg space-y-4 leading-[20px] md:leading-normal">
-                  <div>
-                    <h4 className="text-base font-bold text-white">Who Can Join</h4>
-                    <p>
-                      Open to all enthusiasts<br />
-                      Students | Professionals | Creatives | Anyone with a Vision
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-base font-bold text-white">Creative Freedom</h4>
-                    <p>
-                      No limits on size, color, materials, or format; as long as it reflects the futuristic theme.
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-base font-bold text-white">Global Participation</h4>
-                    <p>
-                      Entries accepted locally and internationally. All formats must be submitted online.
-                    </p>
-                  </div>
+            <div className="text-center">
+              <h2 id="submission-categories" className="text-2xl md:text-4xl font-bold text-white mb-8 uppercase tracking-wide scroll-mt-20">
+                <a href="#submission-categories">SUBMISSION CATEGORIES</a>
+              </h2>
+              
+              <div className="space-y-4 max-w-3xl mx-auto text-left">
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-300 text-base md:text-xl leading-[20px] md:leading-normal font-bold flex-1 text-left">• Physical Tree Category</span>
+                  <Button
+                    onClick={() => setActivePopup('physical')}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm rounded-none whitespace-nowrap"
+                  >
+                    Click for more
+                  </Button>
                 </div>
                 
-                <div className="mb-6"></div>
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-300 text-base md:text-xl leading-[20px] md:leading-normal font-bold flex-1 text-left">• Digital Tree Category</span>
+                  <Button
+                    onClick={() => setActivePopup('digital')}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm rounded-none whitespace-nowrap"
+                  >
+                    Click for more
+                  </Button>
+                </div>
                 
-                <p className="text-[11.2px] md:text-base text-gray-400 italic leading-[20px] md:leading-normal">
-                  * Refer terms & conditions for further details.
-                </p>
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-300 text-base md:text-xl leading-[20px] md:leading-normal font-bold flex-1 text-left">• Kid's Tree Category (Age under 12)</span>
+                  <Button
+                    onClick={() => setActivePopup('kids')}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm rounded-none whitespace-nowrap"
+                  >
+                    Click for more
+                  </Button>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* How to Join the Challenge */}
-      <section className="relative pt-12 md:pt-12 pb-12 md:pb-12 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
-        <div className="max-w-7xl mx-auto relative">
-          <h2 id="how-to-join" className="text-2xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
-            <a href="#how-to-join" >HOW TO JOIN THE CHALLENGE</a>
-          </h2>
-          
-          <div className="mb-6"></div>
-          
-          <div className="space-y-6 text-gray-300">
-            <div>
-              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
-                01. Register for the Competition
-              </h3>
-              <ul className="list-disc list-inside ml-4 space-y-2">
-                <li className="text-base leading-[20px]">Sign in to the Archalley website and register between 11th November and 24th December 2025 by providing correct information & paying the registration fee.</li>
-              </ul>
-              </div>
-            
-            <div>
-              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
-                02. Chose your preferred category of participation
-              </h3>
-              <ul className="list-disc list-inside ml-4 space-y-2">
-                <li className="text-base leading-[20px]">Select one category - Physical, Digital, or Kids' Tree –and follow the terms & conditions for that category; non-compliance may lead to disqualification.</li>
-              </ul>
-              </div>
-            
-            <div>
-              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
-                03. Create/Design your Christmas tree
-              </h3>
-              <ul className="list-disc list-inside ml-4 space-y-2">
-                <li className="text-base leading-[20px]">Enjoy full creative freedom on color, materials, size, and decoration (In compliance with the terms & conditions for your selected category).</li>
-                <li className="text-base leading-[20px]">Ensure your design aligns with the Key Design Considerations of the competition.</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
-                04. Prepare Your Submission Materials
-              </h3>
-              <ul className="list-disc list-inside ml-4 space-y-2">
-                <li className="text-base leading-[20px]">Compile the require submission items for your selected category.</li>
-                <li className="text-base leading-[20px]">You may also add optional document or optional video (per the terms & conditions ) to strengthen your entry.</li>
-              </ul>
-              </div>
-            
-            <div>
-              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
-                05. Submission
-              </h3>
-              <ul className="list-disc list-inside ml-4 space-y-2">
-                <li className="text-base leading-[20px]">Kids' Tree Category - From 11th to 21st December 2025</li>
-                <li className="text-base leading-[20px]">Physical Tree Category & Digital Tree Category - From 11th to 24th December 2025</li>
-              </ul>
-              </div>
-            </div>
-          
-          <div className="mt-8">
-            <p className="text-[11.2px] md:text-base text-gray-400 italic leading-[20px] md:leading-normal">
-              Note:-Refer to this brochure & terms & conditions for all required information.
-                </p>
-              </div>
-            </div>
-      </section>
+              {/* Category Information Popups */}
+              {activePopup && (
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setActivePopup(null)}>
+                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-600 max-w-4xl w-full max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
+                    
+                    {/* Close Button */}
+                    <button 
+                      onClick={() => setActivePopup(null)} 
+                      className="absolute top-2 right-2 z-10 text-gray-400 hover:text-white text-2xl font-light bg-black/50 w-8 h-8 flex items-center justify-center hover:bg-black/70 transition-colors rounded-full"
+                    >
+                      ×
+                    </button>
 
-      {/* Submission Requirements */}
-      <section className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 z-20">
-        <div className="max-w-7xl mx-auto relative">
-          <h2 id="submission-requirements" className="text-2xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
-            <a href="#submission-requirements" >SUBMISSION REQUIREMENTS</a>
-          </h2>
-          <div className="max-w-7xl">
-            <div className="space-y-6 text-white text-base md:text-lg text-left leading-[20px] md:leading-normal">
-              <div>
-                <h3 className="text-base md:text-2xl font-bold text-white mb-2">
-                  Key Photograph (JPG)
-                </h3>
-                <ul className="text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
-                  <li>This will be the image published for most popular category voting, total product to be clearly visible</li>
-                </ul>
-              </div>
-              
-              <div>
-                <h3 className="text-base md:text-2xl font-bold text-white mb-2">
-                  Up to 4 other Photographs (JPG)
-                </h3>
-                <ul className="text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
-                  <li>minimum of 2</li>
-                </ul>
-              </div>
-              
-              <div>
-                <h3 className="text-base md:text-2xl font-bold text-white mb-2">
-                  Description of your idea
-                </h3>
-                <ul className="text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
-                  <li>50-200 words</li>
-                </ul>
-                <p className="text-base ml-4 italic text-white mt-2 leading-[20px]">Note: excluded for kids' tree category</p>
-              </div>
-              
-              <div>
-                <h3 className="text-base md:text-2xl font-bold text-white mb-2">
-                  Optional document/panel submission (PDF)
-                </h3>
-                <ul className="text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
-                  <li>Can include sketches, materials, process, etc.</li>
-                  <li>The document should be less than 5 MB</li>
-                </ul>
-                <p className="text-base ml-4 italic text-white mt-2 leading-[20px]">Note: excluded for kids' tree category</p>
-              </div>
-              <div>
-                <h3 className="text-base md:text-2xl font-bold text-white mb-2">
-                  Optional Video (mp4)
-                </h3>
-                <ul className="text-base list-disc list-inside ml-4 space-y-2 leading-[20px]">
-                  <li>The document should be less than 10 MB</li>
-                </ul>
-                <p className="text-base ml-4 italic text-white mt-2 leading-[20px]">Note: excluded for kids' tree category</p>
-              </div>
-            </div>
-            
-            <div className="mt-8">
-              <p className="text-[11.2px] md:text-base text-white italic leading-[20px] md:leading-normal">
-                * Submission requirements are applicable for all categories other than the kids' category as mentioned in above notes.
-              </p>
+                    {/* Header Section */}
+                    <div className="relative p-8 pb-6">
+                      {/* Background decoration similar to PDF */}
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-purple-500/20 to-transparent"></div>
+                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-blue-500/20 to-transparent"></div>
+                      </div>
+                      
+                      <div className="relative">
+                        <p className="text-right text-gray-400 text-sm italic mb-2">Archalley Competition 2025</p>
+                        <h3 className="text-2xl md:text-3xl font-bold text-white text-center underline decoration-2 underline-offset-4 mb-6 tracking-wide">
+                          {activePopup === 'physical' && 'PHYSICAL TREE CATEGORY'}
+                          {activePopup === 'digital' && 'DIGITAL TREE CATEGORY'}
+                          {activePopup === 'kids' && "KIDS' TREE CATEGORY"}
+                        </h3>
+                      </div>
+                    </div>
+                    
+                    {/* Content Section */}
+                    <div className="px-8 pb-8">
+                      <div className="text-gray-200 space-y-4 text-base leading-relaxed">
+                        {activePopup === 'physical' && (
+                          <>
+                            <div className="flex flex-col space-y-3 text-left">
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Build it for real:</strong> The tree must be a physically made product (in 2D or 3D form) and photographed for submission.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Real photos only:</strong> Upload actual photographs of the built tree. Post-processing is limited to basic global color/exposure correction and cropping.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Strictly no AI or graphic edits:</strong> AI-generated/AI-modified images, graphically enhances, compositing, retouching, or graphic enhancements are <strong className="text-red-400">not permitted</strong> and may lead to disqualification.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left">Graphical representations using 3D modeling software, 3D renders, Drawings, printed graphics will <strong className="text-red-400">not be accepted</strong> as the product under this category.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Physical Tree Category - Accepted Formats:</strong> Sewing / Fabric crafts, Sculptures, Crafted trees / Tree models</span>
+                              </p>
+                            </div>
+                          </>
+                        )}
+                        
+                        {activePopup === 'digital' && (
+                          <>
+                            <div className="flex flex-col space-y-3 text-left">
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Digital Tree Category - Accepted Formats:</strong> Paintings, drawings, digital illustrations, mixed media, AI-generated or AI-enhanced images, 3D-rendered images, and graphical representations created using 3D modeling software.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Originality & rights:</strong> The entry must be your original work or use assets you are legally licensed to use. Do not include copyrighted logos/characters or third-party assets without written permission. You are responsible for all rights and clearances.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">AI usage disclosure:</strong> AI-assisted work is allowed. By submitting, you <strong className="text-blue-400">warrant</strong> that no third-party rights are infringed and that any model/assets/prompts used are permitted for this purpose.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Compliance:</strong> Entries that breach these terms or the general competition rules may be <strong className="text-red-400">disqualified</strong>.</span>
+                              </p>
+                            </div>
+                          </>
+                        )}
+                        
+                        {activePopup === 'kids' && (
+                          <>
+                            <div className="flex flex-col space-y-3 text-left">
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">No winners selected:</strong> This category will <strong className="text-red-400">not</strong> be judged by the jury and is <strong className="text-red-400">not eligible</strong> for popularity voting or prizes.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Participation recognition:</strong> Each <strong className="text-green-400">completed submission</strong> receives one gift and a <strong className="text-green-400">certificate of participation</strong>.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Single entry policy:</strong> Only one (1) entry per participant is permitted.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">No group entries:</strong> Group/team entries are <strong className="text-red-400">not allowed</strong> in the Kids' Category.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Parent/Guardian responsibility:</strong> The parent/guardian is responsible for entering the child's accurate details, submission, and <strong className="text-yellow-400">delivery address</strong>, including a <strong className="text-yellow-400">valid phone number</strong>.</span>
+                              </p>
+                              <p className="flex items-start gap-3 text-left">
+                                <span className="text-white font-bold min-w-fit">•</span> 
+                                <span className="text-left"><strong className="text-white">Delivery address required:</strong> A correct, complete delivery address and phone number are <strong className="text-yellow-400">mandatory</strong>. Archalley is <strong className="text-red-400">not liable</strong> for non-delivery, delays, misplacement, or damage arising from incorrect/incomplete details or third-party courier issues.</span>
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Footer with vertical line */}
+                      <div className="mt-8 pt-6 border-t border-slate-600">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -746,12 +607,31 @@ export default function CompetitionPageClient() {
           </div>
 
           {/* Notes and Footer */}
-          <div className="space-y-4 text-gray-300 text-[10px] md:text-base leading-[20px] md:leading-normal">
-            <ul className="list-disc list-inside space-y-2 max-w-4xl mx-auto">
-              <li>All winners will receive a certificate of achievement in addition to their relevant prize money.</li>
-              <li>All entrants will receive an E-certificate of participation.</li>
-              <li>Prize money for foreign participants will be converted to USD according to current Central Bank exchange rate.</li>
-            </ul>
+          <div className="space-y-6 text-gray-300 text-base md:text-lg leading-[20px] md:leading-normal max-w-4xl mx-auto text-center">
+            <p className="text-white font-semibold">All participants will get a certificate</p>
+            
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
+              <Button
+                asChild
+                className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+              >
+                <Link href="/events/archalley-competition-2025/register">
+                  Register Now
+                </Link>
+              </Button>
+              <Button
+                asChild
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+              >
+                <a 
+                  href="/downloads/Christmas Tree Competition 2025 - Brief.pdf"
+                  download="Christmas Tree Competition 2025 - Brief.pdf"
+                >
+                  Download Brief
+                </a>
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -760,7 +640,7 @@ export default function CompetitionPageClient() {
       <section className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 z-20">
         <div className="max-w-7xl mx-auto relative">
           <h2 id="timeline" className="text-2xl md:text-4xl font-bold text-white mb-12 uppercase tracking-wide text-center scroll-mt-20">
-            <a href="#timeline" >TIMELINE</a>
+            <a href="#timeline">TIMELINE</a>
           </h2>
           
           <div className="space-y-3">
@@ -927,11 +807,78 @@ export default function CompetitionPageClient() {
         </div>
       </section>
 
+      {/* How to Join the Challenge */}
+      <section className="relative pt-12 md:pt-12 pb-12 md:pb-12 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
+        <div className="max-w-7xl mx-auto relative">
+          <h2 id="how-to-join" className="text-2xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
+            <a href="#how-to-join">HOW TO JOIN THE CHALLENGE</a>
+          </h2>
+          
+          <div className="mb-6"></div>
+          
+          <div className="space-y-6 text-gray-300">
+            <div>
+              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
+                01. Register for the Competition
+              </h3>
+              <ul className="list-disc list-inside ml-4 space-y-2">
+                <li className="text-base leading-[20px]">Sign in to the Archalley website and register between 11th November and 24th December 2025 by providing correct information & paying the registration fee.</li>
+              </ul>
+              </div>
+            
+            <div>
+              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
+                02. Chose your preferred category of participation
+              </h3>
+              <ul className="list-disc list-inside ml-4 space-y-2">
+                <li className="text-base leading-[20px]">Select one category - Physical, Digital, or Kids' Tree –and follow the terms & conditions for that category; non-compliance may lead to disqualification.</li>
+              </ul>
+              </div>
+            
+            <div>
+              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
+                03. Create/Design your Christmas tree
+              </h3>
+              <ul className="list-disc list-inside ml-4 space-y-2">
+                <li className="text-base leading-[20px]">Enjoy full creative freedom on color, materials, size, and decoration (In compliance with the terms & conditions for your selected category).</li>
+                <li className="text-base leading-[20px]">Ensure your design aligns with the Key Design Considerations of the competition.</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
+                04. Prepare Your Submission Materials
+              </h3>
+              <ul className="list-disc list-inside ml-4 space-y-2">
+                <li className="text-base leading-[20px]">Compile the require submission items for your selected category.</li>
+                <li className="text-base leading-[20px]">You may also add optional document or optional video (per the terms & conditions ) to strengthen your entry.</li>
+              </ul>
+              </div>
+            
+            <div>
+              <h3 className="text-base md:text-2xl font-bold text-red-500 mb-3">
+                05. Submission
+              </h3>
+              <ul className="list-disc list-inside ml-4 space-y-2">
+                <li className="text-base leading-[20px]">Kids' Tree Category - From 11th to 21st December 2025</li>
+                <li className="text-base leading-[20px]">Physical Tree Category & Digital Tree Category - From 11th to 24th December 2025</li>
+              </ul>
+              </div>
+            </div>
+          
+          <div className="mt-8">
+            <p className="text-[11.2px] md:text-base text-gray-400 italic leading-[20px] md:leading-normal">
+              Note:-Refer to this brochure & terms & conditions for all required information.
+                </p>
+              </div>
+            </div>
+      </section>
+
       {/* Jury Section */}
       <section className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
         <div className="max-w-7xl mx-auto relative">
           <h2 id="jury-panel" className="text-2xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
-            <a href="#jury-panel" >JURY PANEL</a>
+            <a href="#jury-panel">JURY PANEL</a>
           </h2>
           {/* First 4 Jurors - Top Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -1014,517 +961,11 @@ export default function CompetitionPageClient() {
         </div>
       </section>
 
-      {/* Registration Section */}
-      <section className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 z-20">
-        <div className="max-w-7xl mx-auto relative">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
-            {/* Left Side - Title */}
-            <div className="flex flex-col justify-start pr-0 md:pr-0 lg:pr-12">
-              <h2 id="registration" className="text-2xl md:text-4xl font-bold text-white mb-4 md:mb-12 uppercase tracking-wide text-left md:text-left lg:text-right scroll-mt-20">
-                <a href="#registration" >REGISTRATION</a>
-              </h2>
-            </div>
-
-            {/* Right Side - Registration Content */}
-            <div className="space-y-8 pl-0 md:pl-0 lg:pl-12">
-              {/* Early bird Registration */}
-              <div>
-                <h3 className="text-base md:text-3xl font-bold text-white mb-2">Early bird Registration</h3>
-                <p className="text-gray-300 text-base md:text-lg mb-4 leading-[20px] md:leading-normal">(11<sup>th</sup> November - 20<sup>th</sup> November)</p>
-                <div className="space-y-2 text-white text-sm md:text-base">
-                  <div className="flex justify-between items-center">
-                    <span>Single Entry:</span>
-                    <span className="font-semibold">LKR 2,000</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Group Entry:</span>
-                    <span className="font-semibold">LKR 4,000</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Standard Registration */}
-              <div>
-                <h3 className="text-base md:text-3xl font-bold text-white mb-2">Standard Registration</h3>
-                <p className="text-gray-300 text-base md:text-lg mb-4 leading-[20px] md:leading-normal">(21<sup>st</sup> November - 20<sup>th</sup> December)</p>
-                <div className="space-y-2 text-white text-sm md:text-base">
-                  <div className="flex justify-between items-center">
-                    <span>Student Entry:</span>
-                    <span className="font-semibold">LKR 2,000</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Single Entry:</span>
-                    <span className="font-semibold">LKR 3,000</span>
-                </div>
-                  <div className="flex justify-between items-center">
-                    <span>Group Entry:</span>
-                    <span className="font-semibold">LKR 5,000</span>
-              </div>
-          </div>
-        </div>
-
-              {/* Late Registration */}
-              <div>
-                <h3 className="text-base md:text-3xl font-bold text-white mb-2">Late Registration</h3>
-                <p className="text-gray-300 text-base md:text-lg mb-4 leading-[20px] md:leading-normal">(21<sup>st</sup> December - 24<sup>th</sup> December)</p>
-                <div className="space-y-2 text-white text-sm md:text-base">
-                  <div className="flex justify-between items-center">
-                    <span>Student Entry:</span>
-                    <span className="font-semibold">LKR 2,000</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Single Entry:</span>
-                    <span className="font-semibold">LKR 5,000</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Group Entry:</span>
-                    <span className="font-semibold">LKR 8,000</span>
-                  </div>
-          </div>
-        </div>
-
-              {/* Kids' Tree Category Registration */}
-              <div>
-                <h3 className="text-base md:text-3xl font-bold text-white mb-2">Kids' Tree Category Registration</h3>
-                <p className="text-gray-300 text-base md:text-lg mb-4 leading-[20px] md:leading-normal">(11<sup>th</sup> November to 21<sup>st</sup> December)</p>
-                <div className="space-y-2 text-white text-sm md:text-base mb-3">
-                  <div className="flex justify-between items-center">
-                    <span className="leading-[20px]">Single Entry:</span>
-                    <span className="font-semibold leading-[20px]">LKR 2,000</span>
-                  </div>
-                </div>
-                <p className="text-gray-400 text-[11.2px] md:text-sm italic leading-[20px] md:leading-normal">*Only single entries are allowed in kids' category.</p>
-              </div>
-
-              {/* General Note */}
-              <div className="pt-4">
-                <p className="text-gray-400 text-[11.2px] md:text-sm italic leading-[20px] md:leading-normal">
-                  * Registration fee for foreign participants will be converted to USD according to current Central Bank exchange rate.
-                </p>
-              </div>
-
-              {/* Register Now Button */}
-              <div className="pt-4">
-                <Button
-                  asChild
-                  className="bg-red-500 hover:bg-red-600 text-white px-8 py-6 text-[14.4px] md:text-lg rounded-none"
-                >
-                  <Link href="/events/archalley-competition-2025/register">
-                    Register Now
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Terms & Conditions Section */}
-      <section className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
-        <div className="max-w-7xl mx-auto relative">
-          <h2 id="terms-conditions" className="text-2xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
-            <a href="#terms-conditions" >TERMS & CONDITIONS</a>
-          </h2>
-          <div className="max-w-7xl mx-auto">
-            {/* Introduction */}
-            <div className="mb-8 text-white text-[14.4px] md:text-lg space-y-4 leading-[20px] md:leading-normal">
-              <p>
-                We invite everyone, irrespective of their age, gender, profession, or qualifications, to join the competition and present the product.
-              </p>
-              <p>
-                All entries should respond directly to the competition—to design a Christmas tree based on the theme, 'Christmas in Future."
-              </p>
-            </div>
-            
-            {/* Terms in Grid Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Physical Tree Category */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('physical-tree')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Physical Tree Category</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['physical-tree'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['physical-tree'] ? 'block' : 'hidden'}`}>
-                  <p><strong>Build it for real:</strong> The tree must be a physically made product (in 2D or 3D form) and photographed for submission.</p>
-                  <p><strong>Real photos only:</strong> Upload actual photographs of the built tree. Post-processing is limited to basic global color/exposure correction and cropping.</p>
-                  <p><strong>Strictly no AI or graphic edits:</strong> AI-generated/AI-modified images, graphically enhances, compositing, retouching, or graphic enhancements are not permitted and may lead to disqualification.</p>
-                  <p>Graphical representations using 3D modeling software, 3D renders, Drawings, printed graphics will not be accepted as the product under this category.</p>
-                  <p><strong>Physical Tree Category - Accepted Formats:</strong> Sewing / Fabric crafts, Sculptures, Crafted trees / Tree models</p>
-                </div>
-              </div>
-              
-              {/* Digital Tree Category */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('digital-tree')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Digital Tree Category</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['digital-tree'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['digital-tree'] ? 'block' : 'hidden'}`}>
-                  <p><strong>Digital Tree Category - Accepted Formats:</strong> Paintings, drawings, digital illustrations, mixed media, AI-generated or AI-enhanced images, 3D-rendered images, and graphical representations created using 3D modeling software.</p>
-                  <p><strong>Originality & rights:</strong> The entry must be your original work or use assets you are legally licensed to use. Do not include copyrighted logos/characters or third-party assets without written permission. You are responsible for all rights and clearances.</p>
-                  <p><strong>AI usage disclosure:</strong> AI-assisted work is allowed. By submitting, you warrant that no third-party rights are infringed and that any model/assets/prompts used are permitted for this purpose.</p>
-                  <p><strong>Compliance:</strong> Entries that breach these terms or the general competition rules may be disqualified.</p>
-                </div>
-              </div>
-              
-              {/* Kids' Tree Category */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('kids-tree')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Kids' Tree Category</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['kids-tree'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['kids-tree'] ? 'block' : 'hidden'}`}>
-                  <p><strong>No winners selected:</strong> This category will not be judged by the jury and is not eligible for popularity voting or prizes.</p>
-                  <p><strong>Participation recognition:</strong> Each completed submission receives one gift and a certificate of participation.</p>
-                  <p><strong>Single entry policy:</strong> Only one (1) entry per participant is permitted.</p>
-                  <p><strong>No group entries:</strong> Group/team entries are not allowed in the Kids' Category.</p>
-                  <p><strong>Parent/Guardian responsibility:</strong> The parent/guardian is responsible for entering the child's accurate details, submission, and delivery address, including a valid phone number.</p>
-                  <p><strong>Delivery address required:</strong> A correct, complete delivery address and phone number are mandatory. Archalley is not liable for non-delivery, delays, misplacement, or damage arising from incorrect/incomplete details or third-party courier issues.</p>
-                </div>
-              </div>
-              
-              {/* Submission Formats */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('submission-formats')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Submission Formats (All Categories)</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['submission-formats'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['submission-formats'] ? 'block' : 'hidden'}`}>
-                  <p>Submit files via the Archalley web portal only (no external links or email). Do not include names, logos, watermarks, or identifying marks on images or filenames.</p>
-                  <ul className="list-disc list-inside space-y-2 ml-4">
-                    <li><strong>Key Photograph (JPG, max 5 MB)</strong> — required; whole product must be clearly visible; used for Most Popular voting.</li>
-                    <li><strong>Additional Photographs:</strong> 2–4 JPGs, each max 5 MB.</li>
-                    <li><strong>Description:</strong> 50–200 words (not required for Kids' Category).</li>
-                  </ul>
-                </div>
-              </div>
-              
-              {/* Optional Documents */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('optional-documents')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Optional Documents (Physical, Digital Tree Categories Only)</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['optional-documents'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['optional-documents'] ? 'block' : 'hidden'}`}>
-                  <p><strong>Optional PDF:</strong> Entrants may upload one (1) additional PDF (sketches, materials, drawings, graphics, process documentation), max 5 MB.</p>
-                  <p><strong>Optional Video:</strong> Entrants may upload one (1) additional video (e.g., physical tree clip, AI video, animated walkthrough), max 10 MB.</p>
-                  <p><strong>Submission channel:</strong> Only files uploaded via the Archalley web portal will be considered. External links (e.g., Google Drive), emails, or other reference documents/links will not be accepted for evaluation.</p>
-                  <p><strong>Note:</strong> These are optional and do not replace the compulsory submission requirements for each category.</p>
-                </div>
-              </div>
-              
-              {/* Group Entry */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('group-entry')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Group Entry</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['group-entry'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['group-entry'] ? 'block' : 'hidden'}`}>
-                  <p><strong>Eligibility.</strong> Under Group entry, teams, and company entries are permitted. A team may include up to ten (10) participants.</p>
-                  <p>If entering under a company name, the entrant represents and warrants that (i) the company has authorized participation in the competition; and (ii) the entrant has the right and authority to submit the entry and all related materials on the company's behalf. Archalley is not liable for any unauthorized submissions, fraud, or misrepresentation by the entrant or team and may, at its discretion, disqualify the entry and recover any costs or damages arising therefrom.</p>
-                  <p><strong>Documentation.</strong> Archalley may request supporting documents to verify company authorization and authenticity. Failure to provide satisfactory documentation may result in disqualification.</p>
-                  <p>By entering as a team, the entrant warrants that all team members are correctly identified and the entrant has authority to submit on the team's behalf; Archalley is not liable for unauthorized submissions, fraud, misrepresentation, or disputes, may disqualify entries and recover costs, and the entrant agrees to indemnify Archalley.</p>
-                </div>
-              </div>
-              
-              {/* Registration & Identification */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('registration-identification')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Registration & Identification</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['registration-identification'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['registration-identification'] ? 'block' : 'hidden'}`}>
-                  <p>After your registration has been approved, you will be sent a unique identification number for your entry, which will be necessary to submit your proposal. If you haven't received a confirmation within two business days, please contact us at projects@archalley.com</p>
-                  <p>For kid's category the guardian is liable for entering the details of the kid & his submission & address & other details.</p>
-                  <p>The registration number and the name are the only forms of identification for the entries.</p>
-                  <p>The registration fee is non-refundable.</p>
-                  <p>English is to be used as the language of communication for all documents.</p>
-                </div>
-              </div>
-              
-              {/* Submission Method, Format & Deadline */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('submission-method')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Submission Method, Format & Deadline</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['submission-method'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['submission-method'] ? 'block' : 'hidden'}`}>
-                  <p>Entries must be registered and submitted only via the Archalley web portal.</p>
-                  <p>Entries must be submitted as JPG and must not exceed 5 MB per upload in the portal.</p>
-                  <p>The submission deadline is 11:59 PM IST, 24 December 2025. Submissions after this deadline will not be considered.</p>
-                </div>
-              </div>
-              
-              {/* Multiple Entries & Duplicate Products */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('multiple-entries')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Multiple Entries & Duplicate Products</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['multiple-entries'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['multiple-entries'] ? 'block' : 'hidden'}`}>
-                  <p>Participants are free to submit multiple entries with different products, but each entry must be registered separately.</p>
-                  <p>Multiple submissions by the same entrant with the same product may result in rejection of all relevant entries.</p>
-                  <p>Multiple submissions of the same product by different participants may result in rejection of all relevant entries.</p>
-                </div>
-              </div>
-              
-              {/* Judging & Jury Protocol */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('judging-jury')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Judging & Jury Protocol</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['judging-jury'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['judging-jury'] ? 'block' : 'hidden'}`}>
-                  <p>Entries will be judged on their artistic merit and creative responses to the requirement to design a Christmas tree based on the theme "Christmas in future."</p>
-                  <p>Entries will be presented anonymously for judging purposes.</p>
-                  <p>The judges' decisions will be final and binding in all matters, and no correspondence will be entered into.</p>
-                  <p>The entrant/entrants must not contact the jury under any circumstances.</p>
-                </div>
-              </div>
-              
-              {/* Verification & Compliance */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('verification-compliance')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Verification & Compliance</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['verification-compliance'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['verification-compliance'] ? 'block' : 'hidden'}`}>
-                  <p><strong>Verification:</strong> Archalley reserves the right to request additional proof of physical fabrication (e.g., build photos, process images) and to disqualify any entry that does not conform to these terms.</p>
-                  <p><strong>Non-compliance:</strong> Entries that do not meet the above will be disqualified.</p>
-                </div>
-              </div>
-              
-              {/* Intellectual Property, Permissions & Indemnity */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('intellectual-property')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Intellectual Property, Permissions & Indemnity</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['intellectual-property'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['intellectual-property'] ? 'block' : 'hidden'}`}>
-                  <p>All copyright and any other intellectual property rights in the product photographs are vested in the entrant. The entrant confirms they have not assigned, licensed, disposed of, or otherwise encumbered any of their rights in the product.</p>
-                  <p>The entrant warrants that the entry does not infringe the intellectual property rights of any third party. The entrant(s) will indemnify Archalley against any claims made by third parties in respect of such infringement.</p>
-                  <p>By entering the competition, the entrant confirms and warrants that they have the permission of any persons pictured in the product photographs (if any); where the photograph includes a person under the age of 18, the entrant has obtained the consent of the parent or legal guardian for the photo to be published and used by Archalley as contemplated by these terms and conditions.</p>
-                </div>
-              </div>
-              
-              {/* Archalley Rights & Liability */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('archalley-rights')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Archalley Rights & Liability</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['archalley-rights'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['archalley-rights'] ? 'block' : 'hidden'}`}>
-                  <p>Archalley reserves the right to amend the competition schedule or cancel the competition at any point if it deems such action necessary or for reasons beyond its reasonable control. Archalley will not be liable to entrants for any such cancellation; however, entry fees will be refunded in such events.</p>
-                  <p>Archalley reserves the right to disqualify, refuse entry or refuse to award the prize to anyone in breach of these terms and conditions.</p>
-                  <p>Archalley will not be liable for any loss or damage to any entries and bears no responsibility for incomplete or delayed entries.</p>
-                  <p>Archalley reserves the right to inspect all the winning products physically/ verification of AI productions, if required.</p>
-                  <p>Winning entrants shall not object to any cropping or other minor alteration of the photographs of their product when used outside the remit of this competition.</p>
-                </div>
-              </div>
-              
-              {/* Winner Notification & Prizes */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('winner-notification')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Winner Notification & Prizes</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['winner-notification'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['winner-notification'] ? 'block' : 'hidden'}`}>
-                  <p>Winning entrants will be notified via email or phone using the contact information provided. If Archalley is unable to contact any winner, or if the prize is not accepted within two days of being notified, the winner will be deemed to have forfeited the prize, and Archalley reserves the right to determine a new winner for that prize or cancel the prize.</p>
-                  <p>The winning entrants will receive prize money/gift as announced by Archalley. There will be no alternative to the prizes/gifts.</p>
-                </div>
-              </div>
-              
-              {/* License for Winning Entries */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('license-winning')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">License for Winning Entries</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['license-winning'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['license-winning'] ? 'block' : 'hidden'}`}>
-                  <p>By entering the competition, each winning entrant grants Archalley, the competition sponsors, and all media partners an irrevocable, perpetual license to reproduce, enlarge, publish, or exhibit the product; the entrant's name; product images; product detail documents; and a self-picture of the entrant, mechanically or electronically, on any media worldwide (including the internet).</p>
-                </div>
-              </div>
-              
-              {/* Acceptance of Terms */}
-              <div className="bg-slate-800/70 rounded-none overflow-hidden">
-                <button 
-                  onClick={() => toggleCard('acceptance-terms')}
-                  className="w-full p-6 text-left flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
-                >
-                  <h3 className="text-sm md:text-xl font-bold text-white">Acceptance of Terms</h3>
-                  <svg 
-                    className={`w-5 h-5 text-white transition-transform ${expandedCards['acceptance-terms'] ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`px-6 pb-6 text-white space-y-3 text-[11.2px] md:text-sm leading-[20px] md:leading-normal ${expandedCards['acceptance-terms'] ? 'block' : 'hidden'}`}>
-                  <p>Submitting an entry to the competition indicates acceptance of these terms and conditions.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* FAQ Section */}
       <section className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
         <div className="max-w-7xl mx-auto relative">
           <h2 id="faq" className="text-2xl md:text-4xl font-bold text-center text-white mb-12 uppercase tracking-wide scroll-mt-20">
-            <a href="#faq" >FAQ</a>
+            <a href="#faq">FAQ</a>
           </h2>
           <div className="max-w-4xl mx-auto">
             <div className="space-y-6">
@@ -1601,33 +1042,115 @@ export default function CompetitionPageClient() {
         </div>
       </section>
 
+      {/* Contact Us Section */}
+      <section className="relative py-8 md:py-12 px-4 md:px-6 lg:px-8 bg-black z-20">
+        <div className="max-w-6xl mx-auto relative">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1px_1fr] gap-8 items-center">
+            {/* Left Side - Text */}
+            <div className="pr-0 lg:pr-8">
+              <h2 className="text-2xl md:text-4xl font-bold text-white mb-4">
+                Contact Us
+              </h2>
+              <p className="text-white text-sm md:text-base leading-relaxed">
+                If you have any questions or need assistance regarding the competition, feel free to reach out to us:
+              </p>
+            </div>
+
+            {/* Vertical Line - Only visible on large screens */}
+            <div className="hidden lg:block h-48 bg-white w-px"></div>
+
+            {/* Right Side - Contact Buttons */}
+            <div className="flex flex-col gap-3 pl-0 lg:pl-8">
+              {/* Phone Number */}
+              <a 
+                href="tel:+94777863015"
+                className="flex items-center justify-center gap-3 border-2 border-white text-white px-4 py-3 text-base font-semibold hover:bg-white hover:text-black transition-colors"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                </svg>
+                +94 77 786 3015
+              </a>
+
+              {/* WhatsApp */}
+              <a 
+                href="https://wa.me/94777863015"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-3 bg-[#25D366] text-white px-4 py-3 text-base font-semibold hover:bg-[#1fa855] transition-colors"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                </svg>
+                +94 77 786 3015
+              </a>
+
+              {/* Email */}
+              <a 
+                href="mailto:competitions@archalley.com"
+                className="flex items-center justify-center gap-3 border-2 border-white text-white px-4 py-3 text-base font-semibold hover:bg-white hover:text-black transition-colors"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                </svg>
+                competitions@archalley.com
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer Section */}
-      <footer className="relative bg-slate-950/90 py-12 px-4 md:px-6 lg:px-8 z-20">
+      <footer className="relative bg-slate-950/90 py-16 px-4 md:px-6 lg:px-8 z-20">
         <div className="max-w-7xl mx-auto relative">
           {/* Official Partners */}
-          <div className="text-center">
-            <h3 className="text-base md:text-xl font-bold text-white mb-4 leading-[20px] md:leading-normal">Official Partners</h3>
-            <div className="flex flex-wrap justify-center items-center gap-6">
-              <div className="h-16 md:h-20 flex items-center">
+          <div className="text-center mb-10">
+            <h3 className="text-lg md:text-2xl font-bold text-white mb-6 leading-[20px] md:leading-normal">Official Partners</h3>
+            <div className="flex flex-wrap justify-center items-center gap-8 md:gap-10">
+              <div className="h-20 md:h-28 flex items-center">
                 <Image
                   src="/uploads/A-Plus-Logo.jpg"
                   alt="A PLUS"
-                  width={150}
-                  height={80}
+                  width={180}
+                  height={100}
                   className="object-contain h-full w-auto"
                 />
               </div>
-              <div className="h-16 md:h-20 flex items-center">
+              <div className="h-20 md:h-28 flex items-center">
                 <Image
                   src="/uploads/ABrand-Logo.jpg"
                   alt="A BRAND"
-                  width={150}
-                  height={80}
+                  width={180}
+                  height={100}
                   className="object-contain h-full w-auto"
                 />
               </div>
-        </div>
-      </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
+            <Button
+              asChild
+              className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+            >
+              <Link href="/events/archalley-competition-2025/register">
+                Register Now
+              </Link>
+            </Button>
+            <Button
+              asChild
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+            >
+              <a 
+                href="/downloads/Christmas Tree Competition 2025 - Brief.pdf"
+                download="Christmas Tree Competition 2025 - Brief.pdf"
+              >
+                Download Brief
+              </a>
+            </Button>
+          </div>
         </div>
       </footer>
     </div>
