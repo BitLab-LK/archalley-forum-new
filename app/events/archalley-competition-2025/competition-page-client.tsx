@@ -479,8 +479,8 @@ export default function CompetitionPageClient() {
 
               {/* Category Information Popups */}
               {activePopup && (
-                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-3 md:p-4 overflow-y-auto" onClick={() => setActivePopup(null)}>
-                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-0 md:border md:border-slate-600 max-w-4xl w-full max-h-[80vh] md:max-h-[90vh] overflow-y-auto relative my-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-3 md:p-4" onClick={() => setActivePopup(null)}>
+                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-0 md:border md:border-slate-600 max-w-4xl w-full max-h-[80vh] md:max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
                     
                     {/* Close Button */}
                     <button 
