@@ -140,8 +140,8 @@ export default function CompetitionPageClient() {
   const navLinks = [
     { href: '#theme', label: 'Theme' },
     { href: '#submission-categories', label: 'Categories' },
-    { href: '#how-to-join', label: 'How to Join' },
     { href: '#awards', label: 'Awards' },
+    { href: '#how-to-join', label: 'How to Join' },
     { href: '#timeline', label: 'Timeline' },
     { href: '#jury-panel', label: 'Jury' },
   ]
