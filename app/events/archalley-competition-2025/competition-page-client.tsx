@@ -70,17 +70,32 @@ export default function CompetitionPageClient() {
   // Prevent body scroll when popup is open
   useEffect(() => {
     if (activePopup) {
-      // Prevent scrolling but don't change position
+      // Prevent scrolling on body
+      const scrollY = window.pageYOffset;
       document.body.style.overflow = 'hidden';
-      document.body.style.paddingRight = '0px'; // Prevent layout shift from scrollbar
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.touchAction = 'none';
     } else {
+      // Restore scrolling
+      const scrollY = document.body.style.top;
       document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.touchAction = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
     }
     
     return () => {
       document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.touchAction = '';
     };
   }, [activePopup]);
 
@@ -483,8 +498,15 @@ export default function CompetitionPageClient() {
 
               {/* Category Information Popups */}
               {activePopup && (
-                <div className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-4" onClick={() => setActivePopup(null)}>
-                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-0 md:border md:border-slate-600 max-w-4xl w-full max-h-[92vh] md:max-h-[90vh] overflow-y-auto relative rounded-none md:rounded-lg" onClick={(e) => e.stopPropagation()}>
+                <div 
+                  className="fixed inset-0 bg-black/95 backdrop-blur-sm z-[9999] flex items-center justify-center p-0 overflow-y-auto"
+                  style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+                  onClick={() => setActivePopup(null)}
+                >
+                  <div 
+                    className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-0 md:border md:border-slate-600 max-w-4xl w-full mx-2 my-4 md:mx-4 max-h-[95vh] overflow-y-auto relative rounded-none md:rounded-lg"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     
                     {/* Close Button */}
                     <button 
