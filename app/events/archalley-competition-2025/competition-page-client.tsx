@@ -499,19 +499,19 @@ export default function CompetitionPageClient() {
 
               {/* Category Information Popups */}
               {activePopup && (
-                <div className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-start md:items-center justify-center p-0 md:p-4" onClick={() => setActivePopup(null)}>
-                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-0 md:border md:border-slate-600 max-w-4xl w-full h-full md:h-auto md:max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-4" onClick={() => setActivePopup(null)}>
+                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-0 md:border md:border-slate-600 max-w-4xl w-full max-h-[92vh] md:max-h-[90vh] overflow-y-auto relative rounded-none md:rounded-lg" onClick={(e) => e.stopPropagation()}>
                     
                     {/* Close Button */}
                     <button 
                       onClick={() => setActivePopup(null)} 
-                      className="sticky top-2 right-2 z-10 text-gray-400 hover:text-white text-2xl font-light bg-black/50 w-8 h-8 flex items-center justify-center hover:bg-black/70 transition-colors rounded-full ml-auto mr-2"
+                      className="absolute top-3 right-3 z-10 text-gray-400 hover:text-white text-2xl font-light bg-black/50 w-9 h-9 flex items-center justify-center hover:bg-black/70 transition-colors rounded-full"
                     >
                       ×
                     </button>
 
                     {/* Header Section */}
-                    <div className="relative p-4 pb-3 md:p-8 md:pb-6">
+                    <div className="relative p-4 pt-12 pb-3 md:p-8 md:pt-12 md:pb-6">
                       {/* Background decoration similar to PDF */}
                       <div className="absolute inset-0 opacity-10">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-purple-500/20 to-transparent"></div>
