@@ -13,6 +13,7 @@ export default function CompetitionPageClient() {
   const [timelineProgress, setTimelineProgress] = useState(0)
   const [activePopup, setActivePopup] = useState<string | null>(null)
   const [activeMobileTab, setActiveMobileTab] = useState('challenge')
+  const scrollPositionRef = useRef(0)
 
   // Function to handle tab change and scroll to respective section
   const handleTabChange = (tab: string) => {
@@ -70,24 +71,32 @@ export default function CompetitionPageClient() {
   // Prevent body scroll when popup is open
   useEffect(() => {
     if (activePopup) {
+      // Save current scroll position
+      scrollPositionRef.current = window.pageYOffset;
       // Prevent scrolling on body
-      const scrollY = window.pageYOffset;
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
+      document.body.style.top = `-${scrollPositionRef.current}px`;
       document.body.style.width = '100%';
       document.body.style.touchAction = 'none';
-    } else {
+    } else if (scrollPositionRef.current > 0) {
       // Restore scrolling
-      const scrollY = document.body.style.top;
+      const savedScrollY = scrollPositionRef.current;
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.width = '';
       document.body.style.touchAction = '';
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-      }
+      // Restore to saved position
+      window.scrollTo(0, savedScrollY);
+      scrollPositionRef.current = 0;
+    } else {
+      // Just clear styles if no saved position
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.touchAction = '';
     }
     
     return () => {
@@ -496,50 +505,44 @@ export default function CompetitionPageClient() {
                 </div>
               </div>
 
-              {/* Category Information Popups */}
+ {/* Category Information Popups */}
               {activePopup && (
-                <div 
-                  className="fixed inset-0 bg-black/95 backdrop-blur-sm z-[9999] flex items-center justify-center p-0 overflow-y-auto"
-                  style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-                  onClick={() => setActivePopup(null)}
-                >
-                  <div 
-                    className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-0 md:border md:border-slate-600 max-w-4xl w-full mx-2 my-4 md:mx-4 max-h-[95vh] overflow-y-auto relative rounded-none md:rounded-lg"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    
+                
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-2 py-8 md:p-4 md:py-4 overflow-y-auto" onClick={() => setActivePopup(null)}>
+                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 md:border md:border-slate-600 max-w-4xl w-full max-h-[70vh] md:max-h-[90vh] overflow-y-auto relative my-auto" onClick={(e) => e.stopPropagation()}>
+
                     {/* Close Button */}
                     <button 
                       onClick={() => setActivePopup(null)} 
-                      className="absolute top-3 right-3 z-10 text-gray-400 hover:text-white text-2xl font-light bg-black/50 w-9 h-9 flex items-center justify-center hover:bg-black/70 transition-colors rounded-full"
+                      className="sticky top-1 right-1 md:top-2 md:right-2 z-10 text-gray-400 hover:text-white text-2xl font-light bg-black/50 w-8 h-8 flex items-center justify-center hover:bg-black/70 transition-colors rounded-full ml-auto mr-1 md:mr-2"
                     >
                       ×
                     </button>
 
                     {/* Header Section */}
-                    <div className="relative p-4 pt-12 pb-3 md:p-8 md:pt-12 md:pb-6">
+                    <div className="relative p-4 pb-4 md:p-8 md:pb-6">
                       {/* Background decoration similar to PDF */}
                       <div className="absolute inset-0 opacity-10">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-purple-500/20 to-transparent"></div>
                         <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-blue-500/20 to-transparent"></div>
                       </div>
-                      
+
                       <div className="relative">
-                        <p className="text-right text-gray-400 text-sm italic mb-2">Archalley Competition 2025</p>
-                        <h3 className="text-2xl md:text-3xl font-bold text-white text-center underline decoration-2 underline-offset-4 mb-6 tracking-wide">
+                        <p className="text-right text-gray-400 text-sm italic mb-1 md:mb-2">Archalley Competition 2025</p>
+                        <h3 className="text-2xl md:text-3xl font-bold text-white text-center underline decoration-2 underline-offset-4 mb-3 md:mb-6 tracking-wide">
                           {activePopup === 'physical' && 'PHYSICAL TREE CATEGORY'}
                           {activePopup === 'digital' && 'DIGITAL TREE CATEGORY'}
                           {activePopup === 'kids' && "KIDS' TREE CATEGORY"}
                         </h3>
                       </div>
                     </div>
-                    
+
                     {/* Content Section */}
                     <div className="px-4 pb-4 md:px-8 md:pb-8">
-                      <div className="text-gray-200 space-y-4 text-base leading-relaxed">
+                      <div className="text-gray-200 space-y-2 md:space-y-4 text-base leading-relaxed">
                         {activePopup === 'physical' && (
                           <>
-                            <div className="flex flex-col space-y-3 text-left">
+                            <div className="flex flex-col space-y-2 md:space-y-3 text-left">
                               <p className="flex items-start gap-3 text-left">
                                 <span className="text-white font-bold min-w-fit">•</span> 
                                 <span className="text-left"><strong className="text-white">Build it for real:</strong> The tree must be a physically made product (in 2D or 3D form) and photographed for submission.</span>
@@ -563,10 +566,10 @@ export default function CompetitionPageClient() {
                             </div>
                           </>
                         )}
-                        
+
                         {activePopup === 'digital' && (
                           <>
-                            <div className="flex flex-col space-y-3 text-left">
+                            <div className="flex flex-col space-y-2 md:space-y-3 text-left">
                               <p className="flex items-start gap-3 text-left">
                                 <span className="text-white font-bold min-w-fit">•</span> 
                                 <span className="text-left"><strong className="text-white">Digital Tree Category - Accepted Formats:</strong> Paintings, drawings, digital illustrations, mixed media, AI-generated or AI-enhanced images, 3D-rendered images, and graphical representations created using 3D modeling software.</span>
@@ -586,10 +589,10 @@ export default function CompetitionPageClient() {
                             </div>
                           </>
                         )}
-                        
+
                         {activePopup === 'kids' && (
                           <>
-                            <div className="flex flex-col space-y-3 text-left">
+                            <div className="flex flex-col space-y-2 md:space-y-3 text-left">
                               <p className="flex items-start gap-3 text-left">
                                 <span className="text-white font-bold min-w-fit">•</span> 
                                 <span className="text-left"><strong className="text-white">No winners selected:</strong> This category will <strong className="text-red-400">not</strong> be judged by the jury and is <strong className="text-red-400">not eligible</strong> for popularity voting or prizes.</span>
@@ -620,7 +623,7 @@ export default function CompetitionPageClient() {
                       </div>
 
                       {/* Footer with vertical line */}
-                      <div className="mt-8 pt-6 border-t border-slate-600">
+                      <div className="mt-4 pt-3 md:mt-8 md:pt-6 border-t border-slate-600">
                       </div>
                     </div>
                   </div>
