@@ -171,10 +171,10 @@ export default function CompetitionPageClient() {
 
       {/* Hero Section - Transparent with blue overlay to reveal fixed bg */}
       <section id="introduction" className="relative w-full z-30">
-          <div className="relative w-full min-h-[600px] md:h-[700px] lg:h-[800px]">
+          <div className="relative w-full min-h-[440px] md:h-[700px] lg:h-[800px]">
             <div className="absolute inset-0 bg-gradient-to-br from-slate-900/30 via-slate-900/60 to-slate-900/30" />
-          <div className="absolute inset-0 flex items-center justify-center px-4 py-6 md:px-6 md:py-0 lg:px-8">
-            <div className="container mx-auto flex flex-col items-center text-center space-y-2 md:space-y-6 lg:space-y-8 -mt-32 md:-mt-40 lg:-mt-48">
+          <div className="absolute inset-0 flex items-start md:items-center justify-center px-4 pt-6 md:px-6 md:py-0 lg:px-8">
+            <div className="container mx-auto flex flex-col items-center text-center space-y-2 md:space-y-6 lg:space-y-8 mt-0 md:-mt-40 lg:-mt-48">
               <style>{`
                 @media (max-width: 767px) {
                   .christmas-word,
@@ -265,7 +265,7 @@ export default function CompetitionPageClient() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-2 md:mb-4 mt-16 md:mt-8">
+              <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mt-16 md:mt-8">
               <Button
                 asChild
                 className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
@@ -368,7 +368,7 @@ export default function CompetitionPageClient() {
         {/* Challenge Content - Always visible on desktop, conditionally on mobile */}
         <div className={`md:block ${activeMobileTab === 'challenge' ? 'block' : 'hidden'}`}>
           {/* Theme Section */}
-      <section id="theme" className="relative py-12 md:py-12 px-4 md:px-6 lg:px-8 z-20">
+      <section id="theme" className="relative pt-12 pb-8 md:py-12 px-4 md:px-6 lg:px-8 z-20">
         <div className="max-w-7xl mx-auto relative">
           <div className="max-w-4xl mx-auto">
             <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-red-500 uppercase tracking-widest text-center mb-6 md:mb-8">
@@ -436,9 +436,9 @@ export default function CompetitionPageClient() {
       </section>
 
       {/* Submission Categories & Who Can Join */}
-      <section className="relative min-h-[600px] z-20 overflow-hidden">
+      <section className="relative md:min-h-[600px] z-20 overflow-hidden">
         {/* Content - Constrained to default width */}
-        <div className="relative z-10 min-h-[600px] flex items-center px-4 md:px-6 lg:px-8 pt-12 md:pt-12 pb-12 md:pb-12">
+        <div className="relative z-10 md:min-h-[600px] flex items-center px-4 md:px-6 lg:px-8 pt-6 md:pt-12 pb-12 md:pb-12">
           <div className="max-w-7xl mx-auto w-full">
             <div className="text-center">
               <h2 id="submission-categories" className="text-2xl md:text-4xl font-bold text-white mb-8 uppercase tracking-wide scroll-mt-20">
@@ -479,8 +479,8 @@ export default function CompetitionPageClient() {
 
               {/* Category Information Popups */}
               {activePopup && (
-                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 py-12 md:py-4 overflow-y-auto" onClick={() => setActivePopup(null)}>
-                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-600 max-w-4xl w-full max-h-[70vh] md:max-h-[90vh] overflow-y-auto relative my-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-3 md:p-4 overflow-y-auto" onClick={() => setActivePopup(null)}>
+                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-0 md:border md:border-slate-600 max-w-4xl w-full max-h-[80vh] md:max-h-[90vh] overflow-y-auto relative my-auto" onClick={(e) => e.stopPropagation()}>
                     
                     {/* Close Button */}
                     <button 
@@ -491,7 +491,7 @@ export default function CompetitionPageClient() {
                     </button>
 
                     {/* Header Section */}
-                    <div className="relative p-8 pb-6">
+                    <div className="relative p-4 pb-3 md:p-8 md:pb-6">
                       {/* Background decoration similar to PDF */}
                       <div className="absolute inset-0 opacity-10">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-purple-500/20 to-transparent"></div>
@@ -509,7 +509,7 @@ export default function CompetitionPageClient() {
                     </div>
                     
                     {/* Content Section */}
-                    <div className="px-8 pb-8">
+                    <div className="px-4 pb-4 md:px-8 md:pb-8">
                       <div className="text-gray-200 space-y-4 text-base leading-relaxed">
                         {activePopup === 'physical' && (
                           <>
