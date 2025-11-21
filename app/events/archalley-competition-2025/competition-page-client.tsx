@@ -70,33 +70,17 @@ export default function CompetitionPageClient() {
   // Prevent body scroll when popup is open
   useEffect(() => {
     if (activePopup) {
-      const scrollY = window.scrollY;
-      document.body.dataset.scrollY = String(scrollY);
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = '0';
-      document.body.style.right = '0';
+      // Prevent scrolling but don't change position
       document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = '0px'; // Prevent layout shift from scrollbar
     } else {
-      const scrollY = document.body.dataset.scrollY;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
       document.body.style.overflow = '';
-      window.scrollTo(0, parseInt(scrollY || '0'));
+      document.body.style.paddingRight = '';
     }
     
     return () => {
-      const scrollY = document.body.dataset.scrollY;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
       document.body.style.overflow = '';
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY));
-      }
+      document.body.style.paddingRight = '';
     };
   }, [activePopup]);
 
