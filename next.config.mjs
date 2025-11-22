@@ -18,12 +18,12 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com",
-              "script-src-elem 'self' 'unsafe-inline' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https: http:",
-              "font-src 'self' data:",
-              "frame-src 'self' https://www.youtube.com https://youtube.com https://www.facebook.com https://facebook.com https://web.facebook.com https://connect.facebook.net",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com https://vercel.live https://www.payhere.lk https://sandbox.payhere.lk",
+              "script-src-elem 'self' 'unsafe-inline' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com https://vercel.live https://www.payhere.lk https://sandbox.payhere.lk",
+              "style-src 'self' 'unsafe-inline' https://cdn.lineicons.com",
+              "img-src 'self' data: https: https://sandbox.payhere.lk",
+              "font-src 'self' data: https://cdn.lineicons.com",
+              "frame-src 'self' https://www.youtube.com https://youtube.com https://www.facebook.com https://facebook.com https://web.facebook.com https://connect.facebook.net https://www.payhere.lk https://sandbox.payhere.lk",
               "child-src 'self' https://www.youtube.com https://youtube.com https://www.facebook.com https://facebook.com",
               "connect-src 'self' https://connect.facebook.net https://www.facebook.com",
               "media-src 'self' https://www.youtube.com https://youtube.com",
@@ -38,6 +38,7 @@ const nextConfig = {
   
   // Image optimization
   images: {
+    domains: ['wp.archalley.com', 'archalley.com'],
     remotePatterns: [
       {
         protocol: 'http',
@@ -53,10 +54,17 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'vnvpjdgzlsratzhmyiry.supabase.co',
+        hostname: 'wp.archalley.com',
         port: '',
-        pathname: '/**',
+        pathname: '/wp-content/uploads/**',
       },
+      // Removed Supabase hostname - migrated to Azure PostgreSQL
+      // {
+      //   protocol: 'https',
+      //   hostname: 'vnvpjdgzlsratzhmyiry.supabase.co',
+      //   port: '',
+      //   pathname: '/**',
+      // },
       {
         protocol: 'https',
         hostname: '**.blob.vercel-storage.com',
@@ -96,6 +104,12 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
         port: '',
         pathname: '/**',
       }

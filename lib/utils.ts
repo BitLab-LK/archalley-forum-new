@@ -82,14 +82,14 @@ export function sanitizeFilename(filename: string): string {
 }
 
 /**
- * Deletes a file from Vercel Blob storage
+ * Deletes a file from Azure Blob Storage
  * @param url - The blob URL to delete
  * @returns Promise that resolves when deletion is complete
  */
 export async function deleteBlobFile(url: string): Promise<void> {
   try {
-    const { del } = await import('@vercel/blob')
-    await del(url)
+    const { deleteFromAzureBlob } = await import('@/lib/azure-blob-storage')
+    await deleteFromAzureBlob(url)
     console.log("✅ Blob file deleted successfully:", url)
   } catch (error) {
     console.error("❌ Failed to delete blob file:", url, error)
@@ -98,7 +98,7 @@ export async function deleteBlobFile(url: string): Promise<void> {
 }
 
 /**
- * Deletes multiple files from Vercel Blob storage
+ * Deletes multiple files from Azure Blob Storage
  * @param urls - Array of blob URLs to delete
  * @returns Promise that resolves when all deletions are complete
  */

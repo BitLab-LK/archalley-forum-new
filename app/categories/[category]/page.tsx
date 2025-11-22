@@ -1,0 +1,98 @@
+import { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import CategoryListing from '@/components/category-listing'
+import { getAllCategories } from '@/lib/wordpress-api'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 300
+
+interface PageProps {
+  params: Promise<{ category: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+/**
+ * Step 1: Map URL slug to WordPress category slug
+ * Step 2: Match slug against WordPress categories
+ * Returns WordPress category if found, null otherwise
+ */
+async function findCategoryBySlug(urlSlug: string): Promise<{ id: number; name: string; slug: string } | null> {
+  // Step 1: Map URL slug to WordPress category slug (try exact match first)
+  // Step 2: Fetch all categories and match by slug
+  const allCategories = await getAllCategories()
+  
+  // Try exact match first
+  let found = allCategories.find(cat => cat.slug === urlSlug)
+  if (found) {
+    return found
+  }
+  
+  // Try with underscore variations
+  const urlUnderscore = urlSlug.replace(/-/g, '_')
+  found = allCategories.find(cat => cat.slug === urlUnderscore)
+  if (found) {
+    return found
+  }
+  
+  // Try with hyphen variations (if original had underscores)
+  const urlHyphen = urlSlug.replace(/_/g, '-')
+  found = allCategories.find(cat => cat.slug === urlHyphen)
+  if (found) {
+    return found
+  }
+  
+  return null
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { category } = await params
+  
+  // Step 2: Match slug - fetch category
+  const wpCategory = await findCategoryBySlug(category)
+  
+  if (!wpCategory) {
+    return {
+      title: 'Category Not Found | Archalley',
+    }
+  }
+  
+  return {
+    title: `${wpCategory.name} | Archalley`,
+    description: `Explore ${wpCategory.name} posts and articles.`,
+  }
+}
+
+export default async function CategoryPage({ params, searchParams }: PageProps) {
+  const { category } = await params
+  const resolvedSearchParams = await searchParams
+  const pageParam = typeof resolvedSearchParams?.page === 'string' 
+    ? resolvedSearchParams.page 
+    : Array.isArray(resolvedSearchParams?.page) 
+      ? resolvedSearchParams.page[0] 
+      : null
+  
+  // Step 1: Map URL slug to WordPress category slug
+  // Step 2: Match slug - fetch category from WordPress
+  const wpCategory = await findCategoryBySlug(category)
+  
+  // Step 3: Show all posts from that category (via CategoryListing component)
+  // Step 4: Show 404 only after fetching if category not found
+  if (!wpCategory) {
+    // Category not found after fetching - show 404
+    notFound()
+  }
+  
+  // Use the URL slug for basePath to maintain URL structure
+  const basePath = `/categories/${category}`
+  
+  // CategoryListing will fetch and display posts from wpCategory.id
+  return (
+    <CategoryListing 
+      categoryId={wpCategory.id} 
+      title={wpCategory.name} 
+      basePath={basePath} 
+      pageParam={pageParam} 
+    />
+  )
+}
+

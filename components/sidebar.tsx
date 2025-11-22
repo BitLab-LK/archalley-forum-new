@@ -197,7 +197,7 @@ function Sidebar() {
   }, [categoriesKey, trendingKey, hasLoadedInitialData]) // Re-fetch when keys change
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sticky top-8">
 
 
       {/* Categories */}
@@ -205,7 +205,7 @@ function Sidebar() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between text-lg font-semibold">
             <div className="flex items-center space-x-2">
-              <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+              <div className="p-1.5 rounded-none bg-orange-100 dark:bg-orange-900/30">
                 <TrendingUp className={cn("w-4 h-4 text-orange-600 dark:text-orange-400", isLoading && "animate-pulse")} />
               </div>
               <span className="text-gray-900 dark:text-gray-100">Categories</span>
@@ -221,7 +221,7 @@ function Sidebar() {
           {isLoading ? (
             // Loading skeleton
             Array.from({ length: 7 }).map((_, index) => (
-              <div key={index} className="flex items-center justify-between animate-pulse p-3 rounded-xl">
+              <div key={index} className="flex items-center justify-between animate-pulse p-3 rounded-none">
                 <div className="flex items-center space-x-3">
                   <div className="w-3 h-3 rounded-full bg-gray-200 dark:bg-gray-700" />
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24" />
@@ -256,7 +256,7 @@ function Sidebar() {
                 return (
                   <div
                     key={category.id}
-                    className="group flex items-center rounded-lg py-2 px-3 transition-all duration-200 cursor-pointer smooth-transition hover-lift animate-slide-in-up max-w-[280px] mx-auto border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700"
+                    className="group flex items-center rounded-none py-2 px-3 transition-all duration-200 cursor-pointer smooth-transition hover-lift animate-slide-in-up max-w-[280px] mx-auto border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700"
                     style={{ 
                       animationDelay: `${index * 50}ms`,
                       backgroundColor: categoryStyles.lightBackground
@@ -282,7 +282,7 @@ function Sidebar() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between text-lg font-semibold">
             <div className="flex items-center space-x-2">
-              <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+              <div className="p-1.5 rounded-none bg-orange-100 dark:bg-orange-900/30">
                 <Award className={cn("w-4 h-4 text-orange-600 dark:text-orange-400", isTrendingLoading && "animate-pulse")} />
               </div>
               <span className="text-gray-900 dark:text-gray-100">Trending Posts</span>
@@ -297,7 +297,7 @@ function Sidebar() {
         <CardContent className="space-y-3 pt-0">
           {isTrendingLoading ? (
             Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="space-y-3 animate-pulse p-4 rounded-xl bg-gray-50/50 dark:bg-gray-800/30">
+              <div key={index} className="space-y-3 animate-pulse p-4 rounded-none bg-gray-50/50 dark:bg-gray-800/30">
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32" />
                 <div className="flex items-center justify-between text-xs">
                   <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16" />
@@ -313,7 +313,7 @@ function Sidebar() {
             trendingPosts.map((post, index) => (
               <div 
                 key={post.id} 
-                className="group p-3 rounded-lg bg-white/60 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800/60 transition-all duration-200 cursor-pointer hover:shadow-sm border border-gray-100 dark:border-gray-800 hover:border-orange-200 dark:hover:border-orange-800 animate-slide-in-up hover-lift smooth-transition"
+                className="group p-3 rounded-none bg-white/60 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800/60 transition-all duration-200 cursor-pointer hover:shadow-sm border border-gray-100 dark:border-gray-800 hover:border-orange-200 dark:hover:border-orange-800 animate-slide-in-up hover-lift smooth-transition"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Post Title */}
@@ -346,7 +346,7 @@ function Sidebar() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between text-lg font-semibold">
             <div className="flex items-center space-x-2">
-              <div className="p-1.5 rounded-lg bg-green-100 dark:bg-green-900/30">
+              <div className="p-1.5 rounded-none bg-green-100 dark:bg-green-900/30">
                 <Users className="w-4 h-4 text-green-600 dark:text-green-400" />
               </div>
               <span className="text-gray-900 dark:text-gray-100">Top Contributors</span>
@@ -361,7 +361,7 @@ function Sidebar() {
         <CardContent className="space-y-3 pt-0">
           {isContributorsLoading ? (
             Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="group flex items-center space-x-3 p-3 rounded-xl bg-white/60 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
+              <div key={index} className="group flex items-center space-x-3 p-3 rounded-none bg-white/60 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
                 <div className="relative">
                   <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
                 </div>
@@ -383,7 +383,7 @@ function Sidebar() {
             topContributors.map((contributor, index) => (
               <div 
                 key={contributor.id} 
-                className="group flex items-center space-x-3 p-3 rounded-xl bg-white/60 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800/60 transition-all duration-200 cursor-pointer hover:shadow-sm border border-gray-100 dark:border-gray-800 hover:border-green-200 dark:hover:border-green-800 animate-slide-in-up hover-lift smooth-transition"
+                className="group flex items-center space-x-3 p-3 rounded-none bg-white/60 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800/60 transition-all duration-200 cursor-pointer hover:shadow-sm border border-gray-100 dark:border-gray-800 hover:border-green-200 dark:hover:border-green-800 animate-slide-in-up hover-lift smooth-transition"
                 style={{ animationDelay: `${index * 80}ms` }}
               >
                 <div className="relative">

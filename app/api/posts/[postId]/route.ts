@@ -87,7 +87,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
     console.log("📊 Will decrement counts for categories:", allCategoryIds)
 
-    // Clean up Vercel Blob files before deleting database records
+    // Clean up Azure Blob Storage files before deleting database records
     try {
       await cleanupPostBlobs(postId)
     } catch (blobError) {

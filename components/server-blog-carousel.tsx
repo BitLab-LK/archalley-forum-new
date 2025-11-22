@@ -3,7 +3,8 @@ import BlogCarousel from "@/components/blog-carousel"
 
 export default async function ServerBlogCarousel() {
   try {
-    const posts = await getAllPosts(1, 4)
+    // Fetch 12 posts so there's content to slide through
+    const posts = await getAllPosts(1, 12)
     return <BlogCarousel initialPosts={posts} />
   } catch (error) {
     console.error('Failed to fetch posts on server:', error)

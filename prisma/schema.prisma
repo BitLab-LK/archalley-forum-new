@@ -52,7 +52,7 @@ model Post {
   moderationReason  String?
   moderationNotes   String?        // Internal notes for moderators
   // Content and Display
-  images            String[]       @default([]) // Store Vercel Blob URLs directly
+  images            String[]       @default([]) // Store Azure Blob Storage URLs directly
   aiTags            String[]
   originalLanguage  String         @default("English")
   translatedContent String?
@@ -222,6 +222,19 @@ model EmailLogs {
   @@index([status])
 }
 
+model VerificationToken {
+  id         String   @id @default(cuid())
+  identifier String   // email address
+  token      String   @unique
+  expires    DateTime
+  createdAt  DateTime @default(now())
+
+  @@unique([identifier, token])
+  @@index([token])
+  @@index([identifier])
+  @@index([expires])
+}
+
 model pages {
   id          String   @id
   title       String
@@ -334,6 +347,11 @@ model users {
   // Advertisement relations
   createdAds          Advertisement[]  @relation("AdCreator")
   editedAds           Advertisement[]  @relation("AdEditor")
+  
+  // Competition relations
+  registrationCarts        RegistrationCart[]
+  competitionRegistrations CompetitionRegistration[]
+  competitionPayments      CompetitionPayment[]
   
   // Performance and security indexes
   @@index([email])
@@ -596,4 +614,338 @@ enum AdPriority {
   HIGH
   MEDIUM  
   LOW
+}
+
+// ============================================
+// COMPETITION REGISTRATION SYSTEM
+// ============================================
+
+// Main Competition Model
+model Competition {
+  id                    String   @id @default(cuid())
+  slug                  String   @unique
+  title                 String
+  description           String   @db.Text
+  year                  Int
+  status                CompetitionStatus @default(UPCOMING)
+  
+  // Important dates
+  startDate             DateTime
+  endDate               DateTime
+  registrationDeadline  DateTime
+  earlyBirdDeadline     DateTime?
+  
+  // Registration settings
+  registrationFee       Float    // Base fee in LKR
+  
+  // Prize information
+  totalPrizeFund        Float
+  prizes                Json     // Prize structure as JSON
+  
+  // Media
+  thumbnail             String?
+  heroImage             String?
+  
+  // Additional information (JSON for flexibility)
+  requirements          Json?    // Competition requirements
+  judgePanel            Json?    // Judge information
+  timeline              Json?    // Competition timeline/milestones
+  
+  // Relations
+  registrationTypes     CompetitionRegistrationType[]
+  registrations         CompetitionRegistration[]
+  cartItems             RegistrationCartItem[]
+  payments              CompetitionPayment[]
+  
+  // Timestamps
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@index([slug])
+  @@index([status])
+  @@index([year])
+  @@index([registrationDeadline])
+}
+
+enum CompetitionStatus {
+  UPCOMING
+  REGISTRATION_OPEN
+  REGISTRATION_CLOSED
+  IN_PROGRESS
+  JUDGING
+  COMPLETED
+  CANCELLED
+}
+
+// Registration Type Configuration
+model CompetitionRegistrationType {
+  id                String   @id @default(cuid())
+  competitionId     String
+  competition       Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  
+  // Type configuration
+  type              RegistrationType
+  name              String
+  description       String?          @db.Text
+  fee               Float            // Fee in LKR
+  maxMembers        Int              @default(1)
+  minAge            Int?             // For age restrictions (e.g., KIDS)
+  maxAge            Int?             // For age restrictions (e.g., KIDS, STUDENT)
+  isActive          Boolean          @default(true)
+  displayOrder      Int              @default(0)
+  
+  // Relations
+  cartItems         RegistrationCartItem[]
+  registrations     CompetitionRegistration[]
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([competitionId, type])
+  @@index([competitionId])
+  @@index([isActive])
+}
+
+enum RegistrationType {
+  INDIVIDUAL
+  TEAM
+  COMPANY
+  STUDENT
+  KIDS
+}
+
+// Shopping Cart for Registration
+model RegistrationCart {
+  id                String   @id @default(cuid())
+  userId            String
+  user              users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  status            CartStatus @default(ACTIVE)
+  expiresAt         DateTime   // Auto-expire after 30 minutes
+  
+  // Relations
+  items             RegistrationCartItem[]
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([userId, status])
+}
+
+model RegistrationCartItem {
+  id                    String   @id @default(cuid())
+  cartId                String
+  cart                  RegistrationCart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  
+  competitionId         String
+  competition           Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  
+  registrationTypeId    String
+  registrationType      CompetitionRegistrationType @relation(fields: [registrationTypeId], references: [id], onDelete: Cascade)
+  
+  // Basic registration details
+  country               String
+  participantType       RegistrationType
+  referralSource        String?
+  
+  // Type-specific fields
+  teamName              String?          // TEAM
+  companyName           String?          // COMPANY
+  businessRegistrationNo String?         // COMPANY
+  teamMembers           Json?            // TEAM: Array of team member names
+  
+  // Member information (JSON for all types)
+  // Structure varies by type: INDIVIDUAL, STUDENT, TEAM (representative), COMPANY (representative), KIDS (child + parent)
+  members               Json
+  
+  // Pricing
+  unitPrice             Float
+  subtotal              Float
+  
+  // Agreement tracking
+  agreedToTerms         Boolean          @default(false)
+  agreedToWebsiteTerms  Boolean          @default(false)
+  agreedToPrivacyPolicy Boolean          @default(false)
+  agreedToRefundPolicy  Boolean          @default(false)
+  
+  // Timestamps
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@index([cartId])
+  @@index([competitionId])
+  @@index([registrationTypeId])
+}
+
+enum CartStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  ABANDONED
+}
+
+// Final Registration Record (after payment)
+model CompetitionRegistration {
+  id                    String   @id @default(cuid())
+  registrationNumber    String   @unique // Format: AC{YEAR}-{TYPE}-{SEQUENCE} - Used for both internal tracking and public display
+  
+  userId                String
+  user                  users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  competitionId         String
+  competition           Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  
+  registrationTypeId    String
+  registrationType      CompetitionRegistrationType @relation(fields: [registrationTypeId], references: [id], onDelete: Cascade)
+  
+  paymentId             String?
+  payment               CompetitionPayment? @relation(fields: [paymentId], references: [id])
+  
+  // Basic registration details
+  country               String
+  participantType       RegistrationType
+  referralSource        String?
+  
+  // Type-specific fields
+  teamName              String?          // TEAM
+  companyName           String?          // COMPANY
+  businessRegistrationNo String?         // COMPANY
+  teamMembers           Json?            // TEAM: Array of team member names
+  
+  // Member information (JSON for all types)
+  // Structure varies by type: INDIVIDUAL, STUDENT, TEAM (representative), COMPANY (representative), KIDS (child + parent)
+  members               Json
+  
+  // Status tracking
+  status                RegistrationStatus   @default(PENDING)
+  submissionStatus      SubmissionStatus     @default(NOT_SUBMITTED)
+  
+  // Pricing
+  amountPaid            Float
+  currency              String               @default("LKR")
+  
+  // Important dates
+  registeredAt          DateTime             @default(now())
+  confirmedAt           DateTime?
+  submittedAt           DateTime?
+  
+  // Submission tracking
+  submissionFiles       Json?                // Array of file references
+  submissionNotes       String?              @db.Text
+  submissionUrl         String?
+  
+  // Judging & Awards
+  score                 Float?
+  judgeComments         Json?                // Array of judge comments
+  rank                  Int?
+  award                 String?              // FIRST_PRIZE, SECOND_PRIZE, etc.
+  certificateUrl        String?
+  
+  // Additional data
+  metadata              Json?
+  
+  // Timestamps
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([competitionId])
+  @@index([registrationNumber])
+  @@index([status])
+  @@index([registrationTypeId])
+  @@index([paymentId])
+  @@index([userId, competitionId])
+  @@index([status, competitionId])
+}
+
+enum RegistrationStatus {
+  PENDING           // Payment pending
+  CONFIRMED         // Payment confirmed
+  SUBMITTED         // Project submitted
+  UNDER_REVIEW      // Being judged
+  COMPLETED         // Judging complete
+  CANCELLED         // Registration cancelled
+  REFUNDED          // Payment refunded
+}
+
+enum SubmissionStatus {
+  NOT_SUBMITTED
+  DRAFT
+  IN_PROGRESS
+  SUBMITTED
+  RESUBMITTED
+  ACCEPTED
+  REJECTED
+}
+
+// Payment Processing
+model CompetitionPayment {
+  id                String   @id @default(cuid())
+  orderId           String   @unique
+  
+  userId            String
+  user              users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  competitionId     String
+  competition       Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  
+  // Payment details
+  amount            Float
+  currency          String   @default("LKR")
+  status            PaymentStatus @default(PENDING)
+  
+  // PayHere integration fields
+  merchantId        String
+  paymentId         String?
+  statusCode        String?
+  md5sig            String?              // Signature verification
+  
+  // Payment method details
+  paymentMethod     String?
+  cardHolderName    String?
+  cardNo            String?              // Last 4 digits only
+  
+  // Transaction data
+  items             Json                 // Array of registration items
+  customerDetails   Json?
+  responseData      Json?                // Full PayHere response
+  errorMessage      String?
+  errorCode         String?
+  metadata          Json?
+  
+  // Important dates
+  initiatedAt       DateTime @default(now())
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  refundedAt        DateTime?
+  
+  // Relations
+  registrations     CompetitionRegistration[]
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([competitionId])
+  @@index([orderId])
+  @@index([status])
+  @@index([paymentId])
+  @@index([userId, competitionId])
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  EXPIRED
 }

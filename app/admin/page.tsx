@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Users, MessageSquare, TrendingUp, Eye, EyeOff, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal, RefreshCw, Clock, BarChart } from "lucide-react"
+import { Users, MessageSquare, TrendingUp, Eye, EyeOff, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal, RefreshCw, Clock, BarChart, MailCheck, MailX } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useSocket } from "@/lib/socket-context"
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
@@ -22,6 +22,7 @@ import { toast } from "sonner"
 import { checkSuperAdminPrivileges } from "@/lib/super-admin-utils"
 import { getRolePermissions, getAvailableTabs, getDefaultTab, getRoleInfo, type UserRole } from "@/lib/role-permissions"
 import AdsManagementSection from "@/components/ads-management-section"
+import CompetitionsManagementSection from "@/components/competitions-management-section"
 
 interface DashboardStats {
   totalUsers: number
@@ -44,6 +45,8 @@ interface User {
   commentCount: number
   image?: string
   isActive?: boolean
+  emailVerified?: string | null
+  requiresEmailVerification?: boolean
 }
 
 interface Settings {
@@ -1288,7 +1291,7 @@ function AdminDashboardContent() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="container mx-auto">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
             <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
@@ -1310,7 +1313,7 @@ function AdminDashboardContent() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Minimalistic Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
@@ -1337,7 +1340,7 @@ function AdminDashboardContent() {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
             {availableTabs.includes('statistics') && (
@@ -1351,6 +1354,9 @@ function AdminDashboardContent() {
             )}
             {availableTabs.includes('posts') && (
               <TabsTrigger value="posts" className="text-sm font-medium">Posts</TabsTrigger>
+            )}
+            {availableTabs.includes('competitions') && (
+              <TabsTrigger value="competitions" className="text-sm font-medium">Competitions</TabsTrigger>
             )}
             {availableTabs.includes('ads') && (
               <TabsTrigger value="ads" className="text-sm font-medium">Advertisements</TabsTrigger>
@@ -1701,9 +1707,10 @@ function AdminDashboardContent() {
                   </div>
 
                   <div className="border rounded-lg overflow-hidden">
-                    <div className="hidden lg:grid grid-cols-6 gap-4 p-4 font-medium border-b bg-gray-50 dark:bg-gray-800">
+                    <div className="hidden lg:grid grid-cols-7 gap-4 p-4 font-medium border-b bg-gray-50 dark:bg-gray-800">
                       <div className="text-center min-w-0">User</div>
                       <div className="text-center min-w-0">Email</div>
+                      <div className="text-center">Email Verified</div>
                       <div className="text-center">Role</div>
                       <div className="text-center">Join Date</div>
                       <div className="text-center">Last Login</div>
@@ -1725,7 +1732,7 @@ function AdminDashboardContent() {
                         return (
                           <React.Fragment key={user.id}>
                             {/* Desktop View */}
-                            <div className={`hidden lg:grid grid-cols-6 gap-4 p-4 border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+                            <div className={`hidden lg:grid grid-cols-7 gap-4 p-4 border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
                               <div className="flex items-center space-x-3 min-w-0">
                                 <Avatar className="w-10 h-10 flex-shrink-0">
                                   <AvatarImage src={user.image || "/placeholder.svg?height=40&width=40"} />
@@ -1750,6 +1757,25 @@ function AdminDashboardContent() {
                                 >
                                   {user.email}
                                 </span>
+                              </div>
+                              <div className="flex items-center justify-center">
+                                {user.requiresEmailVerification ? (
+                                  user.emailVerified ? (
+                                    <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 flex items-center gap-1">
+                                      <MailCheck className="w-3 h-3" />
+                                      Verified
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 flex items-center gap-1">
+                                      <MailX className="w-3 h-3" />
+                                      Not Verified
+                                    </Badge>
+                                  )
+                                ) : (
+                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-700">
+                                    Social Auth
+                                  </Badge>
+                                )}
                               </div>
                               <div className="flex items-center justify-center">
                                 <div className="flex items-center space-x-2">
@@ -1819,6 +1845,25 @@ function AdminDashboardContent() {
                                       title={user.email}
                                     >
                                       {user.email}
+                                    </div>
+                                    <div className="mt-1">
+                                      {user.requiresEmailVerification ? (
+                                        user.emailVerified ? (
+                                          <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 flex items-center gap-1 w-fit text-xs">
+                                            <MailCheck className="w-3 h-3" />
+                                            Verified
+                                          </Badge>
+                                        ) : (
+                                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 flex items-center gap-1 w-fit text-xs">
+                                            <MailX className="w-3 h-3" />
+                                            Not Verified
+                                          </Badge>
+                                        )
+                                      ) : (
+                                        <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-700 w-fit text-xs">
+                                          Social Auth
+                                        </Badge>
+                                      )}
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1">
                                       {user.postCount} posts, {user.commentCount} comments
@@ -2596,6 +2641,13 @@ function AdminDashboardContent() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
+
+          {/* Competitions Tab */}
+          {permissions.canViewCompetitions && (
+            <TabsContent value="competitions" className="space-y-6">
+              <CompetitionsManagementSection />
+            </TabsContent>
           )}
 
           {/* Advertisements Tab */}

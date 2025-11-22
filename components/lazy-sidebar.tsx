@@ -23,20 +23,23 @@ const Sidebar = dynamic(() => import('./sidebar'), {
   ),
 });
 
-export default function LazySidebar() {
+// Desktop sidebar component - used inside homepage-sidebar wrapper
+export function DesktopSidebar() {
+  return <Sidebar />;
+}
+
+// Mobile sidebar component - used outside homepage-sidebar wrapper
+export function MobileSidebar() {
   return (
-    <>
-      {/* Desktop only - normal sidebar */}
-      <div className="homepage-sidebar">
+    <div className="block lg:hidden">
+      <MobileSidebarToggle>
         <Sidebar />
-      </div>
-      
-      {/* Mobile only - floating toggle sidebar */}
-      <div className="block lg:hidden">
-        <MobileSidebarToggle>
-          <Sidebar />
-        </MobileSidebarToggle>
-      </div>
-    </>
+      </MobileSidebarToggle>
+    </div>
   );
+}
+
+// Default export - desktop sidebar only (for backward compatibility)
+export default function LazySidebar() {
+  return <DesktopSidebar />;
 }

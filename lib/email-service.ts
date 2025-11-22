@@ -76,15 +76,15 @@ const sendEmailViaResend = async (
   text: string
 ): Promise<boolean> => {
   try {
-    // In development or when Resend is not configured, just log the email
-    if (process.env.NODE_ENV === 'development' || !process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'your-resend-api-key') {
-      console.log(`📧 [EMAIL DEBUG] DEVELOPMENT MODE - Email that would be sent:`);
+    // Check if Resend is configured (but send emails even in development mode)
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'your-resend-api-key') {
+      console.log(`📧 [EMAIL DEBUG] Resend API key not configured - Email that would be sent:`);
       console.log(`📧 [EMAIL DEBUG] To: ${to}`);
       console.log(`📧 [EMAIL DEBUG] Subject: ${subject}`);
       console.log(`📧 [EMAIL DEBUG] Text: ${text}`);
       console.log(`📧 [EMAIL DEBUG] HTML Length: ${html.length} characters`);
-      console.log(`✅ [EMAIL DEBUG] Email logged successfully (development mode)`);
-      return true;
+      console.log(`⚠️ [EMAIL DEBUG] Email NOT sent - Resend API key not configured`);
+      return false;
     }
 
     if (!resend) {
@@ -93,16 +93,15 @@ const sendEmailViaResend = async (
     
     if (!resend) {
       console.error('❌ [EMAIL DEBUG] Resend client not available:', resendError);
-      // Fall back to logging in production if Resend fails
       console.log(`📧 [EMAIL DEBUG] FALLBACK - Email that would be sent:`);
       console.log(`📧 [EMAIL DEBUG] To: ${to}, Subject: ${subject}`);
-      return true;
+      return false;
     }
 
     console.log(`📧 [EMAIL DEBUG] Sending email via Resend to ${to}`);
     
     const result = await resend.emails.send({
-      from: `${process.env.EMAIL_FROM_NAME || 'Archalley Forum'} <${process.env.EMAIL_FROM || 'noreply@archalley.com'}>`,
+      from: `${process.env.EMAIL_FROM_NAME || 'Archalley'} <${process.env.EMAIL_FROM || 'noreply@archalley.com'}>`,
       to: [to],
       subject,
       html,
@@ -119,9 +118,8 @@ const sendEmailViaResend = async (
 
   } catch (error) {
     console.error('❌ [EMAIL DEBUG] Resend send failed:', error);
-    // Final fallback - just log
-    console.log(`📧 [EMAIL DEBUG] FINAL FALLBACK - Email logged: To: ${to}, Subject: ${subject}`);
-    return true;
+    console.log(`📧 [EMAIL DEBUG] FINAL FALLBACK - Email could not be sent: To: ${to}, Subject: ${subject}`);
+    return false;
   }
 };
 
@@ -945,6 +943,585 @@ export const getEmailTemplate = (type: NotificationType, data: EmailData): Email
   return templates[type];
 };
 
+// Send verification email directly (for registration)
+export const sendVerificationEmail = async (
+  email: string,
+  userName: string,
+  token: string
+): Promise<boolean> => {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    // Verification URL points to the verify page, which will use sessionStorage for callbackUrl
+    const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${encodeURIComponent(token)}`
+    
+    // Generate a 6-digit code from token (for display in email)
+    const code = token.slice(0, 6).toUpperCase()
+    
+    const subject = 'Verify your email address'
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #333;">Verify your email address 📧</h2>
+        <p>Hi ${userName},</p>
+        <p>Thank you for registering! Please verify your email address to complete your registration and access your account.</p>
+        
+        <div style="margin: 30px 0;">
+          <p style="margin-bottom: 15px;"><strong>Verification Code:</strong></p>
+          <div style="background: #f5f5f5; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0066cc;">
+            ${code}
+          </div>
+        </div>
+        
+        <div style="margin: 30px 0; text-align: center;">
+          <a href="${verificationUrl}" style="background: #0066cc; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Verify Email Address</a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px; margin-top: 30px;">
+          Or copy and paste this link into your browser:<br/>
+          <a href="${verificationUrl}" style="color: #0066cc; word-break: break-all;">${verificationUrl}</a>
+        </p>
+        
+        <p style="color: #666; font-size: 12px; margin-top: 30px;">
+          This verification link will expire in 24 hours. If you didn't create this account, you can safely ignore this email.
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="color: #999; font-size: 11px;">
+          If you're having trouble clicking the button, copy and paste the URL above into your web browser.
+        </p>
+      </div>
+    `
+    
+    const text = `
+Hi ${userName},
+
+Thank you for registering! Please verify your email address to complete your registration.
+
+Verification Code: ${code}
+
+Verify your email by clicking this link:
+${verificationUrl}
+
+Or copy and paste the link into your browser.
+
+This verification link will expire in 24 hours. If you didn't create this account, you can safely ignore this email.
+    `.trim()
+
+    // Get transporter
+    const emailTransporter = await getTransporter()
+    if (!emailTransporter) {
+      console.error('❌ Email service not available for verification email')
+      // Try Resend as fallback
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+
+    // Send email
+    const mailOptions = {
+      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      to: email,
+      subject,
+      text,
+      html,
+    }
+
+    try {
+      await emailTransporter.sendMail(mailOptions)
+      console.log(`✅ Verification email sent to ${email}`)
+      
+      // Also try Resend as backup
+      await sendEmailViaResend(email, subject, html, text)
+      
+      return true
+    } catch (error) {
+      console.error('❌ Error sending verification email via SMTP:', error)
+      // Fallback to Resend
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+  } catch (error) {
+    console.error('❌ Error in sendVerificationEmail:', error)
+    return false
+  }
+};
+
+/**
+ * Send password reset email
+ */
+export const sendPasswordResetEmail = async (
+  email: string,
+  userName: string,
+  token: string
+): Promise<boolean> => {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    // Password reset URL
+    const resetUrl = `${baseUrl}/auth/reset-password?token=${encodeURIComponent(token)}`
+    
+    // Generate a 6-digit code from token (for display in email)
+    const code = token.slice(0, 6).toUpperCase()
+    
+    const subject = 'Reset your password'
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #333;">Reset your password 🔒</h2>
+        <p>Hi ${userName},</p>
+        <p>We received a request to reset your password. Click the button below to create a new password.</p>
+        
+        <div style="margin: 30px 0;">
+          <p style="margin-bottom: 15px;"><strong>Reset Code:</strong></p>
+          <div style="background: #f5f5f5; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0066cc;">
+            ${code}
+          </div>
+        </div>
+        
+        <div style="margin: 30px 0; text-align: center;">
+          <a href="${resetUrl}" style="background: #0066cc; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Reset Password</a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px; margin-top: 30px;">
+          Or copy and paste this link into your browser:<br/>
+          <a href="${resetUrl}" style="color: #0066cc; word-break: break-all;">${resetUrl}</a>
+        </p>
+        
+        <p style="color: #666; font-size: 12px; margin-top: 30px;">
+          This reset link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.
+        </p>
+        
+        <p style="color: #d32f2f; font-size: 12px; margin-top: 20px; font-weight: bold;">
+          ⚠️ If you didn't request this password reset, please contact support immediately.
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="color: #999; font-size: 11px;">
+          If you're having trouble clicking the button, copy and paste the URL above into your web browser.
+        </p>
+      </div>
+    `
+    
+    const text = `
+Hi ${userName},
+
+We received a request to reset your password. Click the link below to create a new password.
+
+Reset Code: ${code}
+
+Reset your password by clicking this link:
+${resetUrl}
+
+Or copy and paste the link into your browser.
+
+This reset link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.
+
+⚠️ If you didn't request this password reset, please contact support immediately.
+    `.trim()
+
+    // Get transporter
+    const emailTransporter = await getTransporter()
+    if (!emailTransporter) {
+      console.error('❌ Email service not available for password reset email')
+      // Try Resend as fallback
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+
+    // Send email
+    const mailOptions = {
+      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      to: email,
+      subject,
+      text,
+      html,
+    }
+
+    try {
+      await emailTransporter.sendMail(mailOptions)
+      console.log(`✅ Password reset email sent to ${email}`)
+      
+      // Also try Resend as backup
+      await sendEmailViaResend(email, subject, html, text)
+      
+      return true
+    } catch (error) {
+      console.error('❌ Error sending password reset email via SMTP:', error)
+      // Fallback to Resend
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+  } catch (error) {
+    console.error('❌ Error in sendPasswordResetEmail:', error)
+    return false
+  }
+};
+
+/**
+ * Send login notification email
+ */
+export const sendLoginNotificationEmail = async (
+  email: string,
+  userName: string,
+  loginDetails: {
+    ipAddress?: string
+    userAgent?: string
+    location?: string
+    timestamp: Date
+  }
+): Promise<boolean> => {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    
+    const subject = 'New login detected'
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #333;">New login detected 🔐</h2>
+        <p>Hi ${userName},</p>
+        <p>We detected a new login to your account. If this was you, you can safely ignore this email.</p>
+        
+        <div style="background: #f5f5f5; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <h3 style="color: #333; margin-top: 0;">Login Details:</h3>
+          <p style="margin: 8px 0;"><strong>Time:</strong> ${loginDetails.timestamp.toLocaleString()}</p>
+          ${loginDetails.ipAddress ? `<p style="margin: 8px 0;"><strong>IP Address:</strong> ${loginDetails.ipAddress}</p>` : ''}
+          ${loginDetails.location ? `<p style="margin: 8px 0;"><strong>Location:</strong> ${loginDetails.location}</p>` : ''}
+          ${loginDetails.userAgent ? `<p style="margin: 8px 0;"><strong>Device:</strong> ${loginDetails.userAgent.substring(0, 100)}</p>` : ''}
+        </div>
+        
+        <div style="margin: 30px 0; text-align: center;">
+          <a href="${baseUrl}/profile" style="background: #0066cc; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">View Account Settings</a>
+        </div>
+        
+        <p style="color: #d32f2f; font-size: 12px; margin-top: 20px; font-weight: bold;">
+          ⚠️ If you didn't log in, please secure your account immediately:
+        </p>
+        <ul style="color: #666; font-size: 12px;">
+          <li>Change your password immediately</li>
+          <li>Review your account settings</li>
+          <li>Revoke any suspicious sessions</li>
+          <li>Contact support if needed</li>
+        </ul>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="color: #999; font-size: 11px;">
+          This is an automated security notification. If you have any concerns, please contact support.
+        </p>
+      </div>
+    `
+    
+    const text = `
+Hi ${userName},
+
+We detected a new login to your account. If this was you, you can safely ignore this email.
+
+Login Details:
+- Time: ${loginDetails.timestamp.toLocaleString()}
+${loginDetails.ipAddress ? `- IP Address: ${loginDetails.ipAddress}` : ''}
+${loginDetails.location ? `- Location: ${loginDetails.location}` : ''}
+${loginDetails.userAgent ? `- Device: ${loginDetails.userAgent.substring(0, 100)}` : ''}
+
+View your account: ${baseUrl}/profile
+
+⚠️ If you didn't log in, please secure your account immediately:
+- Change your password immediately
+- Review your account settings
+- Revoke any suspicious sessions
+- Contact support if needed
+
+This is an automated security notification. If you have any concerns, please contact support.
+    `.trim()
+
+    // Get transporter
+    const emailTransporter = await getTransporter()
+    if (!emailTransporter) {
+      console.error('❌ Email service not available for login notification email')
+      // Try Resend as fallback
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+
+    // Send email
+    const mailOptions = {
+      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      to: email,
+      subject,
+      text,
+      html,
+    }
+
+    try {
+      await emailTransporter.sendMail(mailOptions)
+      console.log(`✅ Login notification email sent to ${email}`)
+      
+      // Also try Resend as backup
+      await sendEmailViaResend(email, subject, html, text)
+      
+      return true
+    } catch (error) {
+      console.error('❌ Error sending login notification email via SMTP:', error)
+      // Fallback to Resend
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+  } catch (error) {
+    console.error('❌ Error in sendLoginNotificationEmail:', error)
+    return false
+  }
+};
+
+/**
+ * Send magic link email for passwordless login
+ */
+export const sendMagicLinkEmail = async (
+  email: string,
+  userName: string,
+  token: string
+): Promise<boolean> => {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    // Magic link URL
+    const magicLinkUrl = `${baseUrl}/api/auth/verify-magic-link?token=${encodeURIComponent(token)}`
+    
+    // Generate a 6-digit code from token (for display in email)
+    const code = token.slice(0, 6).toUpperCase()
+    
+    const subject = 'Your magic link to sign in'
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #333;">Sign in with magic link ✨</h2>
+        <p>Hi ${userName},</p>
+        <p>Click the button below to sign in to your account. No password required!</p>
+        
+        <div style="margin: 30px 0;">
+          <p style="margin-bottom: 15px;"><strong>Login Code:</strong></p>
+          <div style="background: #f5f5f5; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0066cc;">
+            ${code}
+          </div>
+        </div>
+        
+        <div style="margin: 30px 0; text-align: center;">
+          <a href="${magicLinkUrl}" style="background: #0066cc; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Sign In</a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px; margin-top: 30px;">
+          Or copy and paste this link into your browser:<br/>
+          <a href="${magicLinkUrl}" style="color: #0066cc; word-break: break-all;">${magicLinkUrl}</a>
+        </p>
+        
+        <p style="color: #666; font-size: 12px; margin-top: 30px;">
+          This magic link will expire in 15 minutes. If you didn't request this, you can safely ignore this email.
+        </p>
+        
+        <p style="color: #d32f2f; font-size: 12px; margin-top: 20px; font-weight: bold;">
+          ⚠️ If you didn't request this magic link, please contact support immediately.
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="color: #999; font-size: 11px;">
+          If you're having trouble clicking the button, copy and paste the URL above into your web browser.
+        </p>
+      </div>
+    `
+    
+    const text = `
+Hi ${userName},
+
+Click the link below to sign in to your account. No password required!
+
+Login Code: ${code}
+
+Sign in by clicking this link:
+${magicLinkUrl}
+
+Or copy and paste the link into your browser.
+
+This magic link will expire in 15 minutes. If you didn't request this, you can safely ignore this email.
+
+⚠️ If you didn't request this magic link, please contact support immediately.
+    `.trim()
+
+    // Get transporter
+    const emailTransporter = await getTransporter()
+    if (!emailTransporter) {
+      console.error('❌ Email service not available for magic link email')
+      // Try Resend as fallback
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+
+    // Send email
+    const mailOptions = {
+      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      to: email,
+      subject,
+      text,
+      html,
+    }
+
+    try {
+      await emailTransporter.sendMail(mailOptions)
+      console.log(`✅ Magic link email sent to ${email}`)
+      
+      // Also try Resend as backup
+      await sendEmailViaResend(email, subject, html, text)
+      
+      return true
+    } catch (error) {
+      console.error('❌ Error sending magic link email via SMTP:', error)
+      // Fallback to Resend
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+  } catch (error) {
+    console.error('❌ Error in sendMagicLinkEmail:', error)
+    return false
+  }
+};
+
+/**
+ * Send welcome email after successful registration
+ */
+export const sendWelcomeEmail = async (
+  email: string,
+  userName: string
+): Promise<boolean> => {
+  try {
+    const archalleyHomeUrl =
+      process.env.NEXT_PUBLIC_ARCHALLEY_URL ||
+      process.env.NEXTAUTH_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      'https://archalley.com'
+    
+    const subject = 'Welcome to Archalley! 🎉'
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+        <!-- Header -->
+        <div style="text-align: center; padding: 30px 0; border-bottom: 2px solid #FFA000;">
+          <h1 style="color: #FFA000; margin: 0; font-size: 32px;">Welcome to Archalley! 🎉</h1>
+        </div>
+        
+        <!-- Main Content -->
+        <div style="padding: 30px 20px;">
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            Hi ${userName},
+          </p>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            Welcome to Archalley! We're thrilled to have you join our online platform dedicated to architecture and design, with a particular focus on innovative tropical architecture in Sri Lanka.
+          </p>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            Archalley is your source for information and inspiration, connecting architects, designers, and creative minds who are passionate about tropical architecture and sustainable design practices.
+          </p>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+            Get started by exploring our community, sharing your projects, and connecting with fellow professionals. We're here to support your creative journey and inspire innovation in tropical architecture!
+          </p>
+          
+          <!-- CTA Button -->
+          <div style="text-align: center; margin: 40px 0;">
+            <a href="${archalleyHomeUrl}" 
+               style="background: #FFA000; 
+                      color: white; 
+                      padding: 15px 40px; 
+                      text-decoration: none; 
+                      border-radius: 8px; 
+                      display: inline-block; 
+                      font-weight: bold; 
+                      font-size: 16px;
+                      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                      transition: background 0.3s;">
+              Visit Archalley.com
+            </a>
+          </div>
+          
+          <!-- Features Section -->
+          <div style="background: #f9f9f9; padding: 25px; border-radius: 8px; margin: 30px 0;">
+            <h3 style="color: #333; font-size: 18px; margin: 0 0 15px 0;">What you can do:</h3>
+            <ul style="color: #666; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+              <li>Discover innovative tropical architecture projects from Sri Lanka and beyond</li>
+              <li>Share your architectural designs and get valuable feedback</li>
+              <li>Participate in discussions with industry professionals</li>
+              <li>Explore design inspiration and sustainable building practices</li>
+              <li>Connect with like-minded architects and designers</li>
+              <li>Stay updated with the latest trends, competitions, and architectural news</li>
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background: #f9f9f9; padding: 25px; text-align: center; border-top: 1px solid #eee;">
+          <p style="color: #999; font-size: 12px; margin: 0 0 10px 0;">
+            Need help? Contact us at <a href="mailto:projects@archalley.com" style="color: #FFA000; text-decoration: none;">projects@archalley.com</a>
+          </p>
+          <p style="color: #999; font-size: 12px; margin: 0;">
+            Follow us on 
+            <a href="https://facebook.com/archalley" style="color: #FFA000; text-decoration: none; margin: 0 5px;">Facebook</a> |
+            <a href="https://www.instagram.com/archalley_insta/" style="color: #FFA000; text-decoration: none; margin: 0 5px;">Instagram</a> |
+            <a href="https://www.linkedin.com/company/archalleypage/" style="color: #FFA000; text-decoration: none; margin: 0 5px;">LinkedIn</a>
+          </p>
+          <p style="color: #999; font-size: 11px; margin: 15px 0 0 0;">
+            © ${new Date().getFullYear()} Archalley. All rights reserved.
+          </p>
+        </div>
+      </div>
+    `
+    
+    const text = `
+Welcome to Archalley! 🎉
+
+Hi ${userName},
+
+Welcome to Archalley! We're thrilled to have you join our online platform dedicated to architecture and design, with a particular focus on innovative tropical architecture in Sri Lanka.
+
+Archalley is your source for information and inspiration, connecting architects, designers, and creative minds who are passionate about tropical architecture and sustainable design practices.
+
+Get started by exploring our community, sharing your projects, and connecting with fellow professionals. We're here to support your creative journey and inspire innovation in tropical architecture!
+
+Visit Archalley.com: ${archalleyHomeUrl}
+
+What you can do:
+- Discover innovative tropical architecture projects from Sri Lanka and beyond
+- Share your architectural designs and get valuable feedback
+- Participate in discussions with industry professionals
+- Explore design inspiration and sustainable building practices
+- Connect with like-minded architects and designers
+- Stay updated with the latest trends, competitions, and architectural news
+
+Need help? Contact us at support@archalley.com
+
+Follow us on:
+- Facebook: https://facebook.com/archalley
+- Instagram: https://www.instagram.com/archalley_insta/
+- LinkedIn: https://www.linkedin.com/company/archalleypage/
+
+© ${new Date().getFullYear()} Archalley. All rights reserved.
+    `.trim()
+
+    // Get transporter
+    const emailTransporter = await getTransporter()
+    if (!emailTransporter) {
+      console.error('❌ Email service not available for welcome email')
+      // Try Resend as fallback
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+
+    // Send email
+    const mailOptions = {
+      from: `"${process.env.EMAIL_FROM_NAME || 'Archalley'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      to: email,
+      subject,
+      text,
+      html,
+    }
+
+    try {
+      await emailTransporter.sendMail(mailOptions)
+      console.log(`✅ Welcome email sent to ${email}`)
+      
+      // Also try Resend as backup
+      await sendEmailViaResend(email, subject, html, text)
+      
+      return true
+    } catch (error) {
+      console.error('❌ Error sending welcome email via SMTP:', error)
+      // Fallback to Resend
+      return await sendEmailViaResend(email, subject, html, text)
+    }
+  } catch (error) {
+    console.error('❌ Error in sendWelcomeEmail:', error)
+    return false
+  }
+};
+
 // Check if user wants email notifications for this type
 export const shouldSendEmail = async (userId: string, type: NotificationType): Promise<boolean> => {
   const user = await prisma.users.findUnique({
@@ -1156,7 +1733,7 @@ export const sendNotificationEmail = async (
     try {
       // Prepare mail options
       const mailOptions = {
-        from: `"${process.env.EMAIL_FROM_NAME || 'Archalley Forum'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+        from: `"${process.env.EMAIL_FROM_NAME || 'Archalley'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
         to: user.email,
         subject: template.subject,
         text: template.text,

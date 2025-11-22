@@ -10,14 +10,74 @@ const config: Config = {
     "*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    container: {
-      center: true,
-      padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
-    },
+    // Use default container settings - DO NOT add custom max-width overrides
     extend: {
+      typography: ({ theme }: { theme: any }) => ({
+        DEFAULT: {
+          css: {
+            lineHeight: '1.75',
+            p: {
+              marginTop: theme('spacing.5'),
+              marginBottom: theme('spacing.5'),
+              textAlign: 'justify',
+            },
+            img: { display: 'block', width: '100%', height: 'auto' },
+            'picture > img': { display: 'block', width: '100%', height: 'auto' },
+            hr: {
+              marginTop: '1em',
+              marginBottom: '1em',
+            },
+          },
+        },
+        sm: {
+          css: {
+            lineHeight: '1.7',
+            p: {
+              marginTop: theme('spacing.4'),
+              marginBottom: theme('spacing.4'),
+              textAlign: 'justify',
+            },
+            img: { display: 'block', width: '100%', height: 'auto' },
+            'picture > img': { display: 'block', width: '100%', height: 'auto' },
+            hr: {
+              marginTop: '1em',
+              marginBottom: '1em',
+            },
+          },
+        },
+        base: {
+          css: {
+            lineHeight: '1.75',
+            p: {
+              marginTop: theme('spacing.5'),
+              marginBottom: theme('spacing.5'),
+              textAlign: 'justify',
+            },
+            img: { display: 'block', width: '100%', height: 'auto' },
+            'picture > img': { display: 'block', width: '100%', height: 'auto' },
+            hr: {
+              marginTop: '1em',
+              marginBottom: '1em',
+            },
+          },
+        },
+        lg: {
+          css: {
+            lineHeight: '1.8',
+            p: {
+              marginTop: theme('spacing.6'),
+              marginBottom: theme('spacing.6'),
+              textAlign: 'justify',
+            },
+            img: { display: 'block', width: '100%', height: 'auto' },
+            'picture > img': { display: 'block', width: '100%', height: 'auto' },
+            hr: {
+              marginTop: '1em',
+              marginBottom: '1em',
+            },
+          },
+        },
+      }),
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -25,7 +85,7 @@ const config: Config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#FFA500",
+          DEFAULT: "#FFA000",
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
@@ -52,6 +112,19 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        yellow: {
+          400: "#FFA000",
+          500: "#FFA000",
+          600: "#FFA000",
+          700: "#FFA000",
+          800: "#FFA000",
+        },
+        archalley: {
+          black: "#000000",
+          gray: "#808080",
+          "gray-800": "#1f2937",
+          "gray-700": "#374151",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -72,9 +145,12 @@ const config: Config = {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
+      fontFamily: {
+        aquire: ["var(--font-aquire)", "sans-serif"],
+      },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config
 
 export default config

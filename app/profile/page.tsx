@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -31,24 +32,27 @@ interface UserBadge {
 }
 
 export default function ProfilePage() {
+  const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [userBadges, setUserBadges] = useState<UserBadge[]>([])
-  const { user } = useAuth()
+  const userBadges: UserBadge[] = []
+  const { user, isLoading: authLoading } = useAuth()
 
-  // Memoized badge transformation to prevent unnecessary re-renders
-  const transformedBadges = useMemo(() => 
-    userBadges.map(ub => ({
-      id: ub.badges.id,
-      name: ub.badges.name,
-      description: ub.badges.description,
-      icon: ub.badges.icon,
-      color: ub.badges.color,
-      level: ub.badges.level,
-      type: ub.badges.type
-    })), [userBadges]
-  )
+  // Redirect to /profile/{uuid} when user accesses /profile
+  useEffect(() => {
+    if (!authLoading && user?.id) {
+      router.replace(`/profile/${user.id}`)
+    }
+  }, [user?.id, authLoading, router])
+
+  const transformedBadges = userBadges.map(ub => ({
+    id: ub.badges.id,
+    name: ub.badges.name,
+    description: ub.badges.description,
+    icon: ub.badges.icon,
+    color: ub.badges.color,
+    level: ub.badges.level,
+    type: ub.badges.type
+  }))
 
   const [profileData, setProfileData] = useState({
     // Basic Information
@@ -80,68 +84,8 @@ export default function ProfilePage() {
     profileVisibility: true,
   })
 
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user?.id) return
-      
-      try {
-        // Parallel API calls for better performance
-        const [profileResponse, badgesResponse] = await Promise.all([
-          fetch(`/api/users/${user.id}`),
-          fetch(`/api/badges/user/${user.id}`)
-        ])
-
-        if (!profileResponse.ok) {
-          throw new Error("Failed to fetch user profile")
-        }
-        
-        const data = await profileResponse.json()
-        setProfileData({
-          // Basic Information
-          firstName: data.user.firstName || "",
-          lastName: data.user.lastName || "",
-          name: data.user.name || "",
-          email: data.user.email || "",
-          phoneNumber: data.user.phoneNumber || "",
-          
-          // Professional Profile
-          headline: data.user.headline || "",
-          skills: data.user.skills || [],
-          industry: data.user.industry || "",
-          country: data.user.country || "",
-          city: data.user.city || "",
-          bio: data.user.bio || "",
-          portfolioUrl: data.user.portfolioUrl || "",
-          
-          // Social Media
-          linkedinUrl: data.user.linkedinUrl || "",
-          facebookUrl: data.user.facebookUrl || "",
-          instagramUrl: data.user.instagramUrl || "",
-          
-          // Work Experience & Education
-          workExperience: data.user.workExperience || [],
-          education: data.user.education || [],
-          
-          // Settings
-          profileVisibility: data.user.profileVisibility ?? true,
-        })
-
-        // Handle badges response in parallel
-        if (badgesResponse.ok) {
-          const badgesData = await badgesResponse.json()
-          setUserBadges(badgesData || [])
-        } else {
-          setUserBadges([])
-        }
-      } catch (err) {
-        setError("Failed to load profile data")
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchUserProfile()
-  }, [user?.id])
+  // Skip data fetching since we're redirecting to /profile/{uuid}
+  // The redirect happens immediately, so we don't need to fetch profile data here
 
   const handleSaveProfile = useCallback(async () => {
     if (!user?.id) return
@@ -184,33 +128,42 @@ export default function ProfilePage() {
 
       setIsEditing(false)
     } catch (err) {
-      setError("Failed to update profile")
+      console.error("Failed to update profile", err)
     }
   }, [user?.id, profileData])
 
-  if (isLoading) {
+  // Show loading state while auth is loading or while redirecting
+  if (authLoading || user?.id) {
     return (
       <div className="flex items-center justify-center min-h-screen animate-fade-in">
         <div className="text-center animate-scale-in animate-delay-100">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground animate-fade-in-up animate-delay-200">Loading profile...</p>
+          <p className="mt-4 text-muted-foreground animate-fade-in-up animate-delay-200">Redirecting to your profile...</p>
         </div>
       </div>
     )
   }
 
-  if (error) {
+  // If user is not authenticated, AuthGuard will handle redirect to login
+  // If user is authenticated but no ID (shouldn't happen), show error
+  if (!user?.id && !authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen animate-fade-in">
-        <Card className="max-w-md w-full animate-scale-in animate-delay-100">
-          <CardContent className="pt-6">
-            <div className="text-center text-red-500 animate-fade-in-up animate-delay-200">{error}</div>
-          </CardContent>
-        </Card>
-      </div>
+      <AuthGuard>
+        <div className="flex items-center justify-center min-h-screen animate-fade-in">
+          <Card className="max-w-md w-full animate-scale-in animate-delay-100">
+            <CardContent className="pt-6">
+              <div className="text-center text-red-500 animate-fade-in-up animate-delay-200">
+                Unable to load user profile
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </AuthGuard>
     )
   }
 
+  // This should not be reached in normal flow due to redirect above
+  // But keeping it as fallback for edge cases
   return (
     <AuthGuard>
       <main className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8 animate-fade-in">

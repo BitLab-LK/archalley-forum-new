@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Search, MessageSquare, ThumbsUp, User, MapPin, Building, CheckCircle, Loader2 } from 'lucide-react'
 import { HorizontalAd } from '@/components/ad-banner'
+import { decodeHtmlEntities } from '@/lib/wordpress-api'
 
 interface SearchPost {
   id: string
@@ -38,6 +39,9 @@ interface SearchPost {
   images: string[]
   commentsCount: number
   votesCount: number
+  isWordPress?: boolean
+  wordpressSlug?: string
+  wordpressLink?: string
 }
 
 interface SearchMember {
@@ -204,6 +208,14 @@ function SearchContent() {
         </mark>
       ) : part
     )
+  }
+
+  const getPostLink = (post: SearchPost): string => {
+    if (post.isWordPress && post.wordpressSlug) {
+      return `/post/${post.wordpressSlug}`
+    }
+    // Database posts use the ID
+    return `/${post.id}`
   }
 
   const renderPostImages = (images: string[]) => {
@@ -397,18 +409,18 @@ function SearchContent() {
                                       // Show all categories
                                       post.allCategories.map((category: any) => (
                                         <Badge key={category.id} variant="secondary" className="text-xs mr-1">
-                                          {category.name}
+                                          {decodeHtmlEntities(category.name)}
                                         </Badge>
                                       ))
                                     ) : post.categories ? (
                                       // Fallback to single category
                                       <Badge variant="secondary" className="text-xs">
-                                        {post.categories.name}
+                                        {decodeHtmlEntities(post.categories.name)}
                                       </Badge>
                                     ) : null}
                                   </div>
                                   
-                                  <Link href={`/posts/${post.id}`} className="group">
+                                  <Link href={getPostLink(post)} className="group">
                                     <h3 className="text-lg font-semibold group-hover:text-primary transition-colors mb-2">
                                       {highlightText(post.content?.substring(0, 80) + '...' || 'No content', searchQuery)}
                                     </h3>
@@ -580,18 +592,18 @@ function SearchContent() {
                                   // Show all categories
                                   post.allCategories.map((category: any) => (
                                     <Badge key={category.id} variant="secondary" className="text-xs mr-1">
-                                      {category.name}
+                                      {decodeHtmlEntities(category.name)}
                                     </Badge>
                                   ))
                                 ) : post.categories ? (
                                   // Fallback to single category
                                   <Badge variant="secondary" className="text-xs">
-                                    {post.categories.name}
+                                    {decodeHtmlEntities(post.categories.name)}
                                   </Badge>
                                 ) : null}
                               </div>
                               
-                              <Link href={`/posts/${post.id}`} className="group">
+                              <Link href={getPostLink(post)} className="group">
                                 <h3 className="text-lg font-semibold group-hover:text-primary transition-colors mb-2">
                                   {highlightText(post.content?.substring(0, 80) + '...' || 'No content', searchQuery)}
                                 </h3>

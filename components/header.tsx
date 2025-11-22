@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Search, Moon, Sun, LogOut, User, Shield, Home, Crown, MessageCircle, ChevronDown, FolderOpen, Newspaper } from "lucide-react"
+import { Search, Moon, Sun, LogOut, User, Shield, Home, Crown, ChevronDown, FolderOpen, Newspaper, ClipboardList } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/lib/auth-context"
 import NotificationDropdown from "@/components/notification-dropdown"
@@ -87,8 +87,8 @@ export default function Header() {
       {/* Desktop Header */}
       <header className="hidden md:block sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ease-in-out">
         {/* Align inner header content to match page content max width */}
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="max-w-[80rem] mx-auto h-16 flex items-center justify-between">
+        <div className="container mx-auto px-4">
+          <div className="h-16 flex items-center justify-between">
           {/* Logo and Navigation */}
           <div className="flex items-center space-x-12">
             <Link href="/" className="flex items-center space-x-3 group">
@@ -212,44 +212,37 @@ export default function Header() {
 
               <Link 
                 href="/events" 
+                className="text-sm font-medium transition-all duration-300 ease-in-out px-4 py-2 rounded-md text-white"
+                style={{ backgroundColor: '#FFA000' }}
+              >
+                EVENTS
+              </Link>
+
+              <Link 
+                href="/about" 
                 className={`text-sm font-medium transition-all duration-300 ease-in-out py-2 relative overflow-hidden group ${
-                  isActivePath("/events") 
+                  isActivePath("/about") 
                     ? "text-primary" 
                     : "text-muted-foreground hover:text-primary"
                 }`}
               >
-                <span className="relative z-10">EVENTS</span>
-                {isActivePath("/events") && (
+                <span className="relative z-10">ABOUT</span>
+                {isActivePath("/about") && (
                   <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary animate-pulse"></div>
                 )}
                 <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all duration-300 ease-in-out group-hover:w-full"></div>
               </Link>
-              
+
               <Link 
-                href="/forum" 
+                href="/contact" 
                 className={`text-sm font-medium transition-all duration-300 ease-in-out py-2 relative overflow-hidden group ${
-                  isActivePath("/forum") 
+                  isActivePath("/contact") 
                     ? "text-primary" 
                     : "text-muted-foreground hover:text-primary"
                 }`}
               >
-                <span className="relative z-10">FORUM</span>
-                {isActivePath("/forum") && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary animate-pulse"></div>
-                )}
-                <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all duration-300 ease-in-out group-hover:w-full"></div>
-              </Link>
-              
-              <Link 
-                href="/members" 
-                className={`text-sm font-medium transition-all duration-300 ease-in-out py-2 relative overflow-hidden group ${
-                  isActivePath("/members") 
-                    ? "text-primary" 
-                    : "text-muted-foreground hover:text-primary"
-                }`}
-              >
-                <span className="relative z-10">MEMBERS</span>
-                {isActivePath("/members") && (
+                <span className="relative z-10">CONTACT</span>
+                {isActivePath("/contact") && (
                   <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary animate-pulse"></div>
                 )}
                 <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all duration-300 ease-in-out group-hover:w-full"></div>
@@ -266,7 +259,7 @@ export default function Header() {
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 border-0 bg-muted/50 focus:bg-background transition-all duration-300 ease-in-out focus:shadow-md focus:scale-105 hover:bg-muted/70"
+                className="pl-10 border-0 bg-muted/50 focus:bg-background transition-all duration-300 ease-in-out focus:shadow-md focus:scale-105 hover:bg-muted/70 rounded-none"
               />
             </form>
           </div>
@@ -329,6 +322,12 @@ export default function Header() {
                         <span>Profile</span>
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile/registrations">
+                        <ClipboardList className="mr-2 h-4 w-4" />
+                        <span>My Registrations</span>
+                      </Link>
+                    </DropdownMenuItem>
                     {/* Settings - Temporarily Removed */}
                     {/* <DropdownMenuItem asChild>
                       <Link href="/settings">
@@ -337,12 +336,20 @@ export default function Header() {
                       </Link>
                     </DropdownMenuItem> */}
                     {(user?.role === "ADMIN" || user?.role === "SUPER_ADMIN" || user?.role === "MODERATOR") && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin">
-                          <Shield className="mr-2 h-4 w-4" />
-                          <span>Admin Panel</span>
-                        </Link>
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin">
+                            <Shield className="mr-2 h-4 w-4" />
+                            <span>Admin Panel</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/competitions/registrations">
+                            <ClipboardList className="mr-2 h-4 w-4" />
+                            <span>Manage Registrations</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
                     )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
@@ -411,6 +418,12 @@ export default function Header() {
                         <span>Profile</span>
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile/registrations">
+                        <ClipboardList className="mr-2 h-4 w-4" />
+                        <span>My Registrations</span>
+                      </Link>
+                    </DropdownMenuItem>
                     {/* Settings - Temporarily Removed */}
                     {/* <DropdownMenuItem asChild>
                       <Link href="/settings">
@@ -418,6 +431,23 @@ export default function Header() {
                         <span>Settings</span>
                       </Link>
                     </DropdownMenuItem> */}
+                    {(user?.role === "ADMIN" || user?.role === "SUPER_ADMIN" || user?.role === "MODERATOR") && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin">
+                            <Shield className="mr-2 h-4 w-4" />
+                            <span>Admin Panel</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/competitions/registrations">
+                            <ClipboardList className="mr-2 h-4 w-4" />
+                            <span>Manage Registrations</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
                     <DropdownMenuItem onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
                       <div className="mr-2 h-4 w-4 relative">
                         <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -457,7 +487,7 @@ export default function Header() {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-11 h-11 text-base rounded-xl border-2 focus:border-primary transition-colors"
+              className="pl-11 h-11 text-base rounded-none border-2 focus:border-primary transition-colors"
             />
           </form>
         </div>
@@ -465,7 +495,7 @@ export default function Header() {
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t safe-area-inset-bottom transition-all duration-300 ease-in-out">
-        <div className="grid grid-cols-5 h-18">
+        <div className="grid grid-cols-4 h-18">
           {/* Home */}
           <Link 
             href="/" 
@@ -490,19 +520,6 @@ export default function Header() {
           >
             <FolderOpen className={`h-4 w-4 transition-all duration-300 ease-in-out ${isActivePath("/projects") ? "fill-current scale-110" : "hover:scale-110"}`} />
             <span className="text-[9px] transition-all duration-300 ease-in-out">Projects</span>
-          </Link>
-
-          {/* Forum */}
-          <Link 
-            href="/forum" 
-            className={`flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-all duration-300 ease-in-out py-2 px-1 min-h-[44px] transform hover:scale-105 ${
-              isActivePath("/forum") 
-                ? "text-primary bg-primary/10" 
-                : "text-muted-foreground hover:text-primary"
-            }`}
-          >
-            <MessageCircle className={`h-4 w-4 transition-all duration-300 ease-in-out ${isActivePath("/forum") ? "fill-current scale-110" : "hover:scale-110"}`} />
-            <span className="text-[9px] transition-all duration-300 ease-in-out">Forum</span>
           </Link>
 
           {/* News */}

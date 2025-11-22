@@ -283,7 +283,7 @@ ${comment.content || 'No content'}
             // Extract filename from URL
             const filename = path.basename(imageUrl);
             
-            // For Vercel blob URLs, we'd need to fetch them
+            // For Azure Blob Storage URLs, we'd need to fetch them
             // For now, just record the URL in a text file
             filesFolder?.file(`${filename}.txt`, `Image URL: ${imageUrl}`);
             fileCount++;

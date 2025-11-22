@@ -33,7 +33,7 @@ import { toast } from "sonner"
 import { Suspense } from "react"
 import LazyPostCreator from "@/components/lazy-post-creator"
 import PostCard from "@/components/post-card"
-import LazySidebar from "@/components/lazy-sidebar"
+import LazySidebar, { MobileSidebar } from "@/components/lazy-sidebar"
 import SearchParamsHandler from "@/components/homepage-search-params"
 import { Button } from "@/components/ui/button"
 import { useIsHydrated } from "@/hooks/use-performance"
@@ -684,7 +684,7 @@ export default function HomePageInteractive({
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 mobile-no-overflow">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
-          <div className="max-w-[80rem] mx-auto">
+          <div className="container mx-auto">
             <div className="homepage-layout">
             {/* Main content - ensure consistent width */}
             <div className="homepage-content">
@@ -788,7 +788,7 @@ export default function HomePageInteractive({
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 mobile-no-overflow">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
-        <div className="max-w-[80rem] mx-auto">
+        <div className="container mx-auto">
           <div className="homepage-layout">
           {/* Main content area - maintains consistent width during loading */}
           <div className="homepage-content layout-stable">
@@ -884,11 +884,14 @@ export default function HomePageInteractive({
             )}
           </div>
 
-          {/* Sidebar - maintains consistent width during loading states */}
+          {/* Desktop Sidebar - maintains consistent width during loading states */}
           <div className="homepage-sidebar layout-stable">
             <LazySidebar />
           </div>
           </div>
+          
+          {/* Mobile Sidebar - rendered outside homepage-sidebar wrapper so it's visible on mobile */}
+          <MobileSidebar />
         </div>
       </div>
 

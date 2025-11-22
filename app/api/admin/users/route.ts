@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
         image: true,
         createdAt: true,
         lastActiveAt: true,
+        emailVerified: true,
+        password: true, // To determine if email verification is required
         _count: {
           select: {
             Post: true,
@@ -62,7 +64,9 @@ export async function GET(request: NextRequest) {
       lastLogin: user.lastActiveAt?.toISOString().split("T")[0] || "Never",
       postCount: user._count.Post,
       commentCount: user._count.Comment,
-      isActive: user.lastActiveAt ? user.lastActiveAt >= twentyFourHoursAgo : false
+      isActive: user.lastActiveAt ? user.lastActiveAt >= twentyFourHoursAgo : false,
+      emailVerified: user.emailVerified?.toISOString() || null,
+      requiresEmailVerification: !!user.password // Email/password users require verification
     }))
 
     return NextResponse.json({ users: formattedUsers })

@@ -6,6 +6,8 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import { updateUserActivityAsync } from "@/lib/activity-service"
 import bcrypt from "bcryptjs"
+import { recordFailedLoginAttempt, clearFailedLoginAttempts, isAccountLocked, checkRateLimit } from "@/lib/security"
+import { logAuthEvent } from "@/lib/audit-log"
 
 export const authOptions: NextAuthOptions = {
   // Removed PrismaAdapter to avoid conflicts with custom signIn callback
@@ -44,20 +46,158 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        // Rate limiting: 10 login attempts per 15 minutes per email
+        const rateLimitKey = `login:${credentials.email.toLowerCase()}`
+        if (!checkRateLimit(rateLimitKey, 10, 15 * 60 * 1000)) {
+          await logAuthEvent("RATE_LIMIT_EXCEEDED", {
+            email: credentials.email.toLowerCase(),
+            success: false,
+            details: { action: "login", rateLimitKey },
+            errorMessage: "Too many login attempts",
+          })
+          throw new Error("Too many login attempts. Please try again later.")
+        }
+
+        // Check if account is locked
+        if (isAccountLocked(credentials.email.toLowerCase())) {
+          await logAuthEvent("LOGIN_LOCKED", {
+            email: credentials.email.toLowerCase(),
+            success: false,
+            details: { action: "login" },
+            errorMessage: "Account locked",
+          })
+          throw new Error("Account is temporarily locked due to too many failed login attempts. Please try again in 15 minutes.")
+        }
+
+        // Always perform user lookup to prevent timing attacks
         const user = await prisma.users.findUnique({
           where: {
-            email: credentials.email,
+            email: credentials.email.toLowerCase(),
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            image: true,
+            role: true,
+            isVerified: true,
+            emailVerified: true,
+            password: true,
+            twoFactorEnabled: true,
+            twoFactorSecret: true,
           },
         })
 
-        if (!user || !user.password) {
+        // Perform password comparison even if user doesn't exist (to prevent timing attacks)
+        // Use a dummy hash to ensure constant time comparison
+        const dummyHash = "$2a$14$dummyhashfordummycomparisonpurposesonly"
+        const hashToCompare = user?.password || dummyHash
+        
+        const isPasswordValid = await bcrypt.compare(credentials.password, hashToCompare)
+
+        // If user doesn't exist or password is invalid, record failed attempt
+        if (!user || !user.password || !isPasswordValid) {
+          // Only record attempt if user exists (to prevent account enumeration)
+          if (user) {
+            const lockoutStatus = recordFailedLoginAttempt(credentials.email.toLowerCase())
+            if (lockoutStatus.isLocked) {
+              await logAuthEvent("ACCOUNT_LOCKED", {
+                userId: user.id,
+                email: credentials.email.toLowerCase(),
+                success: false,
+                details: { action: "login", lockoutUntil: lockoutStatus.lockoutUntil },
+                errorMessage: "Account locked due to too many failed attempts",
+              })
+              throw new Error(`Account locked due to too many failed attempts. Please try again in ${Math.ceil((lockoutStatus.lockoutUntil! - Date.now()) / 60000)} minutes.`)
+            }
+            await logAuthEvent("LOGIN_FAILED", {
+              userId: user.id,
+              email: credentials.email.toLowerCase(),
+              success: false,
+              details: { action: "login", reason: "invalid_password" },
+              errorMessage: "Invalid password",
+            })
+          }
           return null
         }
 
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
+        // Check if email is verified (enforce email verification)
+        if (!user.isVerified || !user.emailVerified) {
+          await logAuthEvent("LOGIN_FAILED", {
+            userId: user.id,
+            email: credentials.email.toLowerCase(),
+            success: false,
+            details: { action: "login", reason: "email_not_verified" },
+            errorMessage: "Email not verified",
+          })
+          throw new Error("Please verify your email address before logging in. Check your inbox for the verification email.")
+        }
 
-        if (!isPasswordValid) {
-          return null
+        // Check IP whitelist if enabled (for high-security accounts)
+        // Note: This feature requires database fields - placeholder for now
+        // const ipAddress = (credentials as any).ipAddress
+        // if (ipAddress) {
+        //   const isWhitelisted = await isIPWhitelisted(user.id, ipAddress)
+        //   if (!isWhitelisted) {
+        //     await logAuthEvent("LOGIN_FAILED", {
+        //       userId: user.id,
+        //       email: credentials.email.toLowerCase(),
+        //       success: false,
+        //       details: { action: "login", reason: "ip_not_whitelisted", ipAddress },
+        //       errorMessage: "IP address not whitelisted",
+        //     })
+        //     throw new Error("Your IP address is not authorized to access this account.")
+        //   }
+        // }
+
+        // Check if 2FA is enabled - if so, require 2FA verification
+        // Explicitly check for true to handle null/undefined cases
+        if (user.twoFactorEnabled === true && user.twoFactorSecret) {
+          // Log that 2FA is required for debugging
+          console.log(`[2FA] 2FA is enabled for user ${user.email}, requiring 2FA verification`)
+          // Return a special error that indicates 2FA is required
+          // The client will handle this and show 2FA input form
+          throw new Error("2FA_REQUIRED")
+        } else {
+          // Log 2FA status for debugging
+          console.log(`[2FA] 2FA status for user ${user.email}: enabled=${user.twoFactorEnabled}, hasSecret=${!!user.twoFactorSecret}`)
+        }
+
+        // Clear failed login attempts on successful login
+        clearFailedLoginAttempts(credentials.email.toLowerCase())
+        
+        // Log successful login
+        await logAuthEvent("LOGIN_SUCCESS", {
+          userId: user.id,
+          email: credentials.email.toLowerCase(),
+          success: true,
+          details: { action: "login", provider: "credentials", twoFactor: false },
+        })
+
+        // Send login notification email (async, don't wait)
+        // Check if user has login notifications enabled (default: true)
+        const userWithSettings = await prisma.users.findUnique({
+          where: { id: user.id },
+          select: { emailNotifications: true },
+        })
+
+        if (userWithSettings?.emailNotifications !== false) {
+          // Send login notification asynchronously
+          import("@/lib/email-service").then(({ sendLoginNotificationEmail }) => {
+            const ip = (credentials as any).ipAddress || 'unknown'
+            const userAgent = (credentials as any).userAgent || 'unknown'
+            sendLoginNotificationEmail(
+              user.email,
+              user.name || 'User',
+              {
+                ipAddress: ip,
+                userAgent,
+                timestamp: new Date(),
+              }
+            ).catch((error) => {
+              console.error("Failed to send login notification:", error)
+            })
+          })
         }
 
         return {
@@ -73,11 +213,11 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days (reduced from 30 for better security)
     updateAge: 24 * 60 * 60, // 24 hours
   },
   jwt: {
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days (reduced from 30 for better security)
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
@@ -86,7 +226,11 @@ export const authOptions: NextAuthOptions = {
         return baseUrl
       }
       // Allows relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`
+      if (url.startsWith("/")) {
+        // Use the callbackUrl from NextAuth (which comes from signIn call)
+        // This will be the last URL the user was trying to access
+        return `${baseUrl}${url}`
+      }
       // Allows callback URLs on the same origin
       else if (new URL(url).origin === baseUrl) return url
       // Default redirect to home page
@@ -134,14 +278,28 @@ export const authOptions: NextAuthOptions = {
           // Check if user exists
           const existingUser = await prisma.users.findUnique({
             where: { email: user.email! },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              image: true,
+              twoFactorEnabled: true,
+              twoFactorSecret: true,
+            }
           })
 
           if (!existingUser) {
             // Redirect to registration with OAuth data for account linking
+            // Preserve callbackUrl from the signIn call if available
             console.log(`New user detected for ${account.provider}, redirecting to complete profile`)
+            // Note: callbackUrl is handled by NextAuth's redirect callback, we'll preserve it in URL params
             const redirectUrl = `/auth/register?provider=${account.provider}&email=${encodeURIComponent(user.email!)}&name=${encodeURIComponent(user.name || '')}&image=${encodeURIComponent(user.image || '')}&providerAccountId=${encodeURIComponent(account.providerAccountId)}&message=${encodeURIComponent('Complete your profile to join our community!')}`
             return redirectUrl
           } else {
+            // Note: OAuth 2FA check would go here, but NextAuth's OAuth flow
+            // completes before we can check 2FA. For now, OAuth logins bypass 2FA.
+            // TODO: Implement OAuth + 2FA flow (requires storing temporary OAuth session)
+            
             // Check if this social account is already linked
             const existingAccount = await prisma.account.findUnique({
               where: {
@@ -217,6 +375,54 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, isNewUser }) {
       console.log('SignIn event:', { user: user.email, provider: account?.provider, isNewUser })
       
+      // Log OAuth sign-in
+      if (account?.provider && account.provider !== "credentials") {
+        await logAuthEvent("LOGIN_SUCCESS", {
+          userId: user.id,
+          email: user.email || null,
+          success: true,
+          details: { action: "login", provider: account.provider, isNewUser },
+        })
+
+        // Send login notification email for OAuth logins (async)
+        if (user.email) {
+          const userWithSettings = await prisma.users.findUnique({
+            where: { id: user.id },
+            select: { emailNotifications: true, name: true },
+          })
+
+          if (userWithSettings?.emailNotifications !== false) {
+            import("@/lib/email-service").then(({ sendLoginNotificationEmail }) => {
+              sendLoginNotificationEmail(
+                user.email!,
+                userWithSettings?.name || user.name || 'User',
+                {
+                  timestamp: new Date(),
+                }
+              ).catch((error) => {
+                console.error("Failed to send login notification:", error)
+              })
+            })
+          }
+        }
+      }
+
+      // If this is a new OAuth user, also send the welcome email (non-blocking)
+      try {
+        if (isNewUser && user?.email) {
+          import("@/lib/email-service").then(({ sendWelcomeEmail }) => {
+            const userName = (user.name as string) || 'User'
+            sendWelcomeEmail(user.email!, userName).catch((error) => {
+              console.error("Failed to send welcome email for new OAuth user:", error)
+            })
+          }).catch((err) => {
+            console.error('Failed to import email-service for welcome email:', err)
+          })
+        }
+      } catch (err) {
+        console.error('Error while attempting to send welcome email in signIn event:', err)
+      }
+      
       // Update user activity on sign in
       if (user?.id) {
         updateUserActivityAsync(user.id)
@@ -225,9 +431,16 @@ export const authOptions: NextAuthOptions = {
     async signOut({ session, token }) {
       console.log('SignOut event:', { userEmail: session?.user?.email || token?.email })
       
-      // Update user activity on sign out (they were active when they signed out)
+      // Log logout
       const userId = session?.user?.id || token?.id
+      const email = session?.user?.email || token?.email
       if (userId) {
+        await logAuthEvent("LOGOUT", {
+          userId: userId as string,
+          email: email as string | null,
+          success: true,
+          details: { action: "logout" },
+        })
         updateUserActivityAsync(userId as string)
       }
       

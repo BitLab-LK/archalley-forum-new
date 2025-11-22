@@ -16,6 +16,7 @@ export interface RolePermissions {
   canViewAppearance: boolean
   canViewPages: boolean
   canViewAds: boolean
+  canViewCompetitions: boolean
   
   // User Management
   canEditUsers: boolean
@@ -82,6 +83,7 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canViewPermissions: false,
         canViewAppearance: false,
         canViewPages: false,
+        canViewCompetitions: true, // Moderators can view competitions
         
         // User Management - View only, limited actions
         canEditUsers: false,
@@ -144,6 +146,7 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canViewPermissions: false, // Reserved for SUPER_ADMIN
         canViewAppearance: false,
         canViewPages: false,
+        canViewCompetitions: true, // Admins have full competition access
         
         // User Management - Full except role changes
         canEditUsers: true,
@@ -206,6 +209,7 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canViewPermissions: false,
         canViewAppearance: false,
         canViewPages: false,
+        canViewCompetitions: true, // Super admins have full competition access
         
         // User Management - Full control
         canEditUsers: true,
@@ -267,6 +271,7 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canViewPermissions: false,
         canViewAppearance: false,
         canViewPages: false,
+        canViewCompetitions: false, // Members cannot access admin competitions
         canEditUsers: false,
         canChangeUserRoles: false,
         canDeleteUsers: false,
@@ -331,6 +336,7 @@ export function getAvailableTabs(userRole: UserRole): string[] {
   if (permissions.canViewUsers) tabs.push('users')
   if (permissions.canViewCategories) tabs.push('categories')
   if (permissions.canViewPosts) tabs.push('posts')
+  if (permissions.canViewCompetitions) tabs.push('competitions')
   if (permissions.canViewAds) tabs.push('ads')
   if (permissions.canViewSettings) tabs.push('settings')
   if (permissions.canViewPermissions) tabs.push('permissions')

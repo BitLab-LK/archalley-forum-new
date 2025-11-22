@@ -42,6 +42,7 @@
 "use client"
 
 import { useState, useCallback, useMemo, memo, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -51,6 +52,7 @@ import { cn } from "@/lib/utils"
 import { useGlobalVoteState } from "@/lib/vote-sync"
 import { activityEventManager } from "@/lib/activity-events"
 import { generateCategoryStyles } from "@/lib/color-utils"
+import { decodeHtmlEntities } from "@/lib/wordpress-api"
 import { useSocket } from "@/lib/socket-context"
 import {
   DropdownMenu,
@@ -63,7 +65,6 @@ import { hasPermission } from "@/lib/role-permissions"
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
 import { useToast } from "@/hooks/use-toast"
 import PostImage from "@/components/post-image"
-import PostModal from "./post-modal"
 import { PostBadges } from "./post-badges"
 import ShareDropdown from "./share-dropdown"
 import { ReportPostModal } from "./report-post-modal"
@@ -155,15 +156,6 @@ interface PostCardProps {
   post: Post
   onDelete?: () => void | Promise<void>
   onCommentCountChange?: (postId: string, newCount: number) => void
-  onTopCommentVoteChange?: (postId: string, topComment: { 
-    id: string; 
-    author: { name: string; image?: string }; 
-    content: string; 
-    upvotes: number; 
-    downvotes: number; 
-    isBestAnswer: boolean; 
-    userVote?: "up" | "down" 
-  } | null) => void
 }
 
 // ============================================================================
@@ -231,12 +223,13 @@ const getTextSizeClass = (content: string): string => {
  * @param props - PostCard component props
  * @returns Memoized PostCard component
  */
-const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, onTopCommentVoteChange }: PostCardProps) {
+const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange }: PostCardProps) {
   
   // ========================================================================
   // HOOKS AND CONTEXT
   // ========================================================================
   
+  const router = useRouter()
   const { user } = useAuth()
   const { confirm } = useConfirmDialog()
   const { toast } = useToast()
@@ -291,20 +284,13 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
   const { upvotes, downvotes, userVote } = voteState
   const [isVoting, setIsVoting] = useState(false)
   
-  // Local state for top comment with real-time updates
-  // Allows for independent comment updates without full post refresh
-  const [topComment, setTopComment] = useState(post.topComment)
+  // Local state for top comment
+  const [topComment] = useState(post.topComment)
   
   // Comment count management - uses original prop value with sync capabilities
   const commentCount = post.comments
-  const syncCommentCount = useCallback(() => {
-    // Comment count syncing functionality can be enhanced here
-    // Currently handles basic synchronization for real-time updates
-  }, [])
   
-  // Modal state for post expansion and image viewing
-  const [modalOpen, setModalOpen] = useState(false)
-  const [modalImageIndex, setModalImageIndex] = useState(0)
+  // Modal state for report modal
   const [isDeleting, setIsDeleting] = useState(false)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
 
@@ -480,62 +466,11 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
     }
   }, [onDelete, post.id, confirm, toast])  
   /**
-   * Handles new comment addition with immediate UI updates
-   * Provides optimistic updates for better user experience
-   * 
-   * @fires onCommentCountChange - Notifies parent of count change
+   * Navigates to post detail page
    */
-  const handleCommentAdded = useCallback(() => {
-    const newCount = commentCount + 1
-    syncCommentCount()
-    onCommentCountChange?.(post.id, newCount)
-  }, [commentCount, syncCommentCount, onCommentCountChange, post.id])
-
-  /**
-   * Handles comment count updates from external sources
-   * Ensures synchronization across all components
-   * 
-   * @param newCount - Updated comment count from server or other source
-   * @fires onCommentCountChange - Notifies parent of count change
-   */
-  const handleCommentCountUpdate = useCallback((newCount: number) => {
-    syncCommentCount()
-    onCommentCountChange?.(post.id, newCount)
-  }, [syncCommentCount, onCommentCountChange, post.id])
-
-  /**
-   * Opens the post modal for detailed view
-   * Supports opening at specific image index for gallery navigation
-   * 
-   * @param imgIdx - Index of image to display first (default: 0)
-   */
-  const openModal = useCallback((imgIdx: number = 0) => {
-    setModalImageIndex(imgIdx)
-    setModalOpen(true)
-  }, [])
-
-  /**
-   * Handles top comment vote changes from modal interactions
-   * Updates local state and forwards changes to parent component
-   * Enables real-time synchronization between post card and modal
-   * 
-   * @param postId - ID of the post being updated
-   * @param newTopComment - Updated top comment data or null if removed
-   */
-  const handleTopCommentVoteChange = useCallback((postId: string, newTopComment: { id: string, author: { name: string, image?: string }, content: string, upvotes: number, downvotes: number, isBestAnswer: boolean } | null) => {
-    if (postId === post.id) {
-      if (newTopComment === null) {
-        // No top comment anymore - clear local state
-        setTopComment(undefined)
-      } else {
-        // Update with new top comment data for immediate display
-        setTopComment(newTopComment)
-      }
-      
-      // Forward to parent component for global state management
-      onTopCommentVoteChange?.(postId, newTopComment)
-    }
-  }, [post.id, onTopCommentVoteChange])
+  const openModal = useCallback(() => {
+    router.push(`/${post.id}`)
+  }, [router, post.id])
 
   // ========================================================================
   // VOTING SYSTEM
@@ -689,7 +624,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
             fill
             sizes={sizes}
             priority={index === 0}
-            onClick={() => openModal(index)}
+            onClick={() => openModal()}
             enableDownload={true}
           />
         </>
@@ -833,7 +768,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                           backgroundColor: styles.lightBackground
                         }}
                       >
-                        {category.name}
+                        {decodeHtmlEntities(category.name)}
                       </Badge>
                     )
                   })
@@ -849,7 +784,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
                           backgroundColor: styles.lightBackground
                         }}
                       >
-                        {post.categories.name}
+                        {decodeHtmlEntities(post.categories.name)}
                       </Badge>
                     )
                   })()
@@ -981,7 +916,7 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => openModal(0)}
+                onClick={() => openModal()}
                 className="text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full px-2 py-2 sm:px-3 flex-shrink-0 mobile-touch-target"
               >
                 <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
@@ -1074,24 +1009,6 @@ const PostCard = memo(function PostCard({ post, onDelete, onCommentCountChange, 
       </Card>
       </div>
       
-      {/* Facebook-style Post Popup Modal */}
-      <PostModal 
-        open={modalOpen} 
-        onClose={() => setModalOpen(false)} 
-        post={{
-          ...post,
-          upvotes: upvotes,        // Current global state, not original props
-          downvotes: downvotes,    // Current global state, not original props  
-          userVote: userVote,      // Current global state, not original props
-          comments: commentCount,
-          topComment: topComment   // Use local state for top comment
-        }} 
-        initialImage={modalImageIndex} 
-        onCommentAdded={handleCommentAdded}
-        onCommentCountUpdate={handleCommentCountUpdate}
-        onTopCommentVoteChange={handleTopCommentVoteChange}
-      />
-
       {/* Report Post Modal */}
       <ReportPostModal
         isOpen={isReportModalOpen}

@@ -1,11 +1,5 @@
 import { Metadata } from 'next'
-import { 
-  getAllCategories,
-  getPostsByCategory,
-  type WordPressCategory,
-  type WordPressPost
-} from '@/lib/wordpress-api'
-import ArticlesPageClient from './articles-page-client'
+import CategoryListing from "@/components/category-listing"
 
 // Force dynamic rendering to avoid build timeouts
 export const dynamic = 'force-dynamic'
@@ -16,30 +10,9 @@ export const metadata: Metadata = {
   description: 'Discover in-depth articles, research papers, and expert insights on architecture, design theory, and construction technology.',
 }
 
-export default async function ArticlesPage() {
-  // Try to fetch articles from WordPress
-  let initialArticles: WordPressPost[] = []
-  let initialCategories: WordPressCategory[] = []
-  
-  try {
-    // Fetch all categories first
-    const categories = await getAllCategories()
-    initialCategories = categories
-    
-    // Look for "articles" category (case insensitive)
-    const articlesCategory = categories.find((cat: WordPressCategory) => 
-      cat.slug.toLowerCase().includes('article') || 
-      cat.name.toLowerCase().includes('article')
-    )
-    
-    if (articlesCategory) {
-      // Fetch articles from the articles category
-      const articles = await getPostsByCategory(articlesCategory.id, 1, 20)
-      initialArticles = articles
-    }
-  } catch (error) {
-    console.error('Error fetching articles:', error)
-  }
-
-  return <ArticlesPageClient initialArticles={initialArticles} initialCategories={initialCategories} />
+export default async function ArticlesPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const resolvedSearchParams = await searchParams
+  const pageParam = typeof resolvedSearchParams?.page === 'string' ? resolvedSearchParams.page : Array.isArray(resolvedSearchParams?.page) ? resolvedSearchParams.page[0] : null
+  // New standardized category listing (Articles = categoryId 41)
+  return <CategoryListing categoryId={41} title="Articles" basePath="/articles" pageParam={pageParam} />
 }

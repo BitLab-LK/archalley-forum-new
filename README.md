@@ -152,7 +152,7 @@ Archalley Forum is a sophisticated, enterprise-grade community platform tailored
 
 ### AI & External Services
 - **Google Gemini**: AI-powered content categorization and translation
-- **Vercel Blob Storage**: Secure file storage and CDN
+- **Azure Blob Storage**: Secure file storage and CDN
 - **Resend**: Email delivery service
 - **Nodemailer**: SMTP email client
 
@@ -234,7 +234,7 @@ Archalley Forum is a sophisticated, enterprise-grade community platform tailored
 - `POST /cleanup-blobs`: File cleanup
 
 ### File Management (`/api/upload/`)
-- `POST /blob`: Vercel Blob upload
+- `POST /blob`: Azure Blob Storage upload
 - `POST /token`: Upload token generation
 - `POST /registration`: Registration file upload
 
@@ -394,7 +394,7 @@ The forum organizes content into seven main categories:
 - **Multiple Formats**: JPEG, PNG, GIF, WebP support
 - **Size Optimization**: Automatic image resizing
 - **Format Conversion**: WebP optimization for performance
-- **Secure Storage**: Vercel Blob integration
+- **Secure Storage**: Azure Blob Storage integration
 - **CDN Delivery**: Global content delivery
 
 ### File Processing
@@ -477,8 +477,11 @@ SMTP_PORT=587
 SMTP_USER="your-email@gmail.com"
 SMTP_PASSWORD="your-app-password"
 
-# File Storage
-BLOB_READ_WRITE_TOKEN="your-vercel-blob-token"
+# File Storage (Azure Blob Storage)
+AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;AccountName=your-account-name;AccountKey=your-account-key;EndpointSuffix=core.windows.net"
+# Or use separate credentials:
+# AZURE_STORAGE_ACCOUNT_NAME="your-account-name"
+# AZURE_STORAGE_ACCOUNT_KEY="your-account-key"
 ```
 
 ---

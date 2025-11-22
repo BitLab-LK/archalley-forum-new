@@ -132,22 +132,26 @@ export async function uploadToBlobServer(
   }
 ): Promise<UploadResult> {
   
-  const { put } = await import('@vercel/blob')
+  const { uploadToAzureBlob } = await import('@/lib/azure-blob-storage')
   
   try {
-    const blob = await put(filename, file, {
-      access: options?.access || 'public',
+    // Determine content type
+    const contentType = file instanceof File ? file.type : 'application/octet-stream'
+    
+    const result = await uploadToAzureBlob(file, filename, {
+      containerName: 'uploads',
+      contentType,
       addRandomSuffix: options?.addRandomSuffix ?? true,
-      cacheControlMaxAge: options?.cacheControlMaxAge || 60 * 60 * 24 * 30, // 30 days
+      cacheControl: `public, max-age=${options?.cacheControlMaxAge || 2592000}`, // 30 days
     })
 
     return {
-      url: blob.url,
+      url: result.url,
       name: filename,
       size: fileSize,
-      type: 'application/octet-stream', // Default, you might want to detect this
-      pathname: blob.pathname,
-      downloadUrl: blob.downloadUrl || blob.url
+      type: contentType,
+      pathname: result.pathname,
+      downloadUrl: result.downloadUrl
     }
   } catch (error) {
     console.error('Server upload error:', error)

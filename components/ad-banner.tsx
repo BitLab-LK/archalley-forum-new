@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { ExternalLink } from "lucide-react"
 import { 
   getEnhancedAdBanner, 
   getNextRotationAd, 
@@ -36,6 +34,12 @@ export default function AdBannerComponent({
   const [isRotating, setIsRotating] = useState(false)
   const rotationTimerRef = useRef<NodeJS.Timeout | null>(null)
   const componentMountedRef = useRef(true)
+
+  // Derive fixed pixel dimensions when size is WxH (keep responsive for 100%x250)
+  const isResponsive = size === '100%x250'
+  const parsed = /^([0-9]+)x([0-9]+)$/.exec(size)
+  const fixedWidth = !isResponsive && parsed ? parseInt(parsed[1], 10) : undefined
+  const fixedHeight = !isResponsive && parsed ? parseInt(parsed[2], 10) : undefined
 
   // Load initial ad
   const loadInitialAd = useCallback(async () => {
@@ -113,45 +117,39 @@ export default function AdBannerComponent({
   }
 
   if (!banner) {
-    // Show loading indicator while ads are being fetched
+    // Show loading indicator while ads are being fetched (no text, just visual)
     return (
-      <div className={`relative ${className}`}>
-        {showLabel && (
-          <div className="flex justify-center mb-2">
-            <Badge variant="outline" className="text-xs text-muted-foreground bg-gray-50 dark:bg-gray-800">
-              Loading Advertisement
-            </Badge>
-          </div>
-        )}
+      <div 
+        className={`${className} relative rounded-none overflow-visible`} 
+        style={{ 
+          width: '100%',
+          maxWidth: isResponsive ? '100%' : (fixedWidth ? `${fixedWidth}px` : '100%'),
+          height: fixedHeight, 
+          margin: fixedWidth ? '0 auto' : undefined, 
+          borderRadius: 0, 
+          overflow: 'visible' 
+        }}
+      >
         <div 
-          className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center"
-          style={{
-            aspectRatio: size === '350x350' || size === '400x400' || size === '320x320' ? '1/1' : 
-                        size === '680x180' || size === '800x200' ? '680/180' : 
-                        size === '970x180' || size === '1200x240' ? '970/180' : 
-                        size === '1200x300' ? '1200/300' :
-                        size === '100%x250' ? '1200/250' : '680/180',
-            minHeight: size === '100%x250' ? '250px' : 
-                      size === '1200x300' ? '300px' :
-                      size === '1200x240' ? '240px' :
-                      size === '970x180' ? '180px' :
-                      size === '680x180' ? '180px' :
-                      size === '800x200' ? '200px' :
-                      size === '400x400' ? '400px' : 
-                      size === '350x350' ? '350px' :
-                      size === '320x320' ? '320px' : '180px'
-          }}
+          className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 flex items-center justify-center relative rounded-none"
+          style={
+            isResponsive
+              ? { aspectRatio: '1200/250', minHeight: '250px', borderRadius: 0, width: '100%', maxWidth: '100%' }
+              : { width: '100%', maxWidth: fixedWidth ? `${fixedWidth}px` : '100%', height: fixedHeight, borderRadius: 0 }
+          }
         >
-          <div className="text-center p-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 dark:border-gray-500 mx-auto mb-3"></div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-              Loading...
-            </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              Advertisement
-            </p>
-          </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 dark:border-gray-500"></div>
+          
+          {/* Small "Ad" label in top right corner */}
+          {showLabel && (
+            <div className="absolute top-2 right-2 z-10">
+              <div className="bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-medium text-gray-700 shadow-sm border border-gray-200/50">
+                Ad
+              </div>
+            </div>
+          )}
         </div>
+        <div className="text-center mt-2 text-xs uppercase tracking-[0.35em] text-gray-500">ADVERTISEMENT</div>
       </div>
     )
   }
@@ -160,17 +158,18 @@ export default function AdBannerComponent({
   const placeholderUrl = `https://via.placeholder.com/${size.replace('x', 'x')}/f0f0f0/666666?text=Advertisement`
 
   return (
-    <div className={`relative group ${className}`}>
-      {showLabel && (
-        <div className="flex justify-center mb-2">
-          <Badge variant="outline" className="text-xs text-muted-foreground bg-gray-50">
-            Advertisement
-          </Badge>
-        </div>
-      )}
-      
+    <div 
+      className={`${className} relative group rounded-none overflow-visible`} 
+      style={{ 
+        width: '100%',
+        maxWidth: isResponsive ? '100%' : (fixedWidth ? `${fixedWidth}px` : '100%'),
+        margin: fixedWidth ? '0 auto' : undefined, 
+        borderRadius: 0, 
+        overflow: 'visible' 
+      }}
+    >
       <Card 
-        className={`overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 border-gray-200 w-full rounded-xl ${
+        className={`overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 border-gray-200 rounded-none ${
           isRotating ? 'opacity-70' : 'opacity-100'
         }`}
         onClick={handleClick}
@@ -178,83 +177,51 @@ export default function AdBannerComponent({
           animation: `fadeInAd 0.8s ease-out forwards`,
           opacity: isRotating ? 0.7 : 1,
           transition: 'opacity 0.3s ease-in-out',
-          maxWidth: size === '350x350' ? '350px' : '100%',
-          margin: size === '350x350' ? '0 auto' : 'auto'
+          width: '100%',
+          maxWidth: isResponsive ? '100%' : (fixedWidth ? `${fixedWidth}px` : '100%'),
+          margin: fixedWidth ? '0 auto' : 'auto',
+          borderRadius: 0
         }}
       >
         <div 
-          className="relative overflow-hidden bg-gray-50 w-full rounded-xl"
-          style={{
-            aspectRatio: size === '350x350' || size === '400x400' || size === '320x320' ? '1/1' : 
-                        size === '680x180' || size === '800x200' ? '680/180' : 
-                        size === '970x180' || size === '1200x240' ? '970/180' : 
-                        size === '1200x300' ? '1200/300' :
-                        size === '100%x250' ? '1200/250' : '680/180',
-            minHeight: size === '100%x250' ? '250px' : 
-                      size === '1200x300' ? '300px' :
-                      size === '1200x240' ? '240px' :
-                      size === '970x180' ? '180px' :
-                      size === '680x180' ? '180px' :
-                      size === '800x200' ? '200px' :
-                      size === '400x400' ? '400px' : 
-                      size === '350x350' ? '350px' :
-                      size === '320x320' ? '320px' : '180px'
-          }}
+          className="relative overflow-hidden bg-gray-50 rounded-none"
+          style={
+            isResponsive
+              ? { aspectRatio: '1200/250', minHeight: '250px', borderRadius: 0, width: '100%', maxWidth: '100%' }
+              : { width: '100%', maxWidth: fixedWidth ? `${fixedWidth}px` : '100%', height: fixedHeight, borderRadius: 0 }
+          }
         >
           <Image
             src={imageError ? placeholderUrl : banner.imageUrl}
-            alt={banner.title || banner.id}
+            alt="Advertisement"
             fill
-            className={`object-cover transition-all duration-300 ease-in-out group-hover:scale-105 rounded-xl ${
+            className={`object-contain transition-all duration-300 ease-in-out ${
               imageLoaded ? 'opacity-100' : 'opacity-0'
             }`}
             onLoad={() => setImageLoaded(true)}
             onError={handleImageError}
-            sizes={
-              size === '350x350' || size === '400x400' || size === '320x320'
-                ? "(max-width: 768px) 100vw, 350px"
-                : size === '680x180' || size === '800x200'
-                ? "(max-width: 768px) 100vw, 680px" 
-                : size === '970x180' || size === '1200x240' || size === '1200x300'
-                ? "(max-width: 768px) 100vw, 970px"
-                : size === '100%x250'
-                ? "100vw"
-                : "(max-width: 768px) 100vw, 680px"
-            }
+            sizes={isResponsive ? '100vw' : fixedWidth ? `${fixedWidth}px` : undefined}
           />
           
           {/* Loading placeholder */}
           {!imageLoaded && !imageError && (
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse rounded-xl" />
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse rounded-none" />
           )}
           
-          {/* Hover overlay */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 rounded-xl" />
+          {/* Subtle hover overlay */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 rounded-none" />
           
-          {/* Content overlay */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-b-xl">
-            <h3 className="text-white font-semibold text-sm mb-1">
-              {banner.title || 'Advertisement'}
-            </h3>
-            {banner.description && (
-              <p className="text-white/90 text-xs">
-                {banner.description}
-              </p>
-            )}
-            <div className="flex items-center mt-2">
-              <ExternalLink className="h-3 w-3 text-white/80 mr-1" />
-              <span className="text-white/80 text-xs">Click to visit</span>
+          {/* Small "Ad" label in top right corner (Google-style) */}
+          {showLabel && (
+            <div className="absolute top-2 right-2 z-10">
+              <div className="bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-medium text-gray-700 shadow-sm border border-gray-200/50">
+                Ad
+              </div>
             </div>
-          </div>
-
-          {/* Click indicator */}
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="bg-white/90 rounded-full p-1">
-              <ExternalLink className="h-3 w-3 text-gray-600" />
-            </div>
-          </div>
+          )}
         </div>
       </Card>
+      <div className="text-center mt-2 text-xs uppercase tracking-[0.35em] text-gray-500">ADVERTISEMENT</div>
 
       <style jsx>{`
         @keyframes fadeInAd {
@@ -315,14 +282,8 @@ export function SquareAd({ className }: { className?: string }) {
 export function ExelAd({ className }: { className?: string }) {
   return (
     <div className={`relative group ${className}`}>
-      <div className="flex justify-center mb-2">
-        <Badge variant="outline" className="text-xs text-muted-foreground bg-gray-50">
-          Advertisement
-        </Badge>
-      </div>
-      
       <Card 
-        className="overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 border-gray-200 rounded-xl"
+        className="overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 border-gray-200 rounded-none"
         onClick={() => {
           // Track click and open link
           console.log('Exel ad clicked')
@@ -332,49 +293,38 @@ export function ExelAd({ className }: { className?: string }) {
           animation: `fadeInAd 0.8s ease-out forwards`,
           opacity: 0,
           maxWidth: '320px',
-          margin: '0 auto'
+          margin: '0 auto',
+          borderRadius: 0
         }}
       >
         <div 
-          className="relative overflow-hidden bg-gray-50 rounded-xl"
+          className="relative overflow-hidden bg-gray-50 rounded-none"
           style={{
             aspectRatio: '1/1',
-            minHeight: '320px'
+            minHeight: '320px',
+            borderRadius: 0
           }}
         >
           <Image
-            src="https://archalley.com/wp-content/uploads/2025/02/Exel-Banner-345-x-345-main-banner.webp"
-            alt="Exel Design Software"
+            src="https://wp.archalley.com/wp-content/uploads/2025/02/Exel-Banner-345-x-345-main-banner.webp"
+            alt="Advertisement"
             fill
-            className="object-cover transition-all duration-300 ease-in-out group-hover:scale-105 rounded-xl"
+            className="object-cover transition-all duration-300 ease-in-out group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, 320px"
           />
           
-          {/* Hover overlay */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 rounded-xl" />
+          {/* Subtle hover overlay */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 rounded-none" />
           
-          {/* Content overlay */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-b-xl">
-            <h3 className="text-white font-semibold text-sm mb-1">
-              Exel Design Software
-            </h3>
-            <p className="text-white/90 text-xs">
-              Professional architectural design tools
-            </p>
-            <div className="flex items-center mt-2">
-              <ExternalLink className="h-3 w-3 text-white/80 mr-1" />
-              <span className="text-white/80 text-xs">Click to visit</span>
-            </div>
-          </div>
-
-          {/* Click indicator */}
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="bg-white/90 rounded-full p-1">
-              <ExternalLink className="h-3 w-3 text-gray-600" />
+          {/* Small "Ad" label in top right corner (Google-style) */}
+          <div className="absolute top-2 right-2 z-10">
+            <div className="bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-medium text-gray-700 shadow-sm border border-gray-200/50">
+              Ad
             </div>
           </div>
         </div>
       </Card>
+      <div className="text-center mt-2 text-xs uppercase tracking-[0.35em] text-gray-500">ADVERTISEMENT</div>
 
       <style jsx>{`
         @keyframes fadeInAd {

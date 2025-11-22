@@ -25,6 +25,17 @@ async function isSessionValidForEdge(request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
+  // Redirect /competition to /events/archalley-competition-2025
+  if (request.nextUrl.pathname === '/competition' || request.nextUrl.pathname === '/competition/') {
+    const targetUrl = new URL('/events/archalley-competition-2025', request.url)
+    // Preserve query parameters
+    request.nextUrl.searchParams.forEach((value, key) => {
+      targetUrl.searchParams.set(key, value)
+    })
+    console.log('🔄 Redirecting /competition to /events/archalley-competition-2025')
+    return NextResponse.redirect(targetUrl, 308) // 308 Permanent Redirect
+  }
+
   // Skip middleware entirely for auth routes to prevent redirect loops
   if (request.nextUrl.pathname.startsWith('/auth/')) {
     console.log('🔄 Skipping middleware for auth route:', request.nextUrl.pathname)
@@ -46,7 +57,14 @@ export async function middleware(request: NextRequest) {
     '/api/contributors/top',
     '/api/health',
     '/api/search',
-    '/api/analytics/share'
+    '/api/analytics/share',
+    '/api/users',
+    '/api/ads',
+    '/api/wordpress/',
+    '/api/youtube/',
+    '/api/contact',
+    '/api/academic/submit',
+    '/api/projects/submit'
   ]
 
   // Check if the API route is public
@@ -183,14 +201,14 @@ export async function middleware(request: NextRequest) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com",
-      "script-src-elem 'self' 'unsafe-inline' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com",
-      "style-src 'self' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com https://www.payhere.lk https://sandbox.payhere.lk",
+      "script-src-elem 'self' 'unsafe-inline' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com https://www.payhere.lk https://sandbox.payhere.lk",
+      "style-src 'self' 'unsafe-inline' https://cdn.lineicons.com",
       "img-src 'self' data: https: http:",
-      "font-src 'self' data:",
-      "frame-src 'self' https://www.youtube.com https://youtube.com https://www.facebook.com https://facebook.com https://web.facebook.com https://connect.facebook.net",
-      "child-src 'self' https://www.youtube.com https://youtube.com https://www.facebook.com https://facebook.com",
-      "connect-src 'self' https://connect.facebook.net https://www.facebook.com https:",
+      "font-src 'self' data: https://cdn.lineicons.com",
+      "frame-src 'self' https://www.youtube.com https://youtube.com https://www.facebook.com https://facebook.com https://web.facebook.com https://connect.facebook.net https://www.payhere.lk https://sandbox.payhere.lk",
+      "child-src 'self' https://www.youtube.com https://youtube.com https://www.facebook.com https://facebook.com https://sandbox.payhere.lk",
+      "connect-src 'self' https://connect.facebook.net https://www.facebook.com https://sandbox.payhere.lk https:",
       "media-src 'self' https://www.youtube.com https://youtube.com",
       "object-src 'none'",
       "base-uri 'self'",

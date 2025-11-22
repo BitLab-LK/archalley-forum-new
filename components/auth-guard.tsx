@@ -15,6 +15,8 @@ interface AuthGuardProps {
 
 export function AuthGuard({ children, fallback }: AuthGuardProps) {
   const { isAuthenticated, isLoading } = useAuth()
+  const pathname = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/'
+  const callbackParam = encodeURIComponent(pathname)
 
   if (isLoading) {
     return (
@@ -35,13 +37,13 @@ export function AuthGuard({ children, fallback }: AuthGuardProps) {
           <CardContent className="space-y-4">
             <div className="flex flex-col space-y-2">
               <Button asChild>
-                <Link href="/auth/login">
+                <Link href={`/auth/login?callbackUrl=${callbackParam}`}>
                   <LogIn className="mr-2 h-4 w-4" />
                   Sign In
                 </Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link href="/auth/register">
+                <Link href={`/auth/register?callbackUrl=${callbackParam}`}>
                   <UserPlus className="mr-2 h-4 w-4" />
                   Create Account
                 </Link>
