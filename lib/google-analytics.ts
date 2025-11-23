@@ -110,6 +110,28 @@ export interface EcommerceItem {
   [key: string]: any; // Allow additional custom parameters
 }
 
+// View Item List - Track when user lands on competition registration page
+export const trackViewItemList = (items: EcommerceItem[], currency: string = 'LKR') => {
+  const value = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  pushToDataLayer({
+    event: 'view_item_list',
+    currency: currency,
+    value: value,
+    items: items,
+  });
+};
+
+// Select Item - Track when user selects a registration type
+export const trackSelectItem = (item: EcommerceItem, currency: string = 'LKR') => {
+  pushToDataLayer({
+    event: 'select_item',
+    currency: currency,
+    value: item.price,
+    items: [item],
+  });
+};
+
 // View Item - Track when user views a competition registration page
 export const trackViewItem = (item: EcommerceItem, currency: string = 'LKR') => {
   pushToDataLayer({

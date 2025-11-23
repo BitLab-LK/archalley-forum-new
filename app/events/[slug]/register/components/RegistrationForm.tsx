@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import { Competition, CompetitionRegistrationType } from '@prisma/client';
 import { MemberInfo, AgreementData } from '@/types/competition';
 import { toast } from 'sonner';
-import { trackAddToCart, trackViewItem, EcommerceItem } from '@/lib/google-analytics';
+import { trackAddToCart, trackViewItem, trackViewItemList, trackSelectItem, EcommerceItem } from '@/lib/google-analytics';
 
 interface UserProfile {
   email: string;
@@ -59,22 +59,22 @@ export default function RegistrationForm({
   const [showErrors, setShowErrors] = useState(false);
   const [studentConsent, setStudentConsent] = useState(false);
 
-  // Track view_item when registration form is viewed with a selected type
+  // Track view_item_list when landing on the registration page
   useEffect(() => {
-    if (selectedType && !editingItem) {
-      const item: EcommerceItem = {
-        item_id: `${competition.id}_${selectedType.id}`,
-        item_name: `${competition.title} - ${selectedType.name}`,
+    if (!editingItem && registrationTypes.length > 0) {
+      const items: EcommerceItem[] = registrationTypes.map(type => ({
+        item_id: `${competition.id}_${type.id}`,
+        item_name: `${competition.title} - ${type.name}`,
         item_category: 'Competition Registration',
         item_category2: competition.title,
-        item_category3: selectedType.name,
-        price: selectedType.fee,
+        item_category3: type.name,
+        price: type.fee,
         quantity: 1,
         currency: 'LKR',
-      };
-      trackViewItem(item);
+      }));
+      trackViewItemList(items);
     }
-  }, [selectedType, competition, editingItem]);
+  }, [competition, registrationTypes, editingItem]);
 
   // Update form when editingItem changes - only run when editingItem.id changes
   useEffect(() => {
@@ -1157,6 +1157,21 @@ export default function RegistrationForm({
                         checked={selectedType?.id === type.id}
                         onChange={() => {
                           setSelectedType(type);
+                          // Track select_item when user selects a registration type
+                          if (!editingItem) {
+                            const item: EcommerceItem = {
+                              item_id: `${competition.id}_${type.id}`,
+                              item_name: `${competition.title} - ${type.name}`,
+                              item_category: 'Competition Registration',
+                              item_category2: competition.title,
+                              item_category3: type.name,
+                              price: type.fee,
+                              quantity: 1,
+                              currency: 'LKR',
+                            };
+                            trackSelectItem(item);
+                            trackViewItem(item);
+                          }
                           // Reset members if changing type
                           if (type.maxMembers < members.length) {
                             setMembers([members[0]]);
@@ -1202,6 +1217,21 @@ export default function RegistrationForm({
                           checked={selectedType?.id === type.id}
                           onChange={() => {
                             setSelectedType(type);
+                            // Track select_item when user selects a registration type
+                            if (!editingItem) {
+                              const item: EcommerceItem = {
+                                item_id: `${competition.id}_${type.id}`,
+                                item_name: `${competition.title} - ${type.name}`,
+                                item_category: 'Competition Registration',
+                                item_category2: competition.title,
+                                item_category3: type.name,
+                                price: type.fee,
+                                quantity: 1,
+                                currency: 'LKR',
+                              };
+                              trackSelectItem(item);
+                              trackViewItem(item);
+                            }
                             // Reset members if changing type
                             if (type.maxMembers < members.length) {
                               setMembers([members[0]]);

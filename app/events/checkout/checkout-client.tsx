@@ -115,21 +115,6 @@ export default function CheckoutClient({ user }: Props) {
       if (data.success && data.data?.cart) {
         const cartData = data.data.cart;
         setCart(cartData);
-        
-        // Track begin_checkout event
-        if (cartData.items && cartData.items.length > 0) {
-          const items: EcommerceItem[] = cartData.items.map((item: any) => ({
-            item_id: `${item.competitionId}_${item.registrationTypeId}`,
-            item_name: `${item.competition?.title || 'Competition'} - ${item.registrationType?.name || 'Registration'}`,
-            item_category: 'Competition Registration',
-            item_category2: item.competition?.title || '',
-            item_category3: item.registrationType?.name || '',
-            price: item.subtotal,
-            quantity: 1,
-            currency: 'LKR',
-          }));
-          trackBeginCheckout(items);
-        }
 
         // Auto-fill form with data from first cart item's first member
         if (cartData.items && cartData.items.length > 0) {
@@ -268,6 +253,22 @@ export default function CheckoutClient({ user }: Props) {
     try {
       if (paymentMethod === 'card') {
         console.log('Initiating card payment via PayHere');
+        
+        // Track add_payment_info event when clicking PayHere button
+        if (cart && cart.items.length > 0) {
+          const items: EcommerceItem[] = cart.items.map((item: any) => ({
+            item_id: `${item.competitionId}_${item.registrationTypeId}`,
+            item_name: `${item.competition?.title || 'Competition'} - ${item.registrationType?.name || 'Registration'}`,
+            item_category: 'Competition Registration',
+            item_category2: item.competition?.title || '',
+            item_category3: item.registrationType?.name || '',
+            price: item.subtotal,
+            quantity: 1,
+            currency: 'LKR',
+          }));
+          trackAddPaymentInfo(items, 'card');
+        }
+        
         // Card payment via PayHere
         const response = await fetch('/api/competitions/checkout', {
           method: 'POST',
@@ -315,6 +316,21 @@ export default function CheckoutClient({ user }: Props) {
 
           bankSlipUrl = uploadResult.url;
           bankSlipFileName = bankSlipFile.name;
+        }
+
+        // Track add_payment_info event when clicking Submit Bank Transfer button
+        if (cart && cart.items.length > 0) {
+          const items: EcommerceItem[] = cart.items.map((item: any) => ({
+            item_id: `${item.competitionId}_${item.registrationTypeId}`,
+            item_name: `${item.competition?.title || 'Competition'} - ${item.registrationType?.name || 'Registration'}`,
+            item_category: 'Competition Registration',
+            item_category2: item.competition?.title || '',
+            item_category3: item.registrationType?.name || '',
+            price: item.subtotal,
+            quantity: 1,
+            currency: 'LKR',
+          }));
+          trackAddPaymentInfo(items, 'bank_transfer');
         }
 
         // Submit the payment with or without uploaded file
@@ -665,20 +681,6 @@ export default function CheckoutClient({ user }: Props) {
               }`}
               onClick={() => {
                 setPaymentMethod('card');
-                // Track add_payment_info event
-                if (cart && cart.items.length > 0) {
-                  const items: EcommerceItem[] = cart.items.map((item: any) => ({
-                    item_id: `${item.competitionId}_${item.registrationTypeId}`,
-                    item_name: `${item.competition?.title || 'Competition'} - ${item.registrationType?.name || 'Registration'}`,
-                    item_category: 'Competition Registration',
-                    item_category2: item.competition?.title || '',
-                    item_category3: item.registrationType?.name || '',
-                    price: item.subtotal,
-                    quantity: 1,
-                    currency: 'LKR',
-                  }));
-                  trackAddPaymentInfo(items, 'card');
-                }
               }}
             >
               <div className="flex items-start gap-3">
@@ -712,20 +714,6 @@ export default function CheckoutClient({ user }: Props) {
               }`}
               onClick={() => {
                 setPaymentMethod('bank');
-                // Track add_payment_info event
-                if (cart && cart.items.length > 0) {
-                  const items: EcommerceItem[] = cart.items.map((item: any) => ({
-                    item_id: `${item.competitionId}_${item.registrationTypeId}`,
-                    item_name: `${item.competition?.title || 'Competition'} - ${item.registrationType?.name || 'Registration'}`,
-                    item_category: 'Competition Registration',
-                    item_category2: item.competition?.title || '',
-                    item_category3: item.registrationType?.name || '',
-                    price: item.subtotal,
-                    quantity: 1,
-                    currency: 'LKR',
-                  }));
-                  trackAddPaymentInfo(items, 'bank_transfer');
-                }
               }}
             >
               <div className="flex items-start gap-3">

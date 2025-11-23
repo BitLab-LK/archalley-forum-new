@@ -10,7 +10,7 @@ import { CartWithItems } from '@/types/competition';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useCountdown } from '@/hooks/useCountdown';
-import { trackViewCart, trackRemoveFromCart, EcommerceItem } from '@/lib/google-analytics';
+import { trackViewCart, trackRemoveFromCart, trackBeginCheckout, EcommerceItem } from '@/lib/google-analytics';
 
 interface Props {
   onCartUpdate: () => void;
@@ -212,6 +212,19 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
       toast.error('Please agree to the Terms & Conditions to proceed');
       return;
     }
+
+    // Track begin_checkout event
+    const items: EcommerceItem[] = cart.items.map((item: any) => ({
+      item_id: `${item.competitionId}_${item.registrationTypeId}`,
+      item_name: `${item.competition?.title || 'Competition'} - ${item.registrationType?.name || 'Registration'}`,
+      item_category: 'Competition Registration',
+      item_category2: item.competition?.title || '',
+      item_category3: item.registrationType?.name || '',
+      price: item.subtotal,
+      quantity: 1,
+      currency: 'LKR',
+    }));
+    trackBeginCheckout(items);
 
     setIsCheckingOut(true);
     router.push('/events/checkout');

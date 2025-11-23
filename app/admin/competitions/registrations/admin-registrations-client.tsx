@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { RevertPaymentDialog } from '@/components/ui/revert-payment-dialog';
 import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 import { RejectPaymentDialog } from '@/components/ui/reject-payment-dialog';
+import { trackPurchase, EcommerceItem } from '@/lib/google-analytics';
 
 interface Registration {
   id: string;
@@ -363,6 +364,27 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
       const data = await response.json();
 
       if (data.success) {
+        // Track purchase event when admin approves payment
+        if (approve && registration && registration.payment) {
+          const item: EcommerceItem = {
+            item_id: `${registration.competition.id}_${registration.registrationType.id}`,
+            item_name: `${registration.competition.title} - ${registration.registrationType.name}`,
+            item_category: 'Competition Registration',
+            item_category2: registration.competition.title,
+            item_category3: registration.registrationType.name,
+            price: registration.amountPaid,
+            quantity: 1,
+            currency: registration.currency || 'LKR',
+          };
+          
+          trackPurchase(
+            registration.payment.orderId,
+            [item],
+            registration.payment.amount,
+            registration.currency || 'LKR'
+          );
+        }
+        
         toast.success(approve ? 'Payment verified successfully!' : 'Payment rejected and user notified');
         
         // Refresh data
