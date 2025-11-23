@@ -62,7 +62,7 @@ export default function RegistrationForm({
   // Track view_item_list when landing on the registration page
   useEffect(() => {
     if (!editingItem && registrationTypes.length > 0) {
-      const items: EcommerceItem[] = registrationTypes.map(type => ({
+      const items: EcommerceItem[] = registrationTypes.map((type, index) => ({
         item_id: `${competition.id}_${type.id}`,
         item_name: `${competition.title} - ${type.name}`,
         item_category: 'Competition Registration',
@@ -71,8 +71,14 @@ export default function RegistrationForm({
         price: type.fee,
         quantity: 1,
         currency: 'LKR',
+        index: index,
       }));
-      trackViewItemList(items);
+      trackViewItemList(
+        items,
+        'LKR',
+        'competition_registration_types',
+        'Competition Registration Types'
+      );
     }
   }, [competition, registrationTypes, editingItem]);
 
@@ -1169,7 +1175,12 @@ export default function RegistrationForm({
                               quantity: 1,
                               currency: 'LKR',
                             };
-                            trackSelectItem(item);
+                            trackSelectItem(
+                              item,
+                              'LKR',
+                              'competition_registration_types',
+                              'Competition Registration Types'
+                            );
                             trackViewItem(item);
                           }
                           // Reset members if changing type

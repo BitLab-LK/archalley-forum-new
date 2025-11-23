@@ -111,34 +111,73 @@ export interface EcommerceItem {
 }
 
 // View Item List - Track when user lands on competition registration page
-export const trackViewItemList = (items: EcommerceItem[], currency: string = 'LKR') => {
+export const trackViewItemList = (
+  items: EcommerceItem[], 
+  currency: string = 'LKR',
+  itemListId?: string,
+  itemListName?: string
+) => {
   const value = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  // Clear previous ecommerce object
+  pushToDataLayer({ ecommerce: null });
   
   pushToDataLayer({
     event: 'view_item_list',
-    currency: currency,
-    value: value,
-    items: items,
+    ecommerce: {
+      currency: currency,
+      value: value,
+      item_list_id: itemListId || 'competition_registration_types',
+      item_list_name: itemListName || 'Competition Registration Types',
+      items: items.map((item, index) => ({
+        ...item,
+        index: index,
+        item_list_id: item.item_list_id || itemListId || 'competition_registration_types',
+        item_list_name: item.item_list_name || itemListName || 'Competition Registration Types',
+      })),
+    },
   });
 };
 
 // Select Item - Track when user selects a registration type
-export const trackSelectItem = (item: EcommerceItem, currency: string = 'LKR') => {
+export const trackSelectItem = (
+  item: EcommerceItem, 
+  currency: string = 'LKR',
+  itemListId?: string,
+  itemListName?: string
+) => {
+  // Clear previous ecommerce object
+  pushToDataLayer({ ecommerce: null });
+  
   pushToDataLayer({
     event: 'select_item',
-    currency: currency,
-    value: item.price,
-    items: [item],
+    ecommerce: {
+      currency: currency,
+      value: item.price * item.quantity,
+      item_list_id: itemListId || 'competition_registration_types',
+      item_list_name: itemListName || 'Competition Registration Types',
+      items: [{
+        ...item,
+        index: 0,
+        item_list_id: item.item_list_id || itemListId || 'competition_registration_types',
+        item_list_name: item.item_list_name || itemListName || 'Competition Registration Types',
+      }],
+    },
   });
 };
 
 // View Item - Track when user views a competition registration page
 export const trackViewItem = (item: EcommerceItem, currency: string = 'LKR') => {
+  // Clear previous ecommerce object
+  pushToDataLayer({ ecommerce: null });
+  
   pushToDataLayer({
     event: 'view_item',
-    currency: currency,
-    value: item.price,
-    items: [item],
+    ecommerce: {
+      currency: currency,
+      value: item.price * item.quantity,
+      items: [item],
+    },
   });
 };
 
@@ -146,11 +185,19 @@ export const trackViewItem = (item: EcommerceItem, currency: string = 'LKR') => 
 export const trackAddToCart = (items: EcommerceItem[], currency: string = 'LKR') => {
   const value = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   
+  // Clear previous ecommerce object
+  pushToDataLayer({ ecommerce: null });
+  
   pushToDataLayer({
     event: 'add_to_cart',
-    currency: currency,
-    value: value,
-    items: items,
+    ecommerce: {
+      currency: currency,
+      value: value,
+      items: items.map((item, index) => ({
+        ...item,
+        index: index,
+      })),
+    },
   });
 };
 
@@ -158,23 +205,40 @@ export const trackAddToCart = (items: EcommerceItem[], currency: string = 'LKR')
 export const trackViewCart = (items: EcommerceItem[], currency: string = 'LKR') => {
   const value = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   
+  // Clear previous ecommerce object
+  pushToDataLayer({ ecommerce: null });
+  
   pushToDataLayer({
     event: 'view_cart',
-    currency: currency,
-    value: value,
-    items: items,
+    ecommerce: {
+      currency: currency,
+      value: value,
+      items: items.map((item, index) => ({
+        ...item,
+        index: index,
+      })),
+    },
   });
 };
 
 // Begin Checkout - Track when user initiates checkout
-export const trackBeginCheckout = (items: EcommerceItem[], currency: string = 'LKR') => {
+export const trackBeginCheckout = (items: EcommerceItem[], currency: string = 'LKR', coupon?: string) => {
   const value = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  // Clear previous ecommerce object
+  pushToDataLayer({ ecommerce: null });
   
   pushToDataLayer({
     event: 'begin_checkout',
-    currency: currency,
-    value: value,
-    items: items,
+    ecommerce: {
+      currency: currency,
+      value: value,
+      coupon: coupon,
+      items: items.map((item, index) => ({
+        ...item,
+        index: index,
+      })),
+    },
   });
 };
 
@@ -182,16 +246,26 @@ export const trackBeginCheckout = (items: EcommerceItem[], currency: string = 'L
 export const trackAddPaymentInfo = (
   items: EcommerceItem[],
   paymentType: string,
-  currency: string = 'LKR'
+  currency: string = 'LKR',
+  coupon?: string
 ) => {
   const value = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   
+  // Clear previous ecommerce object
+  pushToDataLayer({ ecommerce: null });
+  
   pushToDataLayer({
     event: 'add_payment_info',
-    currency: currency,
-    value: value,
-    payment_type: paymentType,
-    items: items,
+    ecommerce: {
+      currency: currency,
+      value: value,
+      coupon: coupon,
+      payment_type: paymentType,
+      items: items.map((item, index) => ({
+        ...item,
+        index: index,
+      })),
+    },
   });
 };
 
@@ -203,27 +277,45 @@ export const trackPurchase = (
   currency: string = 'LKR',
   tax?: number,
   shipping?: number,
-  coupon?: string
+  coupon?: string,
+  customerType?: 'new' | 'returning'
 ) => {
+  // Clear previous ecommerce object
+  pushToDataLayer({ ecommerce: null });
+  
   pushToDataLayer({
     event: 'purchase',
-    transaction_id: transactionId,
-    currency: currency,
-    value: value,
-    tax: tax,
-    shipping: shipping,
-    coupon: coupon,
-    items: items,
+    ecommerce: {
+      transaction_id: transactionId,
+      currency: currency,
+      value: value,
+      tax: tax,
+      shipping: shipping,
+      coupon: coupon,
+      customer_type: customerType,
+      items: items.map((item, index) => ({
+        ...item,
+        index: index,
+      })),
+    },
   });
 };
 
 // Remove from Cart - Track when user removes item from cart
 export const trackRemoveFromCart = (item: EcommerceItem, currency: string = 'LKR') => {
+  // Clear previous ecommerce object
+  pushToDataLayer({ ecommerce: null });
+  
   pushToDataLayer({
     event: 'remove_from_cart',
-    currency: currency,
-    value: item.price * item.quantity,
-    items: [item],
+    ecommerce: {
+      currency: currency,
+      value: item.price * item.quantity,
+      items: [{
+        ...item,
+        index: 0,
+      }],
+    },
   });
 };
 
