@@ -10,6 +10,7 @@ import { CartWithItems } from '@/types/competition';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useCountdown } from '@/hooks/useCountdown';
+import { trackViewCart, trackRemoveFromCart, EcommerceItem } from '@/lib/google-analytics';
 
 interface Props {
   onCartUpdate: () => void;
@@ -63,6 +64,21 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
       if (data.success && data.data?.cart) {
         console.log('✅ Cart loaded with', data.data.cart.items?.length || 0, 'items');
         setCart(data.data.cart);
+        
+        // Track view_cart event
+        if (data.data.cart.items && data.data.cart.items.length > 0) {
+          const items: EcommerceItem[] = data.data.cart.items.map((item: any) => ({
+            item_id: `${item.competitionId}_${item.registrationTypeId}`,
+            item_name: `${item.competition?.title || 'Competition'} - ${item.registrationType?.name || 'Registration'}`,
+            item_category: 'Competition Registration',
+            item_category2: item.competition?.title || '',
+            item_category3: item.registrationType?.name || '',
+            price: item.subtotal,
+            quantity: 1,
+            currency: 'LKR',
+          }));
+          trackViewCart(items);
+        }
       } else {
         console.log('⚠️ No cart data or unsuccessful response');
         setCart(null);
@@ -85,6 +101,22 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
       const result = await response.json();
 
       if (result.success) {
+        // Track remove_from_cart event
+        const itemToRemove = cart?.items.find(i => i.id === itemId);
+        if (itemToRemove) {
+          const ecommerceItem: EcommerceItem = {
+            item_id: `${itemToRemove.competitionId}_${itemToRemove.registrationTypeId}`,
+            item_name: `${itemToRemove.competition?.title || 'Competition'} - ${itemToRemove.registrationType?.name || 'Registration'}`,
+            item_category: 'Competition Registration',
+            item_category2: itemToRemove.competition?.title || '',
+            item_category3: itemToRemove.registrationType?.name || '',
+            price: itemToRemove.subtotal,
+            quantity: 1,
+            currency: 'LKR',
+          };
+          trackRemoveFromCart(ecommerceItem);
+        }
+        
         toast.success('Item removed from cart');
         fetchCart(); // Refresh cart
         onCartUpdate();

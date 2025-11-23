@@ -62,6 +62,25 @@ export default async function PaymentSuccessPage({ params }: Props) {
         },
         registrationType: {
           select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      select: {
+        registrationNumber: true,
+        status: true,
+        amountPaid: true,
+        competition: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+        registrationType: {
+          select: {
+            id: true,
             name: true,
           },
         },
@@ -97,10 +116,13 @@ export default async function PaymentSuccessPage({ params }: Props) {
           competition: {
             title: reg.competition.title,
             slug: reg.competition.slug,
+            id: reg.competition.id,
           },
           registrationType: {
             name: reg.registrationType.name,
+            id: reg.registrationType.id,
           },
+          amountPaid: reg.amountPaid,
         }))}
       />
     );

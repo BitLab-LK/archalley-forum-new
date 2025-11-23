@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Mail, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
+import { trackPurchase, EcommerceItem } from '@/lib/google-analytics';
 
 interface PaymentSuccessClientProps {
   user: {
@@ -22,10 +23,13 @@ interface PaymentSuccessClientProps {
     competition: {
       title: string;
       slug: string;
+      id: string;
     };
     registrationType: {
       name: string;
+      id: string;
     };
+    amountPaid: number;
   }>;
 }
 
@@ -36,6 +40,27 @@ export default function PaymentSuccessClient({
 }: PaymentSuccessClientProps) {
   const router = useRouter();
   const [countdown, setCountdown] = useState(30);
+
+  useEffect(() => {
+    // Track purchase event (only once on mount)
+    const items: EcommerceItem[] = registrations.map((reg) => ({
+      item_id: `${reg.competition.id}_${reg.registrationType.id}`,
+      item_name: `${reg.competition.title} - ${reg.registrationType.name}`,
+      item_category: 'Competition Registration',
+      item_category2: reg.competition.title,
+      item_category3: reg.registrationType.name,
+      price: reg.amountPaid,
+      quantity: 1,
+      currency: payment.currency,
+    }));
+
+    trackPurchase(
+      payment.orderId,
+      items,
+      payment.amount,
+      payment.currency
+    );
+  }, []); // Only run once on mount
 
   useEffect(() => {
     // Redirect to events page after 30 seconds

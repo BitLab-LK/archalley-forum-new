@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { Competition, CompetitionRegistrationType } from '@prisma/client';
 import { MemberInfo, AgreementData } from '@/types/competition';
 import { toast } from 'sonner';
+import { trackAddToCart, trackViewItem, EcommerceItem } from '@/lib/google-analytics';
 
 interface UserProfile {
   email: string;
@@ -57,6 +58,23 @@ export default function RegistrationForm({
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [showErrors, setShowErrors] = useState(false);
   const [studentConsent, setStudentConsent] = useState(false);
+
+  // Track view_item when registration form is viewed with a selected type
+  useEffect(() => {
+    if (selectedType && !editingItem) {
+      const item: EcommerceItem = {
+        item_id: `${competition.id}_${selectedType.id}`,
+        item_name: `${competition.title} - ${selectedType.name}`,
+        item_category: 'Competition Registration',
+        item_category2: competition.title,
+        item_category3: selectedType.name,
+        price: selectedType.fee,
+        quantity: 1,
+        currency: 'LKR',
+      };
+      trackViewItem(item);
+    }
+  }, [selectedType, competition, editingItem]);
 
   // Update form when editingItem changes - only run when editingItem.id changes
   useEffect(() => {
@@ -981,6 +999,21 @@ export default function RegistrationForm({
 
       if (result.success) {
         console.log('✅ Successfully added to cart, cart item ID:', result.data?.cartItemId);
+        
+        // Track add_to_cart event
+        if (selectedType) {
+          const item: EcommerceItem = {
+            item_id: `${competition.id}_${selectedType.id}`,
+            item_name: `${competition.title} - ${selectedType.name}`,
+            item_category: 'Competition Registration',
+            item_category2: competition.title,
+            item_category3: selectedType.name,
+            price: selectedType.fee,
+            quantity: 1,
+            currency: 'LKR',
+          };
+          trackAddToCart([item]);
+        }
         
         // If editing, remove the old cart item
         if (editItemId) {
