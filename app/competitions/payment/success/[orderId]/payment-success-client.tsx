@@ -45,7 +45,7 @@ export default function PaymentSuccessClient({
     // Track purchase event (only once on mount)
     const items: EcommerceItem[] = registrations.map((reg) => ({
       item_id: `${reg.competition.id}_${reg.registrationType.id}`,
-      item_name: `${reg.competition.title} - ${reg.registrationType.name}`,
+      item_name: reg.registrationType.name,
       item_category: 'Competition Registration',
       item_category2: reg.competition.title,
       item_category3: reg.registrationType.name,

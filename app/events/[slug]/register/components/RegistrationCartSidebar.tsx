@@ -69,7 +69,7 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
         if (data.data.cart.items && data.data.cart.items.length > 0) {
           const items: EcommerceItem[] = data.data.cart.items.map((item: any) => ({
             item_id: `${item.competitionId}_${item.registrationTypeId}`,
-            item_name: `${item.competition?.title || 'Competition'} - ${item.registrationType?.name || 'Registration'}`,
+            item_name: item.registrationType?.name || 'Registration',
             item_category: 'Competition Registration',
             item_category2: item.competition?.title || '',
             item_category3: item.registrationType?.name || '',
@@ -106,7 +106,7 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
         if (itemToRemove) {
           const ecommerceItem: EcommerceItem = {
             item_id: `${itemToRemove.competitionId}_${itemToRemove.registrationTypeId}`,
-            item_name: `${itemToRemove.competition?.title || 'Competition'} - ${itemToRemove.registrationType?.name || 'Registration'}`,
+            item_name: itemToRemove.registrationType?.name || 'Registration',
             item_category: 'Competition Registration',
             item_category2: itemToRemove.competition?.title || '',
             item_category3: itemToRemove.registrationType?.name || '',
@@ -216,7 +216,7 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
     // Track begin_checkout event
     const items: EcommerceItem[] = cart.items.map((item: any) => ({
       item_id: `${item.competitionId}_${item.registrationTypeId}`,
-      item_name: `${item.competition?.title || 'Competition'} - ${item.registrationType?.name || 'Registration'}`,
+      item_name: item.registrationType?.name || 'Registration',
       item_category: 'Competition Registration',
       item_category2: item.competition?.title || '',
       item_category3: item.registrationType?.name || '',

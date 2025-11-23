@@ -64,7 +64,7 @@ export default function RegistrationForm({
     if (!editingItem && registrationTypes.length > 0) {
       const items: EcommerceItem[] = registrationTypes.map((type, index) => ({
         item_id: `${competition.id}_${type.id}`,
-        item_name: `${competition.title} - ${type.name}`,
+        item_name: type.name,
         item_category: 'Competition Registration',
         item_category2: competition.title,
         item_category3: type.name,
@@ -1010,7 +1010,7 @@ export default function RegistrationForm({
         if (selectedType) {
           const item: EcommerceItem = {
             item_id: `${competition.id}_${selectedType.id}`,
-            item_name: `${competition.title} - ${selectedType.name}`,
+            item_name: selectedType.name,
             item_category: 'Competition Registration',
             item_category2: competition.title,
             item_category3: selectedType.name,
@@ -1163,11 +1163,11 @@ export default function RegistrationForm({
                         checked={selectedType?.id === type.id}
                         onChange={() => {
                           setSelectedType(type);
-                          // Track select_item when user selects a registration type
+                          // Track view_item and select_item when user selects a registration type
                           if (!editingItem) {
                             const item: EcommerceItem = {
                               item_id: `${competition.id}_${type.id}`,
-                              item_name: `${competition.title} - ${type.name}`,
+                              item_name: type.name,
                               item_category: 'Competition Registration',
                               item_category2: competition.title,
                               item_category3: type.name,
@@ -1175,13 +1175,12 @@ export default function RegistrationForm({
                               quantity: 1,
                               currency: 'LKR',
                             };
+                            trackViewItem(item);
                             trackSelectItem(
                               item,
-                              'LKR',
                               'competition_registration_types',
                               'Competition Registration Types'
                             );
-                            trackViewItem(item);
                           }
                           // Reset members if changing type
                           if (type.maxMembers < members.length) {
@@ -1228,11 +1227,11 @@ export default function RegistrationForm({
                           checked={selectedType?.id === type.id}
                           onChange={() => {
                             setSelectedType(type);
-                            // Track select_item when user selects a registration type
+                            // Track view_item and select_item when user selects a registration type
                             if (!editingItem) {
                               const item: EcommerceItem = {
                                 item_id: `${competition.id}_${type.id}`,
-                                item_name: `${competition.title} - ${type.name}`,
+                                item_name: type.name,
                                 item_category: 'Competition Registration',
                                 item_category2: competition.title,
                                 item_category3: type.name,
@@ -1240,8 +1239,8 @@ export default function RegistrationForm({
                                 quantity: 1,
                                 currency: 'LKR',
                               };
-                              trackSelectItem(item);
                               trackViewItem(item);
+                              trackSelectItem(item);
                             }
                             // Reset members if changing type
                             if (type.maxMembers < members.length) {

@@ -258,7 +258,7 @@ export default function CheckoutClient({ user }: Props) {
         if (cart && cart.items.length > 0) {
           const items: EcommerceItem[] = cart.items.map((item: any) => ({
             item_id: `${item.competitionId}_${item.registrationTypeId}`,
-            item_name: `${item.competition?.title || 'Competition'} - ${item.registrationType?.name || 'Registration'}`,
+            item_name: item.registrationType?.name || 'Registration',
             item_category: 'Competition Registration',
             item_category2: item.competition?.title || '',
             item_category3: item.registrationType?.name || '',
@@ -322,7 +322,7 @@ export default function CheckoutClient({ user }: Props) {
         if (cart && cart.items.length > 0) {
           const items: EcommerceItem[] = cart.items.map((item: any) => ({
             item_id: `${item.competitionId}_${item.registrationTypeId}`,
-            item_name: `${item.competition?.title || 'Competition'} - ${item.registrationType?.name || 'Registration'}`,
+            item_name: item.registrationType?.name || 'Registration',
             item_category: 'Competition Registration',
             item_category2: item.competition?.title || '',
             item_category3: item.registrationType?.name || '',

@@ -368,7 +368,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
         if (approve && registration && registration.payment) {
           const item: EcommerceItem = {
             item_id: `${registration.competition.id}_${registration.registrationType.id}`,
-            item_name: `${registration.competition.title} - ${registration.registrationType.name}`,
+            item_name: registration.registrationType.name,
             item_category: 'Competition Registration',
             item_category2: registration.competition.title,
             item_category3: registration.registrationType.name,
