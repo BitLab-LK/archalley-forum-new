@@ -52,21 +52,6 @@ export default async function PaymentSuccessPage({ params }: Props) {
       where: {
         paymentId: payment.id,
       },
-      include: {
-        competition: {
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-          },
-        },
-        registrationType: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
       select: {
         registrationNumber: true,
         status: true,
