@@ -206,7 +206,7 @@ export const trackRemoveFromCart = (item: EcommerceItem, currency: string = 'LKR
 };
 
 // Legacy function names for backward compatibility (deprecated)
-export const trackCheckout = (items: any[], totalAmount: number) => {
+export const trackCheckout = (items: any[], _totalAmount: number) => {
   const ecommerceItems: EcommerceItem[] = items.map((item, index) => ({
     item_id: item.id || item.item_id || `item_${index}`,
     item_name: item.name || item.item_name || 'Competition Registration',
