@@ -11,7 +11,7 @@ import Script from 'next/script';
 import { CartWithItems } from '@/types/competition';
 import { PayHerePaymentData } from '@/types/competition';
 import { toast } from 'sonner';
-import { trackBeginCheckout, trackAddPaymentInfo, EcommerceItem } from '@/lib/google-analytics';
+import { trackAddPaymentInfo, EcommerceItem } from '@/lib/google-analytics';
 
 interface Props {
   user: any;
