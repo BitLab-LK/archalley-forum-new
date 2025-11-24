@@ -61,17 +61,16 @@ export function classifyPayment(payment: {
       confidence = 'high';
     }
     // Check for known sandbox merchant IDs
-    // Common PayHere sandbox merchant IDs: 1232882, 1214321, etc.
-    if (payment.merchantId === '1232882' || payment.merchantId === '1214321') {
-      indicators.push(`sandbox merchant ID: ${payment.merchantId}`);
+    // PayHere sandbox merchant IDs: 1232882, 1224208
+    if (payment.merchantId === '1232882' || payment.merchantId === '1224208') {
+      indicators.push(`Sandbox merchant ID: ${payment.merchantId}`);
       isSandbox = true;
       confidence = 'high';
     }
-    // PayHere sandbox merchant IDs often start with 12
-    if (payment.merchantId.match(/^12\d{5}$/)) {
-      indicators.push('PayHere sandbox merchant ID pattern (12xxxxx)');
-      isSandbox = true;
-      confidence = 'medium';
+    // Production merchant ID
+    if (payment.merchantId === '238431') {
+      indicators.push('Production merchant ID: 238431');
+      confidence = 'high';
     }
   }
 
