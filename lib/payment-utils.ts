@@ -138,7 +138,8 @@ export function classifyPayment(payment: {
     environment = 'test';
   } else if (isSandbox) {
     environment = 'sandbox';
-  } else if (indicators.length === 0) {
+  } else {
+    // If not sandbox or test, it's production
     environment = 'production';
   }
 
