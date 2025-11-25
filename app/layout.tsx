@@ -13,6 +13,7 @@ import { ConfirmDialogProvider } from "@/hooks/use-confirm-dialog"
 import { SessionMonitor } from "@/hooks/use-session-monitor"
 import GTMHead from "@/components/gtm-head"
 import GTMBody from "@/components/gtm-body"
+import GoogleAnalytics from "@/components/google-analytics"
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["300", "400", "500", "700"] })
 
@@ -76,6 +77,7 @@ export default function RootLayout({
           }
         `}</style>
         <GTMHead />
+        <GoogleAnalytics />
       </head>
       <body className={`${roboto.className} ${aquire.variable}`} suppressHydrationWarning>
         <GTMBody />
