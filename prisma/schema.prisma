@@ -560,6 +560,7 @@ enum UserRole {
   MODERATOR
   MEMBER
   SUPER_ADMIN
+  VIEWER
 }
 
 enum VoteType {

@@ -131,7 +131,7 @@ export default function UserProfilePage() {
 
   // Helper function to get profile image source based on privacy
   const getProfileImageSource = () => {
-    if (!user?.image) return "/placeholder-user.jpg"
+    if (!user?.image) return "/archalley-pro-pic.png"
     
     // Check if profile photo should be visible
     const showProfilePhoto = shouldShowField(
@@ -139,7 +139,7 @@ export default function UserProfilePage() {
       privacyContext
     )
     
-    return showProfilePhoto ? user.image : "/placeholder-user.jpg"
+    return showProfilePhoto ? user.image : "/archalley-pro-pic.png"
   }
 
   // Check if we're coming from an edit (to force refresh)

@@ -1276,7 +1276,7 @@ function EditProfileContent() {
                 <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                     <Avatar className="w-16 h-16 sm:w-20 sm:h-20 mx-auto sm:mx-0">
-                      <AvatarImage src={previewImage || profileData.image || "/placeholder-user.jpg"} alt={user?.name} />
+                      <AvatarImage src={previewImage || profileData.image || "/archalley-pro-pic.png"} alt={user?.name} />
                       <AvatarFallback className="text-lg sm:text-xl">
                         {user?.name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
                       </AvatarFallback>

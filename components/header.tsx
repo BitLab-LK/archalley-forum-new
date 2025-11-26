@@ -311,7 +311,8 @@ export default function Header() {
                           {user?.role === "SUPER_ADMIN" && <Crown className="h-3 w-3" />}
                           {user?.role === "SUPER_ADMIN" ? "Super Admin" :
                            user?.role === "ADMIN" ? "Admin" :
-                           user?.role === "MODERATOR" ? "Moderator" : "Member"}
+                           user?.role === "MODERATOR" ? "Moderator" :
+                           user?.role === "VIEWER" ? "Viewer" : "Member"}
                         </Badge>
                       </div>
                     </DropdownMenuLabel>

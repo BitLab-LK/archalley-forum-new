@@ -757,13 +757,13 @@ export async function POST(request: Request) {
       author: result.users ? {
         id: result.users.id,
         name: result.isAnonymous ? "Anonymous" : result.users.name,
-        avatar: result.users.image || "/placeholder-user.jpg",
+        avatar: result.users.image || "/archalley-pro-pic.png",
         isVerified: isUserVerified(result.users.userBadges),
         badges: result.users.userBadges?.slice(0, 3) || [],
       } : {
         id: 'unknown',
         name: result.isAnonymous ? "Anonymous" : "User",
-        avatar: "/placeholder-user.jpg",
+        avatar: "/archalley-pro-pic.png",
         isVerified: false,
         badges: [],
       },
@@ -1581,7 +1581,7 @@ export async function GET(request: NextRequest) {
           author: {
             id: post.users.id,
             name: post.isAnonymous ? "Anonymous" : post.users.name,
-            avatar: post.users.image || "/placeholder.svg",
+            avatar: post.users.image || "/archalley-pro-pic.png",
             isVerified: isUserVerified(post.users.userBadges),
             badges: post.users.userBadges?.slice(0, 3) || [], // Include top 3 badges
           },

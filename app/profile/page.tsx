@@ -193,7 +193,7 @@ export default function ProfilePage() {
                   <div className="flex items-center space-x-3 pr-16">
                     <div className="relative flex-shrink-0">
                       <Avatar className="w-12 h-12 smooth-transition hover:scale-110">
-                        <AvatarImage src={user?.image || "/placeholder.svg"} alt={profileData.name} />
+                        <AvatarImage src={user?.image || "/archalley-pro-pic.png"} alt={profileData.name} />
                         <AvatarFallback className="text-sm">{profileData.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
                       </Avatar>
                       {isEditing && (
@@ -265,7 +265,7 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-4 sm:flex-col sm:items-start sm:space-x-0">
                   <div className="relative flex-shrink-0">
                     <Avatar className="w-24 h-24 smooth-transition hover:scale-110">
-                      <AvatarImage src={user?.image || "/placeholder.svg"} alt={profileData.name} />
+                      <AvatarImage src={user?.image || "/archalley-pro-pic.png"} alt={profileData.name} />
                       <AvatarFallback className="text-2xl">{profileData.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     {isEditing && (

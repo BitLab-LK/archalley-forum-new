@@ -3,7 +3,7 @@
  * Defines what each role can access and perform
  */
 
-export type UserRole = 'MEMBER' | 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN'
+export type UserRole = 'MEMBER' | 'VIEWER' | 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN'
 
 export interface RolePermissions {
   // Dashboard Tab Access
@@ -261,6 +261,60 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canPromoteToAdmin: true,
       }
 
+    case 'VIEWER':
+      return {
+        canViewStatistics: false,
+        canViewUsers: false,
+        canViewCategories: false,
+        canViewPosts: false,
+        canViewSettings: false,
+        canViewPermissions: false,
+        canViewAppearance: false,
+        canViewPages: false,
+        canViewCompetitions: false, // Viewers cannot access admin competitions
+        canEditUsers: false,
+        canChangeUserRoles: false,
+        canDeleteUsers: false,
+        canViewUserDetails: false,
+        canEditPosts: false,
+        canDeletePosts: false,
+        canPinPosts: false,
+        canLockPosts: false,
+        canHidePosts: false,
+        canApproveFlags: false,
+        
+        // Reporting System - Viewers can only report
+        canReportPosts: true,                   // Viewers can report inappropriate content
+        canViewReports: false,                  // Cannot access moderation queue
+        canReviewReports: false,                // Cannot review reports
+        canEscalateReports: false,              // Cannot escalate reports
+        canDismissReports: false,               // Cannot dismiss reports
+        canViewModerationQueue: false,          // No access to moderation queue
+        canViewModerationHistory: false,        // Cannot view moderation history
+        canPerformModerationActions: false,     // Cannot perform moderation actions
+        
+        canCreateCategories: false,
+        canEditCategories: false,
+        canDeleteCategories: false,
+        canChangeSettings: false,
+        canManagePermissions: false,
+        canCustomizeAppearance: false,
+        canManagePages: false,
+        
+        // Advertisement Management - No access
+        canViewAds: false,
+        canViewAdsPanel: false,
+        canCreateAds: false,
+        canEditAds: false,
+        canDeleteAds: false,
+        canToggleAds: false,
+        canViewAdStats: false,
+        
+        canViewSystemStats: false,
+        canAccessDeveloperTools: false,
+        canPromoteToAdmin: false,
+      }
+
     default: // MEMBER or unknown
       return {
         canViewStatistics: false,
@@ -361,6 +415,7 @@ export function getDefaultTab(userRole: UserRole): string {
 export function isHigherRole(userRole: UserRole, targetRole: UserRole): boolean {
   const hierarchy: Record<UserRole, number> = {
     'MEMBER': 0,
+    'VIEWER': 0,
     'MODERATOR': 1,
     'ADMIN': 2,
     'SUPER_ADMIN': 3
@@ -374,6 +429,13 @@ export function isHigherRole(userRole: UserRole, targetRole: UserRole): boolean 
  */
 export function getRoleInfo(role: UserRole) {
   switch (role) {
+    case 'VIEWER':
+      return {
+        name: 'Viewer',
+        description: 'Regular forum viewer',
+        color: 'gray',
+        icon: ''
+      }
     case 'MODERATOR':
       return {
         name: 'Moderator',
