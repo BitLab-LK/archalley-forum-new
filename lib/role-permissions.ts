@@ -337,6 +337,7 @@ export function getAvailableTabs(userRole: UserRole): string[] {
   if (permissions.canViewCategories) tabs.push('categories')
   if (permissions.canViewPosts) tabs.push('posts')
   if (permissions.canViewCompetitions) tabs.push('competitions')
+  if (permissions.canViewCompetitions) tabs.push('submissions')
   if (permissions.canViewAds) tabs.push('ads')
   if (permissions.canViewSettings) tabs.push('settings')
   if (permissions.canViewPermissions) tabs.push('permissions')

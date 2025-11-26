@@ -949,3 +949,111 @@ enum PaymentStatus {
   PARTIALLY_REFUNDED
   EXPIRED
 }
+
+// ============================================
+// COMPETITION SUBMISSION SYSTEM
+// Separate tables - no modifications to existing registration tables
+// ============================================
+
+model CompetitionSubmission {
+  id                    String   @id @default(cuid())
+  submissionNumber      String   @unique // Format: SUB{YEAR}-{CATEGORY}-{SEQUENCE} e.g., SUB2025-DIG-001
+  
+  // References to existing data (READ-ONLY, no Prisma relations to avoid constraints)
+  registrationId        String   // Links to CompetitionRegistration.id
+  userId                String   // Links to users.id
+  competitionId         String   // Links to Competition.id
+  
+  // Category Selection - Required
+  submissionCategory    SubmissionCategory // DIGITAL or PHYSICAL
+  
+  // Submission Details
+  title                 String
+  description           String   @db.Text // 50-200 words (excluded for kids' tree category)
+  
+  // File Storage - Vercel Blob URLs
+  keyPhotographUrl      String   // Main image for voting (JPG)
+  additionalPhotographs String[] // 2-4 additional images (array of JPG URLs)
+  documentFileUrl       String?  // Optional PDF < 5MB (sketches, materials, process)
+  videoFileUrl          String?  // Optional MP4 < 10MB
+  
+  // File Metadata for tracking
+  fileMetadata          Json?    
+  // Structure: { keyPhoto: {filename, size, uploadedAt}, photos: [...], document: {...}, video: {...} }
+  
+  // Status Management
+  status                CompetitionSubmissionStatus @default(DRAFT)
+  submittedAt           DateTime?
+  
+  // Validation & Review
+  isValidated           Boolean  @default(false)
+  validationErrors      Json?    // Array of validation issues
+  validatedBy           String?  // Admin/Moderator user ID
+  validatedAt           DateTime?
+  validationNotes       String?  @db.Text
+  
+  // Public Display
+  isPublished           Boolean  @default(false)
+  publishedAt           DateTime?
+  viewCount             Int      @default(0)
+  
+  // Voting
+  voteCount             Int      @default(0)
+  
+  // Judging & Awards
+  judgeScores           Json?    // Array of {judgeId, score, comments}
+  finalScore            Float?
+  rank                  Int?
+  award                 String?  // "FIRST_PRIZE", "SECOND_PRIZE", etc.
+  certificateUrl        String?
+  
+  // Timestamps
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  // Relations (new tables only)
+  votes                 SubmissionVote[]
+  
+  @@index([registrationId])
+  @@index([userId])
+  @@index([competitionId])
+  @@index([submissionCategory])
+  @@index([status])
+  @@index([isPublished])
+  @@index([competitionId, submissionCategory])
+  @@unique([registrationId]) // One submission per registration
+}
+
+enum SubmissionCategory {
+  DIGITAL
+  PHYSICAL
+}
+
+enum CompetitionSubmissionStatus {
+  DRAFT              // User is still editing
+  SUBMITTED          // User submitted, awaiting validation
+  VALIDATED          // Admin approved
+  PUBLISHED          // Live for public voting
+  REJECTED           // Admin rejected
+  WITHDRAWN          // User withdrew
+}
+
+// Voting System
+model SubmissionVote {
+  id                String   @id @default(cuid())
+  submissionId      String
+  submission        CompetitionSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  
+  userId            String?  // Null for guest votes
+  ipAddress         String   // Track IP for duplicate prevention
+  userAgent         String?
+  sessionId         String?  // For guest vote tracking
+  
+  createdAt         DateTime @default(now())
+  
+  @@unique([submissionId, userId])
+  @@unique([submissionId, ipAddress])
+  @@index([submissionId])
+  @@index([userId])
+  @@index([ipAddress])
+}
