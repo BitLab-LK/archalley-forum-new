@@ -25,48 +25,45 @@ window.dataLayer.push({
     item_list_name: 'Competition Registration Types',
     items: [
       {
-        item_id: 'comp_123_regtype_1',
+        item_id: 'comp_2025_regtype_1',
         item_name: 'Individual Entry',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Individual Entry',
+        item_category: 'Physical and Digital',
         price: 5000,
         quantity: 1,
-        currency: 'LKR',
         index: 0,
-        item_list_id: 'competition_registration_types',
-        item_list_name: 'Competition Registration Types'
       },
       {
-        item_id: 'comp_123_regtype_2',
-        item_name: 'Team Entry (2-5 members)',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Team Entry (2-5 members)',
-        price: 15000,
+        item_id: 'comp_2025_regtype_2',
+        item_name: 'Group Entry',
+        item_category: 'Physical and Digital',
+        price: 1500,
         quantity: 1,
-        currency: 'LKR',
         index: 1,
-        item_list_id: 'competition_registration_types',
-        item_list_name: 'Competition Registration Types'
       },
       {
-        item_id: 'comp_123_regtype_3',
+        item_id: 'comp_2025_regtype_3',
         item_name: 'Student Entry',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Student Entry',
+        item_category: 'Physical and Digital',
         price: 3000,
         quantity: 1,
-        currency: 'LKR',
         index: 2,
-        item_list_id: 'competition_registration_types',
-        item_list_name: 'Competition Registration Types'
+      },
+      {
+        item_id: 'comp_2025_regtype_4',
+        item_name: 'Kids Entry',
+        item_category: 'Kids',
+        price: 3000,
+        quantity: 1,
+        index: 3,
       }
     ]
   }
 });
 ```
+
+### **Item Category Mapping:**
+- **"Physical and Digital"** for: Single Entry (INDIVIDUAL), Group Entry (TEAM/COMPANY), Student Entry (STUDENT)
+- **"Kids"** for: Kids' Entry (KIDS)
 
 ---
 
@@ -90,14 +87,11 @@ window.dataLayer.push({
     value: 5000,  // Calculated from price * quantity
     items: [
       {
-        item_id: 'comp_123_regtype_1',
+        item_id: 'comp_2025_regtype_1',
         item_name: 'Individual Entry',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Individual Entry',
+        item_category: 'Physical and Digital',
         price: 5000,
-        quantity: 1,
-        currency: 'LKR'
+        quantity: 1
       }
     ]
   }
@@ -126,17 +120,12 @@ window.dataLayer.push({
     item_list_name: 'Competition Registration Types',
     items: [
       {
-        item_id: 'comp_123_regtype_1',
+        item_id: 'comp_2025_regtype_1',
         item_name: 'Individual Entry',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Individual Entry',
+        item_category: 'Physical and Digital',
         price: 5000,
         quantity: 1,
-        currency: 'LKR',
-        index: 0,
-        item_list_id: 'competition_registration_types',
-        item_list_name: 'Competition Registration Types'
+        index: 0
       }
     ]
   }
@@ -162,17 +151,14 @@ window.dataLayer.push({
   event: 'add_to_cart',
   ecommerce: {
     currency: 'LKR',
-    value: 5000,  // Calculated from sum of (price * quantity) for all items
+    value: 15000,  // Calculated from sum of (price * quantity) for all items
     items: [
       {
-        item_id: 'comp_123_regtype_1',
+        item_id: 'comp_2025_regtype_1',
         item_name: 'Individual Entry',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Individual Entry',
+        item_category: 'Physical and Digital',
         price: 5000,
-        quantity: 1,
-        currency: 'LKR',
+        quantity: 3,
         index: 0
       }
     ]
@@ -199,28 +185,22 @@ window.dataLayer.push({
   event: 'view_cart',
   ecommerce: {
     currency: 'LKR',
-    value: 20000,  // Calculated from sum of (price * quantity) for all items
+    value: 19000,  // Calculated from sum of (price * quantity) for all items
     items: [
       {
-        item_id: 'comp_123_regtype_1',
+        item_id: 'comp_2025_regtype_1',
         item_name: 'Individual Entry',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Individual Entry',
+        item_category: 'Physical and Digital',
         price: 5000,
-        quantity: 1,
-        currency: 'LKR',
+        quantity: 2,
         index: 0
       },
       {
-        item_id: 'comp_123_regtype_2',
-        item_name: 'Team Entry (2-5 members)',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Team Entry (2-5 members)',
-        price: 15000,
-        quantity: 1,
-        currency: 'LKR',
+        item_id: 'comp_2025_regtype_4',
+        item_name: 'Kids Entry',
+        item_category: 'Kids',
+        price: 3000,
+        quantity: 3,
         index: 1
       }
     ]
@@ -247,17 +227,14 @@ window.dataLayer.push({
   event: 'remove_from_cart',
   ecommerce: {
     currency: 'LKR',
-    value: 5000,  // Calculated from price * quantity of removed item
+    value: 9000,  // Calculated from price * quantity of removed item
     items: [
       {
-        item_id: 'comp_123_regtype_1',
-        item_name: 'Individual Entry',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Individual Entry',
-        price: 5000,
-        quantity: 1,
-        currency: 'LKR',
+        item_id: 'comp_2025_regtype_4',
+        item_name: 'Kids Entry',
+        item_category: 'Kids',
+        price: 3000,
+        quantity: 3,
         index: 0
       }
     ]
@@ -284,29 +261,22 @@ window.dataLayer.push({
   event: 'begin_checkout',
   ecommerce: {
     currency: 'LKR',
-    value: 20000,  // Calculated from sum of (price * quantity) for all items
-    coupon: undefined,  // Optional: coupon code if applicable
+    value: 19000,  // Calculated from sum of (price * quantity) for all items
     items: [
       {
-        item_id: 'comp_123_regtype_1',
+        item_id: 'comp_2025_regtype_1',
         item_name: 'Individual Entry',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Individual Entry',
+        item_category: 'Physical and Digital',
         price: 5000,
-        quantity: 1,
-        currency: 'LKR',
+        quantity: 2,
         index: 0
       },
       {
-        item_id: 'comp_123_regtype_2',
-        item_name: 'Team Entry (2-5 members)',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Team Entry (2-5 members)',
-        price: 15000,
-        quantity: 1,
-        currency: 'LKR',
+        item_id: 'comp_2025_regtype_4',
+        item_name: 'Kids Entry',
+        item_category: 'Kids',
+        price: 3000,
+        quantity: 3,
         index: 1
       }
     ]
@@ -321,8 +291,8 @@ window.dataLayer.push({
 ### **Firing Occasion:**
 - Fires when a user selects a payment method and clicks the payment button
 - Triggered in `checkout-client.tsx`:
-  - When user clicks "Pay with Card" button (paymentType: 'card')
-  - When user clicks "Submit Bank Transfer" button (paymentType: 'bank_transfer')
+  - When user clicks **"Pay Securely with PayHere"** (payment_type: `'PayHere'`)
+  - When user clicks **"Submit Bank Transfer Details →"** (payment_type: `'Bank Transfer'`)
 - Fires once per payment method selection/submission
 
 ### **Sample dataLayer Push (Card Payment):**
@@ -335,30 +305,23 @@ window.dataLayer.push({
   event: 'add_payment_info',
   ecommerce: {
     currency: 'LKR',
-    value: 20000,  // Calculated from sum of (price * quantity) for all items
-    payment_type: 'card',  // or 'bank_transfer'
-    coupon: undefined,  // Optional: coupon code if applicable
+    value: 19000,  // Calculated from sum of (price * quantity) for all items
+    payment_type: 'PayHere',  // or 'Bank Transfer'
     items: [
       {
-        item_id: 'comp_123_regtype_1',
+        item_id: 'comp_2025_regtype_1',
         item_name: 'Individual Entry',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Individual Entry',
+        item_category: 'Physical and Digital',
         price: 5000,
-        quantity: 1,
-        currency: 'LKR',
+        quantity: 2,
         index: 0
       },
       {
-        item_id: 'comp_123_regtype_2',
-        item_name: 'Team Entry (2-5 members)',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Team Entry (2-5 members)',
-        price: 15000,
-        quantity: 1,
-        currency: 'LKR',
+        item_id: 'comp_2025_regtype_4',
+        item_name: 'Kids Entry',
+        item_category: 'Kids',
+        price: 3000,
+        quantity: 3,
         index: 1
       }
     ]
@@ -376,20 +339,24 @@ window.dataLayer.push({
   event: 'add_payment_info',
   ecommerce: {
     currency: 'LKR',
-    value: 20000,
-    payment_type: 'bank_transfer',
-    coupon: undefined,
+    value: 19000,
+    payment_type: 'Bank Transfer',
     items: [
       {
-        item_id: 'comp_123_regtype_1',
+        item_id: 'comp_2025_regtype_1',
         item_name: 'Individual Entry',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Individual Entry',
+        item_category: 'Physical and Digital',
         price: 5000,
-        quantity: 1,
-        currency: 'LKR',
+        quantity: 2,
         index: 0
+      },
+      {
+        item_id: 'comp_2025_regtype_4',
+        item_name: 'Kids Entry',
+        item_category: 'Kids',
+        price: 3000,
+        quantity: 3,
+        index: 1
       }
     ]
   }
@@ -417,32 +384,23 @@ window.dataLayer.push({
   ecommerce: {
     transaction_id: 'ORD-1234567890',  // Required: Order/Transaction ID
     currency: 'LKR',
-    value: 20000,  // Total transaction value (can be provided or calculated from items)
-    tax: undefined,  // Optional: Tax amount
-    shipping: undefined,  // Optional: Shipping cost
-    coupon: undefined,  // Optional: Coupon code used
-    affiliation: undefined,  // Optional: Affiliation/partner name
+    value: 19000,  // Total transaction value (can be provided or calculated from items)
+    customer_type: 'new', // 'new' if first completed purchase, otherwise 'returning'
     items: [
       {
-        item_id: 'comp_123_regtype_1',
+        item_id: 'comp_2025_regtype_1',
         item_name: 'Individual Entry',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Individual Entry',
+        item_category: 'Physical and Digital',
         price: 5000,
-        quantity: 1,
-        currency: 'LKR',
+        quantity: 2,
         index: 0
       },
       {
-        item_id: 'comp_123_regtype_2',
-        item_name: 'Team Entry (2-5 members)',
-        item_category: 'Competition Registration',
-        item_category2: 'ArchAlley Competition 2025',
-        item_category3: 'Team Entry (2-5 members)',
-        price: 15000,
-        quantity: 1,
-        currency: 'LKR',
+        item_id: 'comp_2025_regtype_4',
+        item_name: 'Kids Entry',
+        item_category: 'Kids',
+        price: 3000,
+        quantity: 3,
         index: 1
       }
     ]
@@ -461,11 +419,9 @@ window.dataLayer.push({
 3. **Item Structure**: All items follow the GA4 e-commerce item structure with:
    - `item_id`: Unique identifier (format: `{competitionId}_{registrationTypeId}`)
    - `item_name`: Display name of the registration type
-   - `item_category`: Always 'Competition Registration'
-   - `item_category2`: Competition title
-   - `item_category3`: Registration type name
+   - `item_category`: `Physical and Digital` for Individual/Group/Student entries, `Kids` for Kids' Entry
    - `price`: Registration fee
-   - `quantity`: Always 1 (one registration per item)
+   - `quantity`: Defaults to 1 (adjusted when multiple quantities are aggregated)
    - `index`: Position in the list (0-based)
 
 4. **Value Calculation**: The `value` field is automatically calculated from `sum(price * quantity)` for all items if not explicitly provided.

@@ -141,25 +141,18 @@ export const trackViewItemList = (
     event: 'view_item_list',
     ecommerce: {
       currency: currency, // Required if value is set (for revenue metrics)
-      item_list_id: defaultItemListId, // Optional: ID of the list (ignored if set at item-level)
-      item_list_name: defaultItemListName, // Optional: Name of the list (ignored if set at item-level)
+      item_list_id: defaultItemListId,
+      item_list_name: defaultItemListName,
       items: items.map((item, index) => {
-        // Item-level item_list_id and item_list_name override event-level
-        // If set at item-level, event-level is ignored per GA4 spec
+        // Build clean item data without item_category2, item_category3, currency, item_list_id, item_list_name
         const itemData: any = {
-          ...item,
-          index: item.index !== undefined ? item.index : index, // Use provided index or calculated index
+          item_id: item.item_id,
+          item_name: item.item_name,
+          item_category: item.item_category,
+          price: item.price,
+          quantity: item.quantity !== undefined ? item.quantity : 1,
+          index: item.index !== undefined ? item.index : index,
         };
-        
-        // Set item_list_id: use item-level if provided, otherwise use event-level
-        if (!itemData.item_list_id) {
-          itemData.item_list_id = defaultItemListId;
-        }
-        
-        // Set item_list_name: use item-level if provided, otherwise use event-level
-        if (!itemData.item_list_name) {
-          itemData.item_list_name = defaultItemListName;
-        }
         
         return itemData;
       }),
@@ -181,22 +174,15 @@ export const trackSelectItem = (
   const defaultItemListId = itemListId || 'competition_registration_types';
   const defaultItemListName = itemListName || 'Competition Registration Types';
   
-  // Build item object with proper item_list_id and item_list_name handling
-  // Item-level item_list_id and item_list_name override event-level per GA4 spec
+  // Build minimal item object per tracking requirements
   const itemData: any = {
-    ...item,
-    index: item.index !== undefined ? item.index : 0, // Use provided index or default to 0
+    item_id: item.item_id,
+    item_name: item.item_name,
+    item_category: item.item_category,
+    price: item.price,
+    quantity: item.quantity !== undefined ? item.quantity : 1,
+    index: item.index !== undefined ? item.index : 0,
   };
-  
-  // Set item_list_id: use item-level if provided, otherwise use event-level
-  if (!itemData.item_list_id) {
-    itemData.item_list_id = defaultItemListId;
-  }
-  
-  // Set item_list_name: use item-level if provided, otherwise use event-level
-  if (!itemData.item_list_name) {
-    itemData.item_list_name = defaultItemListName;
-  }
   
   pushToDataLayer({
     event: 'select_item',
@@ -215,8 +201,17 @@ export const trackViewItem = (item: EcommerceItem, currency?: string) => {
   // Clear previous ecommerce object
   pushToDataLayer({ ecommerce: null });
   
+  const formattedItem: EcommerceItem = {
+    item_id: item.item_id,
+    item_name: item.item_name,
+    item_category: item.item_category,
+    price: item.price,
+    quantity: item.quantity !== undefined ? item.quantity : 1,
+    index: item.index,
+  };
+  
   const ecommerceData: any = {
-    items: [item],
+    items: [formattedItem],
   };
   
   // Add currency if provided
@@ -225,10 +220,10 @@ export const trackViewItem = (item: EcommerceItem, currency?: string) => {
   }
   
   // Add value if price and quantity are available
-  if (item.price !== undefined && item.quantity !== undefined) {
-    ecommerceData.value = item.price * item.quantity;
-  } else if (item.price !== undefined) {
-    ecommerceData.value = item.price;
+  if (formattedItem.price !== undefined && formattedItem.quantity !== undefined) {
+    ecommerceData.value = formattedItem.price * formattedItem.quantity;
+  } else if (formattedItem.price !== undefined) {
+    ecommerceData.value = formattedItem.price;
   }
   
   pushToDataLayer({
@@ -244,11 +239,17 @@ export const trackAddToCart = (items: EcommerceItem[], currency?: string) => {
   // Clear previous ecommerce object
   pushToDataLayer({ ecommerce: null });
   
+  const formattedItems = items.map((item, index) => ({
+    item_id: item.item_id,
+    item_name: item.item_name,
+    item_category: item.item_category,
+    price: item.price,
+    quantity: item.quantity !== undefined ? item.quantity : 1,
+    index: item.index !== undefined ? item.index : index,
+  }));
+  
   const ecommerceData: any = {
-    items: items.map((item, index) => ({
-      ...item,
-      index: item.index !== undefined ? item.index : index,
-    })),
+    items: formattedItems,
   };
   
   // Add currency if provided
@@ -257,7 +258,7 @@ export const trackAddToCart = (items: EcommerceItem[], currency?: string) => {
   }
   
   // Calculate and add value if prices and quantities are available
-  const value = items.reduce((sum, item) => {
+  const value = formattedItems.reduce((sum, item) => {
     const itemPrice = item.price !== undefined ? item.price : 0;
     const itemQuantity = item.quantity !== undefined ? item.quantity : 1;
     return sum + (itemPrice * itemQuantity);
@@ -280,11 +281,17 @@ export const trackViewCart = (items: EcommerceItem[], currency?: string) => {
   // Clear previous ecommerce object
   pushToDataLayer({ ecommerce: null });
   
+  const formattedItems = items.map((item, index) => ({
+    item_id: item.item_id,
+    item_name: item.item_name,
+    item_category: item.item_category,
+    price: item.price,
+    quantity: item.quantity !== undefined ? item.quantity : 1,
+    index: item.index !== undefined ? item.index : index,
+  }));
+  
   const ecommerceData: any = {
-    items: items.map((item, index) => ({
-      ...item,
-      index: item.index !== undefined ? item.index : index,
-    })),
+    items: formattedItems,
   };
   
   // Add currency if provided
@@ -293,7 +300,7 @@ export const trackViewCart = (items: EcommerceItem[], currency?: string) => {
   }
   
   // Calculate and add value if prices and quantities are available
-  const value = items.reduce((sum, item) => {
+  const value = formattedItems.reduce((sum, item) => {
     const itemPrice = item.price !== undefined ? item.price : 0;
     const itemQuantity = item.quantity !== undefined ? item.quantity : 1;
     return sum + (itemPrice * itemQuantity);
@@ -312,15 +319,21 @@ export const trackViewCart = (items: EcommerceItem[], currency?: string) => {
 // Begin Checkout - Track when user initiates checkout
 // Log this event when a user initiates the checkout process.
 // Reference: https://developers.google.com/analytics/devguides/collection/ga4/ecommerce-events
-export const trackBeginCheckout = (items: EcommerceItem[], currency?: string, coupon?: string) => {
+export const trackBeginCheckout = (items: EcommerceItem[], currency?: string) => {
   // Clear previous ecommerce object
   pushToDataLayer({ ecommerce: null });
   
+  const formattedItems = items.map((item, index) => ({
+    item_id: item.item_id,
+    item_name: item.item_name,
+    item_category: item.item_category,
+    price: item.price,
+    quantity: item.quantity !== undefined ? item.quantity : 1,
+    index: item.index !== undefined ? item.index : index,
+  }));
+  
   const ecommerceData: any = {
-    items: items.map((item, index) => ({
-      ...item,
-      index: item.index !== undefined ? item.index : index,
-    })),
+    items: formattedItems,
   };
   
   // Add currency if provided
@@ -328,13 +341,8 @@ export const trackBeginCheckout = (items: EcommerceItem[], currency?: string, co
     ecommerceData.currency = currency;
   }
   
-  // Add coupon if provided
-  if (coupon) {
-    ecommerceData.coupon = coupon;
-  }
-  
   // Calculate and add value if prices and quantities are available
-  const value = items.reduce((sum, item) => {
+  const value = formattedItems.reduce((sum, item) => {
     const itemPrice = item.price !== undefined ? item.price : 0;
     const itemQuantity = item.quantity !== undefined ? item.quantity : 1;
     return sum + (itemPrice * itemQuantity);
@@ -356,27 +364,27 @@ export const trackBeginCheckout = (items: EcommerceItem[], currency?: string, co
 export const trackAddPaymentInfo = (
   items: EcommerceItem[],
   paymentType?: string,
-  currency?: string,
-  coupon?: string
+  currency?: string
 ) => {
   // Clear previous ecommerce object
   pushToDataLayer({ ecommerce: null });
   
+  const formattedItems = items.map((item, index) => ({
+    item_id: item.item_id,
+    item_name: item.item_name,
+    item_category: item.item_category,
+    price: item.price,
+    quantity: item.quantity !== undefined ? item.quantity : 1,
+    index: item.index !== undefined ? item.index : index,
+  }));
+  
   const ecommerceData: any = {
-    items: items.map((item, index) => ({
-      ...item,
-      index: item.index !== undefined ? item.index : index,
-    })),
+    items: formattedItems,
   };
   
   // Add currency if provided
   if (currency) {
     ecommerceData.currency = currency;
-  }
-  
-  // Add coupon if provided
-  if (coupon) {
-    ecommerceData.coupon = coupon;
   }
   
   // Add payment_type if provided
@@ -385,7 +393,7 @@ export const trackAddPaymentInfo = (
   }
   
   // Calculate and add value if prices and quantities are available
-  const value = items.reduce((sum, item) => {
+  const value = formattedItems.reduce((sum, item) => {
     const itemPrice = item.price !== undefined ? item.price : 0;
     const itemQuantity = item.quantity !== undefined ? item.quantity : 1;
     return sum + (itemPrice * itemQuantity);
@@ -409,20 +417,23 @@ export const trackPurchase = (
   items: EcommerceItem[],
   value?: number,
   currency?: string,
-  tax?: number,
-  shipping?: number,
-  coupon?: string,
-  affiliation?: string
+  customerType?: 'new' | 'returning'
 ) => {
   // Clear previous ecommerce object
   pushToDataLayer({ ecommerce: null });
   
+  const formattedItems = items.map((item, index) => ({
+    item_id: item.item_id,
+    item_name: item.item_name,
+    item_category: item.item_category,
+    price: item.price,
+    quantity: item.quantity !== undefined ? item.quantity : 1,
+    index: item.index !== undefined ? item.index : index,
+  }));
+  
   const ecommerceData: any = {
     transaction_id: transactionId,
-    items: items.map((item, index) => ({
-      ...item,
-      index: item.index !== undefined ? item.index : index,
-    })),
+    items: formattedItems,
   };
   
   // Add currency if provided
@@ -435,7 +446,7 @@ export const trackPurchase = (
     ecommerceData.value = value;
   } else {
     // Calculate value from items if not provided
-    const calculatedValue = items.reduce((sum, item) => {
+    const calculatedValue = formattedItems.reduce((sum, item) => {
       const itemPrice = item.price !== undefined ? item.price : 0;
       const itemQuantity = item.quantity !== undefined ? item.quantity : 1;
       return sum + (itemPrice * itemQuantity);
@@ -445,21 +456,8 @@ export const trackPurchase = (
     }
   }
   
-  // Add optional parameters if provided
-  if (tax !== undefined) {
-    ecommerceData.tax = tax;
-  }
-  
-  if (shipping !== undefined) {
-    ecommerceData.shipping = shipping;
-  }
-  
-  if (coupon) {
-    ecommerceData.coupon = coupon;
-  }
-  
-  if (affiliation) {
-    ecommerceData.affiliation = affiliation;
+  if (customerType) {
+    ecommerceData.customer_type = customerType;
   }
   
   pushToDataLayer({
@@ -475,11 +473,17 @@ export const trackRemoveFromCart = (item: EcommerceItem, currency?: string) => {
   // Clear previous ecommerce object
   pushToDataLayer({ ecommerce: null });
   
+  const formattedItem: EcommerceItem = {
+    item_id: item.item_id,
+    item_name: item.item_name,
+    item_category: item.item_category,
+    price: item.price,
+    quantity: item.quantity !== undefined ? item.quantity : 1,
+    index: item.index !== undefined ? item.index : 0,
+  };
+  
   const ecommerceData: any = {
-    items: [{
-      ...item,
-      index: item.index !== undefined ? item.index : 0,
-    }],
+    items: [formattedItem],
   };
   
   // Add currency if provided
@@ -488,8 +492,8 @@ export const trackRemoveFromCart = (item: EcommerceItem, currency?: string) => {
   }
   
   // Add value if price and quantity are available
-  const itemPrice = item.price !== undefined ? item.price : 0;
-  const itemQuantity = item.quantity !== undefined ? item.quantity : 1;
+  const itemPrice = formattedItem.price !== undefined ? formattedItem.price : 0;
+  const itemQuantity = formattedItem.quantity !== undefined ? formattedItem.quantity : 1;
   const value = itemPrice * itemQuantity;
   
   if (value > 0) {

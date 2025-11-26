@@ -256,17 +256,15 @@ export default function CheckoutClient({ user }: Props) {
         
         // Track add_payment_info event when clicking PayHere button
         if (cart && cart.items.length > 0) {
-          const items: EcommerceItem[] = cart.items.map((item: any) => ({
+          const items: EcommerceItem[] = cart.items.map((item: any, index: number) => ({
             item_id: `${item.competitionId}_${item.registrationTypeId}`,
             item_name: item.registrationType?.name || 'Registration',
-            item_category: 'Competition Registration',
-            item_category2: item.competition?.title || '',
-            item_category3: item.registrationType?.name || '',
+            item_category: item.registrationType?.type === 'KIDS' ? 'Kids' : 'Physical and Digital',
             price: item.subtotal,
             quantity: 1,
-            currency: 'LKR',
+            index,
           }));
-          trackAddPaymentInfo(items, 'card');
+          trackAddPaymentInfo(items, 'PayHere', 'LKR');
         }
         
         // Card payment via PayHere
@@ -320,17 +318,15 @@ export default function CheckoutClient({ user }: Props) {
 
         // Track add_payment_info event when clicking Submit Bank Transfer button
         if (cart && cart.items.length > 0) {
-          const items: EcommerceItem[] = cart.items.map((item: any) => ({
+          const items: EcommerceItem[] = cart.items.map((item: any, index: number) => ({
             item_id: `${item.competitionId}_${item.registrationTypeId}`,
             item_name: item.registrationType?.name || 'Registration',
-            item_category: 'Competition Registration',
-            item_category2: item.competition?.title || '',
-            item_category3: item.registrationType?.name || '',
+            item_category: item.registrationType?.type === 'KIDS' ? 'Kids' : 'Physical and Digital',
             price: item.subtotal,
             quantity: 1,
-            currency: 'LKR',
+            index,
           }));
-          trackAddPaymentInfo(items, 'bank_transfer');
+          trackAddPaymentInfo(items, 'Bank Transfer', 'LKR');
         }
 
         // Submit the payment with or without uploaded file

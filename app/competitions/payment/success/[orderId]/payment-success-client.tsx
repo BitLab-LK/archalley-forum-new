@@ -28,37 +28,44 @@ interface PaymentSuccessClientProps {
     registrationType: {
       name: string;
       id: string;
+      type: 'INDIVIDUAL' | 'TEAM' | 'COMPANY' | 'STUDENT' | 'KIDS';
     };
     amountPaid: number;
   }>;
+  customerType: 'new' | 'returning';
 }
 
 export default function PaymentSuccessClient({
   user,
   payment,
   registrations,
+  customerType,
 }: PaymentSuccessClientProps) {
   const router = useRouter();
   const [countdown, setCountdown] = useState(30);
 
   useEffect(() => {
     // Track purchase event (only once on mount)
-    const items: EcommerceItem[] = registrations.map((reg) => ({
-      item_id: `${reg.competition.id}_${reg.registrationType.id}`,
-      item_name: reg.registrationType.name,
-      item_category: 'Competition Registration',
-      item_category2: reg.competition.title,
-      item_category3: reg.registrationType.name,
-      price: reg.amountPaid,
-      quantity: 1,
-      currency: payment.currency,
-    }));
+    const items: EcommerceItem[] = registrations.map((reg, index) => {
+      const itemCategory =
+        reg.registrationType.type === 'KIDS' ? 'Kids' : 'Physical and Digital';
+      
+      return {
+        item_id: `${reg.competition.id}_${reg.registrationType.id}`,
+        item_name: reg.registrationType.name,
+        item_category: itemCategory,
+        price: reg.amountPaid,
+        quantity: 1,
+        index,
+      };
+    });
 
     trackPurchase(
       payment.orderId,
       items,
       payment.amount,
-      payment.currency
+      payment.currency,
+      customerType
     );
   }, []); // Only run once on mount
 

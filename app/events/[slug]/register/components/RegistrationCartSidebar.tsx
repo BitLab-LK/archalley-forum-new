@@ -67,17 +67,22 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
         
         // Track view_cart event
         if (data.data.cart.items && data.data.cart.items.length > 0) {
-          const items: EcommerceItem[] = data.data.cart.items.map((item: any) => ({
-            item_id: `${item.competitionId}_${item.registrationTypeId}`,
-            item_name: item.registrationType?.name || 'Registration',
-            item_category: 'Competition Registration',
-            item_category2: item.competition?.title || '',
-            item_category3: item.registrationType?.name || '',
-            price: item.subtotal,
-            quantity: 1,
-            currency: 'LKR',
-          }));
-          trackViewCart(items);
+          const items: EcommerceItem[] = data.data.cart.items.map((item: any, index: number) => {
+            const registrationType = item.registrationType?.type;
+            const itemCategory = registrationType === 'KIDS'
+              ? 'Kids'
+              : 'Physical and Digital';
+            
+            return {
+              item_id: `${item.competitionId}_${item.registrationTypeId}`,
+              item_name: item.registrationType?.name || 'Registration',
+              item_category: itemCategory,
+              price: item.subtotal,
+              quantity: 1,
+              index,
+            };
+          });
+          trackViewCart(items, 'LKR');
         }
       } else {
         console.log('⚠️ No cart data or unsuccessful response');
@@ -104,15 +109,16 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
         // Track remove_from_cart event
         const itemToRemove = cart?.items.find(i => i.id === itemId);
         if (itemToRemove) {
+          const registrationType = itemToRemove.registrationType?.type;
+          const itemCategory = registrationType === 'KIDS'
+            ? 'Kids'
+            : 'Physical and Digital';
           const ecommerceItem: EcommerceItem = {
             item_id: `${itemToRemove.competitionId}_${itemToRemove.registrationTypeId}`,
             item_name: itemToRemove.registrationType?.name || 'Registration',
-            item_category: 'Competition Registration',
-            item_category2: itemToRemove.competition?.title || '',
-            item_category3: itemToRemove.registrationType?.name || '',
+            item_category: itemCategory,
             price: itemToRemove.subtotal,
             quantity: 1,
-            currency: 'LKR',
           };
           trackRemoveFromCart(ecommerceItem);
         }
@@ -217,14 +223,11 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
     const items: EcommerceItem[] = cart.items.map((item: any) => ({
       item_id: `${item.competitionId}_${item.registrationTypeId}`,
       item_name: item.registrationType?.name || 'Registration',
-      item_category: 'Competition Registration',
-      item_category2: item.competition?.title || '',
-      item_category3: item.registrationType?.name || '',
+      item_category: item.registrationType?.type === 'KIDS' ? 'Kids' : 'Physical and Digital',
       price: item.subtotal,
       quantity: 1,
-      currency: 'LKR',
     }));
-    trackBeginCheckout(items);
+    trackBeginCheckout(items, 'LKR');
 
     setIsCheckingOut(true);
     router.push('/events/checkout');

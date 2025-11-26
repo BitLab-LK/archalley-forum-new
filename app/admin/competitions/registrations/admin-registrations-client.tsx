@@ -75,6 +75,7 @@ interface Registration {
     id: string;
     name: string;
     fee: number;
+    type?: 'INDIVIDUAL' | 'TEAM' | 'COMPANY' | 'STUDENT' | 'KIDS';
   };
   payment: {
     id: string;
@@ -386,22 +387,31 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
       if (data.success) {
         // Track purchase event when admin approves payment
         if (approve && registration && registration.payment) {
+          const itemCategory =
+            registration.participantType === 'KIDS' ? 'Kids' : 'Physical and Digital';
           const item: EcommerceItem = {
             item_id: `${registration.competition.id}_${registration.registrationType.id}`,
             item_name: registration.registrationType.name,
-            item_category: 'Competition Registration',
-            item_category2: registration.competition.title,
-            item_category3: registration.registrationType.name,
+            item_category: itemCategory,
             price: registration.amountPaid,
             quantity: 1,
-            currency: registration.currency || 'LKR',
           };
+          
+          const hasPreviousConfirmed = registrations.some(
+            (reg) =>
+              reg.user.id === registration.user.id &&
+              reg.status === 'CONFIRMED' &&
+              reg.id !== registration.id
+          );
+          
+          const customerType: 'new' | 'returning' = hasPreviousConfirmed ? 'returning' : 'new';
           
           trackPurchase(
             registration.payment.orderId,
             [item],
             registration.payment.amount,
-            registration.currency || 'LKR'
+            registration.currency || 'LKR',
+            customerType
           );
         }
         

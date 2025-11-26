@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import PaymentSuccessClient from './payment-success-client';
+import { PaymentStatus } from '@prisma/client';
 
 export const metadata: Metadata = {
   title: 'Payment Successful - Archalley Forum',
@@ -67,6 +68,7 @@ export default async function PaymentSuccessPage({ params }: Props) {
           select: {
             id: true,
             name: true,
+            type: true,
           },
         },
       },
@@ -83,6 +85,19 @@ export default async function PaymentSuccessPage({ params }: Props) {
       ? `${customerDetails.firstName} ${customerDetails.lastName}`
       : payment.user.name || 'User';
 
+    const previousSuccessfulPayments = await prisma.competitionPayment.count({
+      where: {
+        userId: payment.userId,
+        status: PaymentStatus.COMPLETED,
+        id: {
+          not: payment.id,
+        },
+      },
+    });
+    
+    const customerType: 'new' | 'returning' =
+      previousSuccessfulPayments > 0 ? 'returning' : 'new';
+    
     return (
       <PaymentSuccessClient
         user={{
@@ -106,9 +121,11 @@ export default async function PaymentSuccessPage({ params }: Props) {
           registrationType: {
             name: reg.registrationType.name,
             id: reg.registrationType.id,
+            type: reg.registrationType.type,
           },
           amountPaid: reg.amountPaid,
         }))}
+        customerType={customerType}
       />
     );
   } catch (error) {

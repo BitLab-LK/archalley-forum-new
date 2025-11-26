@@ -62,17 +62,23 @@ export default function RegistrationForm({
   // Track view_item_list when landing on the registration page
   useEffect(() => {
     if (!editingItem && registrationTypes.length > 0) {
-      const items: EcommerceItem[] = registrationTypes.map((type, index) => ({
-        item_id: `${competition.id}_${type.id}`,
-        item_name: type.name,
-        item_category: 'Competition Registration',
-        item_category2: competition.title,
-        item_category3: type.name,
-        price: type.fee,
-        quantity: 1,
-        currency: 'LKR',
-        index: index,
-      }));
+      const items: EcommerceItem[] = registrationTypes.map((type, index) => {
+        // Set item_category based on registration type
+        // "Physical and Digital" for INDIVIDUAL, TEAM, COMPANY, STUDENT
+        // "Kids" for KIDS
+        const itemCategory = type.type === 'KIDS' 
+          ? 'Kids' 
+          : 'Physical and Digital';
+        
+        return {
+          item_id: `${competition.id}_${type.id}`,
+          item_name: type.name,
+          item_category: itemCategory,
+          price: type.fee,
+          quantity: 1,
+          index: index,
+        };
+      });
       trackViewItemList(
         items,
         'LKR',
@@ -1008,15 +1014,15 @@ export default function RegistrationForm({
         
         // Track add_to_cart event
         if (selectedType) {
+          const itemCategory = selectedType.type === 'KIDS'
+            ? 'Kids'
+            : 'Physical and Digital';
           const item: EcommerceItem = {
             item_id: `${competition.id}_${selectedType.id}`,
             item_name: selectedType.name,
-            item_category: 'Competition Registration',
-            item_category2: competition.title,
-            item_category3: selectedType.name,
+            item_category: itemCategory,
             price: selectedType.fee,
             quantity: 1,
-            currency: 'LKR',
           };
           trackAddToCart([item]);
         }
@@ -1165,15 +1171,15 @@ export default function RegistrationForm({
                           setSelectedType(type);
                           // Track view_item and select_item when user selects a registration type
                           if (!editingItem) {
+                            const itemCategory = type.type === 'KIDS'
+                              ? 'Kids'
+                              : 'Physical and Digital';
                             const item: EcommerceItem = {
                               item_id: `${competition.id}_${type.id}`,
                               item_name: type.name,
-                              item_category: 'Competition Registration',
-                              item_category2: competition.title,
-                              item_category3: type.name,
+                              item_category: itemCategory,
                               price: type.fee,
                               quantity: 1,
-                              currency: 'LKR',
                             };
                             trackViewItem(item);
                             trackSelectItem(
@@ -1229,15 +1235,15 @@ export default function RegistrationForm({
                             setSelectedType(type);
                             // Track view_item and select_item when user selects a registration type
                             if (!editingItem) {
-                              const item: EcommerceItem = {
+                            const itemCategory = type.type === 'KIDS'
+                              ? 'Kids'
+                              : 'Physical and Digital';
+                            const item: EcommerceItem = {
                                 item_id: `${competition.id}_${type.id}`,
                                 item_name: type.name,
-                                item_category: 'Competition Registration',
-                                item_category2: competition.title,
-                                item_category3: type.name,
+                              item_category: itemCategory,
                                 price: type.fee,
                                 quantity: 1,
-                                currency: 'LKR',
                               };
                               trackViewItem(item);
                               trackSelectItem(item);

@@ -61,6 +61,7 @@ export default async function AdminCompetitionRegistrationsPage() {
           id: true,
           name: true,
           fee: true,
+          type: true,
         },
       },
       payment: {
