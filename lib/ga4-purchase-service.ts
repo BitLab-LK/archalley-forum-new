@@ -1,6 +1,6 @@
 'use server';
 
-import { Ga4PurchaseLogStatus, Ga4PurchaseStatus } from '@prisma/client';
+import { Prisma, Ga4PurchaseLogStatus, Ga4PurchaseStatus } from '@prisma/client';
 import { prisma } from './prisma';
 import {
   Ga4PurchaseItem,
@@ -140,6 +140,10 @@ export async function triggerGa4PurchaseForPayment(
       where: { transactionId: payment.orderId },
     })) + 1;
 
+  const serializedPayload: Prisma.InputJsonValue = JSON.parse(
+    JSON.stringify(ga4Payload)
+  );
+
   const logEntry = await prisma.ga4PurchaseLog.create({
     data: {
       transactionId: payment.orderId,
@@ -148,7 +152,7 @@ export async function triggerGa4PurchaseForPayment(
       source: purchaseSource,
       status: Ga4PurchaseLogStatus.PENDING,
       attempt,
-      payload: ga4Payload,
+      payload: serializedPayload,
     },
   });
 
