@@ -64,7 +64,8 @@ export async function middleware(request: NextRequest) {
     '/api/youtube/',
     '/api/contact',
     '/api/academic/submit',
-    '/api/projects/submit'
+    '/api/projects/submit',
+    '/api/competitions/payment/notify'
   ]
 
   // Check if the API route is public
