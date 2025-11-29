@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Mail, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
@@ -41,7 +41,6 @@ export default function PaymentSuccessClient({
   customerType,
 }: PaymentSuccessClientProps) {
   const router = useRouter();
-  const [countdown, setCountdown] = useState(30);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -55,20 +54,6 @@ export default function PaymentSuccessClient({
       customer_type: customerType,
     });
   }, [payment.orderId, customerType]);
-
-  useEffect(() => {
-    // Redirect to events page after 30 seconds
-    if (countdown === 0) {
-      router.push('/events');
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setCountdown((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [countdown, router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white py-12 px-4 sm:px-6 lg:px-8">
@@ -231,12 +216,6 @@ export default function PaymentSuccessClient({
           </button>
         </div>
 
-        {/* Auto-redirect notice */}
-        <div className="text-center text-sm text-gray-500">
-          <p>
-            Auto-redirecting to events page in <span className="font-semibold text-orange-600">{countdown}</span> seconds...
-          </p>
-        </div>
       </div>
     </div>
   );
