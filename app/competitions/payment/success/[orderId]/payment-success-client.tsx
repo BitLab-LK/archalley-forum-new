@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Mail, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
-import { trackPurchase, EcommerceItem } from '@/lib/google-analytics';
 
 interface PaymentSuccessClientProps {
   user: {
@@ -45,29 +44,17 @@ export default function PaymentSuccessClient({
   const [countdown, setCountdown] = useState(30);
 
   useEffect(() => {
-    // Track purchase event (only once on mount)
-    const items: EcommerceItem[] = registrations.map((reg, index) => {
-      const itemCategory =
-        reg.registrationType.type === 'KIDS' ? 'Kids' : 'Physical and Digital';
-      
-      return {
-        item_id: `${reg.competition.id}_${reg.registrationType.id}`,
-        item_name: reg.registrationType.name,
-        item_category: itemCategory,
-        price: reg.amountPaid,
-        quantity: 1,
-        index,
-      };
-    });
+    if (typeof window === 'undefined') {
+      return;
+    }
 
-    trackPurchase(
-      payment.orderId,
-      items,
-      payment.amount,
-      payment.currency,
-      customerType
-    );
-  }, []); // Only run once on mount
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: 'purchase_received',
+      transaction_id: payment.orderId,
+      customer_type: customerType,
+    });
+  }, [payment.orderId, customerType]);
 
   useEffect(() => {
     // Redirect to events page after 30 seconds

@@ -27,7 +27,6 @@ import { toast } from 'sonner';
 import { RevertPaymentDialog } from '@/components/ui/revert-payment-dialog';
 import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 import { RejectPaymentDialog } from '@/components/ui/reject-payment-dialog';
-import { trackPurchase, EcommerceItem } from '@/lib/google-analytics';
 import { classifyPayment, getPaymentEnvironmentBadge } from '@/lib/payment-utils';
 
 interface Registration {
@@ -387,16 +386,6 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
       if (data.success) {
         // Track purchase event when admin approves payment
         if (approve && registration && registration.payment) {
-          const itemCategory =
-            registration.participantType === 'KIDS' ? 'Kids' : 'Physical and Digital';
-          const item: EcommerceItem = {
-            item_id: `${registration.competition.id}_${registration.registrationType.id}`,
-            item_name: registration.registrationType.name,
-            item_category: itemCategory,
-            price: registration.amountPaid,
-            quantity: 1,
-          };
-          
           const hasPreviousConfirmed = registrations.some(
             (reg) =>
               reg.user.id === registration.user.id &&
@@ -405,14 +394,18 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
           );
           
           const customerType: 'new' | 'returning' = hasPreviousConfirmed ? 'returning' : 'new';
-          
-          trackPurchase(
-            registration.payment.orderId,
-            [item],
-            registration.payment.amount,
-            registration.currency || 'LKR',
-            customerType
-          );
+
+          if (typeof window !== 'undefined') {
+            const scope = window as typeof window & { dataLayer?: any[] };
+            scope.dataLayer = scope.dataLayer || [];
+            scope.dataLayer.push({
+              event: 'purchase_received',
+              transaction_id: registration.payment.orderId,
+              customer_type: customerType,
+              payment_method: registration.payment.paymentMethod || 'BANK_TRANSFER',
+              source: 'admin_manual_verification',
+            });
+          }
         }
         
         toast.success(approve ? 'Payment verified successfully!' : 'Payment rejected and user notified');

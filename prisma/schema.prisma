@@ -918,6 +918,14 @@ model CompetitionPayment {
   errorMessage      String?
   errorCode         String?
   metadata          Json?
+
+  // GA4 server-side ecommerce tracking
+  ga4PurchaseStatus       Ga4PurchaseStatus @default(NOT_SENT)
+  ga4PurchaseSentAt       DateTime?
+  ga4PurchaseLastAttemptAt DateTime?
+  ga4PurchaseResponse     Json?
+  ga4PurchaseError        String?
+  ga4PurchaseLogs         Ga4PurchaseLog[]
   
   // Important dates
   initiatedAt       DateTime @default(now())
@@ -938,6 +946,7 @@ model CompetitionPayment {
   @@index([status])
   @@index([paymentId])
   @@index([userId, competitionId])
+  @@index([ga4PurchaseStatus])
 }
 
 enum PaymentStatus {
@@ -949,6 +958,43 @@ enum PaymentStatus {
   REFUNDED
   PARTIALLY_REFUNDED
   EXPIRED
+}
+
+enum Ga4PurchaseStatus {
+  NOT_SENT
+  SENDING
+  SENT
+  FAILED
+}
+
+model Ga4PurchaseLog {
+  id            String                @id @default(cuid())
+  transactionId String
+  paymentId     String?
+  paymentMethod String?
+  source        String?
+  status        Ga4PurchaseLogStatus  @default(PENDING)
+  attempt       Int                   @default(1)
+  payload       Json?
+  response      Json?
+  errorMessage  String?
+  httpStatus    Int?
+  sentAt        DateTime?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  payment       CompetitionPayment?   @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([transactionId])
+  @@index([paymentId])
+  @@index([status])
+}
+
+enum Ga4PurchaseLogStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  SKIPPED
 }
 
 // ============================================
