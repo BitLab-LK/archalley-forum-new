@@ -8,6 +8,9 @@ import {
   sendGa4PurchaseEvent,
 } from './ga4-measurement';
 
+const serializeJson = (value: unknown): Prisma.InputJsonValue =>
+  JSON.parse(JSON.stringify(value ?? null));
+
 type PurchaseEventResultStatus = 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'NOT_FOUND';
 
 export interface PurchaseEventResult {
@@ -140,10 +143,6 @@ export async function triggerGa4PurchaseForPayment(
       where: { transactionId: payment.orderId },
     })) + 1;
 
-  const serializedPayload: Prisma.InputJsonValue = JSON.parse(
-    JSON.stringify(ga4Payload)
-  );
-
   const logEntry = await prisma.ga4PurchaseLog.create({
     data: {
       transactionId: payment.orderId,
@@ -152,7 +151,7 @@ export async function triggerGa4PurchaseForPayment(
       source: purchaseSource,
       status: Ga4PurchaseLogStatus.PENDING,
       attempt,
-      payload: serializedPayload,
+      payload: serializeJson(ga4Payload),
     },
   });
 
@@ -166,10 +165,10 @@ export async function triggerGa4PurchaseForPayment(
           data: {
             ga4PurchaseStatus: Ga4PurchaseStatus.SENT,
             ga4PurchaseSentAt: new Date(),
-            ga4PurchaseResponse: {
+            ga4PurchaseResponse: serializeJson({
               status: ga4Response.status,
               body: ga4Response.responseBody ?? null,
-            },
+            }),
             ga4PurchaseError: null,
           },
         }),
@@ -177,10 +176,10 @@ export async function triggerGa4PurchaseForPayment(
           where: { id: logEntry.id },
           data: {
             status: Ga4PurchaseLogStatus.SUCCESS,
-            response: {
+            response: serializeJson({
               status: ga4Response.status,
               body: ga4Response.responseBody ?? null,
-            },
+            }),
             httpStatus: ga4Response.status ?? undefined,
             sentAt: new Date(),
           },
@@ -228,11 +227,11 @@ async function handleGa4Failure(
         ga4PurchaseStatus: Ga4PurchaseStatus.FAILED,
         ga4PurchaseError: errorMessage,
         ga4PurchaseResponse: ga4Response
-          ? {
+          ? serializeJson({
               status: ga4Response.status,
               body: ga4Response.responseBody ?? null,
-            }
-          : null,
+            })
+          : Prisma.JsonNull,
       },
     }),
     prisma.ga4PurchaseLog.update({
@@ -241,11 +240,11 @@ async function handleGa4Failure(
         status: Ga4PurchaseLogStatus.FAILED,
         errorMessage,
         response: ga4Response
-          ? {
+          ? serializeJson({
               status: ga4Response.status,
               body: ga4Response.responseBody ?? null,
-            }
-          : null,
+            })
+          : Prisma.JsonNull,
         httpStatus: ga4Response?.status ?? undefined,
         sentAt: new Date(),
       },
