@@ -25,6 +25,13 @@ export default function PaymentPendingClient({ user }: PaymentPendingClientProps
   const [countdown, setCountdown] = useState(30);
 
   useEffect(() => {
+    // Dispatch cart update event to refresh cart icon count
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('cartUpdated'));
+    }
+  }, []); // Run once on mount
+
+  useEffect(() => {
     // Redirect to events page after 30 seconds
     if (countdown === 0) {
       router.push('/events');

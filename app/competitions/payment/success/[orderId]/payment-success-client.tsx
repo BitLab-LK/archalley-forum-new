@@ -53,6 +53,9 @@ export default function PaymentSuccessClient({
       transaction_id: payment.orderId,
       customer_type: customerType,
     });
+
+    // Dispatch cart update event to refresh cart icon count
+    window.dispatchEvent(new Event('cartUpdated'));
   }, [payment.orderId, customerType]);
 
   return (

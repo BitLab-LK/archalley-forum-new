@@ -42,6 +42,20 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
     return () => clearTimeout(timer);
   }, [refreshKey]);
 
+  // Listen for cart update events (triggered after payment completion)
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      console.log('🔔 cartUpdated event received, refreshing cart...');
+      fetchCart();
+    };
+
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    
+    return () => {
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+    };
+  }, []);
+
   // Auto-refresh cart when expired (only if expiry is enabled)
   useEffect(() => {
     if (!isExpiryDisabled && countdown.isExpired && cart) {
