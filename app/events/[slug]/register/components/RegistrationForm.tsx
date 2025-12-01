@@ -1060,6 +1060,9 @@ export default function RegistrationForm({
         console.log('Calling onCartUpdate to refresh cart...');
         onCartUpdate();
         
+        // Dispatch custom event to update cart icon count
+        window.dispatchEvent(new Event('cartUpdated'));
+        
         // Reset form to empty state
         setSelectedType(null);
         setTeamName('');

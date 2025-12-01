@@ -126,6 +126,9 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
         toast.success('Item removed from cart');
         fetchCart(); // Refresh cart
         onCartUpdate();
+        
+        // Dispatch custom event to update cart icon count
+        window.dispatchEvent(new Event('cartUpdated'));
       } else {
         toast.error(result.error || 'Failed to remove item');
       }
@@ -199,6 +202,9 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
         toast.success('Cart cleared');
         fetchCart(); // Refresh cart
         onCartUpdate();
+        
+        // Dispatch custom event to update cart icon count
+        window.dispatchEvent(new Event('cartUpdated'));
       } else {
         toast.error(result.error || 'Failed to clear cart');
       }

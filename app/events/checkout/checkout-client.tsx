@@ -518,6 +518,9 @@ export default function CheckoutClient({ user }: Props) {
 
   // Get competition title from first item
   const competitionTitle = cart.items[0]?.competition?.title || 'Archalley Competition 2025';
+  
+  // Get competition slug for back navigation
+  const competitionSlug = cart.items[0]?.competition?.slug || 'archalley-competition-2025';
 
   return (
     <>
@@ -557,7 +560,7 @@ export default function CheckoutClient({ user }: Props) {
         <div className="container mx-auto px-4 max-w-4xl">
         {/* Back Button */}
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push(`/events/${competitionSlug}/register`)}
           className="flex items-center gap-2 text-gray-600 hover:text-black mb-6 transition-colors text-sm"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
