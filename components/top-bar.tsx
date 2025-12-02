@@ -107,11 +107,13 @@ export default function TopBar() {
     
     // Listen for custom cart update events (when items are added/removed)
     const handleCartUpdate = () => {
+      console.log('🔔 TopBar: cartUpdated event received, authenticated:', isAuthenticated);
       if (isAuthenticated) {
         fetchCartCount()
       }
     }
     
+    console.log('📡 TopBar: Setting up event listeners, isAuthenticated:', isAuthenticated);
     window.addEventListener('focus', handleFocus)
     window.addEventListener('cartUpdated', handleCartUpdate)
     

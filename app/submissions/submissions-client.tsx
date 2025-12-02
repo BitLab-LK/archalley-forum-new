@@ -11,6 +11,7 @@ import { CategorySelector } from '@/components/submissions/category-selector';
 import { FileUploadZone } from '@/components/submissions/file-upload-zone';
 import { DescriptionCounter } from '@/components/submissions/description-counter';
 import type { SubmissionCategory } from '@/types/submission';
+import { toast } from 'sonner';
 
 interface Registration {
   id: string;
@@ -43,6 +44,7 @@ export function SubmissionsClient() {
   const [loading, setLoading] = useState(true);
   const [selectedRegistration, setSelectedRegistration] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingSubmission, setEditingSubmission] = useState<Registration['submission'] | null>(null);
 
   // Form states
   const [category, setCategory] = useState<SubmissionCategory | ''>('');
@@ -55,6 +57,7 @@ export function SubmissionsClient() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [eligibilityMessage, setEligibilityMessage] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
 
   useEffect(() => {
     fetchRegistrations();
@@ -112,20 +115,26 @@ export function SubmissionsClient() {
       setDocumentFile([]);
       setVideoFile([]);
       setError('');
+      setEditingSubmission(null);
     }
   };
 
   const handleCancelSubmission = () => {
     setShowForm(false);
     setSelectedRegistration(null);
+    setEditingSubmission(null);
     setEligibilityMessage('');
   };
 
-  const handleSubmit = async (isDraft: boolean) => {
+  const handleSubmit = async () => {
     setError('');
     setSubmitting(true);
 
     try {
+      const isUpdating = editingSubmission !== null;
+      
+      console.log(isUpdating ? '📝 Updating submission...' : '✨ Creating new submission...');
+
       // Validation
       if (!category || !title) {
         setError('Please select a category and enter a title');
@@ -133,17 +142,16 @@ export function SubmissionsClient() {
         return;
       }
 
-      if (!isDraft) {
-        if (keyPhoto.length === 0) {
-          setError('Key photograph is required');
-          setSubmitting(false);
-          return;
-        }
-        if (additionalPhotos.length < 2) {
-          setError('At least 2 additional photographs are required');
-          setSubmitting(false);
-          return;
-        }
+      // Require files for final submission (unless updating existing submission with files)
+      if (!isUpdating && keyPhoto.length === 0) {
+        setError('Key photograph is required');
+        setSubmitting(false);
+        return;
+      }
+      if (!isUpdating && additionalPhotos.length < 2) {
+        setError('At least 2 additional photographs are required');
+        setSubmitting(false);
+        return;
       }
 
       // Build FormData
@@ -152,7 +160,7 @@ export function SubmissionsClient() {
       formData.append('category', category);
       formData.append('title', title);
       formData.append('description', description);
-      formData.append('isDraft', isDraft.toString());
+      formData.append('isDraft', 'false'); // Always submit as final
 
       if (keyPhoto[0]) formData.append('keyPhotograph', keyPhoto[0]);
       additionalPhotos.forEach((photo) => {
@@ -162,29 +170,68 @@ export function SubmissionsClient() {
       if (videoFile[0]) formData.append('videoFile', videoFile[0]);
 
       // Submit
+      console.log('📤 Sending submission request...');
       const response = await fetch('/api/submissions/create', {
         method: 'POST',
         body: formData,
       });
 
       const data = await response.json();
+      console.log('📥 Response:', data);
 
       if (!response.ok) {
+        console.error('❌ Submission failed:', data.error);
         setError(data.error || 'Failed to create submission');
         setSubmitting(false);
         return;
       }
 
       // Success - refresh and close form
+      console.log('✅ Submission successful, refreshing registrations...');
       await fetchRegistrations();
       setShowForm(false);
       setSelectedRegistration(null);
-      alert(data.message || 'Submission created successfully!');
+      setEditingSubmission(null);
+      
+      // Show success toast
+      toast.success(isUpdating ? 'Submission updated successfully!' : 'Submission created successfully!', {
+        description: data.message || 'Your submission has been received.',
+        duration: 5000,
+      });
     } catch (error) {
       setError('An error occurred while submitting');
       console.error('Submission error:', error);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleWithdrawSubmission = async (submissionId: string, submissionNumber: string) => {
+    if (!confirm(`Are you sure you want to withdraw submission ${submissionNumber}? This action cannot be undone.`)) {
+      return;
+    }
+
+    setWithdrawing(true);
+    try {
+      const response = await fetch('/api/submissions/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Submission withdrawn successfully');
+        await fetchRegistrations(); // Refresh list
+      } else {
+        toast.error(data.error || 'Failed to withdraw submission');
+      }
+    } catch (error) {
+      console.error('Error withdrawing submission:', error);
+      toast.error('An error occurred while withdrawing');
+    } finally {
+      setWithdrawing(false);
     }
   };
 
@@ -290,7 +337,7 @@ export function SubmissionsClient() {
                     {registration.submission ? (
                       <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                         <div className="flex items-center justify-between">
-                          <div>
+                          <div className="flex-1">
                             <p className="font-medium text-blue-900">
                               Submission: {registration.submission.submissionNumber}
                             </p>
@@ -299,18 +346,30 @@ export function SubmissionsClient() {
                               {registration.submission.submissionCategory})
                             </p>
                           </div>
-                          <span
-                            className={`px-3 py-1 text-xs font-medium rounded-full ${
-                              registration.submission.status === 'SUBMITTED'
-                                ? 'bg-green-100 text-green-800'
-                                : registration.submission.status === 'DRAFT'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}
-                          >
+                          <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                            registration.submission.status === 'SUBMITTED' ? 'bg-blue-100 text-blue-800' :
+                            registration.submission.status === 'VALIDATED' ? 'bg-green-100 text-green-800' :
+                            registration.submission.status === 'PUBLISHED' ? 'bg-purple-100 text-purple-800' :
+                            registration.submission.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                            registration.submission.status === 'WITHDRAWN' ? 'bg-gray-100 text-gray-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
                             {registration.submission.status}
                           </span>
                         </div>
+                        
+                        {/* Withdraw button for SUBMITTED, VALIDATED, or PUBLISHED submissions */}
+                        {['SUBMITTED', 'VALIDATED', 'PUBLISHED'].includes(registration.submission.status) && (
+                          <div className="mt-3 pt-3 border-t border-blue-200">
+                            <button
+                              onClick={() => handleWithdrawSubmission(registration.submission!.id, registration.submission!.submissionNumber)}
+                              disabled={withdrawing}
+                              className="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {withdrawing ? 'Withdrawing...' : 'Withdraw Submission'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="mt-4">
@@ -333,9 +392,11 @@ export function SubmissionsClient() {
         {showForm && selectedRegistration && (
           <div className="bg-white rounded-lg shadow-md p-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Create Submission
-              </h2>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Create Submission
+                </h2>
+              </div>
               <button
                 onClick={handleCancelSubmission}
                 className="text-gray-500 hover:text-gray-700"
@@ -438,20 +499,13 @@ export function SubmissionsClient() {
               />
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-6 border-t">
+              <div className="flex pt-6 border-t">
                 <button
-                  onClick={() => handleSubmit(false)}
+                  onClick={handleSubmit}
                   disabled={submitting}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? 'Submitting...' : 'Submit Entry'}
-                </button>
-                <button
-                  onClick={() => handleSubmit(true)}
-                  disabled={submitting}
-                  className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Save as Draft
                 </button>
               </div>
             </div>

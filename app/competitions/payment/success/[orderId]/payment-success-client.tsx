@@ -55,7 +55,16 @@ export default function PaymentSuccessClient({
     });
 
     // Dispatch cart update event to refresh cart icon count
+    console.log('🎉 Payment success page loaded, dispatching cartUpdated event');
     window.dispatchEvent(new Event('cartUpdated'));
+    
+    // Also dispatch after a delay to ensure all components are mounted
+    const timer = setTimeout(() => {
+      console.log('🔄 Dispatching delayed cartUpdated event');
+      window.dispatchEvent(new Event('cartUpdated'));
+    }, 500);
+    
+    return () => clearTimeout(timer);
   }, [payment.orderId, customerType]);
 
   return (

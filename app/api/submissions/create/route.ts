@@ -217,6 +217,13 @@ export async function POST(request: NextRequest) {
       submissionNumber = await generateSubmissionNumber(category);
     }
 
+    // Check if this is an update (submission already exists)
+    const existingSubmission = await prisma.competitionSubmission.findUnique({
+      where: { registrationId },
+    });
+
+    console.log(existingSubmission ? `📝 Updating existing submission: ${existingSubmission.submissionNumber}` : '✨ Creating new submission');
+
     // Create or update submission record
     const submission = await prisma.competitionSubmission.upsert({
       where: { registrationId },
@@ -240,15 +247,19 @@ export async function POST(request: NextRequest) {
         submissionCategory: category,
         title,
         description: description || '',
+        // Only update file fields if new files were uploaded
         ...(keyPhotoUrl && { keyPhotographUrl: keyPhotoUrl }),
         ...(photoUrls.length > 0 && { additionalPhotographs: photoUrls }),
-        ...(documentUrl && { documentFileUrl: documentUrl }),
-        ...(videoUrl && { videoFileUrl: videoUrl }),
+        ...(documentUrl !== null && { documentFileUrl: documentUrl }),
+        ...(videoUrl !== null && { videoFileUrl: videoUrl }),
         ...(fileMetadata && { fileMetadata: fileMetadata as any }),
+        // Update status (can change from DRAFT to SUBMITTED)
         status: isDraft ? 'DRAFT' : 'SUBMITTED',
         submittedAt: isDraft ? null : new Date(),
       },
     });
+
+    console.log(`✅ Submission saved: ${submission.submissionNumber} (Status: ${submission.status})`);
 
     return NextResponse.json({
       success: true,

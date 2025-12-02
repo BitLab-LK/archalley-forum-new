@@ -45,13 +45,15 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
   // Listen for cart update events (triggered after payment completion)
   useEffect(() => {
     const handleCartUpdate = () => {
-      console.log('🔔 cartUpdated event received, refreshing cart...');
+      console.log('🔔 RegistrationCartSidebar: cartUpdated event received, refreshing cart...');
       fetchCart();
     };
 
+    console.log('📡 RegistrationCartSidebar: Setting up cartUpdated event listener');
     window.addEventListener('cartUpdated', handleCartUpdate);
     
     return () => {
+      console.log('🔌 RegistrationCartSidebar: Removing cartUpdated event listener');
       window.removeEventListener('cartUpdated', handleCartUpdate);
     };
   }, []);

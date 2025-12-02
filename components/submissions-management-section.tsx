@@ -25,7 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, Eye, Download, RefreshCw, FileText, Image, Video } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Search, Eye, Download, RefreshCw, FileText, Image, Video, CheckCircle, XCircle, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Submission {
@@ -77,6 +78,13 @@ export default function SubmissionsManagementSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  
+  // Action dialogs
+  const [validateDialogOpen, setValidateDialogOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [validationNotes, setValidationNotes] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     fetchSubmissions();
@@ -127,6 +135,115 @@ export default function SubmissionsManagementSection() {
   const handleViewSubmission = (submission: Submission) => {
     setSelectedSubmission(submission);
     setViewDialogOpen(true);
+  };
+
+  const handleValidateClick = (submission: Submission) => {
+    setSelectedSubmission(submission);
+    setValidationNotes('');
+    setValidateDialogOpen(true);
+  };
+
+  const handleRejectClick = (submission: Submission) => {
+    setSelectedSubmission(submission);
+    setRejectionReason('');
+    setRejectDialogOpen(true);
+  };
+
+  const handleValidateSubmission = async () => {
+    if (!selectedSubmission) return;
+
+    setActionLoading(true);
+    try {
+      const response = await fetch('/api/admin/submissions/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submissionId: selectedSubmission.id,
+          validationNotes: validationNotes || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Submission validated successfully');
+        setValidateDialogOpen(false);
+        setValidationNotes('');
+        fetchSubmissions(); // Refresh list
+      } else {
+        toast.error(data.error || 'Failed to validate submission');
+      }
+    } catch (error) {
+      console.error('Error validating submission:', error);
+      toast.error('An error occurred');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectSubmission = async () => {
+    if (!selectedSubmission || !rejectionReason.trim()) {
+      toast.error('Rejection reason is required');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const response = await fetch('/api/admin/submissions/reject', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submissionId: selectedSubmission.id,
+          rejectionReason: rejectionReason,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Submission rejected');
+        setRejectDialogOpen(false);
+        setRejectionReason('');
+        fetchSubmissions(); // Refresh list
+      } else {
+        toast.error(data.error || 'Failed to reject submission');
+      }
+    } catch (error) {
+      console.error('Error rejecting submission:', error);
+      toast.error('An error occurred');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handlePublishSubmission = async (submission: Submission) => {
+    if (submission.status !== 'VALIDATED') {
+      toast.error('Only validated submissions can be published');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const response = await fetch('/api/admin/submissions/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionId: submission.id }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Submission published successfully');
+        fetchSubmissions(); // Refresh list
+      } else {
+        toast.error(data.error || 'Failed to publish submission');
+      }
+    } catch (error) {
+      console.error('Error publishing submission:', error);
+      toast.error('An error occurred');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -278,14 +395,63 @@ export default function SubmissionsManagementSection() {
                           : 'Not submitted'}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          onClick={() => handleViewSubmission(submission)}
-                          variant="ghost"
-                          size="sm"
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            onClick={() => handleViewSubmission(submission)}
+                            variant="ghost"
+                            size="sm"
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            View
+                          </Button>
+                          
+                          {submission.status === 'SUBMITTED' && (
+                            <>
+                              <Button
+                                onClick={() => handleValidateClick(submission)}
+                                variant="ghost"
+                                size="sm"
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Validate
+                              </Button>
+                              <Button
+                                onClick={() => handleRejectClick(submission)}
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <XCircle className="w-4 h-4 mr-1" />
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                          
+                          {submission.status === 'VALIDATED' && (
+                            <>
+                              <Button
+                                onClick={() => handlePublishSubmission(submission)}
+                                variant="ghost"
+                                size="sm"
+                                className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                                disabled={actionLoading}
+                              >
+                                <Globe className="w-4 h-4 mr-1" />
+                                Publish
+                              </Button>
+                              <Button
+                                onClick={() => handleRejectClick(submission)}
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <XCircle className="w-4 h-4 mr-1" />
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -505,6 +671,129 @@ export default function SubmissionsManagementSection() {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Validate Submission Dialog */}
+      <Dialog open={validateDialogOpen} onOpenChange={setValidateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Validate Submission</DialogTitle>
+            <DialogDescription>
+              Approve this submission and mark it ready for publishing
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedSubmission && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm font-medium">Submission: {selectedSubmission.submissionNumber}</p>
+                <p className="text-sm text-gray-600">{selectedSubmission.title}</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Validation Notes (Optional)
+                </label>
+                <Textarea
+                  value={validationNotes}
+                  onChange={(e) => setValidationNotes(e.target.value)}
+                  placeholder="Add any notes about this validation..."
+                  className="mt-1"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  onClick={() => setValidateDialogOpen(false)}
+                  variant="outline"
+                  disabled={actionLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleValidateSubmission}
+                  className="bg-green-600 hover:bg-green-700"
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Validating...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Validate Submission
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Submission Dialog */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Submission</DialogTitle>
+            <DialogDescription>
+              Reject this submission and provide a reason
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedSubmission && (
+            <div className="space-y-4">
+              <div className="bg-red-50 p-3 rounded-lg">
+                <p className="text-sm font-medium">Submission: {selectedSubmission.submissionNumber}</p>
+                <p className="text-sm text-gray-600">{selectedSubmission.title}</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Rejection Reason <span className="text-red-500">*</span>
+                </label>
+                <Textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Explain why this submission is being rejected..."
+                  className="mt-1"
+                  rows={4}
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  onClick={() => setRejectDialogOpen(false)}
+                  variant="outline"
+                  disabled={actionLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleRejectSubmission}
+                  className="bg-red-600 hover:bg-red-700"
+                  disabled={actionLoading || !rejectionReason.trim()}
+                >
+                  {actionLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Rejecting...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Reject Submission
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           )}
