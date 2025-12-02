@@ -198,18 +198,34 @@ export async function POST(
     });
 
     if (!cart) {
-      console.log('📝 Creating new cart for user');
-      cart = await prisma.registrationCart.create({
-        data: {
+      // Double-check before creating to prevent race condition
+      const existingCart = await prisma.registrationCart.findFirst({
+        where: {
           userId: session.user.id,
           status: 'ACTIVE',
-          expiresAt: calculateCartExpiry(),
-        },
-        include: {
-          items: true,
         },
       });
-      console.log('✅ Cart created:', cart.id);
+      
+      if (existingCart) {
+        console.log('⚠️ Active cart was just created by another request, using it:', existingCart.id);
+        cart = await prisma.registrationCart.findUnique({
+          where: { id: existingCart.id },
+          include: { items: true },
+        });
+      } else {
+        console.log('📝 Creating new cart for user');
+        cart = await prisma.registrationCart.create({
+          data: {
+            userId: session.user.id,
+            status: 'ACTIVE',
+            expiresAt: calculateCartExpiry(),
+          },
+          include: {
+            items: true,
+          },
+        });
+        console.log('✅ Cart created:', cart.id);
+      }
     } else {
       console.log('✅ Active cart found:', cart.id, 'with', cart.items.length, 'items');
     }

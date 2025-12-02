@@ -74,21 +74,35 @@ export default function TopBar() {
       }
 
       try {
-        const response = await fetch('/api/competitions/cart', {
+        // Add timestamp to prevent browser caching
+        const timestamp = new Date().getTime()
+        const response = await fetch(`/api/competitions/cart?t=${timestamp}`, {
           cache: 'no-store', // Prevent caching
           headers: {
-            'Cache-Control': 'no-cache',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
           },
         })
         const data = await response.json()
         
+        console.log('🛒 TopBar: Cart API response:', {
+          success: data.success,
+          itemCount: data.data?.cart?.items?.length || 0,
+          cartStatus: data.data?.cart?.status,
+          cartId: data.data?.cart?.id
+        })
+        
         if (data.success && data.data?.cart) {
-          setCartItemCount(data.data.cart.items?.length || 0)
+          const count = data.data.cart.items?.length || 0
+          console.log(`🛒 TopBar: Setting cart count to ${count}`)
+          setCartItemCount(count)
         } else {
+          console.log('🛒 TopBar: No cart data, setting count to 0')
           setCartItemCount(0)
         }
       } catch (error) {
-        console.error('Error fetching cart count:', error)
+        console.error('❌ TopBar: Error fetching cart count:', error)
         setCartItemCount(0)
       }
     }
@@ -129,21 +143,34 @@ export default function TopBar() {
     if (isAuthenticated) {
       const fetchCartCount = async () => {
         try {
-          const response = await fetch('/api/competitions/cart', {
+          // Add timestamp to prevent browser caching
+          const timestamp = new Date().getTime()
+          const response = await fetch(`/api/competitions/cart?t=${timestamp}`, {
             cache: 'no-store',
             headers: {
-              'Cache-Control': 'no-cache',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
             },
           })
           const data = await response.json()
           
+          console.log('🛒 TopBar (pathname change): Cart API response:', {
+            pathname,
+            itemCount: data.data?.cart?.items?.length || 0,
+            cartStatus: data.data?.cart?.status
+          })
+          
           if (data.success && data.data?.cart) {
-            setCartItemCount(data.data.cart.items?.length || 0)
+            const count = data.data.cart.items?.length || 0
+            console.log(`🛒 TopBar (pathname change): Setting cart count to ${count}`)
+            setCartItemCount(count)
           } else {
+            console.log('🛒 TopBar (pathname change): No cart data, setting count to 0')
             setCartItemCount(0)
           }
         } catch (error) {
-          console.error('Error fetching cart count:', error)
+          console.error('❌ TopBar (pathname change): Error fetching cart count:', error)
           setCartItemCount(0)
         }
       }

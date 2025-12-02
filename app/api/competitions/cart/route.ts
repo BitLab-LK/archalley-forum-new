@@ -18,6 +18,10 @@ import {
   isCartExpired,
 } from '@/lib/competition-utils';
 
+// Disable all caching for this route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 /**
  * GET - Fetch user's active cart
  */
@@ -81,13 +85,11 @@ export async function GET(
         });
       }
 
-      console.log('📝 Creating new empty cart');
-      // Create new cart
-      cart = await prisma.registrationCart.create({
-        data: {
+      // Double-check no active cart exists (prevent duplicate carts)
+      const existingActiveCart = await prisma.registrationCart.findFirst({
+        where: {
           userId: session.user.id,
           status: 'ACTIVE',
-          expiresAt: calculateCartExpiry(),
         },
         include: {
           items: {
@@ -98,7 +100,30 @@ export async function GET(
           },
         },
       });
-      console.log('✅ New cart created:', cart.id);
+
+      if (existingActiveCart) {
+        console.log('⚠️ Active cart exists, using it instead of creating new:', existingActiveCart.id);
+        cart = existingActiveCart;
+      } else {
+        console.log('📝 Creating new empty cart');
+        // Create new cart
+        cart = await prisma.registrationCart.create({
+          data: {
+            userId: session.user.id,
+            status: 'ACTIVE',
+            expiresAt: calculateCartExpiry(),
+          },
+          include: {
+            items: {
+              include: {
+                competition: true,
+                registrationType: true,
+              },
+            },
+          },
+        });
+        console.log('✅ New cart created:', cart.id);
+      }
     }
 
     // Calculate cart summary
@@ -119,17 +144,27 @@ export async function GET(
       })),
     };
 
-    summary.total = calculateCartTotal(summary.subtotal, summary.discount);
     console.log('✅ Summary:', summary);
 
     console.log('=== RETURNING CART RESPONSE ===');
-    return NextResponse.json({
-      success: true,
-      data: {
-        cart,
-        summary,
+    console.log(`📤 Returning: ${cart.items.length} items in cart ${cart.id} with status ${cart.status}`);
+    
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          cart,
+          summary,
+        },
       },
-    });
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     console.error('Error fetching cart:', error);
     return NextResponse.json(
