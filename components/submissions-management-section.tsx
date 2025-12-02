@@ -302,7 +302,7 @@ export default function SubmissionsManagementSection() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-blue-50 p-4 rounded-lg">
               <div className="text-sm text-blue-600 font-medium">Total Submissions</div>
               <div className="text-2xl font-bold text-blue-900">{submissions.length}</div>
@@ -311,12 +311,6 @@ export default function SubmissionsManagementSection() {
               <div className="text-sm text-green-600 font-medium">Submitted</div>
               <div className="text-2xl font-bold text-green-900">
                 {submissions.filter((s) => s.status === 'SUBMITTED').length}
-              </div>
-            </div>
-            <div className="bg-yellow-50 p-4 rounded-lg">
-              <div className="text-sm text-yellow-600 font-medium">Drafts</div>
-              <div className="text-2xl font-bold text-yellow-900">
-                {submissions.filter((s) => s.status === 'DRAFT').length}
               </div>
             </div>
             <div className="bg-purple-50 p-4 rounded-lg">

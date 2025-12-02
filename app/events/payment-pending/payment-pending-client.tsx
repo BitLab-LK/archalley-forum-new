@@ -26,18 +26,18 @@ export default function PaymentPendingClient({ user }: PaymentPendingClientProps
 
   useEffect(() => {
     // Dispatch cart update event to refresh cart icon count
-    if (typeof window !== 'undefined') {
-      console.log('🏦 Bank transfer pending page loaded, dispatching cartUpdated event');
+    if (typeof window === 'undefined') return;
+    
+    console.log('🏦 Bank transfer pending page loaded, dispatching cartUpdated event');
+    window.dispatchEvent(new Event('cartUpdated'));
+    
+    // Also dispatch after a delay to ensure all components are mounted
+    const timer = setTimeout(() => {
+      console.log('🔄 Dispatching delayed cartUpdated event');
       window.dispatchEvent(new Event('cartUpdated'));
-      
-      // Also dispatch after a delay to ensure all components are mounted
-      const timer = setTimeout(() => {
-        console.log('🔄 Dispatching delayed cartUpdated event');
-        window.dispatchEvent(new Event('cartUpdated'));
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
+    }, 500);
+    
+    return () => clearTimeout(timer);
   }, []); // Run once on mount
 
   useEffect(() => {
