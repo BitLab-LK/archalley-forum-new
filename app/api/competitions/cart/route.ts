@@ -14,7 +14,6 @@ import {
 } from '@/types/competition';
 import {
   calculateCartExpiry,
-  calculateCartTotal,
   isCartExpired,
 } from '@/lib/competition-utils';
 
@@ -128,11 +127,12 @@ export async function GET(
 
     // Calculate cart summary
     console.log('📊 Calculating cart summary...');
+    const subtotal = cart.items.reduce((sum, item) => sum + item.subtotal, 0);
     const summary: CartSummary = {
       itemCount: cart.items.length,
-      subtotal: cart.items.reduce((sum, item) => sum + item.subtotal, 0),
+      subtotal,
       discount: 0, // Calculate early bird discount if applicable
-      total: 0,
+      total: subtotal, // No discount applied, so total = subtotal
       items: cart.items.map((item) => ({
         id: item.id,
         competitionTitle: item.competition.title,
