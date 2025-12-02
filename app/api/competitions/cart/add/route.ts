@@ -204,14 +204,14 @@ export async function POST(
           userId: session.user.id,
           status: 'ACTIVE',
         },
+        include: {
+          items: true,
+        },
       });
       
       if (existingCart) {
         console.log('⚠️ Active cart was just created by another request, using it:', existingCart.id);
-        cart = await prisma.registrationCart.findUnique({
-          where: { id: existingCart.id },
-          include: { items: true },
-        });
+        cart = existingCart;
       } else {
         console.log('📝 Creating new cart for user');
         cart = await prisma.registrationCart.create({
@@ -228,6 +228,17 @@ export async function POST(
       }
     } else {
       console.log('✅ Active cart found:', cart.id, 'with', cart.items.length, 'items');
+    }
+    
+    // Ensure cart is not null (TypeScript safety check)
+    if (!cart) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to create or find cart',
+        },
+        { status: 500 }
+      );
     }
 
     // Allow multiple registrations of the same type
