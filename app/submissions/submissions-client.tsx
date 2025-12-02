@@ -57,7 +57,6 @@ export function SubmissionsClient() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [eligibilityMessage, setEligibilityMessage] = useState('');
-  const [withdrawing, setWithdrawing] = useState(false);
 
   useEffect(() => {
     fetchRegistrations();
@@ -206,35 +205,6 @@ export function SubmissionsClient() {
     }
   };
 
-  const handleWithdrawSubmission = async (submissionId: string, submissionNumber: string) => {
-    if (!confirm(`Are you sure you want to withdraw submission ${submissionNumber}? This action cannot be undone.`)) {
-      return;
-    }
-
-    setWithdrawing(true);
-    try {
-      const response = await fetch('/api/submissions/withdraw', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ submissionId }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success('Submission withdrawn successfully');
-        await fetchRegistrations(); // Refresh list
-      } else {
-        toast.error(data.error || 'Failed to withdraw submission');
-      }
-    } catch (error) {
-      console.error('Error withdrawing submission:', error);
-      toast.error('An error occurred while withdrawing');
-    } finally {
-      setWithdrawing(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -357,19 +327,6 @@ export function SubmissionsClient() {
                             {registration.submission.status}
                           </span>
                         </div>
-                        
-                        {/* Withdraw button for SUBMITTED, VALIDATED, or PUBLISHED submissions */}
-                        {['SUBMITTED', 'VALIDATED', 'PUBLISHED'].includes(registration.submission.status) && (
-                          <div className="mt-3 pt-3 border-t border-blue-200">
-                            <button
-                              onClick={() => handleWithdrawSubmission(registration.submission!.id, registration.submission!.submissionNumber)}
-                              disabled={withdrawing}
-                              className="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {withdrawing ? 'Withdrawing...' : 'Withdraw Submission'}
-                            </button>
-                          </div>
-                        )}
                       </div>
                     ) : (
                       <div className="mt-4">
