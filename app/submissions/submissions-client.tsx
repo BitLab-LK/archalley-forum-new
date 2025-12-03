@@ -56,6 +56,12 @@ export function SubmissionsClient() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [eligibilityMessage, setEligibilityMessage] = useState('');
+  
+  // Store existing file URLs when editing a draft
+  const [existingKeyPhotoUrl, setExistingKeyPhotoUrl] = useState<string | null>(null);
+  const [existingAdditionalPhotosUrls, setExistingAdditionalPhotosUrls] = useState<string[]>([]);
+  const [existingDocumentUrl, setExistingDocumentUrl] = useState<string | null>(null);
+  const [existingVideoUrl, setExistingVideoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRegistrations();
@@ -114,18 +120,75 @@ export function SubmissionsClient() {
       setVideoFile([]);
       setError('');
       setEditingSubmission(null);
+      // Reset existing file URLs
+      setExistingKeyPhotoUrl(null);
+      setExistingAdditionalPhotosUrls([]);
+      setExistingDocumentUrl(null);
+      setExistingVideoUrl(null);
     }
   };
 
   const handleEditDraft = async (registration: Registration) => {
     // Load draft data into form
     if (registration.submission) {
-      setSelectedRegistration(registration.id);
-      setEditingSubmission(registration.submission);
-      setCategory(registration.submission.submissionCategory as SubmissionCategory);
-      setTitle(registration.submission.title);
-      // Will need to fetch full submission details to get description and files
-      setShowForm(true);
+      try {
+        console.log('📝 Loading draft submission data...');
+        
+        // Fetch full submission details from the database
+        const response = await fetch(`/api/submissions/${registration.submission.id}`);
+        
+        if (!response.ok) {
+          console.error('Failed to fetch submission details');
+          toast.error('Failed to load draft data');
+          return;
+        }
+        
+        const { submission } = await response.json();
+        console.log('✅ Draft data loaded:', submission);
+        console.log('🔍 File URLs in response:', {
+          keyPhotographUrl: submission.keyPhotographUrl,
+          additionalPhotographs: submission.additionalPhotographs,
+          documentFileUrl: submission.documentFileUrl,
+          videoFileUrl: submission.videoFileUrl,
+        });
+        
+        // Load all form fields from the draft
+        setSelectedRegistration(registration.id);
+        setEditingSubmission(submission);
+        setCategory(submission.submissionCategory as SubmissionCategory);
+        setTitle(submission.title || '');
+        setDescription(submission.description || '');
+        
+        // Store existing file URLs to display in the form
+        setExistingKeyPhotoUrl(submission.keyPhotographUrl || null);
+        setExistingAdditionalPhotosUrls(submission.additionalPhotographs || []);
+        setExistingDocumentUrl(submission.documentFileUrl || null);
+        setExistingVideoUrl(submission.videoFileUrl || null);
+        
+        console.log('📌 Setting existing file URLs:', {
+          keyPhotoUrl: submission.keyPhotographUrl || null,
+          additionalPhotosUrls: submission.additionalPhotographs || [],
+          documentUrl: submission.documentFileUrl || null,
+          videoUrl: submission.videoFileUrl || null,
+        });
+        
+        // Clear file inputs (user can upload new files to replace existing ones)
+        setKeyPhoto([]);
+        setAdditionalPhotos([]);
+        setDocumentFile([]);
+        setVideoFile([]);
+        
+        console.log('✅ Form populated with draft data, existing files:', {
+          keyPhoto: !!submission.keyPhotographUrl,
+          additionalPhotos: submission.additionalPhotographs?.length || 0,
+          document: !!submission.documentFileUrl,
+          video: !!submission.videoFileUrl,
+        });
+        setShowForm(true);
+      } catch (error) {
+        console.error('Error loading draft:', error);
+        toast.error('Failed to load draft data');
+      }
     }
   };
 
@@ -444,6 +507,7 @@ export function SubmissionsClient() {
                 maxSize={5 * 1024 * 1024}
                 files={keyPhoto}
                 onFilesChange={setKeyPhoto}
+                existingFileUrl={existingKeyPhotoUrl}
                 required
               />
 
@@ -457,6 +521,7 @@ export function SubmissionsClient() {
                 maxSize={5 * 1024 * 1024}
                 files={additionalPhotos}
                 onFilesChange={setAdditionalPhotos}
+                existingFileUrls={existingAdditionalPhotosUrls}
                 required
               />
 
@@ -468,6 +533,7 @@ export function SubmissionsClient() {
                 maxSize={5 * 1024 * 1024}
                 files={documentFile}
                 onFilesChange={setDocumentFile}
+                existingFileUrl={existingDocumentUrl}
               />
 
               {/* Optional Video */}
@@ -478,6 +544,7 @@ export function SubmissionsClient() {
                 maxSize={10 * 1024 * 1024}
                 files={videoFile}
                 onFilesChange={setVideoFile}
+                existingFileUrl={existingVideoUrl}
               />
 
               {/* Action Buttons */}

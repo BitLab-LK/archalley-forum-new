@@ -13,7 +13,6 @@ import {
   CartSummary,
 } from '@/types/competition';
 import {
-  calculateCartExpiry,
   isCartExpired,
 } from '@/lib/competition-utils';
 

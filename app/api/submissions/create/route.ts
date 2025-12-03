@@ -97,39 +97,47 @@ export async function POST(request: NextRequest) {
     let videoUrl: string | null = null;
     let fileMetadata: FileMetadata | null = null;
 
-    // For non-draft submissions, validate and upload files
-    if (!isDraft) {
-      // Validate required files
-      if (!keyPhotoFile) {
-        return NextResponse.json(
-          { error: 'Key photograph is required' },
-          { status: 400 }
-        );
+    // Upload files if provided (for both drafts and final submissions)
+    const hasFiles = keyPhotoFile || additionalPhotosArray.length > 0 || documentFile || videoFile;
+    
+    if (hasFiles) {
+      // For final submissions, validate all required files
+      if (!isDraft) {
+        // Validate required files
+        if (!keyPhotoFile) {
+          return NextResponse.json(
+            { error: 'Key photograph is required' },
+            { status: 400 }
+          );
+        }
+
+        if (additionalPhotosArray.length < 2) {
+          return NextResponse.json(
+            { error: 'At least 2 additional photographs are required' },
+            { status: 400 }
+          );
+        }
       }
 
-      if (additionalPhotosArray.length < 2) {
-        return NextResponse.json(
-          { error: 'At least 2 additional photographs are required' },
-          { status: 400 }
-        );
+      // Validate files if provided
+      if (keyPhotoFile) {
+        const keyPhotoValidation = validateFile(keyPhotoFile, 'photo');
+        if (!keyPhotoValidation.valid) {
+          return NextResponse.json(
+            { error: `Key photograph: ${keyPhotoValidation.error}` },
+            { status: 400 }
+          );
+        }
       }
 
-      // Validate key photograph
-      const keyPhotoValidation = validateFile(keyPhotoFile, 'photo');
-      if (!keyPhotoValidation.valid) {
-        return NextResponse.json(
-          { error: `Key photograph: ${keyPhotoValidation.error}` },
-          { status: 400 }
-        );
-      }
-
-      // Validate additional photographs
-      const additionalPhotosValidation = validateMultiplePhotos(additionalPhotosArray);
-      if (!additionalPhotosValidation.valid) {
-        return NextResponse.json(
-          { error: additionalPhotosValidation.error },
-          { status: 400 }
-        );
+      if (additionalPhotosArray.length > 0) {
+        const additionalPhotosValidation = validateMultiplePhotos(additionalPhotosArray);
+        if (!additionalPhotosValidation.valid) {
+          return NextResponse.json(
+            { error: additionalPhotosValidation.error },
+            { status: 400 }
+          );
+        }
       }
 
       // Validate optional files
@@ -153,27 +161,34 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Upload files to Azure Blob storage
       const year = new Date().getFullYear();
       const uploadConfig = { 
         registrationNumber,
-        category: category as SubmissionCategory, 
+        category: category as SubmissionCategory || 'DIGITAL', 
         year 
       };
 
-      // Upload files to Vercel Blob
-      const keyPhotoResult = await uploadSubmissionFile(
-        keyPhotoFile,
-        'key-photo',
-        uploadConfig
-      );
-      keyPhotoUrl = keyPhotoResult.url;
+      // Upload key photograph if provided
+      if (keyPhotoFile) {
+        const keyPhotoResult = await uploadSubmissionFile(
+          keyPhotoFile,
+          'key-photo',
+          uploadConfig
+        );
+        keyPhotoUrl = keyPhotoResult.url;
+      }
 
-      const photoResults = await uploadMultiplePhotos(
-        additionalPhotosArray,
-        uploadConfig
-      );
-      photoUrls = photoResults.map((r) => r.url);
+      // Upload additional photographs if provided
+      if (additionalPhotosArray.length > 0) {
+        const photoResults = await uploadMultiplePhotos(
+          additionalPhotosArray,
+          uploadConfig
+        );
+        photoUrls = photoResults.map((r) => r.url);
+      }
 
+      // Upload optional document if provided
       if (documentFile) {
         const docResult = await uploadSubmissionFile(
           documentFile,
@@ -183,6 +198,7 @@ export async function POST(request: NextRequest) {
         documentUrl = docResult.url;
       }
 
+      // Upload optional video if provided
       if (videoFile) {
         const videoResult = await uploadSubmissionFile(
           videoFile,
@@ -192,32 +208,28 @@ export async function POST(request: NextRequest) {
         videoUrl = videoResult.url;
       }
 
-      // Build file metadata
+      // Build file metadata for uploaded files
       fileMetadata = {
-        keyPhoto: {
+        keyPhoto: keyPhotoFile ? {
           filename: keyPhotoFile.name,
           size: keyPhotoFile.size,
           uploadedAt: new Date().toISOString(),
-        },
+        } : null,
         photos: additionalPhotosArray.map((f) => ({
           filename: f.name,
           size: f.size,
           uploadedAt: new Date().toISOString(),
         })),
-        document: documentFile
-          ? {
-              filename: documentFile.name,
-              size: documentFile.size,
-              uploadedAt: new Date().toISOString(),
-            }
-          : null,
-        video: videoFile
-          ? {
-              filename: videoFile.name,
-              size: videoFile.size,
-              uploadedAt: new Date().toISOString(),
-            }
-          : null,
+        document: documentFile ? {
+          filename: documentFile.name,
+          size: documentFile.size,
+          uploadedAt: new Date().toISOString(),
+        } : null,
+        video: videoFile ? {
+          filename: videoFile.name,
+          size: videoFile.size,
+          uploadedAt: new Date().toISOString(),
+        } : null,
       };
     }
 

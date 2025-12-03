@@ -68,11 +68,11 @@ export interface FileUploadResult {
 }
 
 export interface FileMetadata {
-  keyPhoto: {
+  keyPhoto?: {
     filename: string;
     size: number;
     uploadedAt: string;
-  };
+  } | null;
   photos: Array<{
     filename: string;
     size: number;
