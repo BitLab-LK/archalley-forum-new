@@ -87,7 +87,7 @@ export async function GET(
           where: { registrationId: reg.id },
           select: {
             id: true,
-            submissionNumber: true,
+            registrationNumber: true,
             status: true,
             title: true,
             submissionCategory: true,

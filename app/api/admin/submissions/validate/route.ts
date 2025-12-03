@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         status: true,
-        submissionNumber: true,
+        registrationNumber: true,
         title: true,
         userId: true,
       },
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log(`✅ Submission ${submission.submissionNumber} validated by admin ${user.name}`);
+    console.log(`✅ Submission ${submission.registrationNumber} validated by admin ${user.name}`);
 
     return NextResponse.json({
       success: true,

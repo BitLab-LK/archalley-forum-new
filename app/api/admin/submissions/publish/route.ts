@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         status: true,
-        submissionNumber: true,
+        registrationNumber: true,
         title: true,
         isValidated: true,
         userId: true,
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log(`🚀 Submission ${submission.submissionNumber} published by admin ${user.name}`);
+    console.log(`🚀 Submission ${submission.registrationNumber} published by admin ${user.name}`);
     console.log(`   Title: ${submission.title}`);
     console.log(`   Now live for public voting!`);
 

@@ -16,7 +16,7 @@ async function cleanupDraftSubmissions() {
       where: { status: 'DRAFT' },
       select: {
         id: true,
-        submissionNumber: true,
+        registrationNumber: true,
         title: true,
         submissionCategory: true,
         userId: true,
@@ -31,7 +31,7 @@ async function cleanupDraftSubmissions() {
 
     console.log(`📋 Found ${draftSubmissions.length} DRAFT submission(s):\n`);
     draftSubmissions.forEach((sub, index) => {
-      console.log(`${index + 1}. ${sub.submissionNumber} - "${sub.title || 'Untitled'}"`);
+      console.log(`${index + 1}. ${sub.registrationNumber || 'N/A'} - "${sub.title || 'Untitled'}"`);
       console.log(`   Category: ${sub.submissionCategory}`);
       console.log(`   Created: ${sub.createdAt.toLocaleDateString()}\n`);
     });

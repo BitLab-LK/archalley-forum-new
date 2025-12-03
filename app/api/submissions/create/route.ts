@@ -9,7 +9,6 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import {
   canUserSubmit,
-  generateSubmissionNumber,
 } from '@/lib/submission-service';
 import {
   uploadSubmissionFile,
@@ -63,6 +62,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: eligibility.reason }, { status: 400 });
     }
 
+    // Get registration number for the submission
+    const registrationNumber = eligibility.registration!.registrationNumber;
+
     // Validate description word count (skip for drafts)
     if (!isDraft && description) {
       const wordCountValidation = validateWordCount(description, 50, 200);
@@ -80,7 +82,6 @@ export async function POST(request: NextRequest) {
     const documentFile = formData.get('documentFile') as File | null;
     const videoFile = formData.get('videoFile') as File | null;
 
-    let submissionNumber: string;
     let keyPhotoUrl: string | null = null;
     let photoUrls: string[] = [];
     let documentUrl: string | null = null;
@@ -143,12 +144,9 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Generate submission number
-      submissionNumber = await generateSubmissionNumber(category);
-
       const year = new Date().getFullYear();
       const uploadConfig = { 
-        submissionNumber, 
+        registrationNumber,
         category: category as SubmissionCategory, 
         year 
       };
@@ -212,9 +210,6 @@ export async function POST(request: NextRequest) {
             }
           : null,
       };
-    } else {
-      // For drafts, generate submission number but don't require files
-      submissionNumber = await generateSubmissionNumber(category);
     }
 
     // Check if this is an update (submission already exists)
@@ -222,14 +217,14 @@ export async function POST(request: NextRequest) {
       where: { registrationId },
     });
 
-    console.log(existingSubmission ? `📝 Updating existing submission: ${existingSubmission.submissionNumber}` : '✨ Creating new submission');
+    console.log(existingSubmission ? `📝 Updating existing submission for registration: ${registrationId}` : '✨ Creating new submission');
 
     // Create or update submission record
     const submission = await prisma.competitionSubmission.upsert({
       where: { registrationId },
       create: {
-        submissionNumber,
         registrationId,
+        registrationNumber,
         userId: session.user.id,
         competitionId: eligibility.registration!.competitionId,
         submissionCategory: category,
@@ -258,8 +253,7 @@ export async function POST(request: NextRequest) {
         submittedAt: isDraft ? null : new Date(),
       },
     });
-
-    console.log(`✅ Submission saved: ${submission.submissionNumber} (Status: ${submission.status})`);
+    console.log(`✅ Submission saved: ${registrationNumber} (Status: ${submission.status})`);
 
     return NextResponse.json({
       success: true,

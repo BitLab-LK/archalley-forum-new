@@ -31,7 +31,7 @@ import { toast } from 'sonner';
 
 interface Submission {
   id: string;
-  submissionNumber: string;
+  registrationNumber: string;
   submissionCategory: string;
   title: string;
   description: string;
@@ -122,7 +122,7 @@ export default function SubmissionsManagementSection() {
     const query = searchQuery.toLowerCase();
     const filtered = submissions.filter(
       (sub) =>
-        sub.submissionNumber.toLowerCase().includes(query) ||
+        sub.registrationNumber.toLowerCase().includes(query) ||
         sub.title.toLowerCase().includes(query) ||
         sub.user.name.toLowerCase().includes(query) ||
         sub.user.email.toLowerCase().includes(query) ||
@@ -326,8 +326,7 @@ export default function SubmissionsManagementSection() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Submission #</TableHead>
-                  <TableHead>Registration #</TableHead>
+                  <TableHead>Registration Number</TableHead>
                   <TableHead>User</TableHead>
                   <TableHead>Competition</TableHead>
                   <TableHead>Title</TableHead>
@@ -340,23 +339,20 @@ export default function SubmissionsManagementSection() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
+                    <TableCell colSpan={8} className="text-center py-8">
                       <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
                       Loading submissions...
                     </TableCell>
                   </TableRow>
                 ) : filteredSubmissions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                       No submissions found
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredSubmissions.map((submission) => (
                     <TableRow key={submission.id}>
-                      <TableCell className="font-mono text-sm">
-                        {submission.submissionNumber}
-                      </TableCell>
                       <TableCell className="font-mono text-sm">
                         {submission.registration?.registrationNumber || 'N/A'}
                       </TableCell>
@@ -472,7 +468,7 @@ export default function SubmissionsManagementSection() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700">Submission Number</label>
-                  <p className="text-sm font-mono mt-1">{selectedSubmission.submissionNumber}</p>
+                  <p className="text-sm font-mono mt-1">{selectedSubmission.registrationNumber}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Registration Number</label>
@@ -684,7 +680,7 @@ export default function SubmissionsManagementSection() {
           {selectedSubmission && (
             <div className="space-y-4">
               <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm font-medium">Submission: {selectedSubmission.submissionNumber}</p>
+                <p className="text-sm font-medium">Submission: {selectedSubmission.registrationNumber}</p>
                 <p className="text-sm text-gray-600">{selectedSubmission.title}</p>
               </div>
 
@@ -745,7 +741,7 @@ export default function SubmissionsManagementSection() {
           {selectedSubmission && (
             <div className="space-y-4">
               <div className="bg-red-50 p-3 rounded-lg">
-                <p className="text-sm font-medium">Submission: {selectedSubmission.submissionNumber}</p>
+                <p className="text-sm font-medium">Submission: {selectedSubmission.registrationNumber}</p>
                 <p className="text-sm text-gray-600">{selectedSubmission.title}</p>
               </div>
 

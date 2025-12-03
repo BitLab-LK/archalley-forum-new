@@ -13,7 +13,7 @@ import type {
   SubmissionSortBy,
   JudgeScore,
 } from '@/types/submission';
-import { SubmissionCategory, RegistrationStatus } from '@prisma/client';
+import { RegistrationStatus } from '@prisma/client';
 
 // ============================================
 // ELIGIBILITY CHECKS
@@ -80,33 +80,6 @@ export async function canUserSubmit(
     registration,
     existingSubmission // For edit mode
   };
-}
-
-// ============================================
-// SUBMISSION NUMBER GENERATION
-// ============================================
-
-export async function generateSubmissionNumber(
-  category: SubmissionCategory
-): Promise<string> {
-  const year = new Date().getFullYear();
-  const prefix = category === SubmissionCategory.DIGITAL ? 'DIG' : 'PHY';
-  
-  // Find last submission number for this category and year
-  const lastSubmission = await prisma.competitionSubmission.findFirst({
-    where: {
-      submissionNumber: {
-        startsWith: `SUB${year}-${prefix}`
-      }
-    },
-    orderBy: { submissionNumber: 'desc' }
-  });
-  
-  const sequence = lastSubmission 
-    ? parseInt(lastSubmission.submissionNumber.split('-')[2]) + 1
-    : 1;
-    
-  return `SUB${year}-${prefix}-${sequence.toString().padStart(3, '0')}`;
 }
 
 // ============================================
@@ -326,7 +299,6 @@ export async function getRegistrationSubmissionStatus(
       registrationNumber: reg.registrationNumber,
       participantName,
       hasSubmitted: !!submission,
-      submissionNumber: submission?.submissionNumber || null,
       submissionStatus: submission?.status || null,
       submissionCategory: submission?.submissionCategory || null,
       submittedAt: submission?.submittedAt || null,

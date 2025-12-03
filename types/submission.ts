@@ -91,7 +91,7 @@ export interface FileMetadata {
 }
 
 export interface UploadConfig {
-  submissionNumber: string;
+  registrationNumber: string;
   category: SubmissionCategory;
   year: number;
 }
@@ -195,7 +195,6 @@ export interface SubmissionSummary {
   registrationNumber: string;
   participantName: string;
   hasSubmitted: boolean;
-  submissionNumber?: string | null;
   submissionStatus?: CompetitionSubmissionStatus | null;
   submissionCategory?: SubmissionCategory | null;
   submittedAt?: Date | null;

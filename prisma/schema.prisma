@@ -1004,10 +1004,10 @@ enum Ga4PurchaseLogStatus {
 
 model CompetitionSubmission {
   id                    String   @id @default(cuid())
-  submissionNumber      String   @unique // Format: SUB{YEAR}-{CATEGORY}-{SEQUENCE} e.g., SUB2025-DIG-001
   
   // References to existing data (READ-ONLY, no Prisma relations to avoid constraints)
   registrationId        String   // Links to CompetitionRegistration.id
+  registrationNumber    String?  // Denormalized for easy lookup (e.g., "QZ8T4L") - Optional for backward compatibility
   userId                String   // Links to users.id
   competitionId         String   // Links to Competition.id
   
@@ -1062,6 +1062,7 @@ model CompetitionSubmission {
   votes                 SubmissionVote[]
   
   @@index([registrationId])
+  @@index([registrationNumber])
   @@index([userId])
   @@index([competitionId])
   @@index([submissionCategory])

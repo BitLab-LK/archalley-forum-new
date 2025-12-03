@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         status: true,
-        submissionNumber: true,
+        registrationNumber: true,
         title: true,
         userId: true,
       },
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log(`🔙 Submission ${submission.submissionNumber} withdrawn by user ${session.user.name || session.user.id}`);
+    console.log(`🔙 Submission ${submission.registrationNumber} withdrawn by user ${session.user.name || session.user.id}`);
 
     return NextResponse.json({
       success: true,

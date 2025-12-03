@@ -26,7 +26,6 @@ interface Registration {
   };
   submission?: {
     id: string;
-    submissionNumber: string;
     status: string;
     title: string;
     submissionCategory: string;
@@ -309,7 +308,7 @@ export function SubmissionsClient() {
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <p className="font-medium text-blue-900">
-                              Submission: {registration.submission.submissionNumber}
+                              Submission: {registration.registrationNumber}
                             </p>
                             <p className="text-sm text-blue-700">
                               {registration.submission.title} (
