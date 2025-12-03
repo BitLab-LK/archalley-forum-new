@@ -38,15 +38,24 @@ export async function POST(request: NextRequest) {
     const isDraft = formData.get('isDraft') === 'true';
 
     // Basic validation
-    if (!registrationId || !category || !title) {
+    if (!registrationId) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Registration ID is required' },
         { status: 400 }
       );
     }
 
-    // Validate category
+    // For non-drafts, require all fields
+    if (!isDraft && (!category || !title)) {
+      return NextResponse.json(
+        { error: 'Category and title are required for submission' },
+        { status: 400 }
+      );
+    }
+
+    // Validate category (if provided)
     if (
+      category &&
       category !== 'DIGITAL' &&
       category !== 'PHYSICAL'
     ) {
@@ -227,8 +236,8 @@ export async function POST(request: NextRequest) {
         registrationNumber,
         userId: session.user.id,
         competitionId: eligibility.registration!.competitionId,
-        submissionCategory: category,
-        title,
+        submissionCategory: category || 'DIGITAL', // Default for drafts
+        title: title || 'Untitled Draft',
         description: description || '',
         keyPhotographUrl: keyPhotoUrl || '',
         additionalPhotographs: photoUrls,
@@ -239,9 +248,9 @@ export async function POST(request: NextRequest) {
         submittedAt: isDraft ? null : new Date(),
       },
       update: {
-        submissionCategory: category,
-        title,
-        description: description || '',
+        ...(category && { submissionCategory: category }),
+        ...(title && { title }),
+        ...(description !== undefined && { description }),
         // Only update file fields if new files were uploaded
         ...(keyPhotoUrl && { keyPhotographUrl: keyPhotoUrl }),
         ...(photoUrls.length > 0 && { additionalPhotographs: photoUrls }),

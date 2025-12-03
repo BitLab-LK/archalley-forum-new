@@ -117,6 +117,18 @@ export function SubmissionsClient() {
     }
   };
 
+  const handleEditDraft = async (registration: Registration) => {
+    // Load draft data into form
+    if (registration.submission) {
+      setSelectedRegistration(registration.id);
+      setEditingSubmission(registration.submission);
+      setCategory(registration.submission.submissionCategory as SubmissionCategory);
+      setTitle(registration.submission.title);
+      // Will need to fetch full submission details to get description and files
+      setShowForm(true);
+    }
+  };
+
   const handleCancelSubmission = () => {
     setShowForm(false);
     setSelectedRegistration(null);
@@ -124,7 +136,7 @@ export function SubmissionsClient() {
     setEligibilityMessage('');
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (saveAsDraft: boolean = false) => {
     setError('');
     setSubmitting(true);
 
@@ -132,33 +144,36 @@ export function SubmissionsClient() {
       const isUpdating = editingSubmission !== null;
       
       console.log(isUpdating ? '📝 Updating submission...' : '✨ Creating new submission...');
+      console.log(saveAsDraft ? '💾 Saving as draft' : '📤 Final submission');
 
-      // Validation
-      if (!category || !title) {
-        setError('Please select a category and enter a title');
-        setSubmitting(false);
-        return;
-      }
+      // Validation for final submission only
+      if (!saveAsDraft) {
+        if (!category || !title) {
+          setError('Please select a category and enter a title');
+          setSubmitting(false);
+          return;
+        }
 
-      // Require files for final submission (unless updating existing submission with files)
-      if (!isUpdating && keyPhoto.length === 0) {
-        setError('Key photograph is required');
-        setSubmitting(false);
-        return;
-      }
-      if (!isUpdating && additionalPhotos.length < 2) {
-        setError('At least 2 additional photographs are required');
-        setSubmitting(false);
-        return;
+        // Require files for final submission (unless updating existing submission with files)
+        if (!isUpdating && keyPhoto.length === 0) {
+          setError('Key photograph is required');
+          setSubmitting(false);
+          return;
+        }
+        if (!isUpdating && additionalPhotos.length < 2) {
+          setError('At least 2 additional photographs are required');
+          setSubmitting(false);
+          return;
+        }
       }
 
       // Build FormData
       const formData = new FormData();
       formData.append('registrationId', selectedRegistration!);
-      formData.append('category', category);
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('isDraft', 'false'); // Always submit as final
+      if (category) formData.append('category', category);
+      if (title) formData.append('title', title);
+      if (description) formData.append('description', description);
+      formData.append('isDraft', saveAsDraft.toString());
 
       if (keyPhoto[0]) formData.append('keyPhotograph', keyPhoto[0]);
       additionalPhotos.forEach((photo) => {
@@ -315,16 +330,27 @@ export function SubmissionsClient() {
                               {registration.submission.submissionCategory})
                             </p>
                           </div>
-                          <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                            registration.submission.status === 'SUBMITTED' ? 'bg-blue-100 text-blue-800' :
-                            registration.submission.status === 'VALIDATED' ? 'bg-green-100 text-green-800' :
-                            registration.submission.status === 'PUBLISHED' ? 'bg-purple-100 text-purple-800' :
-                            registration.submission.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                            registration.submission.status === 'WITHDRAWN' ? 'bg-gray-100 text-gray-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {registration.submission.status}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                              registration.submission.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-800' :
+                              registration.submission.status === 'SUBMITTED' ? 'bg-blue-100 text-blue-800' :
+                              registration.submission.status === 'VALIDATED' ? 'bg-green-100 text-green-800' :
+                              registration.submission.status === 'PUBLISHED' ? 'bg-purple-100 text-purple-800' :
+                              registration.submission.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                              registration.submission.status === 'WITHDRAWN' ? 'bg-gray-100 text-gray-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {registration.submission.status}
+                            </span>
+                            {registration.submission.status === 'DRAFT' && (
+                              <button
+                                onClick={() => handleEditDraft(registration)}
+                                className="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700"
+                              >
+                                Edit Draft
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -455,13 +481,20 @@ export function SubmissionsClient() {
               />
 
               {/* Action Buttons */}
-              <div className="flex pt-6 border-t">
+              <div className="flex gap-3 pt-6 border-t">
                 <button
-                  onClick={handleSubmit}
+                  onClick={() => handleSubmit(true)}
                   disabled={submitting}
-                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitting ? 'Submitting...' : 'Submit Entry'}
+                  {submitting ? 'Saving...' : 'Save as Draft'}
+                </button>
+                <button
+                  onClick={() => handleSubmit(false)}
+                  disabled={submitting}
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Submitting...' : editingSubmission ? 'Submit Entry' : 'Submit Entry'}
                 </button>
               </div>
             </div>
