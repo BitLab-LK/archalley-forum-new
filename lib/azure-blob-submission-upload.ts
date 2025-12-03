@@ -103,7 +103,7 @@ export function validateMultiplePhotos(files: File[]): FileValidationResult {
 // ============================================
 
 export function generateBlobPath(
-  submissionNumber: string,
+  registrationNumber: string,
   category: SubmissionCategory,
   fileType: 'key-photo' | 'photo' | 'document' | 'video',
   index?: number
@@ -111,7 +111,7 @@ export function generateBlobPath(
   const year = new Date().getFullYear();
   const categoryFolder = category.toLowerCase();
   
-  const basePath = `competitions/archalley-${year}/submissions/${categoryFolder}/${submissionNumber}`;
+  const basePath = `competitions/archalley-${year}/submissions/${categoryFolder}/${registrationNumber}`;
   
   switch (fileType) {
     case 'key-photo':
@@ -153,7 +153,7 @@ export async function uploadSubmissionFile(
   
   // Generate path
   const pathname = generateBlobPath(
-    config.submissionNumber,
+    config.registrationNumber,
     config.category,
     fileType,
     index
@@ -203,12 +203,12 @@ export async function uploadMultiplePhotos(
 // ============================================
 
 export async function deleteSubmissionFiles(
-  submissionNumber: string,
+  registrationNumber: string,
   category: SubmissionCategory,
   year: number
 ): Promise<void> {
   const categoryFolder = category.toLowerCase();
-  const prefix = `competitions/archalley-${year}/submissions/${categoryFolder}/${submissionNumber}/`;
+  const prefix = `competitions/archalley-${year}/submissions/${categoryFolder}/${registrationNumber}/`;
   
   try {
     // Azure Blob Storage doesn't have a list by prefix in the same way
