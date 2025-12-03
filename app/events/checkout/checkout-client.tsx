@@ -112,7 +112,7 @@ export default function CheckoutClient({ user }: Props) {
       const data = await response.json();
 
       // API returns { success: true, data: { cart, summary } }
-      if (data.success && data.data?.cart) {
+      if (data.success && data.data?.cart && data.data.cart.status === 'ACTIVE') {
         const cartData = data.data.cart;
         setCart(cartData);
 

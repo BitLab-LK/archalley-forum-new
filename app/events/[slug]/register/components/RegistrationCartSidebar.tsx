@@ -70,20 +70,35 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
   const fetchCart = async () => {
     try {
       console.log('🛒 Fetching cart...');
-      const response = await fetch('/api/competitions/cart');
+      // Add cache-busting to ensure fresh data
+      const response = await fetch('/api/competitions/cart?t=' + Date.now(), {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
+      });
       console.log('Cart fetch response status:', response.status);
       
       const data = await response.json();
-      console.log('Cart fetch response data:', data);
+      console.log('Cart fetch response data:', {
+        success: data.success,
+        itemCount: data.data?.cart?.items?.length || 0,
+        cartStatus: data.data?.cart?.status,
+        cartId: data.data?.cart?.id,
+      });
 
       // API returns { success: true, data: { cart, summary } }
-      if (data.success && data.data?.cart) {
-        console.log('✅ Cart loaded with', data.data.cart.items?.length || 0, 'items');
-        setCart(data.data.cart);
+      if (data.success) {
+        const cart = data.data?.cart;
         
-        // Track view_cart event
-        if (data.data.cart.items && data.data.cart.items.length > 0) {
-          const items: EcommerceItem[] = data.data.cart.items.map((item: any, index: number) => {
+        if (cart && cart.status === 'ACTIVE') {
+          const cartItemCount = cart.items?.length || 0;
+          console.log('✅ Cart loaded with', cartItemCount, 'items, status:', cart.status);
+          setCart(cart);
+          
+          // Track view_cart event only if cart has items
+          if (cartItemCount > 0 && cart.items) {
+          const items: EcommerceItem[] = cart.items.map((item: any, index: number) => {
             const registrationType = item.registrationType?.type;
             const itemCategory = registrationType === 'KIDS'
               ? 'Kids'
@@ -100,8 +115,12 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
           });
           trackViewCart(items, 'LKR');
         }
+        } else {
+          console.log('⚠️ No active cart or cart is empty - setting cart to null');
+          setCart(null);
+        }
       } else {
-        console.log('⚠️ No cart data or unsuccessful response');
+        console.log('⚠️ Cart fetch failed or unsuccessful response - setting cart to null');
         setCart(null);
       }
     } catch (error) {

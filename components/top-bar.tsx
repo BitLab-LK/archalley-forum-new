@@ -88,17 +88,18 @@ export default function TopBar() {
         
         console.log('🛒 TopBar: Cart API response:', {
           success: data.success,
+          hasCart: !!data.data?.cart,
           itemCount: data.data?.cart?.items?.length || 0,
           cartStatus: data.data?.cart?.status,
           cartId: data.data?.cart?.id
         })
         
-        if (data.success && data.data?.cart) {
+        if (data.success && data.data?.cart && data.data.cart.status === 'ACTIVE') {
           const count = data.data.cart.items?.length || 0
           console.log(`🛒 TopBar: Setting cart count to ${count}`)
           setCartItemCount(count)
         } else {
-          console.log('🛒 TopBar: No cart data, setting count to 0')
+          console.log('🛒 TopBar: No active cart, setting count to 0')
           setCartItemCount(0)
         }
       } catch (error) {
