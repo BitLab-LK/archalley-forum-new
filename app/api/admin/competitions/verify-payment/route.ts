@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (adminUser?.role !== 'ADMIN') {
+    if (adminUser?.role !== 'ADMIN' && adminUser?.role !== 'SUPER_ADMIN') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }
