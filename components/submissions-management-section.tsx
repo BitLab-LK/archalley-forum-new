@@ -26,7 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, Eye, Download, RefreshCw, FileText, Image, Video, CheckCircle, XCircle, Globe } from 'lucide-react';
+import { Search, Eye, Download, RefreshCw, FileText, Image, Video, CheckCircle, XCircle, Globe, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Submission {
@@ -246,6 +246,36 @@ export default function SubmissionsManagementSection() {
     }
   };
 
+  const handleUnpublishSubmission = async (submission: Submission) => {
+    if (submission.status !== 'PUBLISHED') {
+      toast.error('Only published submissions can be unpublished');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const response = await fetch('/api/admin/submissions/unpublish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionId: submission.id }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Submission unpublished successfully');
+        fetchSubmissions(); // Refresh list
+      } else {
+        toast.error(data.error || 'Failed to unpublish submission');
+      }
+    } catch (error) {
+      console.error('Error unpublishing submission:', error);
+      toast.error('An error occurred');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusColors: Record<string, string> = {
       DRAFT: 'bg-yellow-100 text-yellow-800',
@@ -435,6 +465,30 @@ export default function SubmissionsManagementSection() {
                               >
                                 <Globe className="w-4 h-4 mr-1" />
                                 Publish
+                              </Button>
+                              <Button
+                                onClick={() => handleRejectClick(submission)}
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <XCircle className="w-4 h-4 mr-1" />
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                          
+                          {submission.status === 'PUBLISHED' && (
+                            <>
+                              <Button
+                                onClick={() => handleUnpublishSubmission(submission)}
+                                variant="ghost"
+                                size="sm"
+                                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                disabled={actionLoading}
+                              >
+                                <Lock className="w-4 h-4 mr-1" />
+                                Unpublish
                               </Button>
                               <Button
                                 onClick={() => handleRejectClick(submission)}

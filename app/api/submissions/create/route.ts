@@ -17,6 +17,7 @@ import {
   validateMultiplePhotos,
   validateWordCount,
 } from '@/lib/azure-blob-submission-upload';
+import { sendSubmissionCreatedEmail, sendSubmissionPublishedEmail } from '@/lib/competition-email-service';
 import { SubmissionCategory } from '@prisma/client';
 import type { FileMetadata } from '@/types/submission';
 
@@ -241,6 +242,7 @@ export async function POST(request: NextRequest) {
     console.log(existingSubmission ? `📝 Updating existing submission for registration: ${registrationId}` : '✨ Creating new submission');
 
     // Create or update submission record
+    // Auto-validate and auto-publish non-draft submissions
     const submission = await prisma.competitionSubmission.upsert({
       where: { registrationId },
       create: {
@@ -256,8 +258,13 @@ export async function POST(request: NextRequest) {
         documentFileUrl: documentUrl,
         videoFileUrl: videoUrl,
         fileMetadata: fileMetadata as any,
-        status: isDraft ? 'DRAFT' : 'SUBMITTED',
+        // Auto-validate and auto-publish non-draft submissions
+        status: isDraft ? 'DRAFT' : 'PUBLISHED',
         submittedAt: isDraft ? null : new Date(),
+        isValidated: !isDraft, // Auto-validate
+        validatedAt: isDraft ? null : new Date(),
+        isPublished: !isDraft, // Auto-publish
+        publishedAt: isDraft ? null : new Date(),
       },
       update: {
         ...(category && { submissionCategory: category }),
@@ -269,12 +276,54 @@ export async function POST(request: NextRequest) {
         ...(documentUrl !== null && { documentFileUrl: documentUrl }),
         ...(videoUrl !== null && { videoFileUrl: videoUrl }),
         ...(fileMetadata && { fileMetadata: fileMetadata as any }),
-        // Update status (can change from DRAFT to SUBMITTED)
-        status: isDraft ? 'DRAFT' : 'SUBMITTED',
+        // Auto-validate and auto-publish when changing from DRAFT to final submission
+        status: isDraft ? 'DRAFT' : 'PUBLISHED',
         submittedAt: isDraft ? null : new Date(),
+        isValidated: isDraft ? false : true,
+        validatedAt: isDraft ? null : new Date(),
+        isPublished: !isDraft,
+        publishedAt: isDraft ? null : new Date(),
       },
     });
     console.log(`✅ Submission saved: ${registrationNumber} (Status: ${submission.status})`);
+
+    // Send email notifications if submission is not a draft
+    if (!isDraft && submission.status === 'PUBLISHED') {
+      try {
+        // Fetch user and competition details for email
+        const [user, competition] = await Promise.all([
+          prisma.users.findUnique({
+            where: { id: session.user.id },
+            select: { name: true, email: true },
+          }),
+          prisma.competition.findUnique({
+            where: { id: eligibility.registration!.competitionId },
+          }),
+        ]);
+
+        if (user && competition) {
+          const submissionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/submissions/${submission.id}`;
+          
+          // Send published email (since it's auto-published)
+          await sendSubmissionPublishedEmail({
+            submission: {
+              registrationNumber: submission.registrationNumber || registrationNumber,
+              title: submission.title,
+              submissionCategory: submission.submissionCategory,
+              publishedAt: submission.publishedAt,
+            },
+            competition: competition as any,
+            userName: user.name || 'Participant',
+            userEmail: user.email,
+            submissionUrl,
+          });
+          console.log(`📧 Submission published email sent to ${user.email}`);
+        }
+      } catch (emailError) {
+        console.error('❌ Failed to send submission published email:', emailError);
+        // Don't fail the request if email fails
+      }
+    }
 
     return NextResponse.json({
       success: true,
