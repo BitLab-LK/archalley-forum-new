@@ -235,7 +235,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
 
       return matchesSearch && matchesStatus && matchesCompetition && matchesSubmission && matchesPaymentMethod && matchesEnvironment;
     });
-  }, [groupedRegistrations, searchQuery, statusFilter, competitionFilter, submissionFilter, paymentMethodFilter]);
+  }, [groupedRegistrations, searchQuery, statusFilter, competitionFilter, submissionFilter, paymentMethodFilter, environmentFilter]);
 
   // Handle select all
   const handleSelectAll = () => {
