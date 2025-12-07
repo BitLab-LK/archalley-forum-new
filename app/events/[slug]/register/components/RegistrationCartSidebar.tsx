@@ -10,6 +10,7 @@ import { CartWithItems } from '@/types/competition';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useCountdown } from '@/hooks/useCountdown';
+import { trackViewCart, trackRemoveFromCart, trackBeginCheckout, EcommerceItem } from '@/lib/google-analytics';
 
 interface Props {
   onCartUpdate: () => void;
@@ -41,6 +42,22 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
     return () => clearTimeout(timer);
   }, [refreshKey]);
 
+  // Listen for cart update events (triggered after payment completion)
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      console.log('🔔 RegistrationCartSidebar: cartUpdated event received, refreshing cart...');
+      fetchCart();
+    };
+
+    console.log('📡 RegistrationCartSidebar: Setting up cartUpdated event listener');
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    
+    return () => {
+      console.log('🔌 RegistrationCartSidebar: Removing cartUpdated event listener');
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+    };
+  }, []);
+
   // Auto-refresh cart when expired (only if expiry is enabled)
   useEffect(() => {
     if (!isExpiryDisabled && countdown.isExpired && cart) {
@@ -53,18 +70,57 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
   const fetchCart = async () => {
     try {
       console.log('🛒 Fetching cart...');
-      const response = await fetch('/api/competitions/cart');
+      // Add cache-busting to ensure fresh data
+      const response = await fetch('/api/competitions/cart?t=' + Date.now(), {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
+      });
       console.log('Cart fetch response status:', response.status);
       
       const data = await response.json();
-      console.log('Cart fetch response data:', data);
+      console.log('Cart fetch response data:', {
+        success: data.success,
+        itemCount: data.data?.cart?.items?.length || 0,
+        cartStatus: data.data?.cart?.status,
+        cartId: data.data?.cart?.id,
+      });
 
       // API returns { success: true, data: { cart, summary } }
-      if (data.success && data.data?.cart) {
-        console.log('✅ Cart loaded with', data.data.cart.items?.length || 0, 'items');
-        setCart(data.data.cart);
+      if (data.success) {
+        const cart = data.data?.cart;
+        
+        if (cart && cart.status === 'ACTIVE') {
+          const cartItemCount = cart.items?.length || 0;
+          console.log('✅ Cart loaded with', cartItemCount, 'items, status:', cart.status);
+          setCart(cart);
+          
+          // Track view_cart event only if cart has items
+          if (cartItemCount > 0 && cart.items) {
+          const items: EcommerceItem[] = cart.items.map((item: any, index: number) => {
+            const registrationType = item.registrationType?.type;
+            const itemCategory = registrationType === 'KIDS'
+              ? 'Kids'
+              : 'Physical and Digital';
+            
+            return {
+              item_id: `${item.competitionId}_${item.registrationTypeId}`,
+              item_name: item.registrationType?.name || 'Registration',
+              item_category: itemCategory,
+              price: item.subtotal,
+              quantity: 1,
+              index,
+            };
+          });
+          trackViewCart(items, 'LKR');
+        }
+        } else {
+          console.log('⚠️ No active cart or cart is empty - setting cart to null');
+          setCart(null);
+        }
       } else {
-        console.log('⚠️ No cart data or unsuccessful response');
+        console.log('⚠️ Cart fetch failed or unsuccessful response - setting cart to null');
         setCart(null);
       }
     } catch (error) {
@@ -85,9 +141,29 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
       const result = await response.json();
 
       if (result.success) {
+        // Track remove_from_cart event
+        const itemToRemove = cart?.items.find(i => i.id === itemId);
+        if (itemToRemove) {
+          const registrationType = itemToRemove.registrationType?.type;
+          const itemCategory = registrationType === 'KIDS'
+            ? 'Kids'
+            : 'Physical and Digital';
+          const ecommerceItem: EcommerceItem = {
+            item_id: `${itemToRemove.competitionId}_${itemToRemove.registrationTypeId}`,
+            item_name: itemToRemove.registrationType?.name || 'Registration',
+            item_category: itemCategory,
+            price: itemToRemove.subtotal,
+            quantity: 1,
+          };
+          trackRemoveFromCart(ecommerceItem);
+        }
+        
         toast.success('Item removed from cart');
         fetchCart(); // Refresh cart
         onCartUpdate();
+        
+        // Dispatch custom event to update cart icon count
+        window.dispatchEvent(new Event('cartUpdated'));
       } else {
         toast.error(result.error || 'Failed to remove item');
       }
@@ -161,6 +237,9 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
         toast.success('Cart cleared');
         fetchCart(); // Refresh cart
         onCartUpdate();
+        
+        // Dispatch custom event to update cart icon count
+        window.dispatchEvent(new Event('cartUpdated'));
       } else {
         toast.error(result.error || 'Failed to clear cart');
       }
@@ -180,6 +259,16 @@ export default function RegistrationCartSidebar({ onCartUpdate, refreshKey = 0, 
       toast.error('Please agree to the Terms & Conditions to proceed');
       return;
     }
+
+    // Track begin_checkout event
+    const items: EcommerceItem[] = cart.items.map((item: any) => ({
+      item_id: `${item.competitionId}_${item.registrationTypeId}`,
+      item_name: item.registrationType?.name || 'Registration',
+      item_category: item.registrationType?.type === 'KIDS' ? 'Kids' : 'Physical and Digital',
+      price: item.subtotal,
+      quantity: 1,
+    }));
+    trackBeginCheckout(items, 'LKR');
 
     setIsCheckingOut(true);
     router.push('/events/checkout');

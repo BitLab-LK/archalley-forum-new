@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { Competition, CompetitionRegistrationType } from '@prisma/client';
 import { MemberInfo, AgreementData } from '@/types/competition';
 import { toast } from 'sonner';
+import { trackAddToCart, trackViewItem, trackViewItemList, trackSelectItem, EcommerceItem } from '@/lib/google-analytics';
 
 interface UserProfile {
   email: string;
@@ -57,6 +58,35 @@ export default function RegistrationForm({
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [showErrors, setShowErrors] = useState(false);
   const [studentConsent, setStudentConsent] = useState(false);
+
+  // Track view_item_list when landing on the registration page
+  useEffect(() => {
+    if (!editingItem && registrationTypes.length > 0) {
+      const items: EcommerceItem[] = registrationTypes.map((type, index) => {
+        // Set item_category based on registration type
+        // "Physical and Digital" for INDIVIDUAL, TEAM, COMPANY, STUDENT
+        // "Kids" for KIDS
+        const itemCategory = type.type === 'KIDS' 
+          ? 'Kids' 
+          : 'Physical and Digital';
+        
+        return {
+          item_id: `${competition.id}_${type.id}`,
+          item_name: type.name,
+          item_category: itemCategory,
+          price: type.fee,
+          quantity: 1,
+          index: index,
+        };
+      });
+      trackViewItemList(
+        items,
+        'LKR',
+        'competition_registration_types',
+        'Competition Registration Types'
+      );
+    }
+  }, [competition, registrationTypes, editingItem]);
 
   // Update form when editingItem changes - only run when editingItem.id changes
   useEffect(() => {
@@ -982,6 +1012,21 @@ export default function RegistrationForm({
       if (result.success) {
         console.log('✅ Successfully added to cart, cart item ID:', result.data?.cartItemId);
         
+        // Track add_to_cart event
+        if (selectedType) {
+          const itemCategory = selectedType.type === 'KIDS'
+            ? 'Kids'
+            : 'Physical and Digital';
+          const item: EcommerceItem = {
+            item_id: `${competition.id}_${selectedType.id}`,
+            item_name: selectedType.name,
+            item_category: itemCategory,
+            price: selectedType.fee,
+            quantity: 1,
+          };
+          trackAddToCart([item]);
+        }
+        
         // If editing, remove the old cart item
         if (editItemId) {
           console.log('🔄 Editing mode: Removing old cart item:', editItemId);
@@ -1014,6 +1059,9 @@ export default function RegistrationForm({
         // Call onCartUpdate to refresh the cart sidebar
         console.log('Calling onCartUpdate to refresh cart...');
         onCartUpdate();
+        
+        // Dispatch custom event to update cart icon count
+        window.dispatchEvent(new Event('cartUpdated'));
         
         // Reset form to empty state
         setSelectedType(null);
@@ -1124,6 +1172,25 @@ export default function RegistrationForm({
                         checked={selectedType?.id === type.id}
                         onChange={() => {
                           setSelectedType(type);
+                          // Track view_item and select_item when user selects a registration type
+                          if (!editingItem) {
+                            const itemCategory = type.type === 'KIDS'
+                              ? 'Kids'
+                              : 'Physical and Digital';
+                            const item: EcommerceItem = {
+                              item_id: `${competition.id}_${type.id}`,
+                              item_name: type.name,
+                              item_category: itemCategory,
+                              price: type.fee,
+                              quantity: 1,
+                            };
+                            trackViewItem(item);
+                            trackSelectItem(
+                              item,
+                              'competition_registration_types',
+                              'Competition Registration Types'
+                            );
+                          }
                           // Reset members if changing type
                           if (type.maxMembers < members.length) {
                             setMembers([members[0]]);
@@ -1169,6 +1236,21 @@ export default function RegistrationForm({
                           checked={selectedType?.id === type.id}
                           onChange={() => {
                             setSelectedType(type);
+                            // Track view_item and select_item when user selects a registration type
+                            if (!editingItem) {
+                            const itemCategory = type.type === 'KIDS'
+                              ? 'Kids'
+                              : 'Physical and Digital';
+                            const item: EcommerceItem = {
+                                item_id: `${competition.id}_${type.id}`,
+                                item_name: type.name,
+                              item_category: itemCategory,
+                                price: type.fee,
+                                quantity: 1,
+                              };
+                              trackViewItem(item);
+                              trackSelectItem(item);
+                            }
                             // Reset members if changing type
                             if (type.maxMembers < members.length) {
                               setMembers([members[0]]);

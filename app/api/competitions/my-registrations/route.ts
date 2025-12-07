@@ -80,9 +80,30 @@ export async function GET(
       },
     });
 
+    // Fetch submissions for each registration
+    const registrationsWithSubmissions = await Promise.all(
+      registrations.map(async (reg) => {
+        const submission = await prisma.competitionSubmission.findUnique({
+          where: { registrationId: reg.id },
+          select: {
+            id: true,
+            registrationNumber: true,
+            status: true,
+            title: true,
+            submissionCategory: true,
+          },
+        });
+
+        return {
+          ...reg,
+          submission,
+        };
+      })
+    );
+
     return NextResponse.json({
       success: true,
-      data: registrations,
+      data: registrationsWithSubmissions,
     });
   } catch (error) {
     console.error('Error fetching registrations:', error);

@@ -58,7 +58,7 @@ export default function MembersPage() {
 
   // Helper function to get profile image source based on privacy
   const getProfileImageSource = (member: Member) => {
-    if (!member.avatar) return "/placeholder-user.jpg"
+    if (!member.avatar) return "/archalley-pro-pic.png"
     
     const privacyContext: PrivacyContext = {
       isOwnProfile: user?.id === member.id,
@@ -72,7 +72,7 @@ export default function MembersPage() {
       privacyContext
     )
     
-    return showProfilePhoto ? member.avatar : "/placeholder-user.jpg"
+    return showProfilePhoto ? member.avatar : "/archalley-pro-pic.png"
   }
 
   const handleViewProfile = (memberId: string) => {

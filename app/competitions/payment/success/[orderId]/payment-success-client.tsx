@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Mail, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
@@ -22,34 +22,63 @@ interface PaymentSuccessClientProps {
     competition: {
       title: string;
       slug: string;
+      id: string;
     };
     registrationType: {
       name: string;
+      id: string;
+      type: 'INDIVIDUAL' | 'TEAM' | 'COMPANY' | 'STUDENT' | 'KIDS';
     };
+    amountPaid: number;
   }>;
+  customerType: 'new' | 'returning';
 }
 
 export default function PaymentSuccessClient({
   user,
   payment,
   registrations,
+  customerType,
 }: PaymentSuccessClientProps) {
   const router = useRouter();
-  const [countdown, setCountdown] = useState(30);
 
   useEffect(() => {
-    // Redirect to events page after 30 seconds
-    if (countdown === 0) {
-      router.push('/events');
+    if (typeof window === 'undefined') {
       return;
     }
 
-    const timer = setTimeout(() => {
-      setCountdown((prev) => prev - 1);
-    }, 1000);
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: 'purchase_received',
+      transaction_id: payment.orderId,
+      customer_type: customerType,
+    });
 
-    return () => clearTimeout(timer);
-  }, [countdown, router]);
+    // Dispatch cart update event to refresh cart icon count
+    // Add a small delay to ensure cart status is updated in database
+    console.log('🎉 Payment success page loaded, will dispatch cartUpdated events');
+    
+    const timer1 = setTimeout(() => {
+      console.log('🔄 [1st] Dispatching cartUpdated event (immediate)');
+      window.dispatchEvent(new Event('cartUpdated'));
+    }, 100);
+    
+    const timer2 = setTimeout(() => {
+      console.log('🔄 [2nd] Dispatching cartUpdated event (500ms delay)');
+      window.dispatchEvent(new Event('cartUpdated'));
+    }, 500);
+    
+    const timer3 = setTimeout(() => {
+      console.log('🔄 [3rd] Dispatching cartUpdated event (1000ms delay)');
+      window.dispatchEvent(new Event('cartUpdated'));
+    }, 1000);
+    
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
+  }, [payment.orderId, customerType]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white py-12 px-4 sm:px-6 lg:px-8">
@@ -212,12 +241,6 @@ export default function PaymentSuccessClient({
           </button>
         </div>
 
-        {/* Auto-redirect notice */}
-        <div className="text-center text-sm text-gray-500">
-          <p>
-            Auto-redirecting to events page in <span className="font-semibold text-orange-600">{countdown}</span> seconds...
-          </p>
-        </div>
       </div>
     </div>
   );

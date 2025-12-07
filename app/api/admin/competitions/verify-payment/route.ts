@@ -11,6 +11,7 @@ import {
   sendPaymentVerifiedEmail,
   sendPaymentRejectedEmail,
 } from '@/lib/competition-email-service';
+import { triggerGa4PurchaseForPayment } from '@/lib/ga4-purchase-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (adminUser?.role !== 'ADMIN') {
+    if (adminUser?.role !== 'ADMIN' && adminUser?.role !== 'SUPER_ADMIN') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }
@@ -124,6 +125,26 @@ export async function POST(request: NextRequest) {
       } catch (emailError) {
         console.error('❌ Failed to send verification email:', emailError);
         // Don't fail the request if email fails
+      }
+
+      try {
+        const ga4Result = await triggerGa4PurchaseForPayment(payment.id, {
+          source: 'bank_transfer_admin',
+        });
+
+        if (ga4Result.status === 'SUCCESS') {
+          console.log(
+            `📊 GA4 purchase event sent for bank transfer transaction ${payment.orderId}`,
+            ga4Result.logId ? { logId: ga4Result.logId } : undefined
+          );
+        } else {
+          console.warn(
+            `⚠️ GA4 purchase event skipped for bank transfer transaction ${payment.orderId}`,
+            ga4Result.reason || ga4Result.error
+          );
+        }
+      } catch (trackingError) {
+        console.error('❌ Failed to trigger GA4 purchase event for bank transfer:', trackingError);
       }
 
       return NextResponse.json({

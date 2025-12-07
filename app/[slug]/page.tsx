@@ -120,7 +120,7 @@ export default async function SlugPage({ params }: PageProps) {
       author: {
         id: post.users?.id || '',
         name: post.isAnonymous ? "Anonymous" : (post.users?.name || 'Anonymous'),
-        avatar: post.users?.image || '/placeholder-user.jpg',
+        avatar: post.users?.image || '/archalley-pro-pic.png',
         isVerified: post.users?.isVerified || false,
         badges: post.users?.userBadges || []
       },

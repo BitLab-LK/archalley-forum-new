@@ -15,6 +15,7 @@ import {
   sendComprehensiveConfirmationEmail,
   sendComprehensiveConsolidatedConfirmationEmail,
 } from '@/lib/competition-email-service';
+import { triggerGa4PurchaseForPayment } from '@/lib/ga4-purchase-service';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   console.log('\n🔔 =============== PAYHERE NOTIFY ENDPOINT CALLED ===============');
@@ -306,6 +307,26 @@ async function handleSuccessfulPayment(
     } catch (emailError) {
       console.error(`❌ Failed to send emails:`, emailError);
       // Don't throw - registration is already created
+    }
+
+    try {
+      const ga4Result = await triggerGa4PurchaseForPayment(payment.id, {
+        source: 'payhere_notify',
+      });
+
+      if (ga4Result.status === 'SUCCESS') {
+        console.log(
+          `📊 GA4 purchase event sent for transaction ${payment.orderId}`,
+          ga4Result.logId ? { logId: ga4Result.logId } : undefined
+        );
+      } else {
+        console.warn(
+          `⚠️ GA4 purchase event not sent for transaction ${payment.orderId}`,
+          ga4Result.reason || ga4Result.error
+        );
+      }
+    } catch (trackingError) {
+      console.error('❌ Failed to trigger GA4 purchase event:', trackingError);
     }
     
   } catch (error) {

@@ -1768,6 +1768,337 @@ Follow us on:
   return sendEmail(userEmail, subject, html, text);
 };
 
+// 6. Submission Created Email
+export const sendSubmissionCreatedEmail = async (data: {
+  submission: {
+    registrationNumber: string;
+    title: string;
+    submissionCategory: string;
+    submittedAt: Date | null;
+  };
+  competition: Competition;
+  userName: string;
+  userEmail: string;
+}) => {
+  const { submission, userName, userEmail } = data;
+
+  console.log('📧 Sending Submission Created Email to:', userEmail);
+  
+  const subject = `Submission Received - Archalley Competition 2025 - Christmas in Future ✅`;
+
+  const html = `
+    ${getEmailHeader()}
+    
+    <!-- Main Content -->
+    <div style="padding: 30px 20px;">
+      <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+        Hi ${userName},
+      </p>
+      
+      <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+        Great news! We have successfully received your submission for <strong>Archalley Competition 2025 - Christmas in Future</strong>. Thank you for participating!
+      </p>
+
+      <!-- Success Status -->
+      <div style="background: #e8f5e9; border-left: 4px solid #4caf50; padding: 20px; margin: 30px 0; border-radius: 4px;">
+        <p style="color: #2e7d32; margin: 0; line-height: 1.8; font-size: 16px; font-weight: bold;">
+          ✅ Submission Received Successfully
+        </p>
+      </div>
+
+      <!-- Submission Details Box -->
+      <div style="background: #f9f9f9; padding: 25px; border-radius: 8px; margin: 30px 0;">
+        <h3 style="color: #333; font-size: 18px; margin: 0 0 15px 0;">Submission Details</h3>
+        <table style="width: 100%; color: #333; font-size: 14px; line-height: 1.8;">
+          <tr>
+            <td style="padding: 8px 0;"><strong>Registration Number:</strong></td>
+            <td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: bold; color: #FFA000;">${submission.registrationNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0;"><strong>Submission Title:</strong></td>
+            <td style="padding: 8px 0; text-align: right; color: #333;">${submission.title}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0;"><strong>Category:</strong></td>
+            <td style="padding: 8px 0; text-align: right; color: #333;">${submission.submissionCategory}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0;"><strong>Submitted At:</strong></td>
+            <td style="padding: 8px 0; text-align: right; color: #333;">${submission.submittedAt ? new Date(submission.submittedAt).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }) : 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0;"><strong>Status:</strong></td>
+            <td style="padding: 8px 0; text-align: right; color: #4caf50; font-weight: bold;">Submitted</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- What Happens Next -->
+      <div style="background: #f9f9f9; padding: 25px; border-radius: 8px; margin: 30px 0;">
+        <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">📋 What Happens Next?</h3>
+        <ol style="color: #666; margin: 0; padding-left: 20px; line-height: 1.8; font-size: 14px;">
+          <li style="margin-bottom: 10px;">Our team will review your submission for completeness and compliance</li>
+          <li style="margin-bottom: 10px;">You will receive an email once your submission is validated</li>
+          <li style="margin-bottom: 10px;">Validated submissions will be published for public voting</li>
+          <li style="margin-bottom: 10px;">Results will be announced after the judging process</li>
+        </ol>
+      </div>
+
+      <!-- Important Note -->
+      <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 20px; margin: 30px 0; border-radius: 4px;">
+        <p style="color: #1565c0; margin: 0; line-height: 1.6; font-size: 14px;">
+          <strong>Important:</strong> Please keep this email for your records. Your registration number (${submission.registrationNumber}) is your reference for any inquiries about your submission.
+        </p>
+      </div>
+
+      <!-- CTA Button -->
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="${process.env.NEXT_PUBLIC_APP_URL}/submissions" 
+           style="background: #FFA000; 
+                  color: white; 
+                  padding: 15px 40px; 
+                  text-decoration: none; 
+                  border-radius: 8px; 
+                  display: inline-block; 
+                  font-weight: bold; 
+                  font-size: 16px;
+                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          View My Submissions
+        </a>
+      </div>
+
+      <p style="color: #999; font-size: 12px; line-height: 1.6; margin: 30px 0 0 0; padding-top: 20px; border-top: 1px solid #eee;">
+        If you have any questions or need to make changes to your submission, please contact us at <a href="mailto:projects@archalley.com" style="color: #FFA000; text-decoration: none;">projects@archalley.com</a>
+      </p>
+    </div>
+    ${getEmailFooter()}
+  `;
+
+  const text = `
+Submission Received - Archalley Competition 2025 ✅
+
+Hi ${userName},
+
+Great news! We have successfully received your submission for Archalley Competition 2025 - Christmas in Future. Thank you for participating!
+
+✅ SUBMISSION RECEIVED SUCCESSFULLY
+
+Submission Details:
+- Registration Number: ${submission.registrationNumber}
+- Submission Title: ${submission.title}
+- Category: ${submission.submissionCategory}
+- Submitted At: ${submission.submittedAt ? new Date(submission.submittedAt).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+- Status: Submitted
+
+What Happens Next?
+1. Our team will review your submission for completeness and compliance
+2. You will receive an email once your submission is validated
+3. Validated submissions will be published for public voting
+4. Results will be announced after the judging process
+
+Important: Please keep this email for your records. Your registration number (${submission.registrationNumber}) is your reference for any inquiries about your submission.
+
+View your submissions: ${process.env.NEXT_PUBLIC_APP_URL}/submissions
+
+If you have any questions, contact us at projects@archalley.com
+
+Follow us on:
+- Facebook: https://facebook.com/archalley
+- Instagram: https://www.instagram.com/archalley_insta/
+- LinkedIn: https://www.linkedin.com/company/archalleypage/
+
+© ${new Date().getFullYear()} Archalley. All rights reserved.
+  `;
+
+  return sendEmail(userEmail, subject, html, text);
+};
+
+// 7. Submission Published Email
+export const sendSubmissionPublishedEmail = async (data: {
+  submission: {
+    registrationNumber: string;
+    title: string;
+    submissionCategory: string;
+    publishedAt: Date | null;
+  };
+  competition: Competition;
+  userName: string;
+  userEmail: string;
+  submissionUrl?: string;
+}) => {
+  const { submission, competition, userName, userEmail, submissionUrl } = data;
+
+  console.log('📧 Sending Submission Published Email to:', userEmail);
+  
+  const subject = `Your Submission is Now Live! - Archalley Competition 2025 - Christmas in Future 🎉`;
+
+  const html = `
+    ${getEmailHeader()}
+    
+    <!-- Main Content -->
+    <div style="padding: 30px 20px;">
+      <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+        Hi ${userName},
+      </p>
+      
+      <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+        Exciting news! Your submission for <strong>Archalley Competition 2025 - Christmas in Future</strong> has been validated and is now <strong>live for public voting</strong>! 🎉
+      </p>
+
+      <!-- Success Status -->
+      <div style="background: #e8f5e9; border-left: 4px solid #4caf50; padding: 20px; margin: 30px 0; border-radius: 4px;">
+        <p style="color: #2e7d32; margin: 0; line-height: 1.8; font-size: 18px; font-weight: bold; text-align: center;">
+          🎉 Your Submission is Now Live!
+        </p>
+        <p style="color: #2e7d32; margin: 10px 0 0 0; line-height: 1.8; font-size: 14px; text-align: center;">
+          Share it with your friends and family to get votes!
+        </p>
+      </div>
+
+      <!-- Submission Details Box -->
+      <div style="background: #f9f9f9; padding: 25px; border-radius: 8px; margin: 30px 0;">
+        <h3 style="color: #333; font-size: 18px; margin: 0 0 15px 0;">Your Published Submission</h3>
+        <table style="width: 100%; color: #333; font-size: 14px; line-height: 1.8;">
+          <tr>
+            <td style="padding: 8px 0;"><strong>Registration Number:</strong></td>
+            <td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: bold; color: #FFA000;">${submission.registrationNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0;"><strong>Submission Title:</strong></td>
+            <td style="padding: 8px 0; text-align: right; color: #333;">${submission.title}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0;"><strong>Category:</strong></td>
+            <td style="padding: 8px 0; text-align: right; color: #333;">${submission.submissionCategory}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0;"><strong>Published At:</strong></td>
+            <td style="padding: 8px 0; text-align: right; color: #333;">${submission.publishedAt ? new Date(submission.publishedAt).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }) : 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0;"><strong>Status:</strong></td>
+            <td style="padding: 8px 0; text-align: right; color: #4caf50; font-weight: bold;">Published & Live</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Voting Information -->
+      <div style="background: #fff4e6; border-left: 4px solid #FFA000; padding: 20px; margin: 30px 0; border-radius: 4px;">
+        <h3 style="color: #FFA000; margin: 0 0 15px 0; font-size: 18px;">🗳️ Public Voting is Now Open!</h3>
+        <p style="color: #333; margin: 0 0 15px 0; line-height: 1.8; font-size: 14px;">
+          Your submission is now visible to the public and eligible for voting. Share your submission link with friends, family, and on social media to get more votes!
+        </p>
+        <ul style="color: #666; margin: 0; padding-left: 20px; line-height: 1.8; font-size: 14px;">
+          <li>Share on social media platforms</li>
+          <li>Encourage friends and family to vote</li>
+          <li>Check the leaderboard to see your ranking</li>
+          <li>Voting helps determine public choice awards</li>
+        </ul>
+      </div>
+
+      <!-- CTA Buttons -->
+      <div style="text-align: center; margin: 40px 0;">
+        ${submissionUrl ? `
+          <a href="${submissionUrl}" 
+             style="background: #FFA000; 
+                    color: white; 
+                    padding: 15px 40px; 
+                    text-decoration: none; 
+                    border-radius: 8px; 
+                    display: inline-block; 
+                    font-weight: bold; 
+                    font-size: 16px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    margin-right: 10px;">
+            View My Submission
+          </a>
+        ` : ''}
+        <a href="${process.env.NEXT_PUBLIC_APP_URL}/competitions/${competition.slug || 'archalley-competition-2025'}" 
+           style="background: #333; 
+                  color: white; 
+                  padding: 15px 40px; 
+                  text-decoration: none; 
+                  border-radius: 8px; 
+                  display: inline-block; 
+                  font-weight: bold; 
+                  font-size: 16px;
+                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          View All Submissions
+        </a>
+      </div>
+
+      <!-- Important Note -->
+      <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 20px; margin: 30px 0; border-radius: 4px;">
+        <p style="color: #1565c0; margin: 0; line-height: 1.6; font-size: 14px;">
+          <strong>Note:</strong> Final winners will be determined by a combination of public votes and expert judging. Keep sharing your submission to maximize your chances!
+        </p>
+      </div>
+
+      <p style="color: #999; font-size: 12px; line-height: 1.6; margin: 30px 0 0 0; padding-top: 20px; border-top: 1px solid #eee;">
+        If you have any questions, please contact us at <a href="mailto:projects@archalley.com" style="color: #FFA000; text-decoration: none;">projects@archalley.com</a>
+      </p>
+    </div>
+    ${getEmailFooter()}
+  `;
+
+  const text = `
+Your Submission is Now Live! - Archalley Competition 2025 🎉
+
+Hi ${userName},
+
+Exciting news! Your submission for Archalley Competition 2025 - Christmas in Future has been validated and is now live for public voting! 🎉
+
+🎉 YOUR SUBMISSION IS NOW LIVE!
+
+Your Published Submission:
+- Registration Number: ${submission.registrationNumber}
+- Submission Title: ${submission.title}
+- Category: ${submission.submissionCategory}
+- Published At: ${submission.publishedAt ? new Date(submission.publishedAt).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+- Status: Published & Live
+
+🗳️ PUBLIC VOTING IS NOW OPEN!
+
+Your submission is now visible to the public and eligible for voting. Share your submission link with friends, family, and on social media to get more votes!
+
+Tips:
+- Share on social media platforms
+- Encourage friends and family to vote
+- Check the leaderboard to see your ranking
+- Voting helps determine public choice awards
+
+${submissionUrl ? `View your submission: ${submissionUrl}` : ''}
+View all submissions: ${process.env.NEXT_PUBLIC_APP_URL}/competitions/${competition.slug || 'archalley-competition-2025'}
+
+Note: Final winners will be determined by a combination of public votes and expert judging. Keep sharing your submission to maximize your chances!
+
+If you have any questions, contact us at projects@archalley.com
+
+Follow us on:
+- Facebook: https://facebook.com/archalley
+- Instagram: https://www.instagram.com/archalley_insta/
+- LinkedIn: https://www.linkedin.com/company/archalleypage/
+
+© ${new Date().getFullYear()} Archalley. All rights reserved.
+  `;
+
+  return sendEmail(userEmail, subject, html, text);
+};
+
 export default {
   sendRegistrationConfirmationEmail,
   sendPaymentReceiptEmail,
@@ -1781,5 +2112,7 @@ export default {
   sendPaymentRejectedEmail,
   sendComprehensiveConfirmationEmail,
   sendComprehensiveConsolidatedConfirmationEmail,
+  sendSubmissionCreatedEmail,
+  sendSubmissionPublishedEmail,
 };
 

@@ -5,7 +5,7 @@
  * - Post fetching with retry logic and error handli      author: {
         id: postData.isAnonymous ? 'anonymous' : (postData.author?.id || 'unknown'),
         name: postData.isAnonymous ? 'Anonymous' : (postData.author?.name || 'User'),
-        avatar: postData.isAnonymous ? '/placeholder-user.jpg' : (postData.author?.avatar || '/placeholder-user.jpg'),
+        avatar: postData.isAnonymous ? '/archalley-pro-pic.png' : (postData.author?.avatar || '/archalley-pro-pic.png'),
         isVerified: false,
         rank: 'Member',
         rankIcon: '🧑'
@@ -183,14 +183,14 @@ export default function HomePageInteractive({
       author: postData.isAnonymous ? {
         id: 'anonymous',
         name: 'Anonymous',
-        avatar: '/placeholder-user.jpg',
+        avatar: '/archalley-pro-pic.png',
         isVerified: false,
         rank: 'Member',
         rankIcon: '👤'
       } : {
         id: postData.author?.id || 'unknown',
         name: postData.author?.name || 'User',
-        avatar: postData.author?.avatar || '/placeholder-user.jpg',
+        avatar: postData.author?.avatar || '/archalley-pro-pic.png',
         isVerified: false,
         rank: 'Member',
         rankIcon: '👤'
@@ -439,7 +439,7 @@ export default function HomePageInteractive({
         author: result.post.author || {
           id: result.post.isAnonymous ? 'anonymous' : 'unknown',
           name: result.post.isAnonymous ? 'Anonymous' : 'User',
-          avatar: '/placeholder-user.jpg',
+          avatar: '/archalley-pro-pic.png',
           isVerified: false,
           rank: 'Member',
           rankIcon: '🧑'

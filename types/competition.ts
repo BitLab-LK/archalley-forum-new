@@ -200,7 +200,7 @@ export interface ApiResponse<T = any> {
 }
 
 export interface CartResponse {
-  cart: CartWithItems;
+  cart: CartWithItems | null;
   summary: CartSummary;
 }
 

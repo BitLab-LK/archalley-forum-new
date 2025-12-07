@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { RevertPaymentDialog } from '@/components/ui/revert-payment-dialog';
 import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 import { RejectPaymentDialog } from '@/components/ui/reject-payment-dialog';
+import { classifyPayment, getPaymentEnvironmentBadge } from '@/lib/payment-utils';
 
 interface Registration {
   id: string;
@@ -73,6 +74,7 @@ interface Registration {
     id: string;
     name: string;
     fee: number;
+    type?: 'INDIVIDUAL' | 'TEAM' | 'COMPANY' | 'STUDENT' | 'KIDS';
   };
   payment: {
     id: string;
@@ -82,6 +84,9 @@ interface Registration {
     paymentMethod: string;
     completedAt: string | null;
     metadata?: any;
+    merchantId?: string;
+    paymentId?: string;
+    responseData?: any;
   } | null;
 }
 
@@ -114,6 +119,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
   const [competitionFilter, setCompetitionFilter] = useState<string>('ALL');
   const [submissionFilter, setSubmissionFilter] = useState<string>('ALL');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('ALL');
+  const [environmentFilter, setEnvironmentFilter] = useState<string>('ALL');
   const [selectedRegistrations, setSelectedRegistrations] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [viewingRegistration, setViewingRegistration] = useState<Registration | null>(null);
@@ -212,9 +218,24 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
       const matchesPaymentMethod = 
         paymentMethodFilter === 'ALL' || reg.payment?.paymentMethod === paymentMethodFilter;
 
-      return matchesSearch && matchesStatus && matchesCompetition && matchesSubmission && matchesPaymentMethod;
+      // Environment filter (sandbox/test detection)
+      let matchesEnvironment = true;
+      if (environmentFilter !== 'ALL' && reg.payment) {
+        const classification = classifyPayment({
+          merchantId: reg.payment.merchantId || '',
+          orderId: reg.payment.orderId,
+          paymentId: reg.payment.paymentId,
+          metadata: reg.payment.metadata,
+          responseData: reg.payment.responseData,
+          amount: reg.payment.amount,
+          status: reg.payment.status,
+        });
+        matchesEnvironment = classification.environment === environmentFilter;
+      }
+
+      return matchesSearch && matchesStatus && matchesCompetition && matchesSubmission && matchesPaymentMethod && matchesEnvironment;
     });
-  }, [groupedRegistrations, searchQuery, statusFilter, competitionFilter, submissionFilter, paymentMethodFilter]);
+  }, [groupedRegistrations, searchQuery, statusFilter, competitionFilter, submissionFilter, paymentMethodFilter, environmentFilter]);
 
   // Handle select all
   const handleSelectAll = () => {
@@ -363,6 +384,30 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
       const data = await response.json();
 
       if (data.success) {
+        // Track purchase event when admin approves payment
+        if (approve && registration && registration.payment) {
+          const hasPreviousConfirmed = registrations.some(
+            (reg) =>
+              reg.user.id === registration.user.id &&
+              reg.status === 'CONFIRMED' &&
+              reg.id !== registration.id
+          );
+          
+          const customerType: 'new' | 'returning' = hasPreviousConfirmed ? 'returning' : 'new';
+
+          if (typeof window !== 'undefined') {
+            const scope = window as typeof window & { dataLayer?: any[] };
+            scope.dataLayer = scope.dataLayer || [];
+            scope.dataLayer.push({
+              event: 'purchase_received',
+              transaction_id: registration.payment.orderId,
+              customer_type: customerType,
+              payment_method: registration.payment.paymentMethod || 'BANK_TRANSFER',
+              source: 'admin_manual_verification',
+            });
+          }
+        }
+        
         toast.success(approve ? 'Payment verified successfully!' : 'Payment rejected and user notified');
         
         // Refresh data
@@ -582,14 +627,45 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
       </div>
 
       {/* Second Row of Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-3">
-            <DollarSign className="w-5 h-5" style={{ color: '#FFA000' }} />
+            <DollarSign className="w-5 h-5 text-green-600" />
             <div>
               <p className="text-sm text-gray-600">Total Revenue (LKR)</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {stats.totalRevenue.toLocaleString()}
+              <p className="text-2xl font-semibold text-green-600">
+                {(() => {
+                  // Calculate production revenue (excluding sandbox/test)
+                  const paymentsWithEnv = registrations
+                    .filter(r => r.payment && r.status === 'CONFIRMED')
+                    .map(r => ({
+                      ...r.payment,
+                      classification: classifyPayment({
+                        merchantId: r.payment?.merchantId || '',
+                        orderId: r.payment?.orderId || '',
+                        paymentId: r.payment?.paymentId,
+                        metadata: r.payment?.metadata,
+                        responseData: r.payment?.responseData,
+                        amount: r.payment?.amount,
+                        status: r.payment?.status,
+                      })
+                    }));
+                  
+                  const productionPayments = new Map();
+                  paymentsWithEnv.forEach(p => {
+                    if (p.classification.environment === 'production') {
+                      productionPayments.set(p.id, p);
+                    }
+                  });
+                  
+                  let total = 0;
+                  productionPayments.forEach(p => {
+                    total += p.amount || 0;
+                  });
+                  
+                  return total.toLocaleString();
+                })()}
+                <span className="text-sm font-normal text-gray-500"> LKR</span>
               </p>
             </div>
           </div>
@@ -597,35 +673,85 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
 
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-3">
-            <DollarSign className="w-5 h-5 text-blue-500" />
+            <DollarSign className="w-5 h-5" style={{ color: '#FFA000' }} />
             <div>
-              <p className="text-sm text-gray-600">PayHere Revenue (LKR)</p>
-              <p className="text-2xl font-semibold text-blue-600">
+              <p className="text-sm text-gray-600">PayHere Revenue</p>
+              <p className="text-2xl font-semibold text-gray-900">
                 {(() => {
-                  // Group by payment ID to avoid double counting
-                  const paymentGroups = new Map<string, typeof registrations>();
-                  registrations.forEach(r => {
-                    if (r.payment?.paymentMethod === 'PAYHERE') {
-                      const key = r.payment.id;
-                      if (!paymentGroups.has(key)) {
-                        paymentGroups.set(key, []);
-                      }
-                      paymentGroups.get(key)!.push(r);
+                  // Calculate PayHere revenue (production only)
+                  const paymentsWithEnv = registrations
+                    .filter(r => r.payment && r.status === 'CONFIRMED' && r.payment.paymentMethod === 'PAYHERE')
+                    .map(r => ({
+                      ...r.payment,
+                      classification: classifyPayment({
+                        merchantId: r.payment?.merchantId || '',
+                        orderId: r.payment?.orderId || '',
+                        paymentId: r.payment?.paymentId,
+                        metadata: r.payment?.metadata,
+                        responseData: r.payment?.responseData,
+                        amount: r.payment?.amount,
+                        status: r.payment?.status,
+                      })
+                    }));
+                  
+                  const productionPayments = new Map();
+                  paymentsWithEnv.forEach(p => {
+                    if (p.classification.environment === 'production') {
+                      productionPayments.set(p.id, p);
                     }
                   });
                   
-                  // Calculate total by summing each payment group once
                   let total = 0;
-                  paymentGroups.forEach(group => {
-                    const hasConfirmed = group.some(r => r.status === 'CONFIRMED');
-                    if (hasConfirmed) {
-                      const groupTotal = group.reduce((sum, r) => sum + r.amountPaid, 0);
-                      total += groupTotal;
-                    }
+                  productionPayments.forEach(p => {
+                    total += p.amount || 0;
                   });
                   
                   return total.toLocaleString();
                 })()}
+                <span className="text-sm font-normal text-gray-500"> LKR</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <DollarSign className="w-5 h-5 text-blue-600" />
+            <div>
+              <p className="text-sm text-gray-600">Bank Transfer Revenue</p>
+              <p className="text-2xl font-semibold text-blue-600">
+                {(() => {
+                  // Calculate Bank Transfer revenue (production only)
+                  const paymentsWithEnv = registrations
+                    .filter(r => r.payment && r.status === 'CONFIRMED' && r.payment.paymentMethod === 'BANK_TRANSFER')
+                    .map(r => ({
+                      ...r.payment,
+                      classification: classifyPayment({
+                        merchantId: r.payment?.merchantId || '',
+                        orderId: r.payment?.orderId || '',
+                        paymentId: r.payment?.paymentId,
+                        metadata: r.payment?.metadata,
+                        responseData: r.payment?.responseData,
+                        amount: r.payment?.amount,
+                        status: r.payment?.status,
+                      })
+                    }));
+                  
+                  const productionPayments = new Map();
+                  paymentsWithEnv.forEach(p => {
+                    if (p.classification.environment === 'production') {
+                      productionPayments.set(p.id, p);
+                    }
+                  });
+                  
+                  let total = 0;
+                  productionPayments.forEach(p => {
+                    total += p.amount || 0;
+                  });
+                  
+                  return total.toLocaleString();
+                })()}
+                <span className="text-sm font-normal text-gray-500"> LKR</span>
               </p>
             </div>
           </div>
@@ -686,7 +812,7 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Status
@@ -733,6 +859,31 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
               <option value="ALL">All Methods</option>
               <option value="PAYHERE">PayHere</option>
               <option value="BANK_TRANSFER">Bank Transfer</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Environment
+            </label>
+            <select
+              value={environmentFilter}
+              onChange={(e) => setEnvironmentFilter(e.target.value)}
+              className="w-full px-3 py-2.5 text-base border border-gray-300 rounded-lg focus:ring-1 focus:border-gray-400"
+              style={{ outline: 'none' }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#FFA000';
+                e.currentTarget.style.boxShadow = '0 0 0 1px #FFA000';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#d1d5db';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <option value="ALL">All Environments</option>
+              <option value="production">Live Only</option>
+              <option value="sandbox">Sandbox Only</option>
+              <option value="test">Test Only</option>
             </select>
           </div>
 
@@ -989,10 +1140,38 @@ export default function AdminRegistrationsClient({ registrations: initialRegistr
                         {/* Payment Method & Registration Numbers */}
                         {reg.payment && (
                           <>
-                            <div className={`text-xs font-medium ${
-                              reg.payment.paymentMethod === 'PAYHERE' ? 'text-blue-600' : 'text-yellow-600'
-                            }`}>
-                              {reg.payment.paymentMethod === 'PAYHERE' ? 'PayHere' : 'Bank Transfer'}
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-xs font-medium ${
+                                reg.payment.paymentMethod === 'PAYHERE' ? 'text-blue-600' : 'text-yellow-600'
+                              }`}>
+                                {reg.payment.paymentMethod === 'PAYHERE' ? 'PayHere' : 'Bank Transfer'}
+                              </span>
+                              
+                              {/* Environment Badge */}
+                              {(() => {
+                                const classification = classifyPayment({
+                                  merchantId: reg.payment.merchantId || '',
+                                  orderId: reg.payment.orderId,
+                                  paymentId: reg.payment.paymentId,
+                                  metadata: reg.payment.metadata,
+                                  responseData: reg.payment.responseData,
+                                  amount: reg.payment.amount,
+                                  status: reg.payment.status,
+                                });
+                                const badge = getPaymentEnvironmentBadge(classification);
+                                
+                                if (classification.environment !== 'production') {
+                                  return (
+                                    <span 
+                                      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${badge.bgColor} ${badge.textColor}`}
+                                      title={`Environment: ${classification.environment}\nIndicators: ${classification.indicators.join(', ')}`}
+                                    >
+                                      {badge.label}
+                                    </span>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
                             <div className="text-xs text-gray-500 font-mono">
                               {group.registrationNumbers.length > 1 ? (

@@ -11,6 +11,7 @@ import Script from 'next/script';
 import { CartWithItems } from '@/types/competition';
 import { PayHerePaymentData } from '@/types/competition';
 import { toast } from 'sonner';
+import { trackAddPaymentInfo, EcommerceItem } from '@/lib/google-analytics';
 
 interface Props {
   user: any;
@@ -111,7 +112,7 @@ export default function CheckoutClient({ user }: Props) {
       const data = await response.json();
 
       // API returns { success: true, data: { cart, summary } }
-      if (data.success && data.data?.cart) {
+      if (data.success && data.data?.cart && data.data.cart.status === 'ACTIVE') {
         const cartData = data.data.cart;
         setCart(cartData);
 
@@ -252,6 +253,20 @@ export default function CheckoutClient({ user }: Props) {
     try {
       if (paymentMethod === 'card') {
         console.log('Initiating card payment via PayHere');
+        
+        // Track add_payment_info event when clicking PayHere button
+        if (cart && cart.items.length > 0) {
+          const items: EcommerceItem[] = cart.items.map((item: any, index: number) => ({
+            item_id: `${item.competitionId}_${item.registrationTypeId}`,
+            item_name: item.registrationType?.name || 'Registration',
+            item_category: item.registrationType?.type === 'KIDS' ? 'Kids' : 'Physical and Digital',
+            price: item.subtotal,
+            quantity: 1,
+            index,
+          }));
+          trackAddPaymentInfo(items, 'PayHere', 'LKR');
+        }
+        
         // Card payment via PayHere
         const response = await fetch('/api/competitions/checkout', {
           method: 'POST',
@@ -299,6 +314,19 @@ export default function CheckoutClient({ user }: Props) {
 
           bankSlipUrl = uploadResult.url;
           bankSlipFileName = bankSlipFile.name;
+        }
+
+        // Track add_payment_info event when clicking Submit Bank Transfer button
+        if (cart && cart.items.length > 0) {
+          const items: EcommerceItem[] = cart.items.map((item: any, index: number) => ({
+            item_id: `${item.competitionId}_${item.registrationTypeId}`,
+            item_name: item.registrationType?.name || 'Registration',
+            item_category: item.registrationType?.type === 'KIDS' ? 'Kids' : 'Physical and Digital',
+            price: item.subtotal,
+            quantity: 1,
+            index,
+          }));
+          trackAddPaymentInfo(items, 'Bank Transfer', 'LKR');
         }
 
         // Submit the payment with or without uploaded file
@@ -490,6 +518,9 @@ export default function CheckoutClient({ user }: Props) {
 
   // Get competition title from first item
   const competitionTitle = cart.items[0]?.competition?.title || 'Archalley Competition 2025';
+  
+  // Get competition slug for back navigation
+  const competitionSlug = cart.items[0]?.competition?.slug || 'archalley-competition-2025';
 
   return (
     <>
@@ -529,7 +560,7 @@ export default function CheckoutClient({ user }: Props) {
         <div className="container mx-auto px-4 max-w-4xl">
         {/* Back Button */}
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push(`/events/${competitionSlug}/register`)}
           className="flex items-center gap-2 text-gray-600 hover:text-black mb-6 transition-colors text-sm"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -647,7 +678,9 @@ export default function CheckoutClient({ user }: Props) {
                   ? 'border-orange-500 bg-orange-50' 
                   : 'border-gray-200 hover:border-gray-300'
               }`}
-              onClick={() => setPaymentMethod('card')}
+              onClick={() => {
+                setPaymentMethod('card');
+              }}
             >
               <div className="flex items-start gap-3">
                 <input 
@@ -678,7 +711,9 @@ export default function CheckoutClient({ user }: Props) {
                   ? 'border-orange-500 bg-orange-50' 
                   : 'border-gray-200 hover:border-gray-300'
               }`}
-              onClick={() => setPaymentMethod('bank')}
+              onClick={() => {
+                setPaymentMethod('bank');
+              }}
             >
               <div className="flex items-start gap-3">
                 <input 

@@ -1,0 +1,1629 @@
+[
+  {
+    "id": "cmib9wlsm0007lh043nw6pano",
+    "registrationNumber": "AFEYP6",
+    "userId": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+    "competitionId": "cmhsiwjid000cice0ahkf49ih",
+    "registrationTypeId": "cmhsiwjuw000eice078cg33kn",
+    "paymentId": "cmib9wls60005lh04kriu6l1j",
+    "country": "Sri Lanka",
+    "participantType": "INDIVIDUAL",
+    "referralSource": null,
+    "teamName": null,
+    "companyName": null,
+    "businessRegistrationNo": null,
+    "teamMembers": null,
+    "members": [
+      {
+        "name": "Neranjan Embogama",
+        "email": "neranjan.dee@gmail.com",
+        "phone": "+94710598222",
+        "lastName": "Embogama",
+        "firstName": "Neranjan"
+      }
+    ],
+    "status": "CONFIRMED",
+    "submissionStatus": "NOT_SUBMITTED",
+    "amountPaid": 3000,
+    "currency": "LKR",
+    "registeredAt": "2025-11-23T05:24:17.878Z",
+    "confirmedAt": "2025-11-23T05:28:33.256Z",
+    "submittedAt": null,
+    "submissionFiles": null,
+    "submissionNotes": null,
+    "submissionUrl": null,
+    "score": null,
+    "judgeComments": null,
+    "rank": null,
+    "award": null,
+    "certificateUrl": null,
+    "metadata": null,
+    "createdAt": "2025-11-23T05:24:17.878Z",
+    "updatedAt": "2025-11-23T05:28:33.257Z",
+    "user": {
+      "id": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+      "name": "Neranjan Embogama",
+      "email": "neranjan.dee@gmail.com",
+      "emailVerified": "2025-11-23T05:03:22.086Z",
+      "image": "https://lh3.googleusercontent.com/a/ACg8ocIsCghZSTXhv8_U7Owc_3CdmMvbeRhaQcRhojajjmbW9nHY6e2A=s96-c",
+      "password": null,
+      "company": null,
+      "profession": null,
+      "bio": null,
+      "location": "",
+      "profileVisibility": true,
+      "linkedinUrl": null,
+      "twitterUrl": null,
+      "instagramUrl": null,
+      "role": "MEMBER",
+      "roleChangedAt": null,
+      "isVerified": true,
+      "isSuspended": false,
+      "suspendedUntil": null,
+      "suspendedBy": null,
+      "suspensionReason": null,
+      "moderationNotes": null,
+      "isBanned": false,
+      "bannedAt": null,
+      "bannedBy": null,
+      "banReason": null,
+      "createdAt": "2025-11-23T05:03:22.087Z",
+      "updatedAt": "2025-11-23T05:19:32.722Z",
+      "lastActiveAt": "2025-11-23T05:03:22.087Z",
+      "city": null,
+      "country": null,
+      "facebookUrl": null,
+      "firstName": "Neranjan",
+      "headline": null,
+      "industry": null,
+      "lastName": "Embogama",
+      "phoneNumber": "+94710598222",
+      "portfolioUrl": null,
+      "portfolioLinks": [],
+      "skills": [],
+      "behanceUrl": null,
+      "dribbbleUrl": null,
+      "emailPrivacy": "EVERYONE",
+      "githubUrl": null,
+      "otherSocialUrl": null,
+      "phonePrivacy": "MEMBERS_ONLY",
+      "profilePhotoPrivacy": "EVERYONE",
+      "tiktokUrl": null,
+      "youtubeUrl": null,
+      "professions": [],
+      "emailDigest": "DISABLED",
+      "emailNotifications": true,
+      "notifyOnComment": true,
+      "notifyOnLike": true,
+      "notifyOnMention": true,
+      "notifyOnNewPost": false,
+      "notifyOnReply": true,
+      "notifyOnSystem": true,
+      "twoFactorEnabled": false,
+      "twoFactorSecret": null
+    },
+    "competition": {
+      "id": "cmhsiwjid000cice0ahkf49ih",
+      "slug": "archalley-competition-2025",
+      "title": "Archalley Competition 2025 - Innovative Christmas Tree",
+      "description": "\"What will a Christmas tree look like in 50 years? Will it float, glow, or live in the metaverse? This year's competition invites you to imagine the tree of tomorrow.\" Participants are encouraged to explore unconventional, futuristic, and conceptual interpretations, from virtual models to physical tree designs. Your tree can be either minimal or detailed, digital, tech-infused, or completely surreal. There are no rules... Only imagination.",
+      "year": 2025,
+      "status": "REGISTRATION_OPEN",
+      "startDate": "2025-11-10T18:30:00.000Z",
+      "endDate": "2026-01-10T18:29:59.000Z",
+      "registrationDeadline": "2025-12-24T18:29:59.000Z",
+      "earlyBirdDeadline": "2025-11-20T18:29:59.000Z",
+      "registrationFee": 2000,
+      "totalPrizeFund": 0,
+      "prizes": {
+        "digital": {
+          "first": {
+            "item": "TABLET",
+            "title": "1st Prize"
+          },
+          "second": {
+            "item": "DRAWING PAD",
+            "title": "2nd Prize"
+          }
+        },
+        "special": [
+          {
+            "title": "Archalley Most Popular Tree Award",
+            "description": "Award for most popular tree"
+          }
+        ],
+        "physical": {
+          "first": {
+            "item": "TABLET",
+            "title": "1st Prize"
+          },
+          "second": {
+            "item": "DRAWING PAD",
+            "title": "2nd Prize"
+          }
+        }
+      },
+      "thumbnail": null,
+      "heroImage": null,
+      "requirements": {
+        "theme": "Christmas in Future",
+        "categories": [
+          "Physical Category",
+          "Digital Category",
+          "Kids' Tree Category"
+        ]
+      },
+      "judgePanel": null,
+      "timeline": {
+        "voting": {
+          "end": "2026-01-04",
+          "start": "2025-12-25"
+        },
+        "results": {
+          "announcement": "2026-01-10"
+        },
+        "submissions": {
+          "start": "2025-12-11",
+          "faqDeadline": "2025-12-20",
+          "kidsDeadline": "2025-12-21",
+          "otherDeadline": "2025-12-24"
+        },
+        "registration": {
+          "kids": {
+            "end": "2025-12-21",
+            "start": "2025-11-11"
+          },
+          "late": {
+            "end": "2025-12-24",
+            "start": "2025-12-21"
+          },
+          "opens": "2025-11-11",
+          "standard": {
+            "end": "2025-12-20",
+            "start": "2025-11-21"
+          },
+          "earlybird": {
+            "end": "2025-11-20",
+            "start": "2025-11-11"
+          }
+        }
+      },
+      "createdAt": "2025-11-10T02:28:34.118Z",
+      "updatedAt": "2025-11-12T09:17:02.615Z"
+    },
+    "registrationType": {
+      "id": "cmhsiwjuw000eice078cg33kn",
+      "competitionId": "cmhsiwjid000cice0ahkf49ih",
+      "type": "INDIVIDUAL",
+      "name": "Single Entry",
+      "description": "Individual participant registration",
+      "fee": 3000,
+      "maxMembers": 1,
+      "minAge": null,
+      "maxAge": null,
+      "isActive": true,
+      "displayOrder": 1,
+      "createdAt": "2025-11-10T02:28:34.568Z",
+      "updatedAt": "2025-11-10T02:28:34.568Z"
+    },
+    "payment": {
+      "id": "cmib9wls60005lh04kriu6l1j",
+      "orderId": "ORDER-AC2025-00119-457861",
+      "userId": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+      "competitionId": "cmhsiwjid000cice0ahkf49ih",
+      "amount": 3000,
+      "currency": "LKR",
+      "status": "COMPLETED",
+      "merchantId": "1232882",
+      "paymentId": null,
+      "statusCode": null,
+      "md5sig": null,
+      "paymentMethod": "BANK_TRANSFER",
+      "cardHolderName": null,
+      "cardNo": null,
+      "items": [
+        {
+          "id": "cmib9vtc50003lh04gonn1xio",
+          "country": "Sri Lanka",
+          "subtotal": 3000,
+          "unitPrice": 3000,
+          "memberCount": 1,
+          "competitionTitle": "Archalley Competition 2025 - Innovative Christmas Tree",
+          "registrationType": "Single Entry"
+        }
+      ],
+      "customerDetails": {
+        "city": "",
+        "email": "neranjan.dee@gmail.com",
+        "phone": "+94710598222",
+        "address": "",
+        "country": "Sri Lanka",
+        "lastName": "Embogama",
+        "firstName": "Neranjan"
+      },
+      "responseData": null,
+      "errorMessage": null,
+      "errorCode": null,
+      "metadata": {
+        "action": "APPROVED",
+        "cartId": "cmib9vnwt0001lh04o05j5j87",
+        "itemIds": [
+          "cmib9vtc50003lh04gonn1xio"
+        ],
+        "verifiedAt": "2025-11-23T05:28:33.249Z",
+        "verifiedBy": "chavindu@bitlab.lk",
+        "bankSlipUrl": "https://archalley.blob.core.windows.net/uploads/bank-slips/1763875457440-Christmas_Tree_Competition_2025_-_Brief.pdf",
+        "paymentMethod": "bank",
+        "competitionIds": [
+          "cmhsiwjid000cice0ahkf49ih"
+        ],
+        "verifiedByName": "Chavindu Nuwanpriya",
+        "bankSlipFileName": "Christmas Tree Competition 2025 - Brief.pdf"
+      },
+      "initiatedAt": "2025-11-23T05:24:17.862Z",
+      "completedAt": "2025-11-23T05:28:33.249Z",
+      "cancelledAt": null,
+      "refundedAt": null,
+      "createdAt": "2025-11-23T05:24:17.862Z",
+      "updatedAt": "2025-11-23T05:28:33.250Z"
+    }
+  },
+  {
+    "id": "cmic1f9xv0003l104qijd9qlt",
+    "registrationNumber": "6UWDAZ",
+    "userId": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+    "competitionId": "cmhsiwjid000cice0ahkf49ih",
+    "registrationTypeId": "cmhsiwjuw000eice078cg33kn",
+    "paymentId": "cmic1f9xi0001l104kruj272x",
+    "country": "Sri Lanka",
+    "participantType": "INDIVIDUAL",
+    "referralSource": null,
+    "teamName": null,
+    "companyName": null,
+    "businessRegistrationNo": null,
+    "teamMembers": null,
+    "members": [
+      {
+        "name": "Neranjan Embogama",
+        "email": "neranjan.dee@gmail.com",
+        "phone": "+94710598222",
+        "lastName": "Embogama",
+        "firstName": "Neranjan"
+      }
+    ],
+    "status": "CONFIRMED",
+    "submissionStatus": "NOT_SUBMITTED",
+    "amountPaid": 3000,
+    "currency": "LKR",
+    "registeredAt": "2025-11-23T18:14:38.611Z",
+    "confirmedAt": "2025-11-23T18:14:58.729Z",
+    "submittedAt": null,
+    "submissionFiles": null,
+    "submissionNotes": null,
+    "submissionUrl": null,
+    "score": null,
+    "judgeComments": null,
+    "rank": null,
+    "award": null,
+    "certificateUrl": null,
+    "metadata": null,
+    "createdAt": "2025-11-23T18:14:38.611Z",
+    "updatedAt": "2025-11-23T18:14:58.730Z",
+    "user": {
+      "id": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+      "name": "Neranjan Embogama",
+      "email": "neranjan.dee@gmail.com",
+      "emailVerified": "2025-11-23T05:03:22.086Z",
+      "image": "https://lh3.googleusercontent.com/a/ACg8ocIsCghZSTXhv8_U7Owc_3CdmMvbeRhaQcRhojajjmbW9nHY6e2A=s96-c",
+      "password": null,
+      "company": null,
+      "profession": null,
+      "bio": null,
+      "location": "",
+      "profileVisibility": true,
+      "linkedinUrl": null,
+      "twitterUrl": null,
+      "instagramUrl": null,
+      "role": "MEMBER",
+      "roleChangedAt": null,
+      "isVerified": true,
+      "isSuspended": false,
+      "suspendedUntil": null,
+      "suspendedBy": null,
+      "suspensionReason": null,
+      "moderationNotes": null,
+      "isBanned": false,
+      "bannedAt": null,
+      "bannedBy": null,
+      "banReason": null,
+      "createdAt": "2025-11-23T05:03:22.087Z",
+      "updatedAt": "2025-11-23T05:19:32.722Z",
+      "lastActiveAt": "2025-11-23T05:03:22.087Z",
+      "city": null,
+      "country": null,
+      "facebookUrl": null,
+      "firstName": "Neranjan",
+      "headline": null,
+      "industry": null,
+      "lastName": "Embogama",
+      "phoneNumber": "+94710598222",
+      "portfolioUrl": null,
+      "portfolioLinks": [],
+      "skills": [],
+      "behanceUrl": null,
+      "dribbbleUrl": null,
+      "emailPrivacy": "EVERYONE",
+      "githubUrl": null,
+      "otherSocialUrl": null,
+      "phonePrivacy": "MEMBERS_ONLY",
+      "profilePhotoPrivacy": "EVERYONE",
+      "tiktokUrl": null,
+      "youtubeUrl": null,
+      "professions": [],
+      "emailDigest": "DISABLED",
+      "emailNotifications": true,
+      "notifyOnComment": true,
+      "notifyOnLike": true,
+      "notifyOnMention": true,
+      "notifyOnNewPost": false,
+      "notifyOnReply": true,
+      "notifyOnSystem": true,
+      "twoFactorEnabled": false,
+      "twoFactorSecret": null
+    },
+    "competition": {
+      "id": "cmhsiwjid000cice0ahkf49ih",
+      "slug": "archalley-competition-2025",
+      "title": "Archalley Competition 2025 - Innovative Christmas Tree",
+      "description": "\"What will a Christmas tree look like in 50 years? Will it float, glow, or live in the metaverse? This year's competition invites you to imagine the tree of tomorrow.\" Participants are encouraged to explore unconventional, futuristic, and conceptual interpretations, from virtual models to physical tree designs. Your tree can be either minimal or detailed, digital, tech-infused, or completely surreal. There are no rules... Only imagination.",
+      "year": 2025,
+      "status": "REGISTRATION_OPEN",
+      "startDate": "2025-11-10T18:30:00.000Z",
+      "endDate": "2026-01-10T18:29:59.000Z",
+      "registrationDeadline": "2025-12-24T18:29:59.000Z",
+      "earlyBirdDeadline": "2025-11-20T18:29:59.000Z",
+      "registrationFee": 2000,
+      "totalPrizeFund": 0,
+      "prizes": {
+        "digital": {
+          "first": {
+            "item": "TABLET",
+            "title": "1st Prize"
+          },
+          "second": {
+            "item": "DRAWING PAD",
+            "title": "2nd Prize"
+          }
+        },
+        "special": [
+          {
+            "title": "Archalley Most Popular Tree Award",
+            "description": "Award for most popular tree"
+          }
+        ],
+        "physical": {
+          "first": {
+            "item": "TABLET",
+            "title": "1st Prize"
+          },
+          "second": {
+            "item": "DRAWING PAD",
+            "title": "2nd Prize"
+          }
+        }
+      },
+      "thumbnail": null,
+      "heroImage": null,
+      "requirements": {
+        "theme": "Christmas in Future",
+        "categories": [
+          "Physical Category",
+          "Digital Category",
+          "Kids' Tree Category"
+        ]
+      },
+      "judgePanel": null,
+      "timeline": {
+        "voting": {
+          "end": "2026-01-04",
+          "start": "2025-12-25"
+        },
+        "results": {
+          "announcement": "2026-01-10"
+        },
+        "submissions": {
+          "start": "2025-12-11",
+          "faqDeadline": "2025-12-20",
+          "kidsDeadline": "2025-12-21",
+          "otherDeadline": "2025-12-24"
+        },
+        "registration": {
+          "kids": {
+            "end": "2025-12-21",
+            "start": "2025-11-11"
+          },
+          "late": {
+            "end": "2025-12-24",
+            "start": "2025-12-21"
+          },
+          "opens": "2025-11-11",
+          "standard": {
+            "end": "2025-12-20",
+            "start": "2025-11-21"
+          },
+          "earlybird": {
+            "end": "2025-11-20",
+            "start": "2025-11-11"
+          }
+        }
+      },
+      "createdAt": "2025-11-10T02:28:34.118Z",
+      "updatedAt": "2025-11-12T09:17:02.615Z"
+    },
+    "registrationType": {
+      "id": "cmhsiwjuw000eice078cg33kn",
+      "competitionId": "cmhsiwjid000cice0ahkf49ih",
+      "type": "INDIVIDUAL",
+      "name": "Single Entry",
+      "description": "Individual participant registration",
+      "fee": 3000,
+      "maxMembers": 1,
+      "minAge": null,
+      "maxAge": null,
+      "isActive": true,
+      "displayOrder": 1,
+      "createdAt": "2025-11-10T02:28:34.568Z",
+      "updatedAt": "2025-11-10T02:28:34.568Z"
+    },
+    "payment": {
+      "id": "cmic1f9xi0001l104kruj272x",
+      "orderId": "ORDER-AC2025-00107-678597",
+      "userId": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+      "competitionId": "cmhsiwjid000cice0ahkf49ih",
+      "amount": 3000,
+      "currency": "LKR",
+      "status": "COMPLETED",
+      "merchantId": "1232882",
+      "paymentId": null,
+      "statusCode": null,
+      "md5sig": null,
+      "paymentMethod": "BANK_TRANSFER",
+      "cardHolderName": null,
+      "cardNo": null,
+      "items": [
+        {
+          "id": "cmic1djvg0003ii04n9h3cigg",
+          "country": "Sri Lanka",
+          "subtotal": 3000,
+          "unitPrice": 3000,
+          "memberCount": 1,
+          "competitionTitle": "Archalley Competition 2025 - Innovative Christmas Tree",
+          "registrationType": "Single Entry"
+        }
+      ],
+      "customerDetails": {
+        "city": "",
+        "email": "neranjan.dee@gmail.com",
+        "phone": "+94710598222",
+        "address": "",
+        "country": "Sri Lanka",
+        "lastName": "Embogama",
+        "firstName": "Neranjan"
+      },
+      "responseData": null,
+      "errorMessage": null,
+      "errorCode": null,
+      "metadata": {
+        "action": "APPROVED",
+        "cartId": "cmic1ddl20001ii04efdk24k5",
+        "itemIds": [
+          "cmic1djvg0003ii04n9h3cigg"
+        ],
+        "verifiedAt": "2025-11-23T18:14:58.721Z",
+        "verifiedBy": "chavindun@gmail.com",
+        "bankSlipUrl": "https://archalley.blob.core.windows.net/uploads/bank-slips/1763921678200-Christmas_Tree_Competition_2025_-_Brief.pdf",
+        "paymentMethod": "bank",
+        "competitionIds": [
+          "cmhsiwjid000cice0ahkf49ih"
+        ],
+        "verifiedByName": "Chavindu Nuwanpriya",
+        "bankSlipFileName": "Christmas Tree Competition 2025 - Brief.pdf"
+      },
+      "initiatedAt": "2025-11-23T18:14:38.598Z",
+      "completedAt": "2025-11-23T18:14:58.721Z",
+      "cancelledAt": null,
+      "refundedAt": null,
+      "createdAt": "2025-11-23T18:14:38.598Z",
+      "updatedAt": "2025-11-23T18:14:58.722Z"
+    }
+  },
+  {
+    "id": "cmi4bp9v5000fl504i0vbjjwm",
+    "registrationNumber": "6N6ZU3",
+    "userId": "bc81d183-000c-46bf-b66b-b76cc0dab8bf",
+    "competitionId": "cmhsiwjid000cice0ahkf49ih",
+    "registrationTypeId": "cmhsiwk4u000gice0ogq5qqzr",
+    "paymentId": "cmi4boerb000bky04wn7ekj0r",
+    "country": "Sri Lanka",
+    "participantType": "TEAM",
+    "referralSource": "Email",
+    "teamName": "TeamName1",
+    "companyName": null,
+    "businessRegistrationNo": null,
+    "teamMembers": [
+      "m1"
+    ],
+    "members": [
+      {
+        "name": "GroupEntry Test",
+        "role": "Lead",
+        "email": "gimhanijayasuriya109@gmail.com",
+        "phone": "+9471 1942194",
+        "lastName": "Test",
+        "firstName": "GroupEntry"
+      }
+    ],
+    "status": "CONFIRMED",
+    "submissionStatus": "NOT_SUBMITTED",
+    "amountPaid": 4000,
+    "currency": "LKR",
+    "registeredAt": "2025-11-18T08:40:11.825Z",
+    "confirmedAt": "2025-11-18T08:40:11.824Z",
+    "submittedAt": null,
+    "submissionFiles": null,
+    "submissionNotes": null,
+    "submissionUrl": null,
+    "score": null,
+    "judgeComments": null,
+    "rank": null,
+    "award": null,
+    "certificateUrl": null,
+    "metadata": null,
+    "createdAt": "2025-11-18T08:40:11.825Z",
+    "updatedAt": "2025-11-18T08:40:11.825Z",
+    "user": {
+      "id": "bc81d183-000c-46bf-b66b-b76cc0dab8bf",
+      "name": "Gimhani Jayasuriya",
+      "email": "gimhanijayasuriya109@gmail.com",
+      "emailVerified": "2025-11-13T07:38:52.676Z",
+      "image": "https://lh3.googleusercontent.com/a/ACg8ocJECEjE7lfFERNT3ZxMNs_FxLXNRlcRC0y0JPmmFCDGw5T6msQ=s96-c",
+      "password": null,
+      "company": null,
+      "profession": null,
+      "bio": null,
+      "location": "",
+      "profileVisibility": true,
+      "linkedinUrl": null,
+      "twitterUrl": null,
+      "instagramUrl": null,
+      "role": "ADMIN",
+      "roleChangedAt": null,
+      "isVerified": true,
+      "isSuspended": false,
+      "suspendedUntil": null,
+      "suspendedBy": null,
+      "suspensionReason": null,
+      "moderationNotes": null,
+      "isBanned": false,
+      "bannedAt": null,
+      "bannedBy": null,
+      "banReason": null,
+      "createdAt": "2025-11-13T07:38:52.677Z",
+      "updatedAt": "2025-11-18T06:46:45.244Z",
+      "lastActiveAt": "2025-11-24T08:48:30.771Z",
+      "city": null,
+      "country": null,
+      "facebookUrl": null,
+      "firstName": "Gimhani",
+      "headline": null,
+      "industry": null,
+      "lastName": "Jayasuriya",
+      "phoneNumber": "+9471 1942194",
+      "portfolioUrl": null,
+      "portfolioLinks": [],
+      "skills": [],
+      "behanceUrl": null,
+      "dribbbleUrl": null,
+      "emailPrivacy": "EVERYONE",
+      "githubUrl": null,
+      "otherSocialUrl": null,
+      "phonePrivacy": "MEMBERS_ONLY",
+      "profilePhotoPrivacy": "EVERYONE",
+      "tiktokUrl": null,
+      "youtubeUrl": null,
+      "professions": [],
+      "emailDigest": "DISABLED",
+      "emailNotifications": true,
+      "notifyOnComment": true,
+      "notifyOnLike": true,
+      "notifyOnMention": true,
+      "notifyOnNewPost": false,
+      "notifyOnReply": true,
+      "notifyOnSystem": true,
+      "twoFactorEnabled": false,
+      "twoFactorSecret": null
+    },
+    "competition": {
+      "id": "cmhsiwjid000cice0ahkf49ih",
+      "slug": "archalley-competition-2025",
+      "title": "Archalley Competition 2025 - Innovative Christmas Tree",
+      "description": "\"What will a Christmas tree look like in 50 years? Will it float, glow, or live in the metaverse? This year's competition invites you to imagine the tree of tomorrow.\" Participants are encouraged to explore unconventional, futuristic, and conceptual interpretations, from virtual models to physical tree designs. Your tree can be either minimal or detailed, digital, tech-infused, or completely surreal. There are no rules... Only imagination.",
+      "year": 2025,
+      "status": "REGISTRATION_OPEN",
+      "startDate": "2025-11-10T18:30:00.000Z",
+      "endDate": "2026-01-10T18:29:59.000Z",
+      "registrationDeadline": "2025-12-24T18:29:59.000Z",
+      "earlyBirdDeadline": "2025-11-20T18:29:59.000Z",
+      "registrationFee": 2000,
+      "totalPrizeFund": 0,
+      "prizes": {
+        "digital": {
+          "first": {
+            "item": "TABLET",
+            "title": "1st Prize"
+          },
+          "second": {
+            "item": "DRAWING PAD",
+            "title": "2nd Prize"
+          }
+        },
+        "special": [
+          {
+            "title": "Archalley Most Popular Tree Award",
+            "description": "Award for most popular tree"
+          }
+        ],
+        "physical": {
+          "first": {
+            "item": "TABLET",
+            "title": "1st Prize"
+          },
+          "second": {
+            "item": "DRAWING PAD",
+            "title": "2nd Prize"
+          }
+        }
+      },
+      "thumbnail": null,
+      "heroImage": null,
+      "requirements": {
+        "theme": "Christmas in Future",
+        "categories": [
+          "Physical Category",
+          "Digital Category",
+          "Kids' Tree Category"
+        ]
+      },
+      "judgePanel": null,
+      "timeline": {
+        "voting": {
+          "end": "2026-01-04",
+          "start": "2025-12-25"
+        },
+        "results": {
+          "announcement": "2026-01-10"
+        },
+        "submissions": {
+          "start": "2025-12-11",
+          "faqDeadline": "2025-12-20",
+          "kidsDeadline": "2025-12-21",
+          "otherDeadline": "2025-12-24"
+        },
+        "registration": {
+          "kids": {
+            "end": "2025-12-21",
+            "start": "2025-11-11"
+          },
+          "late": {
+            "end": "2025-12-24",
+            "start": "2025-12-21"
+          },
+          "opens": "2025-11-11",
+          "standard": {
+            "end": "2025-12-20",
+            "start": "2025-11-21"
+          },
+          "earlybird": {
+            "end": "2025-11-20",
+            "start": "2025-11-11"
+          }
+        }
+      },
+      "createdAt": "2025-11-10T02:28:34.118Z",
+      "updatedAt": "2025-11-12T09:17:02.615Z"
+    },
+    "registrationType": {
+      "id": "cmhsiwk4u000gice0ogq5qqzr",
+      "competitionId": "cmhsiwjid000cice0ahkf49ih",
+      "type": "TEAM",
+      "name": "Group Entry",
+      "description": "Team registration (2 or more members)",
+      "fee": 5000,
+      "maxMembers": 10,
+      "minAge": null,
+      "maxAge": null,
+      "isActive": true,
+      "displayOrder": 2,
+      "createdAt": "2025-11-10T02:28:34.926Z",
+      "updatedAt": "2025-11-10T02:28:34.926Z"
+    },
+    "payment": {
+      "id": "cmi4boerb000bky04wn7ekj0r",
+      "orderId": "ORDER-AC2025-00118-171510",
+      "userId": "bc81d183-000c-46bf-b66b-b76cc0dab8bf",
+      "competitionId": "cmhsiwjid000cice0ahkf49ih",
+      "amount": 10000,
+      "currency": "LKR",
+      "status": "COMPLETED",
+      "merchantId": "1232882",
+      "paymentId": null,
+      "statusCode": "2",
+      "md5sig": null,
+      "paymentMethod": "PAYHERE",
+      "cardHolderName": null,
+      "cardNo": null,
+      "items": [
+        {
+          "id": "cmi4bje21000bl504d5ynqwzz",
+          "country": "Sri Lanka",
+          "subtotal": 2000,
+          "unitPrice": 2000,
+          "memberCount": 1,
+          "competitionTitle": "Archalley Competition 2025 - Innovative Christmas Tree",
+          "registrationType": "Single Entry"
+        },
+        {
+          "id": "cmi4bk8mx0009ky04k948ywv8",
+          "country": "Sri Lanka",
+          "subtotal": 4000,
+          "unitPrice": 4000,
+          "memberCount": 1,
+          "competitionTitle": "Archalley Competition 2025 - Innovative Christmas Tree",
+          "registrationType": "Group Entry"
+        },
+        {
+          "id": "cmi4bl9xy000ljr04aw9wioue",
+          "country": "Sri Lanka",
+          "subtotal": 2000,
+          "unitPrice": 2000,
+          "memberCount": 1,
+          "competitionTitle": "Archalley Competition 2025 - Innovative Christmas Tree",
+          "registrationType": "Student Entry"
+        },
+        {
+          "id": "cmi4bma0u000dl504igi14kcu",
+          "country": "Sri Lanka",
+          "subtotal": 2000,
+          "unitPrice": 2000,
+          "memberCount": 1,
+          "competitionTitle": "Archalley Competition 2025 - Innovative Christmas Tree",
+          "registrationType": "Kids' Tree Category"
+        }
+      ],
+      "customerDetails": {
+        "city": "",
+        "email": "gimhanijayasuriya109@gmail.com",
+        "phone": "+9471 1942194",
+        "address": "",
+        "country": "Sri Lanka",
+        "lastName": "Test",
+        "firstName": "singleEntry"
+      },
+      "responseData": {
+        "reason": "notify_endpoint_missed",
+        "created_at": "2025-11-18T08:40:11.904Z",
+        "created_via": "return_handler",
+        "fallback_registration": true
+      },
+      "errorMessage": null,
+      "errorCode": null,
+      "metadata": {
+        "cartId": "cmi4bikmy0007ky04c7xql3bq",
+        "itemIds": [
+          "cmi4bje21000bl504d5ynqwzz",
+          "cmi4bk8mx0009ky04k948ywv8",
+          "cmi4bl9xy000ljr04aw9wioue",
+          "cmi4bma0u000dl504igi14kcu"
+        ]
+      },
+      "initiatedAt": "2025-11-18T08:39:31.511Z",
+      "completedAt": "2025-11-18T08:40:11.904Z",
+      "cancelledAt": null,
+      "refundedAt": null,
+      "createdAt": "2025-11-18T08:39:31.511Z",
+      "updatedAt": "2025-11-18T08:40:11.905Z"
+    }
+  },
+  {
+    "id": "cmic15ng10003ju04qor55xxa",
+    "registrationNumber": "G79CTF",
+    "userId": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+    "competitionId": "cmhsiwjid000cice0ahkf49ih",
+    "registrationTypeId": "cmhsiwjuw000eice078cg33kn",
+    "paymentId": "cmic1388p0001ju04oe7rxay8",
+    "country": "Sri Lanka",
+    "participantType": "INDIVIDUAL",
+    "referralSource": "Facebook",
+    "teamName": null,
+    "companyName": null,
+    "businessRegistrationNo": null,
+    "teamMembers": null,
+    "members": [
+      {
+        "name": "Neranjan Embogama",
+        "email": "neranjan.dee@gmail.com",
+        "phone": "+94710598222",
+        "lastName": "Embogama",
+        "firstName": "Neranjan"
+      }
+    ],
+    "status": "CONFIRMED",
+    "submissionStatus": "NOT_SUBMITTED",
+    "amountPaid": 3000,
+    "currency": "LKR",
+    "registeredAt": "2025-11-23T18:07:09.553Z",
+    "confirmedAt": "2025-11-23T18:07:09.552Z",
+    "submittedAt": null,
+    "submissionFiles": null,
+    "submissionNotes": null,
+    "submissionUrl": null,
+    "score": null,
+    "judgeComments": null,
+    "rank": null,
+    "award": null,
+    "certificateUrl": null,
+    "metadata": null,
+    "createdAt": "2025-11-23T18:07:09.553Z",
+    "updatedAt": "2025-11-23T18:07:09.553Z",
+    "user": {
+      "id": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+      "name": "Neranjan Embogama",
+      "email": "neranjan.dee@gmail.com",
+      "emailVerified": "2025-11-23T05:03:22.086Z",
+      "image": "https://lh3.googleusercontent.com/a/ACg8ocIsCghZSTXhv8_U7Owc_3CdmMvbeRhaQcRhojajjmbW9nHY6e2A=s96-c",
+      "password": null,
+      "company": null,
+      "profession": null,
+      "bio": null,
+      "location": "",
+      "profileVisibility": true,
+      "linkedinUrl": null,
+      "twitterUrl": null,
+      "instagramUrl": null,
+      "role": "MEMBER",
+      "roleChangedAt": null,
+      "isVerified": true,
+      "isSuspended": false,
+      "suspendedUntil": null,
+      "suspendedBy": null,
+      "suspensionReason": null,
+      "moderationNotes": null,
+      "isBanned": false,
+      "bannedAt": null,
+      "bannedBy": null,
+      "banReason": null,
+      "createdAt": "2025-11-23T05:03:22.087Z",
+      "updatedAt": "2025-11-23T05:19:32.722Z",
+      "lastActiveAt": "2025-11-23T05:03:22.087Z",
+      "city": null,
+      "country": null,
+      "facebookUrl": null,
+      "firstName": "Neranjan",
+      "headline": null,
+      "industry": null,
+      "lastName": "Embogama",
+      "phoneNumber": "+94710598222",
+      "portfolioUrl": null,
+      "portfolioLinks": [],
+      "skills": [],
+      "behanceUrl": null,
+      "dribbbleUrl": null,
+      "emailPrivacy": "EVERYONE",
+      "githubUrl": null,
+      "otherSocialUrl": null,
+      "phonePrivacy": "MEMBERS_ONLY",
+      "profilePhotoPrivacy": "EVERYONE",
+      "tiktokUrl": null,
+      "youtubeUrl": null,
+      "professions": [],
+      "emailDigest": "DISABLED",
+      "emailNotifications": true,
+      "notifyOnComment": true,
+      "notifyOnLike": true,
+      "notifyOnMention": true,
+      "notifyOnNewPost": false,
+      "notifyOnReply": true,
+      "notifyOnSystem": true,
+      "twoFactorEnabled": false,
+      "twoFactorSecret": null
+    },
+    "competition": {
+      "id": "cmhsiwjid000cice0ahkf49ih",
+      "slug": "archalley-competition-2025",
+      "title": "Archalley Competition 2025 - Innovative Christmas Tree",
+      "description": "\"What will a Christmas tree look like in 50 years? Will it float, glow, or live in the metaverse? This year's competition invites you to imagine the tree of tomorrow.\" Participants are encouraged to explore unconventional, futuristic, and conceptual interpretations, from virtual models to physical tree designs. Your tree can be either minimal or detailed, digital, tech-infused, or completely surreal. There are no rules... Only imagination.",
+      "year": 2025,
+      "status": "REGISTRATION_OPEN",
+      "startDate": "2025-11-10T18:30:00.000Z",
+      "endDate": "2026-01-10T18:29:59.000Z",
+      "registrationDeadline": "2025-12-24T18:29:59.000Z",
+      "earlyBirdDeadline": "2025-11-20T18:29:59.000Z",
+      "registrationFee": 2000,
+      "totalPrizeFund": 0,
+      "prizes": {
+        "digital": {
+          "first": {
+            "item": "TABLET",
+            "title": "1st Prize"
+          },
+          "second": {
+            "item": "DRAWING PAD",
+            "title": "2nd Prize"
+          }
+        },
+        "special": [
+          {
+            "title": "Archalley Most Popular Tree Award",
+            "description": "Award for most popular tree"
+          }
+        ],
+        "physical": {
+          "first": {
+            "item": "TABLET",
+            "title": "1st Prize"
+          },
+          "second": {
+            "item": "DRAWING PAD",
+            "title": "2nd Prize"
+          }
+        }
+      },
+      "thumbnail": null,
+      "heroImage": null,
+      "requirements": {
+        "theme": "Christmas in Future",
+        "categories": [
+          "Physical Category",
+          "Digital Category",
+          "Kids' Tree Category"
+        ]
+      },
+      "judgePanel": null,
+      "timeline": {
+        "voting": {
+          "end": "2026-01-04",
+          "start": "2025-12-25"
+        },
+        "results": {
+          "announcement": "2026-01-10"
+        },
+        "submissions": {
+          "start": "2025-12-11",
+          "faqDeadline": "2025-12-20",
+          "kidsDeadline": "2025-12-21",
+          "otherDeadline": "2025-12-24"
+        },
+        "registration": {
+          "kids": {
+            "end": "2025-12-21",
+            "start": "2025-11-11"
+          },
+          "late": {
+            "end": "2025-12-24",
+            "start": "2025-12-21"
+          },
+          "opens": "2025-11-11",
+          "standard": {
+            "end": "2025-12-20",
+            "start": "2025-11-21"
+          },
+          "earlybird": {
+            "end": "2025-11-20",
+            "start": "2025-11-11"
+          }
+        }
+      },
+      "createdAt": "2025-11-10T02:28:34.118Z",
+      "updatedAt": "2025-11-12T09:17:02.615Z"
+    },
+    "registrationType": {
+      "id": "cmhsiwjuw000eice078cg33kn",
+      "competitionId": "cmhsiwjid000cice0ahkf49ih",
+      "type": "INDIVIDUAL",
+      "name": "Single Entry",
+      "description": "Individual participant registration",
+      "fee": 3000,
+      "maxMembers": 1,
+      "minAge": null,
+      "maxAge": null,
+      "isActive": true,
+      "displayOrder": 1,
+      "createdAt": "2025-11-10T02:28:34.568Z",
+      "updatedAt": "2025-11-10T02:28:34.568Z"
+    },
+    "payment": {
+      "id": "cmic1388p0001ju04oe7rxay8",
+      "orderId": "ORDER-AC2025-00105-116536",
+      "userId": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+      "competitionId": "cmhsiwjid000cice0ahkf49ih",
+      "amount": 3000,
+      "currency": "LKR",
+      "status": "COMPLETED",
+      "merchantId": "1232882",
+      "paymentId": null,
+      "statusCode": "2",
+      "md5sig": null,
+      "paymentMethod": "PAYHERE",
+      "cardHolderName": null,
+      "cardNo": null,
+      "items": [
+        {
+          "id": "cmic1036l0007ju04n87udhdd",
+          "country": "Sri Lanka",
+          "subtotal": 3000,
+          "unitPrice": 3000,
+          "memberCount": 1,
+          "competitionTitle": "Archalley Competition 2025 - Innovative Christmas Tree",
+          "registrationType": "Single Entry"
+        }
+      ],
+      "customerDetails": {
+        "city": "",
+        "email": "neranjan.dee@gmail.com",
+        "phone": "+94710598222",
+        "address": "",
+        "country": "Sri Lanka",
+        "lastName": "Embogama",
+        "firstName": "Neranjan"
+      },
+      "responseData": {
+        "reason": "notify_endpoint_missed",
+        "created_at": "2025-11-23T18:07:09.571Z",
+        "created_via": "return_handler",
+        "fallback_registration": true
+      },
+      "errorMessage": null,
+      "errorCode": null,
+      "metadata": {
+        "cartId": "cmic0y74t0005ju04hkydamyl",
+        "itemIds": [
+          "cmic1036l0007ju04n87udhdd"
+        ]
+      },
+      "initiatedAt": "2025-11-23T18:05:16.537Z",
+      "completedAt": "2025-11-23T18:07:09.571Z",
+      "cancelledAt": null,
+      "refundedAt": null,
+      "createdAt": "2025-11-23T18:05:16.537Z",
+      "updatedAt": "2025-11-23T18:07:09.572Z"
+    }
+  },
+  {
+    "id": "cmib9t0c10003lg04gm4sonjv",
+    "registrationNumber": "PWVVKQ",
+    "userId": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+    "competitionId": "cmhsiwjid000cice0ahkf49ih",
+    "registrationTypeId": "cmhsiwjuw000eice078cg33kn",
+    "paymentId": "cmib9qt2c0001lg04n7pk2wnd",
+    "country": "Sri Lanka",
+    "participantType": "INDIVIDUAL",
+    "referralSource": "Facebook",
+    "teamName": null,
+    "companyName": null,
+    "businessRegistrationNo": null,
+    "teamMembers": null,
+    "members": [
+      {
+        "name": "Neranjan Embogama",
+        "email": "neranjan.dee@gmail.com",
+        "phone": "+94710598222",
+        "lastName": "Embogama",
+        "firstName": "Neranjan"
+      }
+    ],
+    "status": "CONFIRMED",
+    "submissionStatus": "NOT_SUBMITTED",
+    "amountPaid": 3000,
+    "currency": "LKR",
+    "registeredAt": "2025-11-23T05:21:30.098Z",
+    "confirmedAt": "2025-11-23T05:21:30.097Z",
+    "submittedAt": null,
+    "submissionFiles": null,
+    "submissionNotes": null,
+    "submissionUrl": null,
+    "score": null,
+    "judgeComments": null,
+    "rank": null,
+    "award": null,
+    "certificateUrl": null,
+    "metadata": null,
+    "createdAt": "2025-11-23T05:21:30.098Z",
+    "updatedAt": "2025-11-23T05:21:30.098Z",
+    "user": {
+      "id": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+      "name": "Neranjan Embogama",
+      "email": "neranjan.dee@gmail.com",
+      "emailVerified": "2025-11-23T05:03:22.086Z",
+      "image": "https://lh3.googleusercontent.com/a/ACg8ocIsCghZSTXhv8_U7Owc_3CdmMvbeRhaQcRhojajjmbW9nHY6e2A=s96-c",
+      "password": null,
+      "company": null,
+      "profession": null,
+      "bio": null,
+      "location": "",
+      "profileVisibility": true,
+      "linkedinUrl": null,
+      "twitterUrl": null,
+      "instagramUrl": null,
+      "role": "MEMBER",
+      "roleChangedAt": null,
+      "isVerified": true,
+      "isSuspended": false,
+      "suspendedUntil": null,
+      "suspendedBy": null,
+      "suspensionReason": null,
+      "moderationNotes": null,
+      "isBanned": false,
+      "bannedAt": null,
+      "bannedBy": null,
+      "banReason": null,
+      "createdAt": "2025-11-23T05:03:22.087Z",
+      "updatedAt": "2025-11-23T05:19:32.722Z",
+      "lastActiveAt": "2025-11-23T05:03:22.087Z",
+      "city": null,
+      "country": null,
+      "facebookUrl": null,
+      "firstName": "Neranjan",
+      "headline": null,
+      "industry": null,
+      "lastName": "Embogama",
+      "phoneNumber": "+94710598222",
+      "portfolioUrl": null,
+      "portfolioLinks": [],
+      "skills": [],
+      "behanceUrl": null,
+      "dribbbleUrl": null,
+      "emailPrivacy": "EVERYONE",
+      "githubUrl": null,
+      "otherSocialUrl": null,
+      "phonePrivacy": "MEMBERS_ONLY",
+      "profilePhotoPrivacy": "EVERYONE",
+      "tiktokUrl": null,
+      "youtubeUrl": null,
+      "professions": [],
+      "emailDigest": "DISABLED",
+      "emailNotifications": true,
+      "notifyOnComment": true,
+      "notifyOnLike": true,
+      "notifyOnMention": true,
+      "notifyOnNewPost": false,
+      "notifyOnReply": true,
+      "notifyOnSystem": true,
+      "twoFactorEnabled": false,
+      "twoFactorSecret": null
+    },
+    "competition": {
+      "id": "cmhsiwjid000cice0ahkf49ih",
+      "slug": "archalley-competition-2025",
+      "title": "Archalley Competition 2025 - Innovative Christmas Tree",
+      "description": "\"What will a Christmas tree look like in 50 years? Will it float, glow, or live in the metaverse? This year's competition invites you to imagine the tree of tomorrow.\" Participants are encouraged to explore unconventional, futuristic, and conceptual interpretations, from virtual models to physical tree designs. Your tree can be either minimal or detailed, digital, tech-infused, or completely surreal. There are no rules... Only imagination.",
+      "year": 2025,
+      "status": "REGISTRATION_OPEN",
+      "startDate": "2025-11-10T18:30:00.000Z",
+      "endDate": "2026-01-10T18:29:59.000Z",
+      "registrationDeadline": "2025-12-24T18:29:59.000Z",
+      "earlyBirdDeadline": "2025-11-20T18:29:59.000Z",
+      "registrationFee": 2000,
+      "totalPrizeFund": 0,
+      "prizes": {
+        "digital": {
+          "first": {
+            "item": "TABLET",
+            "title": "1st Prize"
+          },
+          "second": {
+            "item": "DRAWING PAD",
+            "title": "2nd Prize"
+          }
+        },
+        "special": [
+          {
+            "title": "Archalley Most Popular Tree Award",
+            "description": "Award for most popular tree"
+          }
+        ],
+        "physical": {
+          "first": {
+            "item": "TABLET",
+            "title": "1st Prize"
+          },
+          "second": {
+            "item": "DRAWING PAD",
+            "title": "2nd Prize"
+          }
+        }
+      },
+      "thumbnail": null,
+      "heroImage": null,
+      "requirements": {
+        "theme": "Christmas in Future",
+        "categories": [
+          "Physical Category",
+          "Digital Category",
+          "Kids' Tree Category"
+        ]
+      },
+      "judgePanel": null,
+      "timeline": {
+        "voting": {
+          "end": "2026-01-04",
+          "start": "2025-12-25"
+        },
+        "results": {
+          "announcement": "2026-01-10"
+        },
+        "submissions": {
+          "start": "2025-12-11",
+          "faqDeadline": "2025-12-20",
+          "kidsDeadline": "2025-12-21",
+          "otherDeadline": "2025-12-24"
+        },
+        "registration": {
+          "kids": {
+            "end": "2025-12-21",
+            "start": "2025-11-11"
+          },
+          "late": {
+            "end": "2025-12-24",
+            "start": "2025-12-21"
+          },
+          "opens": "2025-11-11",
+          "standard": {
+            "end": "2025-12-20",
+            "start": "2025-11-21"
+          },
+          "earlybird": {
+            "end": "2025-11-20",
+            "start": "2025-11-11"
+          }
+        }
+      },
+      "createdAt": "2025-11-10T02:28:34.118Z",
+      "updatedAt": "2025-11-12T09:17:02.615Z"
+    },
+    "registrationType": {
+      "id": "cmhsiwjuw000eice078cg33kn",
+      "competitionId": "cmhsiwjid000cice0ahkf49ih",
+      "type": "INDIVIDUAL",
+      "name": "Single Entry",
+      "description": "Individual participant registration",
+      "fee": 3000,
+      "maxMembers": 1,
+      "minAge": null,
+      "maxAge": null,
+      "isActive": true,
+      "displayOrder": 1,
+      "createdAt": "2025-11-10T02:28:34.568Z",
+      "updatedAt": "2025-11-10T02:28:34.568Z"
+    },
+    "payment": {
+      "id": "cmib9qt2c0001lg04n7pk2wnd",
+      "orderId": "ORDER-AC2025-00118-187363",
+      "userId": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+      "competitionId": "cmhsiwjid000cice0ahkf49ih",
+      "amount": 3000,
+      "currency": "LKR",
+      "status": "COMPLETED",
+      "merchantId": "1232882",
+      "paymentId": null,
+      "statusCode": "2",
+      "md5sig": null,
+      "paymentMethod": "PAYHERE",
+      "cardHolderName": null,
+      "cardNo": null,
+      "items": [
+        {
+          "id": "cmib9e2v40009k104g23trr0a",
+          "country": "Sri Lanka",
+          "subtotal": 3000,
+          "unitPrice": 3000,
+          "memberCount": 1,
+          "competitionTitle": "Archalley Competition 2025 - Innovative Christmas Tree",
+          "registrationType": "Single Entry"
+        }
+      ],
+      "customerDetails": {
+        "city": "",
+        "email": "neranjan.dee@gmail.com",
+        "phone": "+94710598222",
+        "address": "",
+        "country": "Sri Lanka",
+        "lastName": "Embogama",
+        "firstName": "Neranjan"
+      },
+      "responseData": {
+        "reason": "notify_endpoint_missed",
+        "created_at": "2025-11-23T05:21:30.124Z",
+        "created_via": "return_handler",
+        "fallback_registration": true
+      },
+      "errorMessage": null,
+      "errorCode": null,
+      "metadata": {
+        "cartId": "cmib9duxz0007k104lkgx72bo",
+        "itemIds": [
+          "cmib9e2v40009k104g23trr0a"
+        ]
+      },
+      "initiatedAt": "2025-11-23T05:19:47.364Z",
+      "completedAt": "2025-11-23T05:21:30.124Z",
+      "cancelledAt": null,
+      "refundedAt": null,
+      "createdAt": "2025-11-23T05:19:47.364Z",
+      "updatedAt": "2025-11-23T05:21:30.125Z"
+    }
+  },
+  {
+    "id": "cmic1ah470001ju04es68llx4",
+    "registrationNumber": "6UANBH",
+    "userId": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+    "competitionId": "cmhsiwjid000cice0ahkf49ih",
+    "registrationTypeId": "cmhsiwjuw000eice078cg33kn",
+    "paymentId": "cmic198nj0005jy04e0ym5o3c",
+    "country": "Sri Lanka",
+    "participantType": "INDIVIDUAL",
+    "referralSource": "Facebook",
+    "teamName": null,
+    "companyName": null,
+    "businessRegistrationNo": null,
+    "teamMembers": null,
+    "members": [
+      {
+        "name": "Neranjan Embogama",
+        "email": "neranjan.dee@gmail.com",
+        "phone": "+94710598222",
+        "lastName": "Embogama",
+        "firstName": "Neranjan"
+      }
+    ],
+    "status": "CONFIRMED",
+    "submissionStatus": "NOT_SUBMITTED",
+    "amountPaid": 3000,
+    "currency": "LKR",
+    "registeredAt": "2025-11-23T18:10:54.632Z",
+    "confirmedAt": "2025-11-23T18:10:54.631Z",
+    "submittedAt": null,
+    "submissionFiles": null,
+    "submissionNotes": null,
+    "submissionUrl": null,
+    "score": null,
+    "judgeComments": null,
+    "rank": null,
+    "award": null,
+    "certificateUrl": null,
+    "metadata": null,
+    "createdAt": "2025-11-23T18:10:54.632Z",
+    "updatedAt": "2025-11-23T18:10:54.632Z",
+    "user": {
+      "id": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+      "name": "Neranjan Embogama",
+      "email": "neranjan.dee@gmail.com",
+      "emailVerified": "2025-11-23T05:03:22.086Z",
+      "image": "https://lh3.googleusercontent.com/a/ACg8ocIsCghZSTXhv8_U7Owc_3CdmMvbeRhaQcRhojajjmbW9nHY6e2A=s96-c",
+      "password": null,
+      "company": null,
+      "profession": null,
+      "bio": null,
+      "location": "",
+      "profileVisibility": true,
+      "linkedinUrl": null,
+      "twitterUrl": null,
+      "instagramUrl": null,
+      "role": "MEMBER",
+      "roleChangedAt": null,
+      "isVerified": true,
+      "isSuspended": false,
+      "suspendedUntil": null,
+      "suspendedBy": null,
+      "suspensionReason": null,
+      "moderationNotes": null,
+      "isBanned": false,
+      "bannedAt": null,
+      "bannedBy": null,
+      "banReason": null,
+      "createdAt": "2025-11-23T05:03:22.087Z",
+      "updatedAt": "2025-11-23T05:19:32.722Z",
+      "lastActiveAt": "2025-11-23T05:03:22.087Z",
+      "city": null,
+      "country": null,
+      "facebookUrl": null,
+      "firstName": "Neranjan",
+      "headline": null,
+      "industry": null,
+      "lastName": "Embogama",
+      "phoneNumber": "+94710598222",
+      "portfolioUrl": null,
+      "portfolioLinks": [],
+      "skills": [],
+      "behanceUrl": null,
+      "dribbbleUrl": null,
+      "emailPrivacy": "EVERYONE",
+      "githubUrl": null,
+      "otherSocialUrl": null,
+      "phonePrivacy": "MEMBERS_ONLY",
+      "profilePhotoPrivacy": "EVERYONE",
+      "tiktokUrl": null,
+      "youtubeUrl": null,
+      "professions": [],
+      "emailDigest": "DISABLED",
+      "emailNotifications": true,
+      "notifyOnComment": true,
+      "notifyOnLike": true,
+      "notifyOnMention": true,
+      "notifyOnNewPost": false,
+      "notifyOnReply": true,
+      "notifyOnSystem": true,
+      "twoFactorEnabled": false,
+      "twoFactorSecret": null
+    },
+    "competition": {
+      "id": "cmhsiwjid000cice0ahkf49ih",
+      "slug": "archalley-competition-2025",
+      "title": "Archalley Competition 2025 - Innovative Christmas Tree",
+      "description": "\"What will a Christmas tree look like in 50 years? Will it float, glow, or live in the metaverse? This year's competition invites you to imagine the tree of tomorrow.\" Participants are encouraged to explore unconventional, futuristic, and conceptual interpretations, from virtual models to physical tree designs. Your tree can be either minimal or detailed, digital, tech-infused, or completely surreal. There are no rules... Only imagination.",
+      "year": 2025,
+      "status": "REGISTRATION_OPEN",
+      "startDate": "2025-11-10T18:30:00.000Z",
+      "endDate": "2026-01-10T18:29:59.000Z",
+      "registrationDeadline": "2025-12-24T18:29:59.000Z",
+      "earlyBirdDeadline": "2025-11-20T18:29:59.000Z",
+      "registrationFee": 2000,
+      "totalPrizeFund": 0,
+      "prizes": {
+        "digital": {
+          "first": {
+            "item": "TABLET",
+            "title": "1st Prize"
+          },
+          "second": {
+            "item": "DRAWING PAD",
+            "title": "2nd Prize"
+          }
+        },
+        "special": [
+          {
+            "title": "Archalley Most Popular Tree Award",
+            "description": "Award for most popular tree"
+          }
+        ],
+        "physical": {
+          "first": {
+            "item": "TABLET",
+            "title": "1st Prize"
+          },
+          "second": {
+            "item": "DRAWING PAD",
+            "title": "2nd Prize"
+          }
+        }
+      },
+      "thumbnail": null,
+      "heroImage": null,
+      "requirements": {
+        "theme": "Christmas in Future",
+        "categories": [
+          "Physical Category",
+          "Digital Category",
+          "Kids' Tree Category"
+        ]
+      },
+      "judgePanel": null,
+      "timeline": {
+        "voting": {
+          "end": "2026-01-04",
+          "start": "2025-12-25"
+        },
+        "results": {
+          "announcement": "2026-01-10"
+        },
+        "submissions": {
+          "start": "2025-12-11",
+          "faqDeadline": "2025-12-20",
+          "kidsDeadline": "2025-12-21",
+          "otherDeadline": "2025-12-24"
+        },
+        "registration": {
+          "kids": {
+            "end": "2025-12-21",
+            "start": "2025-11-11"
+          },
+          "late": {
+            "end": "2025-12-24",
+            "start": "2025-12-21"
+          },
+          "opens": "2025-11-11",
+          "standard": {
+            "end": "2025-12-20",
+            "start": "2025-11-21"
+          },
+          "earlybird": {
+            "end": "2025-11-20",
+            "start": "2025-11-11"
+          }
+        }
+      },
+      "createdAt": "2025-11-10T02:28:34.118Z",
+      "updatedAt": "2025-11-12T09:17:02.615Z"
+    },
+    "registrationType": {
+      "id": "cmhsiwjuw000eice078cg33kn",
+      "competitionId": "cmhsiwjid000cice0ahkf49ih",
+      "type": "INDIVIDUAL",
+      "name": "Single Entry",
+      "description": "Individual participant registration",
+      "fee": 3000,
+      "maxMembers": 1,
+      "minAge": null,
+      "maxAge": null,
+      "isActive": true,
+      "displayOrder": 1,
+      "createdAt": "2025-11-10T02:28:34.568Z",
+      "updatedAt": "2025-11-10T02:28:34.568Z"
+    },
+    "payment": {
+      "id": "cmic198nj0005jy04e0ym5o3c",
+      "orderId": "ORDER-AC2025-00106-397006",
+      "userId": "57f32595-c51a-4e6c-b8c8-2dbfe3456837",
+      "competitionId": "cmhsiwjid000cice0ahkf49ih",
+      "amount": 3000,
+      "currency": "LKR",
+      "status": "COMPLETED",
+      "merchantId": "1232882",
+      "paymentId": null,
+      "statusCode": "2",
+      "md5sig": null,
+      "paymentMethod": "PAYHERE",
+      "cardHolderName": null,
+      "cardNo": null,
+      "items": [
+        {
+          "id": "cmic18yks0003jy04fgcqo5n2",
+          "country": "Sri Lanka",
+          "subtotal": 3000,
+          "unitPrice": 3000,
+          "memberCount": 1,
+          "competitionTitle": "Archalley Competition 2025 - Innovative Christmas Tree",
+          "registrationType": "Single Entry"
+        }
+      ],
+      "customerDetails": {
+        "city": "",
+        "email": "neranjan.dee@gmail.com",
+        "phone": "+94710598222",
+        "address": "",
+        "country": "Sri Lanka",
+        "lastName": "Embogama",
+        "firstName": "Neranjan"
+      },
+      "responseData": {
+        "reason": "notify_endpoint_missed",
+        "created_at": "2025-11-23T18:10:54.643Z",
+        "created_via": "return_handler",
+        "fallback_registration": true
+      },
+      "errorMessage": null,
+      "errorCode": null,
+      "metadata": {
+        "cartId": "cmic18o2x0001jy04qyxwd26l",
+        "itemIds": [
+          "cmic18yks0003jy04fgcqo5n2"
+        ]
+      },
+      "initiatedAt": "2025-11-23T18:09:57.008Z",
+      "completedAt": "2025-11-23T18:10:54.643Z",
+      "cancelledAt": null,
+      "refundedAt": null,
+      "createdAt": "2025-11-23T18:09:57.008Z",
+      "updatedAt": "2025-11-23T18:10:54.643Z"
+    }
+  }
+]

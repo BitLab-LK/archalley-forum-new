@@ -250,7 +250,7 @@ async function getInitialPosts(session: any = null): Promise<{ posts: Post[], pa
         author: {
           id: post.users?.id || '',
           name: post.isAnonymous ? "Anonymous" : (post.users?.name || 'Anonymous'),
-          avatar: post.users?.image || '/placeholder-user.jpg',
+          avatar: post.users?.image || '/archalley-pro-pic.png',
           isVerified: post.users?.isVerified || false,
           rank: primaryBadge?.badges?.name || 'Member',
           rankIcon: primaryBadge?.badges?.icon || '🔰',

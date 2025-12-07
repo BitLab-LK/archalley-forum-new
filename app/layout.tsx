@@ -11,6 +11,9 @@ import { BadgeNotificationHandler } from "@/components/badge-notifications"
 import { Toaster } from "@/components/ui/toaster"
 import { ConfirmDialogProvider } from "@/hooks/use-confirm-dialog"
 import { SessionMonitor } from "@/hooks/use-session-monitor"
+import GTMHead from "@/components/gtm-head"
+import GTMBody from "@/components/gtm-body"
+import GoogleAnalytics from "@/components/google-analytics"
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["300", "400", "500", "700"] })
 
@@ -73,21 +76,20 @@ export default function RootLayout({
             }
           }
         `}</style>
-        {/* Google tag (gtag.js) */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-JQPH81Z02Y"></script>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-
-              gtag('config', 'G-JQPH81Z02Y');
-            `,
-          }}
-        />
+        <GTMHead />
+        <GoogleAnalytics />
+        <script type="text/javascript">
+          {`
+            (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "ononimkh1f");
+          `}
+        </script>
       </head>
       <body className={`${roboto.className} ${aquire.variable}`} suppressHydrationWarning>
+        <GTMBody />
         <Providers>
           <ConfirmDialogProvider>
             <SessionMonitor>

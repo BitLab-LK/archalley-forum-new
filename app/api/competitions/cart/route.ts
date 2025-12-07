@@ -13,10 +13,12 @@ import {
   CartSummary,
 } from '@/types/competition';
 import {
-  calculateCartExpiry,
-  calculateCartTotal,
   isCartExpired,
 } from '@/lib/competition-utils';
+
+// Disable all caching for this route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 /**
  * GET - Fetch user's active cart
@@ -42,7 +44,31 @@ export async function GET(
     console.log('✅ User authenticated:', session.user.email);
 
     // Find or create active cart for user
-    console.log('🔍 Looking for active cart...');
+    console.log('🔍 Looking for active cart for user:', session.user.id);
+    
+    // First, check if user has any COMPLETED carts (for debugging)
+    const completedCarts = await prisma.registrationCart.findMany({
+      where: {
+        userId: session.user.id,
+        status: 'COMPLETED',
+      },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      take: 5,
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+    
+    if (completedCarts.length > 0) {
+      console.log(`📦 User has ${completedCarts.length} COMPLETED cart(s) - these will NOT be returned`);
+      console.log('Recent completed carts:', completedCarts.map(c => ({ id: c.id, completedAt: c.updatedAt })));
+    }
+    
     let cart = await prisma.registrationCart.findFirst({
       where: {
         userId: session.user.id,
@@ -59,7 +85,8 @@ export async function GET(
     });
 
     if (cart) {
-      console.log('✅ Found cart:', cart.id, 'with', cart.items.length, 'items');
+      console.log('✅ Found ACTIVE cart:', cart.id, 'with', cart.items.length, 'items');
+      console.log('Cart status:', cart.status);
       console.log('Cart items:', JSON.stringify(cart.items.map(i => ({
         id: i.id,
         competition: i.competition.title,
@@ -67,69 +94,92 @@ export async function GET(
         memberCount: Array.isArray(i.members) ? i.members.length : 0
       })), null, 2));
     } else {
-      console.log('⚠️ No active cart found');
+      console.log('⚠️ No ACTIVE cart found - will create new empty cart');
     }
 
-    // Create new cart if none exists or if cart is expired
-    if (!cart || isCartExpired(cart.expiresAt)) {
-      if (cart && isCartExpired(cart.expiresAt)) {
-        console.log('⏰ Cart expired, marking as EXPIRED');
-        // Mark expired cart as expired
-        await prisma.registrationCart.update({
-          where: { id: cart.id },
-          data: { status: 'EXPIRED' },
-        });
-      }
+    // Handle expired cart
+    if (cart && isCartExpired(cart.expiresAt)) {
+      console.log('⏰ Cart expired, marking as EXPIRED');
+      // Mark expired cart as expired
+      await prisma.registrationCart.update({
+        where: { id: cart.id },
+        data: { status: 'EXPIRED' },
+      });
+      // Set cart to null so we return empty cart response
+      cart = null;
+    }
 
-      console.log('📝 Creating new empty cart');
-      // Create new cart
-      cart = await prisma.registrationCart.create({
-        data: {
-          userId: session.user.id,
-          status: 'ACTIVE',
-          expiresAt: calculateCartExpiry(),
+    // Don't create a new cart on GET - only return what exists
+    // New carts will be created when user adds first item (in POST /cart/add)
+
+    // Calculate cart summary (only if cart exists)
+    if (cart) {
+      console.log('📊 Calculating cart summary...');
+      const subtotal = cart.items.reduce((sum, item) => sum + item.subtotal, 0);
+      const summary: CartSummary = {
+        itemCount: cart.items.length,
+        subtotal,
+        discount: 0, // Calculate early bird discount if applicable
+        total: subtotal, // No discount applied, so total = subtotal
+        items: cart.items.map((item) => ({
+          id: item.id,
+          competitionTitle: item.competition.title,
+          registrationType: item.registrationType.name,
+          country: item.country,
+          memberCount: Array.isArray(item.members) ? (item.members as any[]).length : 0,
+          unitPrice: item.unitPrice,
+          subtotal: item.subtotal,
+        })),
+      };
+
+      console.log('✅ Summary:', summary);
+      console.log('=== RETURNING CART RESPONSE ===');
+      console.log(`📤 Returning: ${cart.items.length} items in cart ${cart.id} with status ${cart.status}`);
+      
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            cart,
+            summary,
+          },
         },
-        include: {
-          items: {
-            include: {
-              competition: true,
-              registrationType: true,
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+        }
+      );
+    } else {
+      // No active cart - return success with null cart
+      console.log('=== RETURNING EMPTY CART RESPONSE ===');
+      console.log('📤 No active cart exists for user');
+      
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            cart: null,
+            summary: {
+              itemCount: 0,
+              subtotal: 0,
+              discount: 0,
+              total: 0,
+              items: [],
             },
           },
         },
-      });
-      console.log('✅ New cart created:', cart.id);
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+        }
+      );
     }
-
-    // Calculate cart summary
-    console.log('📊 Calculating cart summary...');
-    const summary: CartSummary = {
-      itemCount: cart.items.length,
-      subtotal: cart.items.reduce((sum, item) => sum + item.subtotal, 0),
-      discount: 0, // Calculate early bird discount if applicable
-      total: 0,
-      items: cart.items.map((item) => ({
-        id: item.id,
-        competitionTitle: item.competition.title,
-        registrationType: item.registrationType.name,
-        country: item.country,
-        memberCount: Array.isArray(item.members) ? (item.members as any[]).length : 0,
-        unitPrice: item.unitPrice,
-        subtotal: item.subtotal,
-      })),
-    };
-
-    summary.total = calculateCartTotal(summary.subtotal, summary.discount);
-    console.log('✅ Summary:', summary);
-
-    console.log('=== RETURNING CART RESPONSE ===');
-    return NextResponse.json({
-      success: true,
-      data: {
-        cart,
-        summary,
-      },
-    });
   } catch (error) {
     console.error('Error fetching cart:', error);
     return NextResponse.json(

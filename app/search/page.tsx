@@ -399,7 +399,7 @@ function SearchContent() {
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-2">
                                     <Avatar className="w-8 h-8">
-                                      <AvatarImage src={post.author.image || '/placeholder.svg'} />
+                                      <AvatarImage src={post.author.image || '/archalley-pro-pic.png'} />
                                       <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <span className="text-sm text-muted-foreground">
@@ -481,7 +481,7 @@ function SearchContent() {
                             <CardContent className="p-6">
                               <div className="flex items-start gap-3">
                                 <Avatar className="w-12 h-12">
-                                  <AvatarImage src={member.image || '/placeholder.svg'} />
+                                  <AvatarImage src={member.image || '/archalley-pro-pic.png'} />
                                   <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 
@@ -582,7 +582,7 @@ function SearchContent() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
                                 <Avatar className="w-8 h-8">
-                                  <AvatarImage src={post.author.image || '/placeholder.svg'} />
+                                  <AvatarImage src={post.author.image || '/archalley-pro-pic.png'} />
                                   <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <span className="text-sm text-muted-foreground">
@@ -667,7 +667,7 @@ function SearchContent() {
                           <CardContent className="p-6">
                             <div className="flex items-start gap-3">
                               <Avatar className="w-12 h-12">
-                                <AvatarImage src={member.image || '/placeholder.svg'} />
+                                <AvatarImage src={member.image || '/archalley-pro-pic.png'} />
                                 <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
                               </Avatar>
                               

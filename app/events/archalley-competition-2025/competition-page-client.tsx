@@ -62,9 +62,8 @@ export default function CompetitionPageClient() {
   // Track competition page view
   useEffect(() => {
     event({
-      action: 'view_competition',
-      category: 'competition',
-      label: 'archalley_competition_2025',
+      event: 'view_competition',
+      competition_name: 'archalley_competition_2025',
     });
   }, []);
 

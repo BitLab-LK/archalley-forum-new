@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
         : post.content,
       author: {
         name: post.isAnonymous ? 'Anonymous' : (post.authorName || 'Anonymous'),
-        avatar: post.isAnonymous ? '/placeholder-user.jpg' : (post.authorImage || '/placeholder-user.jpg')
+        avatar: post.isAnonymous ? '/archalley-pro-pic.png' : (post.authorImage || '/archalley-pro-pic.png')
       },
       category: {
         name: post.categoryName || 'General',

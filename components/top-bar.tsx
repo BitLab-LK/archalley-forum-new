@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Search, User, ChevronDown } from "lucide-react"
+import { Search, User, ChevronDown, ShoppingCart } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,7 @@ import { Crown, Shield, LogOut } from "lucide-react"
 export default function TopBar() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showMobileSearch, setShowMobileSearch] = useState(false)
+  const [cartItemCount, setCartItemCount] = useState(0)
   const router = useRouter()
   const pathname = usePathname()
   const { user, isAuthenticated, isLoading } = useAuth()
@@ -64,6 +65,121 @@ export default function TopBar() {
     }
   }
 
+  // Fetch cart count when user is authenticated
+  useEffect(() => {
+    const fetchCartCount = async () => {
+      if (!isAuthenticated) {
+        setCartItemCount(0)
+        return
+      }
+
+      try {
+        // Add timestamp to prevent browser caching
+        const timestamp = new Date().getTime()
+        const response = await fetch(`/api/competitions/cart?t=${timestamp}`, {
+          cache: 'no-store', // Prevent caching
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          },
+        })
+        const data = await response.json()
+        
+        console.log('🛒 TopBar: Cart API response:', {
+          success: data.success,
+          hasCart: !!data.data?.cart,
+          itemCount: data.data?.cart?.items?.length || 0,
+          cartStatus: data.data?.cart?.status,
+          cartId: data.data?.cart?.id
+        })
+        
+        if (data.success && data.data?.cart && data.data.cart.status === 'ACTIVE') {
+          const count = data.data.cart.items?.length || 0
+          console.log(`🛒 TopBar: Setting cart count to ${count}`)
+          setCartItemCount(count)
+        } else {
+          console.log('🛒 TopBar: No active cart, setting count to 0')
+          setCartItemCount(0)
+        }
+      } catch (error) {
+        console.error('❌ TopBar: Error fetching cart count:', error)
+        setCartItemCount(0)
+      }
+    }
+
+    fetchCartCount()
+    
+    // Refresh cart count every 30 seconds if user is authenticated
+    const interval = isAuthenticated ? setInterval(fetchCartCount, 30000) : null
+    
+    // Refresh cart when page gains focus (user returns from another page)
+    const handleFocus = () => {
+      if (isAuthenticated) {
+        fetchCartCount()
+      }
+    }
+    
+    // Listen for custom cart update events (when items are added/removed)
+    const handleCartUpdate = () => {
+      console.log('🔔 TopBar: cartUpdated event received, authenticated:', isAuthenticated);
+      if (isAuthenticated) {
+        fetchCartCount()
+      }
+    }
+    
+    console.log('📡 TopBar: Setting up event listeners, isAuthenticated:', isAuthenticated);
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('cartUpdated', handleCartUpdate)
+    
+    return () => {
+      if (interval) clearInterval(interval)
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('cartUpdated', handleCartUpdate)
+    }
+  }, [isAuthenticated])
+
+  // Also refresh cart count when pathname changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchCartCount = async () => {
+        try {
+          // Add timestamp to prevent browser caching
+          const timestamp = new Date().getTime()
+          const response = await fetch(`/api/competitions/cart?t=${timestamp}`, {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            },
+          })
+          const data = await response.json()
+          
+          console.log('🛒 TopBar (pathname change): Cart API response:', {
+            pathname,
+            itemCount: data.data?.cart?.items?.length || 0,
+            cartStatus: data.data?.cart?.status
+          })
+          
+          if (data.success && data.data?.cart) {
+            const count = data.data.cart.items?.length || 0
+            console.log(`🛒 TopBar (pathname change): Setting cart count to ${count}`)
+            setCartItemCount(count)
+          } else {
+            console.log('🛒 TopBar (pathname change): No cart data, setting count to 0')
+            setCartItemCount(0)
+          }
+        } catch (error) {
+          console.error('❌ TopBar (pathname change): Error fetching cart count:', error)
+          setCartItemCount(0)
+        }
+      }
+      
+      fetchCartCount()
+    }
+  }, [pathname, isAuthenticated])
+
   return (
     <div className="bg-gray-800 text-white py-2 relative">
       <div className="container mx-auto px-4">
@@ -97,64 +213,80 @@ export default function TopBar() {
             {isLoading ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#FFA000]"></div>
             ) : isAuthenticated ? (
-              <div className="relative group">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="text-white hover:text-[#FFA000] hover:bg-gray-700 p-0 h-auto">
-                      <div className="flex items-center gap-1">
-                        <User size={16} />
-                        <span>{user?.name?.split(" ")[0] || "User"}</span>
-                        <ChevronDown size={14} />
-                      </div>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-80" align="end" forceMount>
-                    <DropdownMenuLabel className="font-normal">
-                      <div className="flex flex-col space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <p className="text-sm font-medium leading-none">{user?.name}</p>
-                          {user?.isVerified && (
-                            <Badge variant="secondary" className="text-xs">
-                              ✓ Verified
-                            </Badge>
-                          )}
+              <div className="flex items-center space-x-3">
+                {/* User Dropdown */}
+                <div className="relative group">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="text-white hover:text-[#FFA000] hover:bg-gray-700 p-0 h-auto">
+                        <div className="flex items-center gap-1">
+                          <User size={16} />
+                          <span>{user?.name?.split(" ")[0] || "User"}</span>
+                          <ChevronDown size={14} />
                         </div>
-                        <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                        <Badge className={`text-xs w-fit flex items-center gap-1 ${
-                          user?.role === "SUPER_ADMIN" ? "bg-red-500 text-white hover:bg-red-600" :
-                          user?.role === "ADMIN" ? "bg-yellow-500 text-white hover:bg-yellow-600" :
-                          user?.role === "MODERATOR" ? "bg-blue-500 text-white hover:bg-blue-600" :
-                          "bg-gray-500 text-white"
-                        }`}>
-                          {user?.role === "SUPER_ADMIN" && <Crown className="h-3 w-3" />}
-                          {user?.role === "SUPER_ADMIN" ? "Super Admin" :
-                           user?.role === "ADMIN" ? "Admin" :
-                           user?.role === "MODERATOR" ? "Moderator" : "Member"}
-                        </Badge>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href={`/profile/${user?.id}`}>
-                        <User className="mr-2 h-4 w-4" />
-                        <span>My Account</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    {(user?.role === "ADMIN" || user?.role === "SUPER_ADMIN" || user?.role === "MODERATOR") && (
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-80" align="end" forceMount>
+                      <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <p className="text-sm font-medium leading-none">{user?.name}</p>
+                            {user?.isVerified && (
+                              <Badge variant="secondary" className="text-xs">
+                                ✓ Verified
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                          <Badge className={`text-xs w-fit flex items-center gap-1 ${
+                            user?.role === "SUPER_ADMIN" ? "bg-red-500 text-white hover:bg-red-600" :
+                            user?.role === "ADMIN" ? "bg-yellow-500 text-white hover:bg-yellow-600" :
+                            user?.role === "MODERATOR" ? "bg-blue-500 text-white hover:bg-blue-600" :
+                            "bg-gray-500 text-white"
+                          }`}>
+                            {user?.role === "SUPER_ADMIN" && <Crown className="h-3 w-3" />}
+                            {user?.role === "SUPER_ADMIN" ? "Super Admin" :
+                             user?.role === "ADMIN" ? "Admin" :
+                             user?.role === "MODERATOR" ? "Moderator" :
+                             user?.role === "VIEWER" ? "Viewer" : "Member"}
+                          </Badge>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
-                        <Link href="/admin">
-                          <Shield className="mr-2 h-4 w-4" />
-                          <span>Admin Dashboard</span>
+                        <Link href={`/profile/${user?.id}`}>
+                          <User className="mr-2 h-4 w-4" />
+                          <span>My Account</span>
                         </Link>
                       </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Logout</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      {(user?.role === "ADMIN" || user?.role === "SUPER_ADMIN" || user?.role === "MODERATOR") && (
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin">
+                            <Shield className="mr-2 h-4 w-4" />
+                            <span>Admin Dashboard</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSignOut}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Logout</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                {/* Cart Button */}
+                <Link
+                  href="/events/checkout"
+                  className="relative text-white hover:text-[#FFA000] transition-colors"
+                  title="View Cart"
+                >
+                  <ShoppingCart size={18} />
+                  <span className="absolute -top-2 -right-2 bg-[#FFA000] text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                    {cartItemCount}
+                  </span>
+                </Link>
               </div>
             ) : (
               <Link 

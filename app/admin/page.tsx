@@ -23,6 +23,7 @@ import { checkSuperAdminPrivileges } from "@/lib/super-admin-utils"
 import { getRolePermissions, getAvailableTabs, getDefaultTab, getRoleInfo, type UserRole } from "@/lib/role-permissions"
 import AdsManagementSection from "@/components/ads-management-section"
 import CompetitionsManagementSection from "@/components/competitions-management-section"
+import SubmissionsManagementSection from "@/components/submissions-management-section"
 
 interface DashboardStats {
   totalUsers: number
@@ -166,6 +167,10 @@ function AdminDashboardContent() {
   const [users, setUsers] = useState<User[]>([])
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [searchTerm, setSearchTerm] = useState("")
+  const [usersPage, setUsersPage] = useState(1)
+  const [usersTotalPages, setUsersTotalPages] = useState(1)
+  const [usersTotalCount, setUsersTotalCount] = useState(0)
+  const [usersLoading, setUsersLoading] = useState(false)
   const [settings, setSettings] = useState<Settings>({} as Settings)
   const [pages, setPages] = useState<Page[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -272,7 +277,7 @@ function AdminDashboardContent() {
         
         // Conditionally fetch data based on permissions
         if (permissions.canViewUsers) {
-          fetchPromises.push(fetch("/api/admin/users").then(r => ({ type: 'users', response: r })))
+          fetchPromises.push(fetch(`/api/admin/users?page=${usersPage}&limit=25`).then(r => ({ type: 'users', response: r })))
         }
         
         if (permissions.canViewSettings) {
@@ -303,6 +308,12 @@ function AdminDashboardContent() {
               const usersList = usersData.users || []
               setUsers(usersList)
               setFilteredUsers(usersList)
+              // Update pagination metadata
+              if (usersData.pagination) {
+                setUsersTotalPages(usersData.pagination.totalPages || 1)
+                setUsersTotalCount(usersData.pagination.totalUsers || 0)
+                setUsersPage(usersData.pagination.page || 1)
+              }
             } catch (error) {
               console.error("Error processing users data:", error)
               toast.error("Failed to load users")
@@ -390,33 +401,41 @@ function AdminDashboardContent() {
     }
   }, [authenticatedUser, router])
 
-  // Function to refresh users list from server
-  const refreshUsersList = useCallback(async () => {
+  // Function to fetch users for a specific page
+  const fetchUsers = useCallback(async (page: number) => {
     try {
-      console.log('🔄 Refreshing users list from server...')
-      const usersResponse = await fetch("/api/admin/users")
+      setUsersLoading(true)
+      const usersResponse = await fetch(`/api/admin/users?page=${page}&limit=25`)
       if (usersResponse.ok) {
         const usersData = await usersResponse.json()
         const usersList = usersData.users || []
         setUsers(usersList)
+        setFilteredUsers(usersList)
         
-        // Preserve search filtering if active
-        if (searchTerm.trim()) {
-          const filtered = usersList.filter((user: User) => 
-            user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.role.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-          setFilteredUsers(filtered)
-        } else {
-          setFilteredUsers(usersList)
+        // Update pagination metadata
+        if (usersData.pagination) {
+          setUsersTotalPages(usersData.pagination.totalPages || 1)
+          setUsersTotalCount(usersData.pagination.totalUsers || 0)
+          setUsersPage(usersData.pagination.page || 1)
         }
-        console.log('✅ Users list refreshed successfully')
+        
+        console.log('✅ Users list fetched successfully')
+      } else {
+        console.error("Users API failed:", usersResponse.status)
+        toast.error("Failed to load users")
       }
     } catch (error) {
-      console.warn('❌ Failed to refresh users list:', error)
+      console.error("Error fetching users:", error)
+      toast.error("Failed to load users")
+    } finally {
+      setUsersLoading(false)
     }
-  }, [searchTerm])
+  }, [])
+
+  // Function to refresh users list from server
+  const refreshUsersList = useCallback(async () => {
+    await fetchUsers(usersPage)
+  }, [fetchUsers, usersPage])
 
   // Periodic refresh for Recent Users to keep active indicators updated
   useEffect(() => {
@@ -429,7 +448,7 @@ function AdminDashboardContent() {
     return () => clearInterval(interval)
   }, [authenticatedUser, refreshUsersList])
 
-  // Filter users based on search term
+  // Filter users based on search term (client-side filtering on current page)
   useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredUsers(users)
@@ -442,6 +461,23 @@ function AdminDashboardContent() {
       setFilteredUsers(filtered)
     }
   }, [users, searchTerm])
+
+  // Fetch users when page changes
+  useEffect(() => {
+    if (authenticatedUser && ['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(authenticatedUser.role || '')) {
+      fetchUsers(usersPage)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usersPage, authenticatedUser])
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    if (authenticatedUser && ['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(authenticatedUser.role || '')) {
+      if (searchTerm.trim() && usersPage !== 1) {
+        setUsersPage(1)
+      }
+    }
+  }, [searchTerm, authenticatedUser])
 
   // Filter posts based on search term and status
   useEffect(() => {
@@ -483,7 +519,7 @@ function AdminDashboardContent() {
       // Fetch both stats and users data in parallel
       const [statsResponse, usersResponse] = await Promise.all([
         fetch("/api/admin/stats"),
-        fetch("/api/admin/users")
+        fetch(`/api/admin/users?page=${usersPage}&limit=25`)
       ])
       
       if (!statsResponse.ok) {
@@ -500,10 +536,16 @@ function AdminDashboardContent() {
         const usersList = usersData.users || []
         setUsers(usersList)
         setFilteredUsers(usersList)
-        toast.success("Stats and Recent Users refreshed successfully")
+        // Update pagination metadata
+        if (usersData.pagination) {
+          setUsersTotalPages(usersData.pagination.totalPages || 1)
+          setUsersTotalCount(usersData.pagination.totalUsers || 0)
+          setUsersPage(usersData.pagination.page || 1)
+        }
+        toast.success("Stats and Users refreshed successfully")
       } else {
         // Stats updated but users failed
-        toast.success("Stats refreshed successfully (Recent Users refresh failed)")
+        toast.success("Stats refreshed successfully (Users refresh failed)")
       }
     } catch (error) {
       console.error("Error refreshing stats:", error)
@@ -529,10 +571,10 @@ function AdminDashboardContent() {
       setStats(data.stats)
       setStatsError(null)
       
-      // For user-related events, also refresh the Recent Users list to update active indicators
+      // For user-related events, also refresh the Users list to update active indicators
       if (data.eventType === 'user_created' || data.eventType === 'user_deleted' || data.eventType === 'user_role_updated' || data.eventType.includes('user')) {
         try {
-          const usersResponse = await fetch("/api/admin/users")
+          const usersResponse = await fetch(`/api/admin/users?page=${usersPage}&limit=25`)
           if (usersResponse.ok) {
             const usersData = await usersResponse.json()
             const usersList = usersData.users || []
@@ -547,6 +589,11 @@ function AdminDashboardContent() {
               setFilteredUsers(filtered)
             } else {
               setFilteredUsers(usersList)
+            }
+            // Update pagination metadata
+            if (usersData.pagination) {
+              setUsersTotalPages(usersData.pagination.totalPages || 1)
+              setUsersTotalCount(usersData.pagination.totalUsers || 0)
             }
           }
         } catch (error) {
@@ -1358,6 +1405,9 @@ function AdminDashboardContent() {
             {availableTabs.includes('competitions') && (
               <TabsTrigger value="competitions" className="text-sm font-medium">Competitions</TabsTrigger>
             )}
+            {availableTabs.includes('submissions') && (
+              <TabsTrigger value="submissions" className="text-sm font-medium">Submissions</TabsTrigger>
+            )}
             {availableTabs.includes('ads') && (
               <TabsTrigger value="ads" className="text-sm font-medium">Advertisements</TabsTrigger>
             )}
@@ -1478,7 +1528,7 @@ function AdminDashboardContent() {
                       <div className="flex items-center space-x-3">
                         <div className="relative">
                           <Avatar className="w-10 h-10">
-                            <AvatarImage src={user.image || "/placeholder.svg?height=40&width=40"} />
+                            <AvatarImage src={user.image || "/archalley-pro-pic.png"} />
                             <AvatarFallback className="bg-gray-100 text-gray-600">{user.name[0]}</AvatarFallback>
                           </Avatar>
                           {user.isActive && (
@@ -1701,7 +1751,12 @@ function AdminDashboardContent() {
                     />
                     {searchTerm && (
                       <div className="text-sm text-gray-500">
-                        {filteredUsers.length} of {users.length} users
+                        {filteredUsers.length} result{filteredUsers.length !== 1 ? 's' : ''} on this page
+                      </div>
+                    )}
+                    {!searchTerm && (
+                      <div className="text-sm text-gray-500">
+                        Page {usersPage} of {usersTotalPages} ({usersTotalCount} total users)
                       </div>
                     )}
                   </div>
@@ -1735,7 +1790,7 @@ function AdminDashboardContent() {
                             <div className={`hidden lg:grid grid-cols-7 gap-4 p-4 border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
                               <div className="flex items-center space-x-3 min-w-0">
                                 <Avatar className="w-10 h-10 flex-shrink-0">
-                                  <AvatarImage src={user.image || "/placeholder.svg?height=40&width=40"} />
+                                  <AvatarImage src={user.image || "/archalley-pro-pic.png"} />
                                   <AvatarFallback className="bg-yellow-100 text-yellow-700">{user.name?.[0] || '?'}</AvatarFallback>
                                 </Avatar>
                                 <div className="min-w-0 flex-1">
@@ -1787,6 +1842,7 @@ function AdminDashboardContent() {
                                     title={!permissions.canChangeUserRoles ? "Insufficient permissions to change roles" : ""}
                                   >
                                     <option value="MEMBER">Member</option>
+                                    <option value="VIEWER">Viewer</option>
                                     <option value="MODERATOR">Moderator</option>
                                     <option value="ADMIN">Admin</option>
                                     <option 
@@ -1830,7 +1886,7 @@ function AdminDashboardContent() {
                                 {/* User Info */}
                                 <div className="flex items-start space-x-3">
                                   <Avatar className="w-10 h-10 flex-shrink-0">
-                                    <AvatarImage src={user.image || "/placeholder.svg?height=40&width=40"} />
+                                    <AvatarImage src={user.image || "/archalley-pro-pic.png"} />
                                     <AvatarFallback className="bg-yellow-100 text-yellow-700">{user.name?.[0] || '?'}</AvatarFallback>
                                   </Avatar>
                                   <div className="min-w-0 flex-1">
@@ -1884,6 +1940,7 @@ function AdminDashboardContent() {
                                     title={!permissions.canChangeUserRoles ? "Insufficient permissions to change roles" : ""}
                                   >
                                     <option value="MEMBER">Member</option>
+                                    <option value="VIEWER">Viewer</option>
                                     <option value="MODERATOR">Moderator</option>
                                     <option value="ADMIN">Admin</option>
                                     <option 
@@ -1920,6 +1977,66 @@ function AdminDashboardContent() {
                       })
                     )}
                   </div>
+
+                  {/* Pagination Controls */}
+                  {!searchTerm && usersTotalPages > 1 && (
+                    <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Showing {((usersPage - 1) * 25) + 1} to {Math.min(usersPage * 25, usersTotalCount)} of {usersTotalCount} users
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setUsersPage(prev => Math.max(1, prev - 1))}
+                          disabled={usersPage === 1 || usersLoading}
+                          className="disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Previous
+                        </Button>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, usersTotalPages) }, (_, i) => {
+                            let pageNum: number
+                            if (usersTotalPages <= 5) {
+                              pageNum = i + 1
+                            } else if (usersPage <= 3) {
+                              pageNum = i + 1
+                            } else if (usersPage >= usersTotalPages - 2) {
+                              pageNum = usersTotalPages - 4 + i
+                            } else {
+                              pageNum = usersPage - 2 + i
+                            }
+                            return (
+                              <Button
+                                key={pageNum}
+                                variant={usersPage === pageNum ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setUsersPage(pageNum)}
+                                disabled={usersLoading}
+                                className={`min-w-[40px] ${usersPage === pageNum ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : ''} disabled:opacity-50 disabled:cursor-not-allowed`}
+                              >
+                                {pageNum}
+                              </Button>
+                            )
+                          })}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setUsersPage(prev => Math.min(usersTotalPages, prev + 1))}
+                          disabled={usersPage === usersTotalPages || usersLoading}
+                          className="disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {searchTerm && (
+                    <div className="mt-4 text-sm text-gray-600 dark:text-gray-400 text-center">
+                      Showing {filteredUsers.length} result{filteredUsers.length !== 1 ? 's' : ''} on this page
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -2650,6 +2767,13 @@ function AdminDashboardContent() {
             </TabsContent>
           )}
 
+          {/* Submissions Tab */}
+          {permissions.canViewCompetitions && (
+            <TabsContent value="submissions" className="space-y-6">
+              <SubmissionsManagementSection />
+            </TabsContent>
+          )}
+
           {/* Advertisements Tab */}
           {permissions.canViewAds && (
             <TabsContent value="ads" className="space-y-6">
@@ -2785,7 +2909,7 @@ function AdminDashboardContent() {
                               maxHeight: '50vh'
                             }}
                             onError={(e) => {
-                              e.currentTarget.src = '/placeholder.svg'
+                              e.currentTarget.src = '/archalley-pro-pic.png'
                               e.currentTarget.alt = 'Image failed to load'
                             }}
                           />
@@ -2875,7 +2999,7 @@ function AdminDashboardContent() {
                                     alt={`Thumbnail ${index + 1}`}
                                     className="w-14 h-14 object-cover"
                                     onError={(e) => {
-                                      e.currentTarget.src = '/placeholder.svg'
+                                      e.currentTarget.src = '/archalley-pro-pic.png'
                                       e.currentTarget.alt = 'Thumbnail failed to load'
                                     }}
                                   />

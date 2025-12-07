@@ -25,10 +25,19 @@ export async function GET(request: NextRequest) {
       ip: request.headers.get("x-forwarded-for") || "unknown"
     })
 
+    // Get pagination parameters from query string
+    const { searchParams } = new URL(request.url)
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10))
+    const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") || "25", 10))) // Default 25, max 100
+    const skip = (page - 1) * limit
+
     // Calculate the date 24 hours ago for active user detection
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
-    // Get recent users with their roles and join dates
+    // Get total count of users for pagination
+    const totalUsers = await prisma.users.count()
+
+    // Get paginated users with their roles and join dates
     const users = await prisma.users.findMany({
       select: {
         id: true,
@@ -50,7 +59,8 @@ export async function GET(request: NextRequest) {
       orderBy: {
         createdAt: "desc"
       },
-      take: 10 // Limit to 10 most recent users
+      skip,
+      take: limit
     })
 
     // Format the user data with active status
@@ -69,7 +79,19 @@ export async function GET(request: NextRequest) {
       requiresEmailVerification: !!user.password // Email/password users require verification
     }))
 
-    return NextResponse.json({ users: formattedUsers })
+    const totalPages = Math.ceil(totalUsers / limit)
+
+    return NextResponse.json({ 
+      users: formattedUsers,
+      pagination: {
+        page,
+        limit,
+        totalUsers,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1
+      }
+    })
   } catch (error) {
     console.error("[ADMIN_USERS]", error)
     return new NextResponse("Internal Error", { status: 500 })
@@ -108,7 +130,7 @@ export async function PATCH(request: NextRequest) {
     })
 
     // Validate role
-    if (!["MEMBER", "MODERATOR", "ADMIN", "SUPER_ADMIN"].includes(role)) {
+    if (!["MEMBER", "VIEWER", "MODERATOR", "ADMIN", "SUPER_ADMIN"].includes(role)) {
       return new NextResponse("Invalid role", { status: 400 })
     }
 

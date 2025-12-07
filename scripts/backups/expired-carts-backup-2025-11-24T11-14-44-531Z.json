@@ -1,0 +1,38 @@
+[
+  {
+    "id": "cmhnlvv610005js04zsumdl9q",
+    "userId": "f5af1109-7a15-444a-8995-98fa8e1cb13b",
+    "status": "EXPIRED",
+    "expiresAt": "2025-11-06T17:03:10.989Z",
+    "createdAt": "2025-11-06T15:53:10.538Z",
+    "updatedAt": "2025-11-06T17:03:11.066Z",
+    "items": []
+  },
+  {
+    "id": "cmhnodwbn0001l704runhq3i8",
+    "userId": "f5af1109-7a15-444a-8995-98fa8e1cb13b",
+    "status": "EXPIRED",
+    "expiresAt": "2025-11-06T17:33:11.075Z",
+    "createdAt": "2025-11-06T17:03:11.076Z",
+    "updatedAt": "2025-11-06T17:33:11.159Z",
+    "items": []
+  },
+  {
+    "id": "cmhnpgha70001kv046tui7azb",
+    "userId": "f5af1109-7a15-444a-8995-98fa8e1cb13b",
+    "status": "EXPIRED",
+    "expiresAt": "2025-11-06T18:03:11.166Z",
+    "createdAt": "2025-11-06T17:33:11.167Z",
+    "updatedAt": "2025-11-06T18:03:11.247Z",
+    "items": []
+  },
+  {
+    "id": "cmhnqj2e10003js04pqpj2pu2",
+    "userId": "f5af1109-7a15-444a-8995-98fa8e1cb13b",
+    "status": "ACTIVE",
+    "expiresAt": "2025-11-06T18:33:11.448Z",
+    "createdAt": "2025-11-06T18:03:11.449Z",
+    "updatedAt": "2025-11-06T18:03:11.449Z",
+    "items": []
+  }
+]

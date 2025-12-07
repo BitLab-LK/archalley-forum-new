@@ -177,7 +177,7 @@ export default function PostDetailPage({ post }: PostDetailPageProps) {
       id: `comment-${Date.now()}`,
       author: user.name || "Anonymous",
       authorId: user.id || "",
-      authorImage: user.image || "/placeholder-user.jpg",
+      authorImage: user.image || "/archalley-pro-pic.png",
       content: commentInput.trim(),
       createdAt: new Date().toISOString(),
       parentId: null,
@@ -282,7 +282,7 @@ export default function PostDetailPage({ post }: PostDetailPageProps) {
           )}
           
           <Avatar className={cn("flex-shrink-0", isNested ? "h-6 w-6" : "h-8 w-8")}>
-            <AvatarImage src={comment.authorImage || "/placeholder-user.jpg"} />
+            <AvatarImage src={comment.authorImage || "/archalley-pro-pic.png"} />
             <AvatarFallback className="bg-orange-500 text-white text-xs">
               {comment.author && comment.author.length > 0 ? comment.author[0].toUpperCase() : "U"}
             </AvatarFallback>
@@ -410,7 +410,7 @@ export default function PostDetailPage({ post }: PostDetailPageProps) {
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={post.isAnonymous ? "/placeholder.svg" : post.author.avatar} />
+              <AvatarImage src={post.isAnonymous ? "/archalley-pro-pic.png" : post.author.avatar} />
               <AvatarFallback className="bg-orange-500 text-white">{post.isAnonymous ? "A" : post.author.name[0]}</AvatarFallback>
             </Avatar>
             <div>
@@ -551,7 +551,7 @@ export default function PostDetailPage({ post }: PostDetailPageProps) {
           {user && (
             <div className="flex items-start gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
               <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarImage src={user.image || "/placeholder-user.jpg"} />
+                <AvatarImage src={user.image || "/archalley-pro-pic.png"} />
                 <AvatarFallback className="bg-orange-500 text-white text-xs">
                   {user.name?.[0]?.toUpperCase() || "U"}
                 </AvatarFallback>
