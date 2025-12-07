@@ -17,7 +17,7 @@ import {
   validateMultiplePhotos,
   validateWordCount,
 } from '@/lib/azure-blob-submission-upload';
-import { sendSubmissionCreatedEmail, sendSubmissionPublishedEmail } from '@/lib/competition-email-service';
+import { sendSubmissionPublishedEmail } from '@/lib/competition-email-service';
 import { SubmissionCategory } from '@prisma/client';
 import type { FileMetadata } from '@/types/submission';
 
