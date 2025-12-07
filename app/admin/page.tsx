@@ -24,6 +24,7 @@ import { getRolePermissions, getAvailableTabs, getDefaultTab, getRoleInfo, type 
 import AdsManagementSection from "@/components/ads-management-section"
 import CompetitionsManagementSection from "@/components/competitions-management-section"
 import SubmissionsManagementSection from "@/components/submissions-management-section"
+import BriefDownloadsManagementSection from "@/components/brief-downloads-management-section"
 
 interface DashboardStats {
   totalUsers: number
@@ -1423,6 +1424,9 @@ function AdminDashboardContent() {
             {availableTabs.includes('pages') && (
               <TabsTrigger value="pages" className="text-sm font-medium">Pages</TabsTrigger>
             )}
+            {availableTabs.includes('brief-downloads') && (
+              <TabsTrigger value="brief-downloads" className="text-sm font-medium">Brief Downloads</TabsTrigger>
+            )}
           </TabsList>
 
           {/* Statistics Tab */}
@@ -2778,6 +2782,13 @@ function AdminDashboardContent() {
           {permissions.canViewAds && (
             <TabsContent value="ads" className="space-y-6">
               <AdsManagementSection userPermissions={permissions} />
+            </TabsContent>
+          )}
+
+          {/* Brief Downloads Tab */}
+          {permissions.canViewBriefDownloads && (
+            <TabsContent value="brief-downloads" className="space-y-6">
+              <BriefDownloadsManagementSection />
             </TabsContent>
           )}
         </Tabs>

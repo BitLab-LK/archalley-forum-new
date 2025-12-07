@@ -26,7 +26,9 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const eligibility = await canUserSubmit(session.user.id, registrationId);
+    // Pass user role for admin bypass
+    const userRole = session.user.role as string;
+    const eligibility = await canUserSubmit(session.user.id, registrationId, userRole);
     
     return NextResponse.json(eligibility);
   } catch (error) {

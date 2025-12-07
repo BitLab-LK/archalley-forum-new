@@ -21,8 +21,12 @@ import { RegistrationStatus } from '@prisma/client';
 
 export async function canUserSubmit(
   userId: string,
-  registrationId: string
+  registrationId: string,
+  userRole?: string
 ): Promise<EligibilityCheck> {
+  
+  // Check if user is admin or super admin
+  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
   
   // Check existing registration status (READ-ONLY from existing table)
   const registration = await prisma.competitionRegistration.findFirst({
@@ -44,25 +48,50 @@ export async function canUserSubmit(
     };
   }
   
-  // Check if submission deadline passed
-  const now = new Date();
-  if (now > registration.competition.endDate) {
-    return { 
-      canSubmit: false, 
-      reason: 'Submission deadline has passed' 
-    };
-  }
-  
-  // Check if competition accepts submissions
-  if (registration.competition.status !== 'REGISTRATION_OPEN' && 
-      registration.competition.status !== 'IN_PROGRESS') {
-    return { 
-      canSubmit: false, 
-      reason: 'Competition is not accepting submissions' 
-    };
+  // Admins and super admins can bypass submission period restrictions
+  if (!isAdmin) {
+    // Check submission period dates
+    // Submission starts: 11th December 2025
+    // Kids deadline: 21st December 2025
+    // Other categories deadline: 24th December 2025
+    const now = new Date();
+    const submissionStartDate = new Date('2025-12-11T00:00:00+05:30');
+    const kidsDeadline = new Date('2025-12-21T23:59:59+05:30');
+    const otherCategoriesDeadline = new Date('2025-12-24T23:59:59+05:30');
+    
+    // Check if submission period has started
+    if (now < submissionStartDate) {
+      return {
+        canSubmit: false,
+        reason: 'Submission period has not started yet. Submissions open on 11th December 2025.'
+      };
+    }
+    
+    // Check category-specific deadline
+    const isKidsCategory = registration.registrationType?.type === 'KIDS';
+    const deadline = isKidsCategory ? kidsDeadline : otherCategoriesDeadline;
+    
+    if (now > deadline) {
+      const categoryName = isKidsCategory ? 'kids' : 'other';
+      const deadlineDate = isKidsCategory ? '21st December 2025' : '24th December 2025';
+      return {
+        canSubmit: false,
+        reason: `Submission deadline for ${categoryName} category has passed (${deadlineDate})`
+      };
+    }
+    
+    // Check if competition accepts submissions
+    if (registration.competition.status !== 'REGISTRATION_OPEN' && 
+        registration.competition.status !== 'IN_PROGRESS') {
+      return { 
+        canSubmit: false, 
+        reason: 'Competition is not accepting submissions' 
+      };
+    }
   }
   
   // Check if already submitted (from NEW submission table)
+  // Each registration can only be submitted once
   const existingSubmission = await prisma.competitionSubmission.findUnique({
     where: { registrationId: registrationId }
   });
@@ -70,7 +99,7 @@ export async function canUserSubmit(
   if (existingSubmission && existingSubmission.status !== 'DRAFT') {
     return { 
       canSubmit: false, 
-      reason: 'You have already submitted for this competition',
+      reason: 'This entry has already been submitted. Each entry can only be submitted once.',
       existingSubmission 
     };
   }

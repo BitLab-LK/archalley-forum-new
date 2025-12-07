@@ -1780,13 +1780,17 @@ export const sendSubmissionCreatedEmail = async (data: {
   userName: string;
   userEmail: string;
 }) => {
-  const { submission, userName, userEmail } = data;
+  const { submission, competition, userName, userEmail } = data;
 
   console.log('📧 Sending Submission Created Email to:', userEmail);
   
-  const subject = `Submission Received - Archalley Competition 2025 - Christmas in Future ✅`;
+  const subject = `Submission Completed - Archalley Competition 2025 - Christmas in Future ✅`;
 
-  const html = `
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://archalley.com';
+  const submissionViewUrl = `${appUrl}/submissions/${submission.registrationNumber}/view`;
+  const competitionUrl = `${appUrl}/events/${competition.slug || 'archalley-competition-2025'}`;
+
+const html = `
     ${getEmailHeader()}
     
     <!-- Main Content -->
@@ -1796,13 +1800,13 @@ export const sendSubmissionCreatedEmail = async (data: {
       </p>
       
       <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
-        Great news! We have successfully received your submission for <strong>Archalley Competition 2025 - Christmas in Future</strong>. Thank you for participating!
+        Great news! Your submission for <strong>${competition.title}</strong> has been successfully completed. Thank you for participating!
       </p>
 
       <!-- Success Status -->
       <div style="background: #e8f5e9; border-left: 4px solid #4caf50; padding: 20px; margin: 30px 0; border-radius: 4px;">
         <p style="color: #2e7d32; margin: 0; line-height: 1.8; font-size: 16px; font-weight: bold;">
-          ✅ Submission Received Successfully
+          ✅ Submission Completed Successfully
         </p>
       </div>
 
@@ -1813,10 +1817,6 @@ export const sendSubmissionCreatedEmail = async (data: {
           <tr>
             <td style="padding: 8px 0;"><strong>Registration Number:</strong></td>
             <td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: bold; color: #FFA000;">${submission.registrationNumber}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0;"><strong>Submission Title:</strong></td>
-            <td style="padding: 8px 0; text-align: right; color: #333;">${submission.title}</td>
           </tr>
           <tr>
             <td style="padding: 8px 0;"><strong>Category:</strong></td>
@@ -1835,20 +1835,20 @@ export const sendSubmissionCreatedEmail = async (data: {
           </tr>
           <tr>
             <td style="padding: 8px 0;"><strong>Status:</strong></td>
-            <td style="padding: 8px 0; text-align: right; color: #4caf50; font-weight: bold;">Submitted</td>
+            <td style="padding: 8px 0; text-align: right; color: #4caf50; font-weight: bold;">Completed</td>
           </tr>
         </table>
       </div>
 
-      <!-- What Happens Next -->
-      <div style="background: #f9f9f9; padding: 25px; border-radius: 8px; margin: 30px 0;">
-        <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">📋 What Happens Next?</h3>
-        <ol style="color: #666; margin: 0; padding-left: 20px; line-height: 1.8; font-size: 14px;">
-          <li style="margin-bottom: 10px;">Our team will review your submission for completeness and compliance</li>
-          <li style="margin-bottom: 10px;">You will receive an email once your submission is validated</li>
-          <li style="margin-bottom: 10px;">Validated submissions will be published for public voting</li>
-          <li style="margin-bottom: 10px;">Results will be announced after the judging process</li>
-        </ol>
+      <!-- Public Voting Notice -->
+      <div style="background: #fff4e6; border-left: 4px solid #FFA000; padding: 20px; margin: 30px 0; border-radius: 4px;">
+        <h3 style="color: #FFA000; margin: 0 0 15px 0; font-size: 18px;">🗳️ Public Voting</h3>
+        <p style="color: #333; margin: 0 0 10px 0; line-height: 1.8; font-size: 14px;">
+          <strong>Public voting will begin on December 25, 2025.</strong> All submissions will be made publicly available for voting starting from this date.
+        </p>
+        <p style="color: #666; margin: 10px 0 0 0; line-height: 1.6; font-size: 14px;">
+          Share your submission with friends and family to get votes once voting opens!
+        </p>
       </div>
 
       <!-- Important Note -->
@@ -1858,54 +1858,67 @@ export const sendSubmissionCreatedEmail = async (data: {
         </p>
       </div>
 
-      <!-- CTA Button -->
+      <!-- CTA Buttons -->
       <div style="text-align: center; margin: 40px 0;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL}/submissions" 
-           style="background: #FFA000; 
-                  color: white; 
-                  padding: 15px 40px; 
-                  text-decoration: none; 
-                  border-radius: 8px; 
-                  display: inline-block; 
-                  font-weight: bold; 
-                  font-size: 16px;
-                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-          View My Submissions
-        </a>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; align-items: center;">
+          <a href="${submissionViewUrl}" 
+             style="background: #FFA000; 
+                    color: white; 
+                    padding: 15px 30px; 
+                    text-decoration: none; 
+                    border-radius: 8px; 
+                    display: inline-block; 
+                    font-weight: bold; 
+                    font-size: 16px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    text-align: center;">
+            View My Submission
+          </a>
+          <a href="${competitionUrl}" 
+             style="background: #333; 
+                    color: white; 
+                    padding: 15px 30px; 
+                    text-decoration: none; 
+                    border-radius: 8px; 
+                    display: inline-block; 
+                    font-weight: bold; 
+                    font-size: 16px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    text-align: center;">
+            Competition Page
+          </a>
+        </div>
       </div>
 
       <p style="color: #999; font-size: 12px; line-height: 1.6; margin: 30px 0 0 0; padding-top: 20px; border-top: 1px solid #eee;">
         If you have any questions or need to make changes to your submission, please contact us at <a href="mailto:projects@archalley.com" style="color: #FFA000; text-decoration: none;">projects@archalley.com</a>
       </p>
     </div>
-    ${getEmailFooter()}
+${getEmailFooter()}
   `;
 
   const text = `
-Submission Received - Archalley Competition 2025 ✅
+Submission Completed - Archalley Competition 2025 ✅
 
 Hi ${userName},
 
-Great news! We have successfully received your submission for Archalley Competition 2025 - Christmas in Future. Thank you for participating!
+Great news! Your submission for ${competition.title} has been successfully completed. Thank you for participating!
 
-✅ SUBMISSION RECEIVED SUCCESSFULLY
+✅ SUBMISSION COMPLETED SUCCESSFULLY
 
 Submission Details:
 - Registration Number: ${submission.registrationNumber}
-- Submission Title: ${submission.title}
 - Category: ${submission.submissionCategory}
 - Submitted At: ${submission.submittedAt ? new Date(submission.submittedAt).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-- Status: Submitted
+- Status: Completed
 
-What Happens Next?
-1. Our team will review your submission for completeness and compliance
-2. You will receive an email once your submission is validated
-3. Validated submissions will be published for public voting
-4. Results will be announced after the judging process
+🗳️ PUBLIC VOTING
+Public voting will begin on December 25, 2025. All submissions will be made publicly available for voting starting from this date. Share your submission with friends and family to get votes once voting opens!
 
 Important: Please keep this email for your records. Your registration number (${submission.registrationNumber}) is your reference for any inquiries about your submission.
 
-View your submissions: ${process.env.NEXT_PUBLIC_APP_URL}/submissions
+View your submission: ${submissionViewUrl}
+Competition page: ${competitionUrl}
 
 If you have any questions, contact us at projects@archalley.com
 

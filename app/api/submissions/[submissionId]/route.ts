@@ -9,8 +9,8 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(
-  _request: Request,
-  { params }: { params: { submissionId: string } }
+  request: Request,
+  { params }: { params: Promise<{ submissionId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,29 +19,59 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const { submissionId } = params;
+    const { submissionId } = await params;
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type'); // 'draft' to fetch by registrationId
     
-    // Fetch submission
-    const submission = await prisma.competitionSubmission.findUnique({
-      where: { id: submissionId },
-      include: {
-        votes: true,
-      },
-    });
+    let submission;
     
-    if (!submission) {
-      return NextResponse.json(
-        { error: 'Submission not found' },
-        { status: 404 }
-      );
-    }
-    
-    // Verify ownership - user can only access their own submissions
-    if (submission.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to access this submission' },
-        { status: 403 }
-      );
+    if (type === 'draft') {
+      // Fetch draft by registrationId
+      const registration = await prisma.competitionRegistration.findUnique({
+        where: { 
+          id: submissionId,
+          userId: session.user.id,
+        },
+      });
+      
+      if (!registration) {
+        return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
+      }
+      
+      submission = await prisma.competitionSubmission.findUnique({
+        where: { registrationId: registration.id },
+      });
+      
+      // Return draft even if it doesn't exist yet (for new submissions)
+      if (!submission) {
+        return NextResponse.json({
+          success: true,
+          submission: null,
+        });
+      }
+    } else {
+      // Fetch submission by submissionId
+      submission = await prisma.competitionSubmission.findUnique({
+        where: { id: submissionId },
+        include: {
+          votes: true,
+        },
+      });
+      
+      if (!submission) {
+        return NextResponse.json(
+          { error: 'Submission not found' },
+          { status: 404 }
+        );
+      }
+      
+      // Verify ownership - user can only access their own submissions
+      if (submission.userId !== session.user.id) {
+        return NextResponse.json(
+          { error: 'Unauthorized to access this submission' },
+          { status: 403 }
+        );
+      }
     }
     
     // Optionally fetch related data

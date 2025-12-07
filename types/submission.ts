@@ -38,7 +38,6 @@ export type SubmissionWithDetails = CompetitionSubmission & {
 export interface SubmissionFormData {
   registrationId: string;
   submissionCategory: SubmissionCategory; // DIGITAL or PHYSICAL - Required
-  title: string;
   description: string; // 50-200 words
   
   // Files
@@ -130,10 +129,6 @@ export interface EligibilityCheck {
 // ============================================
 
 export const SUBMISSION_RULES = {
-  title: {
-    minLength: 3,
-    maxLength: 100,
-  },
   description: {
     minWords: 50,
     maxWords: 200,

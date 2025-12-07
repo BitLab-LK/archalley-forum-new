@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect, useRef } from "react"
 import { event } from "@/lib/google-analytics"
+import BriefDownloadPopup from "@/components/brief-download-popup"
 
 export default function CompetitionPageClient() {
   const [isSticky, setIsSticky] = useState(false)
@@ -13,6 +14,7 @@ export default function CompetitionPageClient() {
   const [timelineProgress, setTimelineProgress] = useState(0)
   const [activePopup, setActivePopup] = useState<string | null>(null)
   const [activeMobileTab, setActiveMobileTab] = useState('challenge')
+  const [briefDownloadOpen, setBriefDownloadOpen] = useState(false)
   const scrollPositionRef = useRef(0)
 
   // Function to handle tab change and scroll to respective section
@@ -302,15 +304,10 @@ export default function CompetitionPageClient() {
                 </Link>
               </Button>
               <Button
-                asChild
+                onClick={() => setBriefDownloadOpen(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
               >
-                <a 
-                  href="/downloads/Christmas Tree Competition 2025 - Brief.pdf"
-                  download="Christmas Tree Competition 2025 - Brief.pdf"
-                >
-                  Download Brief
-                </a>
+                Download Brief
               </Button>
               </div>
             </div>
@@ -447,15 +444,10 @@ export default function CompetitionPageClient() {
                 </Link>
               </Button>
               <Button
-                asChild
+                onClick={() => setBriefDownloadOpen(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
               >
-                <a 
-                  href="/downloads/Christmas Tree Competition 2025 - Brief.pdf"
-                  download="Christmas Tree Competition 2025 - Brief.pdf"
-                >
-                  Download Brief
-                </a>
+                Download Brief
               </Button>
             </div>
           </div>
@@ -739,15 +731,10 @@ export default function CompetitionPageClient() {
                 </Link>
               </Button>
               <Button
-                asChild
+                onClick={() => setBriefDownloadOpen(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
               >
-                <a 
-                  href="/downloads/Christmas Tree Competition 2025 - Brief.pdf"
-                  download="Christmas Tree Competition 2025 - Brief.pdf"
-                >
-                  Download Brief
-                </a>
+                Download Brief
               </Button>
             </div>
           </div>
@@ -1307,6 +1294,9 @@ export default function CompetitionPageClient() {
           </div>
         </div>
       </div>
+
+      {/* Brief Download Popup */}
+      <BriefDownloadPopup open={briefDownloadOpen} onOpenChange={setBriefDownloadOpen} />
     </div>
   )
 }

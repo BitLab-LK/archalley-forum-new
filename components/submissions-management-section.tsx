@@ -33,7 +33,6 @@ interface Submission {
   id: string;
   registrationNumber: string;
   submissionCategory: string;
-  title: string;
   description: string;
   status: string;
   keyPhotographUrl: string;
@@ -123,7 +122,6 @@ export default function SubmissionsManagementSection() {
     const filtered = submissions.filter(
       (sub) =>
         sub.registrationNumber.toLowerCase().includes(query) ||
-        sub.title.toLowerCase().includes(query) ||
         sub.user.name.toLowerCase().includes(query) ||
         sub.user.email.toLowerCase().includes(query) ||
         sub.registration?.registrationNumber.toLowerCase().includes(query) ||
@@ -323,7 +321,7 @@ export default function SubmissionsManagementSection() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Search by submission number, title, user, registration number..."
+                placeholder="Search by submission number, user, registration number..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -365,7 +363,6 @@ export default function SubmissionsManagementSection() {
                   <TableHead>Registration Number</TableHead>
                   <TableHead>User</TableHead>
                   <TableHead>Competition</TableHead>
-                  <TableHead>Title</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Submitted</TableHead>
@@ -375,14 +372,14 @@ export default function SubmissionsManagementSection() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
                       Loading submissions...
                     </TableCell>
                   </TableRow>
                 ) : filteredSubmissions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                       No submissions found
                     </TableCell>
                   </TableRow>
@@ -409,9 +406,6 @@ export default function SubmissionsManagementSection() {
                       </TableCell>
                       <TableCell className="text-sm">
                         {submission.registration?.competition.title || 'N/A'}
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate text-sm">
-                        {submission.title}
                       </TableCell>
                       <TableCell>{getCategoryBadge(submission.submissionCategory)}</TableCell>
                       <TableCell>{getStatusBadge(submission.status)}</TableCell>
@@ -609,11 +603,7 @@ export default function SubmissionsManagementSection() {
                 <h3 className="font-semibold mb-3">Submission Content</h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Title</label>
-                    <p className="text-sm mt-1">{selectedSubmission.title}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Description</label>
+                    <label className="text-sm font-medium text-gray-700">Concept</label>
                     <p className="text-sm mt-1 whitespace-pre-wrap">{selectedSubmission.description}</p>
                   </div>
                 </div>
@@ -741,7 +731,6 @@ export default function SubmissionsManagementSection() {
             <div className="space-y-4">
               <div className="bg-blue-50 p-3 rounded-lg">
                 <p className="text-sm font-medium">Submission: {selectedSubmission.registrationNumber}</p>
-                <p className="text-sm text-gray-600">{selectedSubmission.title}</p>
               </div>
 
               <div>
@@ -802,7 +791,6 @@ export default function SubmissionsManagementSection() {
             <div className="space-y-4">
               <div className="bg-red-50 p-3 rounded-lg">
                 <p className="text-sm font-medium">Submission: {selectedSubmission.registrationNumber}</p>
-                <p className="text-sm text-gray-600">{selectedSubmission.title}</p>
               </div>
 
               <div>

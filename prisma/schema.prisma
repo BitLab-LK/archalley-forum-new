@@ -353,6 +353,9 @@ model users {
   competitionRegistrations CompetitionRegistration[]
   competitionPayments      CompetitionPayment[]
   
+  // Brief download relations
+  briefDownloadRequests    BriefDownloadRequest[]
+  
   // Performance and security indexes
   @@index([email])
   @@index([role])
@@ -1104,4 +1107,31 @@ model SubmissionVote {
   @@index([submissionId])
   @@index([userId])
   @@index([ipAddress])
+}
+
+// ============================================
+// BRIEF DOWNLOAD SYSTEM
+// ============================================
+
+model BriefDownloadRequest {
+  id              String   @id @default(cuid())
+  email           String
+  token           String   @unique // Unique token for download link
+  userId          String?  // Optional: linked user ID if logged in
+  user            users?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  // Tracking
+  accessCount     Int      @default(0) // Number of times link was accessed
+  downloadCount   Int      @default(0) // Number of times file was downloaded
+  lastAccessedAt  DateTime?
+  firstRequestedAt DateTime @default(now())
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([email])
+  @@index([token])
+  @@index([userId])
+  @@unique([email]) // One token per email (reuse existing token)
 }
