@@ -1780,7 +1780,7 @@ export const sendSubmissionCreatedEmail = async (data: {
   userName: string;
   userEmail: string;
 }) => {
-  const { submission, competition, userName, userEmail } = data;
+  const { submission, userName, userEmail } = data;
 
   console.log('📧 Sending Submission Created Email to:', userEmail);
   
