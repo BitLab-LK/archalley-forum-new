@@ -75,8 +75,25 @@ export default async function ViewSubmissionPage({
       submittedAt: true,
       createdAt: true,
       updatedAt: true,
+      voteCount: true,
+      isPublished: true,
+      registrationNumber: true,
     },
   });
+
+  // Check if user has voted (only for published submissions)
+  let hasVoted = false;
+  if (session?.user?.id && submission?.isPublished && submission?.registrationNumber) {
+    const vote = await prisma.submissionVote.findUnique({
+      where: {
+        registrationNumber_userId: {
+          registrationNumber: submission.registrationNumber,
+          userId: session.user.id,
+        },
+      },
+    });
+    hasVoted = !!vote;
+  }
 
   // Only allow viewing if submission exists and is not a draft
   if (!submission) {
@@ -125,6 +142,9 @@ export default async function ViewSubmissionPage({
         registrationType: registration.registrationType,
       }}
       submission={submission}
+      voteCount={submission.voteCount}
+      hasVoted={hasVoted}
+      isAuthenticated={!!session?.user?.id}
     />
   );
 }

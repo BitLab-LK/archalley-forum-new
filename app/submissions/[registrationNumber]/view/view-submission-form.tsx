@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { VoteButton } from '@/components/voting/vote-button';
 
 interface Registration {
   id: string;
@@ -39,14 +40,26 @@ interface Submission {
   submittedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  voteCount?: number;
+  isPublished?: boolean;
+  registrationNumber?: string;
 }
 
 interface ViewSubmissionFormProps {
   registration: Registration;
   submission: Submission;
+  voteCount?: number;
+  hasVoted?: boolean;
+  isAuthenticated?: boolean;
 }
 
-export function ViewSubmissionForm({ registration, submission }: ViewSubmissionFormProps) {
+export function ViewSubmissionForm({ 
+  registration, 
+  submission,
+  voteCount = 0,
+  hasVoted = false,
+  isAuthenticated = false,
+}: ViewSubmissionFormProps) {
   const router = useRouter();
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -132,6 +145,21 @@ export function ViewSubmissionForm({ registration, submission }: ViewSubmissionF
 
         {/* Submission Form */}
         <div className="bg-white rounded-lg shadow-md p-8">
+          {/* Vote Button - Only show for published submissions */}
+          {submission.isPublished && submission.registrationNumber && (
+            <div className="mb-6 flex justify-end">
+              <VoteButton
+                registrationNumber={submission.registrationNumber}
+                initialVoteCount={voteCount}
+                initialHasVoted={hasVoted}
+                isAuthenticated={isAuthenticated}
+                size="lg"
+                showCount={true}
+                variant="default"
+              />
+            </div>
+          )}
+          
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Submission Details</h2>
