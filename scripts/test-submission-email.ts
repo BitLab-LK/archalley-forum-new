@@ -73,20 +73,6 @@ async function testSubmissionEmail() {
             in: ['PUBLISHED', 'SUBMITTED', 'VALIDATED'],
           },
         },
-        include: {
-          registration: {
-            include: {
-              competition: true,
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                },
-              },
-            },
-          },
-        },
         orderBy: {
           submittedAt: 'desc',
         },
@@ -96,7 +82,25 @@ async function testSubmissionEmail() {
         throw new Error('No submitted submission found in database. Please provide a registration number or ensure there are submitted submissions.');
       }
 
-      registration = submission.registration;
+      // Fetch associated registration with related data
+      registration = await prisma.competitionRegistration.findUnique({
+        where: { id: submission.registrationId },
+        include: {
+          competition: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      if (!registration) {
+        throw new Error(`Registration not found for submission ${submission.id}`);
+      }
+
       competition = registration.competition;
       user = registration.user;
     }

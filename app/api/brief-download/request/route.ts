@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, agreedToPrivacyPolicy } = validationResult.data;
+    const { email } = validationResult.data;
     const normalizedEmail = email.toLowerCase().trim();
 
     // Get session if user is logged in

@@ -34,7 +34,6 @@ export function SubmissionsClient() {
   const router = useRouter();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [eligibilityMessage, setEligibilityMessage] = useState('');
 
   useEffect(() => {
     fetchRegistrations();
@@ -80,13 +79,6 @@ export function SubmissionsClient() {
             View your competition registrations and create submissions
           </p>
         </div>
-
-        {/* Eligibility Message */}
-        {eligibilityMessage && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800">{eligibilityMessage}</p>
-          </div>
-        )}
 
         {/* No Registrations */}
         {registrations.length === 0 && (

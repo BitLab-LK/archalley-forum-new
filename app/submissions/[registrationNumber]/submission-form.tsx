@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { CategorySelector } from '@/components/submissions/category-selector';
 import { FileUploadZone } from '@/components/submissions/file-upload-zone';
@@ -571,7 +571,7 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
                 setCategory(val || '');
                 setHasUserInput(true);
               }}
-              disabled={isReadOnly || (editingSubmission && editingSubmission.status !== 'DRAFT')}
+              disabled={isReadOnly || !!(editingSubmission && editingSubmission.status !== 'DRAFT')}
             />
 
             {/* Concept */}
@@ -584,7 +584,7 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
               minWords={50}
               maxWords={200}
               required
-              disabled={isReadOnly || (editingSubmission && editingSubmission.status !== 'DRAFT')}
+              disabled={isReadOnly || !!(editingSubmission && editingSubmission.status !== 'DRAFT')}
             />
 
             {/* Key Photograph */}
@@ -611,11 +611,11 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
                 }}
                 existingFileUrl={keyPhotoUrl}
                 onRemoveExistingUrl={async (url) => {
-                  await handleFileRemove(keyPhotoUrl);
+                  await handleFileRemove(url);
                   setKeyPhotoUrl(null);
                 }}
                 required
-                disabled={isReadOnly || uploadingKeyPhoto || submitting || (editingSubmission && editingSubmission.status !== 'DRAFT')}
+                disabled={isReadOnly || uploadingKeyPhoto || submitting || !!(editingSubmission && editingSubmission.status !== 'DRAFT')}
               />
               {uploadingKeyPhoto && (
                 <p className="mt-2 text-sm text-blue-600">Uploading...</p>
@@ -655,12 +655,12 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
                 existingFileUrls={additionalPhotosUrls}
                 onRemoveExistingUrl={async (url, index) => {
                   if (index !== undefined) {
-                    await handleFileRemove(null, additionalPhotosUrls, index);
+                    await handleFileRemove(url, additionalPhotosUrls, index);
                     setAdditionalPhotosUrls(additionalPhotosUrls.filter((_, i) => i !== index));
                   }
                 }}
                 required
-                disabled={isReadOnly || uploadingAdditionalPhotos.some(u => u) || submitting || (editingSubmission && editingSubmission.status !== 'DRAFT')}
+                disabled={isReadOnly || uploadingAdditionalPhotos.some(u => u) || submitting || !!(editingSubmission && editingSubmission.status !== 'DRAFT')}
               />
               {uploadingAdditionalPhotos.some(u => u) && (
                 <p className="mt-2 text-sm text-blue-600">Uploading...</p>
@@ -691,10 +691,10 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
                 }}
                 existingFileUrl={documentFileUrl}
                 onRemoveExistingUrl={async (url) => {
-                  await handleFileRemove(documentFileUrl);
+                  await handleFileRemove(url);
                   setDocumentFileUrl(null);
                 }}
-                disabled={isReadOnly || uploadingDocument || submitting || (editingSubmission && editingSubmission.status !== 'DRAFT')}
+                disabled={isReadOnly || uploadingDocument || submitting || !!(editingSubmission && editingSubmission.status !== 'DRAFT')}
               />
               {uploadingDocument && (
                 <p className="mt-2 text-sm text-blue-600">Uploading...</p>
@@ -725,10 +725,10 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
                 }}
                 existingFileUrl={videoFileUrl}
                 onRemoveExistingUrl={async (url) => {
-                  await handleFileRemove(videoFileUrl);
+                  await handleFileRemove(url);
                   setVideoFileUrl(null);
                 }}
-                disabled={isReadOnly || uploadingVideo || submitting || (editingSubmission && editingSubmission.status !== 'DRAFT')}
+                disabled={isReadOnly || uploadingVideo || submitting || !!(editingSubmission && editingSubmission.status !== 'DRAFT')}
               />
               {uploadingVideo && (
                 <p className="mt-2 text-sm text-blue-600">Uploading...</p>

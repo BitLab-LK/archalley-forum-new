@@ -10,27 +10,30 @@ import { formatFileSize } from '@/lib/azure-blob-submission-upload';
 
 interface FilePreviewItemProps {
   file: File;
-  index: number;
   isImage: boolean;
   disabled: boolean;
   onRemove: () => void;
 }
 
-function FilePreviewItem({ file, index, isImage, disabled, onRemove }: FilePreviewItemProps) {
+function FilePreviewItem({ file, isImage, disabled, onRemove }: FilePreviewItemProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
 
   // Create object URL for images
   useEffect(() => {
-    if (isImage) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      
-      // Cleanup function to revoke the object URL
-      return () => {
-        URL.revokeObjectURL(url);
-      };
+    // For non-image files, ensure we reset preview state and exit early
+    if (!isImage) {
+      setPreviewUrl(null);
+      return;
     }
+
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    
+    // Cleanup function to revoke the object URL
+    return () => {
+      URL.revokeObjectURL(url);
+    };
   }, [file, isImage]);
 
   if (isImage && previewUrl && !imageError) {
@@ -456,7 +459,6 @@ export function FileUploadZone({
                 <FilePreviewItem
                   key={`${file.name}-${index}`}
                   file={file}
-                  index={index}
                   isImage={isImage}
                   disabled={disabled}
                   onRemove={() => removeFile(index)}
