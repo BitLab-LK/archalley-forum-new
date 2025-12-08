@@ -11,7 +11,6 @@ import { VoteButton } from './vote-button';
 
 interface EntryCardProps {
   registrationNumber: string;
-  title: string;
   category: 'DIGITAL' | 'PHYSICAL';
   imageUrl: string;
   voteCount: number;
@@ -21,7 +20,6 @@ interface EntryCardProps {
 
 export function EntryCard({
   registrationNumber,
-  title,
   category,
   imageUrl,
   voteCount,

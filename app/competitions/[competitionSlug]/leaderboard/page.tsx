@@ -169,7 +169,7 @@ export default async function LeaderboardPage({ params, searchParams }: PageProp
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {result.leaderboard.map((entry, index) => (
+                  {result.leaderboard.map((entry) => (
                     <tr
                       key={entry.registrationNumber}
                       className={`hover:bg-gray-50 transition-colors ${

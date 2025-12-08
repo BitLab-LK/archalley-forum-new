@@ -162,7 +162,6 @@ export default async function EntriesPage({ params, searchParams }: PageProps) {
                 <EntryCard
                   key={submission.registrationNumber}
                   registrationNumber={submission.registrationNumber}
-                  title={submission.title}
                   category={submission.submissionCategory}
                   imageUrl={submission.keyPhotographUrl}
                   voteCount={submission.voteCount}
