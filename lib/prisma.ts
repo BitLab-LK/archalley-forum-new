@@ -17,7 +17,11 @@ if (process.env.DATABASE_URL) {
   }
 }
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient(prismaClientOptions)
+// Always reuse a single PrismaClient instance (including production) to avoid
+// exhausting database connections in serverless/edge environments.
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient(prismaClientOptions)
 
 // Connection monitoring with improved retry logic
 let isConnected = false
@@ -108,4 +112,5 @@ export async function checkDbHealth() {
   }
 }
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
+// Cache the client globally so it persists across hot reloads and lambda invocations.
+globalForPrisma.prisma = prisma
