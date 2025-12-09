@@ -75,7 +75,9 @@ export async function middleware(request: NextRequest) {
     '/api/contact',
     '/api/academic/submit',
     '/api/projects/submit',
-    '/api/competitions/payment/notify'
+    '/api/competitions/payment/notify',
+    // Brief download flow is public (form submit + token download)
+    '/api/brief-download/'
   ]
 
   // Check if the API route is public
