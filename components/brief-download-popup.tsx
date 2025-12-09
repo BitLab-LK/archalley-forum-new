@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/lib/auth-context"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import Link from "next/link"
 
 interface BriefDownloadPopupProps {
