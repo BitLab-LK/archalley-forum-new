@@ -67,76 +67,66 @@ export default async function LeaderboardPage({ params, searchParams }: PageProp
     }
   };
 
-  const getRankBadge = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white';
-      case 2:
-        return 'bg-gradient-to-r from-gray-300 to-gray-500 text-white';
-      case 3:
-        return 'bg-gradient-to-r from-amber-500 to-amber-700 text-white';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-white py-12">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            🏆 Leaderboard
+        <div className="mb-12 text-center">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
+            LEADERBOARD
           </h1>
-          <p className="text-lg text-gray-600">
-            {competition.title} - Ranked by votes
+          <div className="w-64 h-0.5 bg-gray-900 mx-auto mb-6"></div>
+          <p className="text-base text-gray-600 font-light">
+            Archalley Competition 2025 - CHRISTMAS IN FUTURE - Ranked by votes
           </p>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 mt-2 font-light">
             Updates every 30 seconds
           </p>
         </div>
 
         {/* Category Filter */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="text-sm font-medium text-gray-700">Category:</span>
-            <div className="flex gap-2">
-              <Link
-                href={`/competitions/${competitionSlug}/leaderboard`}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  !selectedCategory
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                All Entries
-              </Link>
-              <Link
-                href={`/competitions/${competitionSlug}/leaderboard?category=DIGITAL`}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selectedCategory === 'DIGITAL'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Digital Only
-              </Link>
-              <Link
-                href={`/competitions/${competitionSlug}/leaderboard?category=PHYSICAL`}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selectedCategory === 'PHYSICAL'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Physical Only
-              </Link>
+        <div className="mb-10 pb-8 border-b border-gray-200">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Filter:</span>
+              <div className="flex gap-2">
+                <Link
+                  href={`/competitions/${competitionSlug}/leaderboard`}
+                  className={`px-4 py-1.5 text-sm font-medium transition-all ${
+                    !selectedCategory
+                      ? 'text-gray-900 border-b-2 border-gray-900'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                >
+                  All
+                </Link>
+                <Link
+                  href={`/competitions/${competitionSlug}/leaderboard?category=DIGITAL`}
+                  className={`px-4 py-1.5 text-sm font-medium transition-all ${
+                    selectedCategory === 'DIGITAL'
+                      ? 'text-gray-900 border-b-2 border-gray-900'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                >
+                  Digital
+                </Link>
+                <Link
+                  href={`/competitions/${competitionSlug}/leaderboard?category=PHYSICAL`}
+                  className={`px-4 py-1.5 text-sm font-medium transition-all ${
+                    selectedCategory === 'PHYSICAL'
+                      ? 'text-gray-900 border-b-2 border-gray-900'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                >
+                  Physical
+                </Link>
+              </div>
             </div>
 
-            <div className="ml-auto">
+            <div>
               <Link
                 href={`/competitions/${competitionSlug}/entries`}
-                className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
               >
                 ← Back to Gallery
               </Link>
@@ -146,45 +136,40 @@ export default async function LeaderboardPage({ params, searchParams }: PageProp
 
         {/* Leaderboard Table */}
         {result.success && result.leaderboard && result.leaderboard.length > 0 ? (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="bg-white border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Rank
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Entry
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Registration #
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Category
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Votes
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-gray-100">
                   {result.leaderboard.map((entry) => (
                     <tr
                       key={entry.registrationNumber}
-                      className={`hover:bg-gray-50 transition-colors ${
-                        entry.rank <= 3 ? 'bg-gradient-to-r from-yellow-50/30 to-transparent' : ''
-                      }`}
+                      className="hover:bg-gray-50 transition-colors"
                     >
                       {/* Rank */}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           {getRankIcon(entry.rank)}
-                          <span className={`
-                            inline-flex items-center justify-center w-10 h-10 rounded-full font-bold
-                            ${getRankBadge(entry.rank)}
-                          `}>
-                            {entry.rank}
+                          <span className="text-base font-semibold text-gray-900">
+                            #{entry.rank}
                           </span>
                         </div>
                       </td>
@@ -192,7 +177,7 @@ export default async function LeaderboardPage({ params, searchParams }: PageProp
                       {/* Thumbnail */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Link href={`/submissions/${entry.registrationNumber}/view`}>
-                          <div className="relative w-16 h-16 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                          <div className="relative w-16 h-16 border border-gray-200 overflow-hidden hover:border-gray-400 transition-all">
                             <Image
                               src={entry.keyPhotographUrl}
                               alt={`Entry ${entry.registrationNumber}`}
@@ -208,7 +193,7 @@ export default async function LeaderboardPage({ params, searchParams }: PageProp
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Link
                           href={`/submissions/${entry.registrationNumber}/view`}
-                          className="text-blue-600 hover:text-blue-800 font-mono font-semibold hover:underline"
+                          className="text-gray-900 hover:text-gray-600 font-mono font-medium hover:underline transition-colors"
                         >
                           {entry.registrationNumber}
                         </Link>
@@ -217,10 +202,10 @@ export default async function LeaderboardPage({ params, searchParams }: PageProp
                       {/* Category */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`
-                          inline-flex px-3 py-1 text-xs font-semibold rounded-full
+                          inline-flex px-3 py-1 text-xs font-semibold rounded
                           ${entry.submissionCategory === 'DIGITAL'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-green-100 text-green-800'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-green-500 text-white'
                           }
                         `}>
                           {entry.submissionCategory === 'DIGITAL' ? 'Digital' : 'Physical'}
@@ -229,13 +214,7 @@ export default async function LeaderboardPage({ params, searchParams }: PageProp
 
                       {/* Vote Count */}
                       <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className={`
-                          inline-flex items-center justify-center px-4 py-2 rounded-full font-bold text-lg
-                          ${entry.rank <= 3
-                            ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white'
-                            : 'bg-gray-100 text-gray-800'
-                          }
-                        `}>
+                        <span className="text-lg font-bold text-gray-900">
                           {entry.voteCount}
                         </span>
                       </td>
@@ -247,15 +226,15 @@ export default async function LeaderboardPage({ params, searchParams }: PageProp
 
             {/* Footer */}
             <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-              <p className="text-sm text-gray-600 text-center">
-                Total Entries: <span className="font-semibold">{result.leaderboard.length}</span>
+              <p className="text-sm text-gray-500 text-center font-light">
+                Total Entries: <span className="font-semibold text-gray-900">{result.leaderboard.length}</span>
               </p>
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <p className="text-gray-500 text-lg">
-              No entries found. Check back soon!
+          <div className="text-center py-24">
+            <p className="text-gray-400 text-base font-light">
+              No entries found
             </p>
           </div>
         )}
