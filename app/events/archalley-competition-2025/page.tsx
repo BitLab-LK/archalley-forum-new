@@ -9,21 +9,12 @@ export const metadata: Metadata = {
     title: 'Archalley Competition 2025 | Christmas in Future',
     url: 'https://forum-dev.archalley.com/events/archalley-competition-2025',
     siteName: 'Archalley',
-    images: [
-      {
-        url: 'https://forum-dev.archalley.com/archalley-logo.png',
-        width: 1200,
-        height: 630,
-        alt: 'Archalley Competition 2025 - Christmas in Future',
-      },
-    ],
     locale: 'en_US',
     type: 'website',
   },
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'Archalley Competition 2025 | Christmas in Future',
-    images: ['https://forum-dev.archalley.com/archalley-logo.png'],
   },
 }
 
