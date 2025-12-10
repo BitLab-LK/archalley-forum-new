@@ -465,7 +465,7 @@ export async function getWinners(
         submissionTitle: sub.title,
         submissionImage: sub.keyPhotographUrl,
         category: sub.submissionCategory,
-        score: sub.finalScore || undefined,
+        score: sub.votingStats?.juryScoreAverage || undefined,
       };
     })
   );
