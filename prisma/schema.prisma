@@ -356,6 +356,9 @@ model users {
   // Brief download relations
   briefDownloadRequests    BriefDownloadRequest[]
   
+  // Voting relations
+  submissionVotes          SubmissionVote[]     @relation("SubmissionVotes")
+  
   // Performance and security indexes
   @@index([email])
   @@index([role])
@@ -1045,17 +1048,6 @@ model CompetitionSubmission {
   // Public Display
   isPublished           Boolean  @default(false)
   publishedAt           DateTime?
-  viewCount             Int      @default(0)
-  
-  // Voting
-  voteCount             Int      @default(0)
-  
-  // Judging & Awards
-  judgeScores           Json?    // Array of {judgeId, score, comments}
-  finalScore            Float?
-  rank                  Int?
-  award                 String?  // "FIRST_PRIZE", "SECOND_PRIZE", etc.
-  certificateUrl        String?
   
   // Timestamps
   createdAt             DateTime @default(now())
@@ -1063,6 +1055,7 @@ model CompetitionSubmission {
   
   // Relations (new tables only)
   votes                 SubmissionVote[]
+  votingStats           SubmissionVotingStats?
   
   @@index([registrationId])
   @@index([registrationNumber])
@@ -1089,18 +1082,83 @@ enum CompetitionSubmissionStatus {
   WITHDRAWN          // User withdrew
 }
 
-// Voting System
+// Unified Voting System (Public Votes + Jury Scores)
 model SubmissionVote {
   id                 String   @id @default(cuid())
   registrationNumber String
   userId             String
+  
+  // Vote Type
+  voteType           SubmissionVoteType @default(PUBLIC) // PUBLIC or JURY
+  
+  // Jury Scoring (only for JURY votes)
+  score              Float?   // Jury score (e.g., 1-10)
+  comments           String?  @db.Text
+  scoringCriteria    Json?    // Detailed breakdown {creativity: 8, technical: 9, etc.}
+  
+  // Timestamps
   createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt @default(now())
   
+  // Relations
   submission         CompetitionSubmission @relation(fields: [registrationNumber], references: [registrationNumber], onDelete: Cascade)
+  user               users    @relation("SubmissionVotes", fields: [userId], references: [id], onDelete: Cascade)
   
-  @@unique([registrationNumber, userId]) // One vote per user per entry
+  @@unique([registrationNumber, userId]) // One vote per user per entry (public OR jury)
   @@index([registrationNumber])
   @@index([userId])
+  @@index([voteType])
+  @@index([registrationNumber, voteType])
+  @@index([createdAt])
+}
+
+// Voting Statistics (Cached Aggregates)
+model SubmissionVotingStats {
+  id                 String   @id @default(cuid())
+  registrationNumber String   @unique
+  
+  // Public Voting Metrics
+  publicVoteCount    Int      @default(0)
+  
+  // Jury Scoring Metrics
+  juryVoteCount      Int      @default(0)
+  juryScoreTotal     Float    @default(0)
+  juryScoreAverage   Float?   // Calculated average
+  
+  // Engagement Metrics
+  viewCount          Int      @default(0)
+  shareCount         Int      @default(0)
+  
+  // Rankings (Computed Periodically)
+  publicRank         Int?     // Based on public votes
+  juryRank           Int?     // Based on jury average score
+  overallRank        Int?     // Combined ranking
+  categoryRank       Int?     // Rank within category
+  
+  // Awards
+  award              String?  // "FIRST_PRIZE", "SECOND_PRIZE", etc.
+  certificateUrl     String?
+  
+  // Tracking
+  firstVoteAt        DateTime?
+  lastVotedAt        DateTime?
+  
+  // Timestamps
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  
+  // Relations
+  submission         CompetitionSubmission @relation(fields: [registrationNumber], references: [registrationNumber], onDelete: Cascade)
+  
+  @@index([publicVoteCount])
+  @@index([juryScoreAverage])
+  @@index([overallRank])
+  @@index([registrationNumber, publicVoteCount])
+}
+
+enum SubmissionVoteType {
+  PUBLIC  // Regular user vote
+  JURY    // Judge/Jury score
 }
 
 // ============================================

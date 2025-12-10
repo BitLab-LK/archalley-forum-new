@@ -68,61 +68,81 @@ export async function toggleVote(registrationNumber: string) {
 
     if (existingVote) {
       // Remove vote (unvote)
-      await prisma.$transaction([
-        prisma.submissionVote.delete({
+      await prisma.$transaction(async (tx) => {
+        // Delete the vote
+        await tx.submissionVote.delete({
           where: { id: existingVote.id },
-        }),
-        prisma.competitionSubmission.update({
+        });
+
+        // Update voting stats
+        await tx.submissionVotingStats.upsert({
           where: { registrationNumber },
-          data: {
-            voteCount: {
+          create: {
+            registrationNumber,
+            publicVoteCount: 0,
+            lastVotedAt: new Date(),
+          },
+          update: {
+            publicVoteCount: {
               decrement: 1,
             },
+            lastVotedAt: new Date(),
           },
-        }),
-      ]);
+        });
+      });
 
       hasVoted = false;
 
       // Get updated vote count
-      const updated = await prisma.competitionSubmission.findUnique({
+      const stats = await prisma.submissionVotingStats.findUnique({
         where: { registrationNumber },
-        select: { voteCount: true },
+        select: { publicVoteCount: true },
       });
-      voteCount = updated?.voteCount || 0;
+      voteCount = stats?.publicVoteCount || 0;
     } else {
       // Add vote
-      await prisma.$transaction([
-        prisma.submissionVote.create({
+      await prisma.$transaction(async (tx) => {
+        // Create the vote
+        await tx.submissionVote.create({
           data: {
             registrationNumber,
             userId,
+            voteType: 'PUBLIC',
           },
-        }),
-        prisma.competitionSubmission.update({
+        });
+
+        // Update voting stats
+        await tx.submissionVotingStats.upsert({
           where: { registrationNumber },
-          data: {
-            voteCount: {
+          create: {
+            registrationNumber,
+            publicVoteCount: 1,
+            firstVoteAt: new Date(),
+            lastVotedAt: new Date(),
+          },
+          update: {
+            publicVoteCount: {
               increment: 1,
             },
+            lastVotedAt: new Date(),
           },
-        }),
-      ]);
+        });
+      });
 
       hasVoted = true;
 
       // Get updated vote count
-      const updated = await prisma.competitionSubmission.findUnique({
+      const stats = await prisma.submissionVotingStats.findUnique({
         where: { registrationNumber },
-        select: { voteCount: true },
+        select: { publicVoteCount: true },
       });
-      voteCount = updated?.voteCount || 0;
+      voteCount = stats?.publicVoteCount || 0;
     }
 
     // Revalidate pages
     revalidatePath(`/submissions/${registrationNumber}/view`);
-    revalidatePath(`/competitions/tree-without-a-tree-2024/entries`);
-    revalidatePath(`/competitions/tree-without-a-tree-2024/leaderboard`);
+    revalidatePath(`/competitions/archalley-competition-2025/entries`);
+    revalidatePath(`/competitions/archalley-competition-2025/leaderboard`);
 
     return {
       success: true,
@@ -146,11 +166,10 @@ export async function getVoteStatus(registrationNumber: string) {
   try {
     const session = await getServerSession(authOptions);
 
-    // Get submission with vote count
+    // Get submission status
     const submission = await prisma.competitionSubmission.findUnique({
       where: { registrationNumber },
       select: {
-        voteCount: true,
         isPublished: true,
         status: true,
       },
@@ -162,6 +181,12 @@ export async function getVoteStatus(registrationNumber: string) {
         error: 'Submission not found',
       };
     }
+
+    // Get voting stats
+    const stats = await prisma.submissionVotingStats.findUnique({
+      where: { registrationNumber },
+      select: { publicVoteCount: true },
+    });
 
     let hasVoted = false;
 
@@ -181,7 +206,7 @@ export async function getVoteStatus(registrationNumber: string) {
     return {
       success: true,
       hasVoted,
-      voteCount: submission.voteCount,
+      voteCount: stats?.publicVoteCount || 0,
       isPublished: submission.isPublished,
     };
   } catch (error) {
@@ -213,7 +238,6 @@ export async function getSubmissionWithVotes(registrationNumber: string) {
         additionalPhotographs: true,
         documentFileUrl: true,
         videoFileUrl: true,
-        voteCount: true,
         status: true,
         isPublished: true,
         publishedAt: true,
@@ -227,6 +251,12 @@ export async function getSubmissionWithVotes(registrationNumber: string) {
         error: 'Submission not found',
       };
     }
+
+    // Get voting stats
+    const stats = await prisma.submissionVotingStats.findUnique({
+      where: { registrationNumber },
+      select: { publicVoteCount: true },
+    });
 
     let hasVoted = false;
 
@@ -245,7 +275,10 @@ export async function getSubmissionWithVotes(registrationNumber: string) {
 
     return {
       success: true,
-      submission,
+      submission: {
+        ...submission,
+        voteCount: stats?.publicVoteCount || 0,
+      },
       hasVoted,
       isAuthenticated: !!session?.user?.id,
     };
@@ -276,22 +309,20 @@ export async function getPublishedSubmissions(
       ...(competitionId && { competitionId }),
     };
 
-    const orderBy =
-      sortBy === 'votes'
-        ? { voteCount: 'desc' as const }
-        : { publishedAt: 'desc' as const };
-
     const submissions = await prisma.competitionSubmission.findMany({
       where,
-      orderBy,
       select: {
         id: true,
         registrationNumber: true,
         title: true,
         submissionCategory: true,
         keyPhotographUrl: true,
-        voteCount: true,
         publishedAt: true,
+        votingStats: {
+          select: {
+            publicVoteCount: true,
+          },
+        },
       },
     });
 
@@ -313,10 +344,24 @@ export async function getPublishedSubmissions(
       userVotes = new Set(votes.map((v) => v.registrationNumber));
     }
 
-    const submissionsWithVoteStatus = submissions.map((submission) => ({
-      ...submission,
-      hasVoted: userVotes.has(submission.registrationNumber),
-    }));
+    const submissionsWithVoteStatus = submissions
+      .map((submission) => ({
+        id: submission.id,
+        registrationNumber: submission.registrationNumber,
+        title: submission.title,
+        submissionCategory: submission.submissionCategory,
+        keyPhotographUrl: submission.keyPhotographUrl,
+        publishedAt: submission.publishedAt,
+        voteCount: submission.votingStats?.publicVoteCount || 0,
+        hasVoted: userVotes.has(submission.registrationNumber),
+      }))
+      .sort((a, b) => {
+        if (sortBy === 'votes') {
+          return b.voteCount - a.voteCount;
+        } else {
+          return new Date(b.publishedAt!).getTime() - new Date(a.publishedAt!).getTime();
+        }
+      });
 
     return {
       success: true,
@@ -347,22 +392,40 @@ export async function getLeaderboard(category?: 'DIGITAL' | 'PHYSICAL', competit
 
     const submissions = await prisma.competitionSubmission.findMany({
       where,
-      orderBy: [
-        { voteCount: 'desc' },
-        { publishedAt: 'asc' }, // Earlier submissions rank higher if tied
-      ],
       select: {
         registrationNumber: true,
         title: true,
         submissionCategory: true,
         keyPhotographUrl: true,
-        voteCount: true,
         publishedAt: true,
+        votingStats: {
+          select: {
+            publicVoteCount: true,
+          },
+        },
       },
     });
 
+    // Sort by vote count and then by published date
+    const sortedSubmissions = submissions
+      .map((s) => ({
+        registrationNumber: s.registrationNumber,
+        title: s.title,
+        submissionCategory: s.submissionCategory,
+        keyPhotographUrl: s.keyPhotographUrl,
+        publishedAt: s.publishedAt,
+        voteCount: s.votingStats?.publicVoteCount || 0,
+      }))
+      .sort((a, b) => {
+        if (b.voteCount !== a.voteCount) {
+          return b.voteCount - a.voteCount;
+        }
+        // Earlier submissions rank higher if tied
+        return new Date(a.publishedAt!).getTime() - new Date(b.publishedAt!).getTime();
+      });
+
     // Add rank based on position
-    const leaderboard = submissions.map((submission, index) => ({
+    const leaderboard = sortedSubmissions.map((submission, index) => ({
       ...submission,
       rank: index + 1,
     }));
