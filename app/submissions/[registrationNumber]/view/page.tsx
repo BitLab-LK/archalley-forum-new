@@ -75,9 +75,13 @@ export default async function ViewSubmissionPage({
       submittedAt: true,
       createdAt: true,
       updatedAt: true,
-      voteCount: true,
       isPublished: true,
       registrationNumber: true,
+      votingStats: {
+        select: {
+          publicVoteCount: true,
+        },
+      },
     },
   });
 
@@ -142,7 +146,7 @@ export default async function ViewSubmissionPage({
         registrationType: registration.registrationType,
       }}
       submission={submission}
-      voteCount={submission.voteCount}
+      voteCount={submission.votingStats?.publicVoteCount ?? 0}
       hasVoted={hasVoted}
       isAuthenticated={!!session?.user?.id}
     />
