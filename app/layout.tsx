@@ -59,9 +59,9 @@ export const metadata: Metadata = {
     siteName: 'Archalley',
     images: [
       {
-        url: 'https://forum-dev.archalley.com/archalley-logo-fb.png',
-        width: 901,
-        height: 200,
+        url: 'https://forum-dev.archalley.com/archalley-pro-pic.png',
+        width: 801,
+        height: 801,
         alt: 'Archalley - Architecture & Design Community',
       },
     ],
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: "Archalley - Architecture & Design Excellence",
-    images: ['https://forum-dev.archalley.com/archalley-logo-fb.png'],
+    images: ['https://forum-dev.archalley.com/archalley-pro-pic.png'],
   },
 }
 
