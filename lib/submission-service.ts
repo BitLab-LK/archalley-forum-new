@@ -11,7 +11,6 @@ import type {
   WinnerData,
   SubmissionListFilter,
   SubmissionSortBy,
-  JudgeScore,
 } from '@/types/submission';
 import { RegistrationStatus } from '@prisma/client';
 
