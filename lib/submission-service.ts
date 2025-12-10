@@ -422,9 +422,18 @@ export async function getWinners(
   const submissions = await prisma.competitionSubmission.findMany({
     where: {
       competitionId,
-      award: { not: null }
+      votingStats: {
+        award: { not: null }
+      }
     },
-    orderBy: { rank: 'asc' }
+    include: {
+      votingStats: true
+    },
+    orderBy: {
+      votingStats: {
+        publicRank: 'asc'
+      }
+    }
   });
   
   const winners = await Promise.all(
@@ -449,8 +458,8 @@ export async function getWinners(
       }
       
       return {
-        rank: sub.rank || 0,
-        award: sub.award || '',
+        rank: sub.votingStats?.publicRank || 0,
+        award: sub.votingStats?.award || '',
         registrationNumber: registration.registrationNumber,
         participantName,
         submissionTitle: sub.title,
