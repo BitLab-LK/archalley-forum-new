@@ -57,6 +57,7 @@ export const metadata: Metadata = {
     title: "Archalley - Architecture & Design Excellence",
     url: 'https://forum-dev.archalley.com',
     siteName: 'Archalley',
+    images: [], // Explicitly prevent any images
     locale: 'en_US',
     type: 'website',
   },

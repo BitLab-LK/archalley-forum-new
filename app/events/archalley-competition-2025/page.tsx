@@ -9,6 +9,7 @@ export const metadata: Metadata = {
     title: 'Archalley Competition 2025 | Christmas in Future',
     url: 'https://forum-dev.archalley.com/events/archalley-competition-2025',
     siteName: 'Archalley',
+    images: [], // Explicitly prevent any images
     locale: 'en_US',
     type: 'website',
   },
