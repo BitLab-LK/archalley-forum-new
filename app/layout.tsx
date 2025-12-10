@@ -55,11 +55,11 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Archalley - Architecture & Design Excellence",
-    url: 'https://forum-dev.archalley.com',
+    url: 'https://www.archalley.com',
     siteName: 'Archalley',
     images: [
       {
-        url: 'https://forum-dev.archalley.com/archalley-pro-pic.png',
+        url: 'https://www.archalley.com/archalley-pro-pic.png',
         width: 801,
         height: 801,
         alt: 'Archalley - Architecture & Design Community',
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: "Archalley - Architecture & Design Excellence",
-    images: ['https://forum-dev.archalley.com/archalley-pro-pic.png'],
+    images: ['https://www.archalley.com/archalley-pro-pic.png'],
   },
 }
 
