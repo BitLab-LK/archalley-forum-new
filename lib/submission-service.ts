@@ -365,15 +365,30 @@ export async function announceWinner(
     throw new Error('Registration not found');
   }
   
-  // Update submission with award
+  // Update submission status
   await prisma.competitionSubmission.update({
     where: { id: submissionId },
     data: {
-      award,
-      rank,
-      finalScore,
       status: 'PUBLISHED',
       isPublished: true,
+    }
+  });
+  
+  // Update voting stats with award and ranking
+  await prisma.submissionVotingStats.upsert({
+    where: {
+      registrationNumber: registration.registrationNumber,
+    },
+    create: {
+      registrationNumber: registration.registrationNumber,
+      award,
+      publicRank: rank,
+      juryScoreAverage: finalScore,
+    },
+    update: {
+      award,
+      publicRank: rank,
+      juryScoreAverage: finalScore,
     }
   });
   
