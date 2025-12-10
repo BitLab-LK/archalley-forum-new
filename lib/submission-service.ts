@@ -237,20 +237,20 @@ export async function getSubmissions(
       orderBy.createdAt = 'asc';
       break;
     case 'most-voted':
-      orderBy.voteCount = 'desc';
+      orderBy.votingStats = { publicVoteCount: 'desc' };
       break;
     case 'highest-score':
-      orderBy.finalScore = 'desc';
+      orderBy.votingStats = { juryScoreAverage: 'desc' };
       break;
     case 'rank':
-      orderBy.rank = 'asc';
+      orderBy.votingStats = { publicRank: 'asc' };
       break;
   }
   
   const [submissions, total] = await Promise.all([
     prisma.competitionSubmission.findMany({
       where,
-      include: { votes: true },
+      include: { votes: true, votingStats: true },
       orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -493,29 +493,57 @@ export async function addJudgeScore(
     throw new Error('Submission not found');
   }
   
-  const existingScores = (submission.judgeScores as any as JudgeScore[]) || [];
-  
-  const newScore: JudgeScore = {
-    judgeId,
-    judgeName,
-    score,
-    comments,
-    judgedAt: new Date().toISOString(),
-  };
-  
-  const updatedScores = [
-    ...existingScores.filter((s: JudgeScore) => s.judgeId !== judgeId),
-    newScore
-  ];
-  
-  // Calculate final score (average)
-  const finalScore = updatedScores.reduce((sum, s) => sum + s.score, 0) / updatedScores.length;
-  
-  await prisma.competitionSubmission.update({
-    where: { id: submissionId },
-    data: {
-      judgeScores: updatedScores as any,
-      finalScore,
-    }
+  // Use transaction to create/update jury vote and update voting stats
+  await prisma.$transaction(async (tx) => {
+    // Upsert the jury vote (using registrationNumber_userId unique constraint)
+    await tx.submissionVote.upsert({
+      where: {
+        registrationNumber_userId: {
+          registrationNumber: submission.registrationNumber,
+          userId: judgeId
+        }
+      },
+      create: {
+        registrationNumber: submission.registrationNumber,
+        userId: judgeId,
+        voteType: 'JURY',
+        score,
+        comments,
+        scoringCriteria: { judgeName } // Store judge name in criteria
+      },
+      update: {
+        voteType: 'JURY', // Ensure it's marked as JURY vote
+        score,
+        comments,
+        scoringCriteria: { judgeName },
+        updatedAt: new Date()
+      }
+    });
+    
+    // Get all jury votes for this submission to calculate average
+    const juryVotes = await tx.submissionVote.findMany({
+      where: {
+        registrationNumber: submission.registrationNumber,
+        voteType: 'JURY'
+      }
+    });
+    
+    const juryScoreAverage = juryVotes.length > 0
+      ? juryVotes.reduce((sum, v) => sum + (v.score || 0), 0) / juryVotes.length
+      : 0;
+    
+    // Update voting stats
+    await tx.submissionVotingStats.upsert({
+      where: { registrationNumber: submission.registrationNumber },
+      create: {
+        registrationNumber: submission.registrationNumber,
+        juryVoteCount: juryVotes.length,
+        juryScoreAverage
+      },
+      update: {
+        juryVoteCount: juryVotes.length,
+        juryScoreAverage
+      }
+    });
   });
 }
