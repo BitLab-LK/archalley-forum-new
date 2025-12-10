@@ -57,13 +57,21 @@ export const metadata: Metadata = {
     title: "Archalley - Architecture & Design Excellence",
     url: 'https://forum-dev.archalley.com',
     siteName: 'Archalley',
-    images: [], // Explicitly prevent any images
+    images: [
+      {
+        url: 'https://forum-dev.archalley.com/archalley-logo-fb.png',
+        width: 901,
+        height: 200,
+        alt: 'Archalley - Architecture & Design Community',
+      },
+    ],
     locale: 'en_US',
     type: 'website',
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: "Archalley - Architecture & Design Excellence",
+    images: ['https://forum-dev.archalley.com/archalley-logo-fb.png'],
   },
 }
 
