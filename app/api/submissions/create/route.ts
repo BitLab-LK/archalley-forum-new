@@ -321,6 +321,23 @@ export async function POST(request: NextRequest) {
     });
     console.log(`✅ Submission saved: ${registrationNumber} (Status: ${submission.status})`);
 
+    // Create voting stats record when submission is published
+    if (!isDraft && submission.status === 'PUBLISHED') {
+      await prisma.submissionVotingStats.upsert({
+        where: { registrationNumber },
+        create: {
+          registrationNumber,
+          publicVoteCount: 0,
+          juryVoteCount: 0,
+          juryScoreTotal: 0,
+          viewCount: 0,
+          shareCount: 0,
+        },
+        update: {}, // Do nothing if already exists
+      });
+      console.log(`📊 Voting stats initialized for ${registrationNumber}`);
+    }
+
     // Send email notifications if submission is not a draft
     if (!isDraft && submission.status === 'PUBLISHED') {
       try {

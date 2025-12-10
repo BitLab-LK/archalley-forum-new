@@ -80,6 +80,20 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Create voting stats record if it doesn't exist
+    await prisma.submissionVotingStats.upsert({
+      where: { registrationNumber: submission.registrationNumber },
+      create: {
+        registrationNumber: submission.registrationNumber,
+        publicVoteCount: 0,
+        juryVoteCount: 0,
+        juryScoreTotal: 0,
+        viewCount: 0,
+        shareCount: 0,
+      },
+      update: {}, // Do nothing if already exists
+    });
+
     console.log(`🚀 Submission ${submission.registrationNumber} published by admin ${user.name}`);
     console.log(`   Title: ${submission.title}`);
     console.log(`   Now live for public voting!`);

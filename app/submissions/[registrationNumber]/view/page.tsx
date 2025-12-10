@@ -77,13 +77,22 @@ export default async function ViewSubmissionPage({
       updatedAt: true,
       isPublished: true,
       registrationNumber: true,
-      votingStats: {
-        select: {
-          publicVoteCount: true,
-        },
-      },
     },
   });
+
+  // Fetch voting stats separately (may not exist for new submissions)
+  let voteCount = 0;
+  if (submission?.registrationNumber) {
+    const votingStats = await prisma.submissionVotingStats.findUnique({
+      where: {
+        registrationNumber: submission.registrationNumber,
+      },
+      select: {
+        publicVoteCount: true,
+      },
+    });
+    voteCount = votingStats?.publicVoteCount ?? 0;
+  }
 
   // Check if user has voted (only for published submissions)
   let hasVoted = false;
@@ -146,7 +155,7 @@ export default async function ViewSubmissionPage({
         registrationType: registration.registrationType,
       }}
       submission={submission}
-      voteCount={submission.votingStats?.publicVoteCount ?? 0}
+      voteCount={voteCount}
       hasVoted={hasVoted}
       isAuthenticated={!!session?.user?.id}
     />
