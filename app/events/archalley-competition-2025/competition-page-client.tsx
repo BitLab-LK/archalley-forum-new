@@ -170,9 +170,10 @@ export default function CompetitionPageClient() {
     { href: '#theme', label: 'Theme' },
     { href: '#submission-categories', label: 'Categories' },
     { href: '#awards', label: 'Awards' },
-    { href: '#how-to-join', label: 'How to Join' },
-    { href: '#timeline', label: 'Timeline' },
     { href: '#jury-panel', label: 'Jury' },
+    { href: '#timeline', label: 'Timeline' },
+    { href: '#registration', label: 'Registration' },
+    { href: '#how-to-join', label: 'How to Join' },
   ]
 
   return (
@@ -1024,6 +1025,97 @@ export default function CompetitionPageClient() {
                   <span className="text-white font-semibold text-[11.2px] md:text-base leading-[20px] md:leading-normal">10<sup>th</sup> January</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Registration Pricing Section */}
+      <section className="relative py-12 md:py-16 px-4 md:px-6 lg:px-8 z-20">
+        <div className="max-w-4xl mx-auto relative">
+          <h2 id="registration" className="text-3xl md:text-4xl font-bold text-white mb-12 uppercase tracking-wide text-center scroll-mt-20">
+            <a href="#registration">REGISTRATION</a>
+          </h2>
+          
+          <div className="space-y-8 text-white">
+            {/* Early Bird Registration */}
+            <div>
+              <h3 className="text-lg md:text-xl font-bold mb-3">
+                Earlybird Registration - <span className="font-normal">11<sup>th</sup> November-20<sup>th</sup> November</span>
+              </h3>
+              <div className="space-y-2 ml-0">
+                <div className="flex justify-between">
+                  <span>Single Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;2,000</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Group Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;4,000</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Standard Registration */}
+            <div>
+              <h3 className="text-lg md:text-xl font-bold mb-3">
+                Standard Registration - <span className="font-normal">21<sup>st</sup> November-20<sup>th</sup> December</span>
+              </h3>
+              <div className="space-y-2 ml-0">
+                <div className="flex justify-between">
+                  <span>Student Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;2,000</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Single Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;3,000</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Group Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;5,000</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Late Registration */}
+            <div>
+              <h3 className="text-lg md:text-xl font-bold mb-3">
+                Late Registration - <span className="font-normal">21<sup>st</sup> December-24th December</span>
+              </h3>
+              <div className="space-y-2 ml-0">
+                <div className="flex justify-between">
+                  <span>Student Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;2,000</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Single Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;5,000</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Group Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;8,000</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Kids' Tree Category */}
+            <div>
+              <h3 className="text-lg md:text-xl font-bold mb-3">
+                Kids&apos; Tree Category Registration - <span className="font-normal">11<sup>th</sup> November to 21<sup>st</sup> December</span>
+              </h3>
+              <div className="space-y-2 ml-0">
+                <div className="flex justify-between">
+                  <span>Single Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;2,000</span>
+                </div>
+                <p className="text-sm italic pt-1">*Only single entries are allowed in kids&apos; category.</p>
+              </div>
+            </div>
+
+            {/* Foreign Participants Note */}
+            <div className="pt-4">
+              <p className="text-sm md:text-base italic">
+                * Registration fee for foreign participants will be converted to USD according to current Central Bank exchange rate.
+              </p>
             </div>
           </div>
         </div>
