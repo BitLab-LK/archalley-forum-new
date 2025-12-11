@@ -41,7 +41,7 @@ export function VoteButton({
     // Redirect to login if not authenticated
     if (!isAuthenticated) {
       toast.error('Please login to vote');
-      router.push('/auth/signin?callbackUrl=' + encodeURIComponent(window.location.pathname));
+      router.push('/auth/login?callbackUrl=' + encodeURIComponent(window.location.pathname));
       return;
     }
 
@@ -62,7 +62,7 @@ export function VoteButton({
         setOptimisticVoteCount(initialVoteCount);
         
         if (result.requiresAuth) {
-          router.push('/auth/signin?callbackUrl=' + encodeURIComponent(window.location.pathname));
+          router.push('/auth/login?callbackUrl=' + encodeURIComponent(window.location.pathname));
         } else {
           toast.error(result.error || 'Failed to vote');
         }

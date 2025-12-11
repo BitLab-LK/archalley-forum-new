@@ -117,29 +117,23 @@ export default async function ViewSubmissionPage({
     redirect(`/submissions/${registrationNumber}`);
   }
 
-  // Check public access date (December 25, 2025)
-  const publicAccessDate = new Date('2025-12-25T00:00:00+05:30');
-  const now = new Date();
-  const isPublicAccessAllowed = now >= publicAccessDate;
-
   // Check if user is the submission owner
   const isOwner = session?.user?.id && submission.userId === session.user.id;
 
   // Access control:
   // 1. Submission owner can always view (when logged in)
-  // 2. Public access allowed after December 25, 2025
-  // 3. Otherwise, block access
-  if (!isOwner && !isPublicAccessAllowed) {
-    // Not the owner and public access not yet allowed
+  // 2. Published submissions are publicly viewable by anyone
+  // 3. Non-published submissions require ownership
+  if (!submission.isPublished && !isOwner) {
+    // Not published and not the owner - block access
     if (!session?.user) {
       // Guest user - redirect to login with message
-      // /auth/login redirects to /auth/register?tab=login
       const callbackUrl = encodeURIComponent(`/submissions/${registrationNumber}/view`);
-      const message = encodeURIComponent('Submissions will be publicly available after December 25, 2025');
+      const message = encodeURIComponent('This submission is not yet published');
       redirect(`/auth/login?callbackUrl=${callbackUrl}&message=${message}`);
     } else {
-      // Logged in but not the owner - show access denied
-      redirect('/submissions?error=access_denied&message=Submissions will be publicly available after December 25, 2025');
+      // Logged in but not the owner and not published - show access denied
+      redirect('/submissions?error=access_denied&message=This submission is not yet published');
     }
   }
 
