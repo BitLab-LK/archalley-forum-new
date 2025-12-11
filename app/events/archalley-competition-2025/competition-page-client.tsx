@@ -4,10 +4,14 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect, useRef } from "react"
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { event } from "@/lib/google-analytics"
 import BriefDownloadPopup from "@/components/brief-download-popup"
 
 export default function CompetitionPageClient() {
+  const { data: session } = useSession()
+  const router = useRouter()
   const [isSticky, setIsSticky] = useState(false)
   const [navHeight, setNavHeight] = useState(0)
   const navRef = useRef<HTMLElement>(null)
@@ -16,6 +20,17 @@ export default function CompetitionPageClient() {
   const [activeMobileTab, setActiveMobileTab] = useState('challenge')
   const [briefDownloadOpen, setBriefDownloadOpen] = useState(false)
   const scrollPositionRef = useRef(0)
+
+  // Handle submit button click
+  const handleSubmitClick = () => {
+    if (!session?.user) {
+      // Redirect to login with callback to submissions page
+      router.push('/auth/login?callbackUrl=' + encodeURIComponent('/submissions'))
+    } else {
+      // Redirect to submissions page
+      router.push('/submissions')
+    }
+  }
 
   // Function to handle tab change and scroll to respective section
   const handleTabChange = (tab: string) => {
@@ -309,6 +324,12 @@ export default function CompetitionPageClient() {
                 className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
               >
                 Download Brief
+              </Button>
+              <Button
+                onClick={handleSubmitClick}
+                className="bg-green-500 hover:bg-green-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+              >
+                Submit
               </Button>
               </div>
             </div>
@@ -1379,6 +1400,12 @@ export default function CompetitionPageClient() {
               >
                 Download Brief
               </a>
+            </Button>
+            <Button
+              onClick={handleSubmitClick}
+              className="bg-green-500 hover:bg-green-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+            >
+              Submit
             </Button>
           </div>
         </div>
