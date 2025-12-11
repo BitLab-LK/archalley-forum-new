@@ -321,6 +321,15 @@ export async function POST(request: NextRequest) {
     });
     console.log(`✅ Submission saved: ${registrationNumber} (Status: ${submission.status})`);
 
+    // Update the CompetitionRegistration submissionStatus
+    await prisma.competitionRegistration.update({
+      where: { id: registrationId },
+      data: {
+        submissionStatus: isDraft ? 'DRAFT' : 'SUBMITTED',
+      },
+    });
+    console.log(`✅ Registration submission status updated to: ${isDraft ? 'DRAFT' : 'SUBMITTED'}`);
+
     // Create voting stats record when submission is published
     if (!isDraft && submission.status === 'PUBLISHED') {
       await prisma.submissionVotingStats.upsert({
