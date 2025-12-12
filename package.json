@@ -85,7 +85,7 @@
     "jszip": "^3.10.1",
     "lineicons-react": "^2.0.0",
     "lucide-react": "^0.525.0",
-    "next": "^15.5.7",
+    "next": "15.5.9",
     "next-auth": "^4.24.7",
     "next-themes": "^0.4.4",
     "nodemailer": "^7.0.10",
