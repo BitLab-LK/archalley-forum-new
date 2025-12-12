@@ -310,10 +310,10 @@ export default function CompetitionPageClient() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mt-16 md:mt-8">
+              <div className="flex flex-col sm:flex-row gap-2.5 items-center justify-center mt-12 md:mt-8 mb-24 md:mb-0">
               <Button
                 asChild
-                className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+                className="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 text-sm md:text-base w-40 md:w-auto rounded-none"
               >
                 <Link href="/events/archalley-competition-2025/register">
                   Register Now
@@ -321,13 +321,13 @@ export default function CompetitionPageClient() {
               </Button>
               <Button
                 onClick={() => setBriefDownloadOpen(true)}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 text-sm md:text-base w-40 md:w-auto rounded-none"
               >
                 Download Brief
               </Button>
               <Button
                 onClick={handleSubmitClick}
-                className="bg-green-500 hover:bg-green-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+                className="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 text-sm md:text-base w-40 md:w-auto rounded-none"
               >
                 Submit
               </Button>
@@ -365,7 +365,7 @@ export default function CompetitionPageClient() {
       </div>
 
       {/* Mobile Tabs - Only visible on mobile */}
-      <div className="md:hidden bg-slate-900 sticky top-0 z-40 border-b border-gray-600">
+      <div className="md:hidden bg-slate-900 sticky top-0 z-40 border-b border-gray-600 mt-20">
         <div className="flex">
           <button
             onClick={() => handleTabChange('challenge')}
