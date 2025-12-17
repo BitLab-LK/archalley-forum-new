@@ -25,6 +25,7 @@ import AdsManagementSection from "@/components/ads-management-section"
 import CompetitionsManagementSection from "@/components/competitions-management-section"
 import SubmissionsManagementSection from "@/components/submissions-management-section"
 import BriefDownloadsManagementSection from "@/components/brief-downloads-management-section"
+import JuryManagementSection from "@/components/jury-management-section"
 
 interface DashboardStats {
   totalUsers: number
@@ -1427,6 +1428,9 @@ function AdminDashboardContent() {
             {availableTabs.includes('brief-downloads') && (
               <TabsTrigger value="brief-downloads" className="text-sm font-medium">Brief Downloads</TabsTrigger>
             )}
+            {(authenticatedUser?.role === 'ADMIN' || authenticatedUser?.role === 'SUPER_ADMIN') && (
+              <TabsTrigger value="jury" className="text-sm font-medium">Jury Management</TabsTrigger>
+            )}
           </TabsList>
 
           {/* Statistics Tab */}
@@ -2789,6 +2793,13 @@ function AdminDashboardContent() {
           {permissions.canViewBriefDownloads && (
             <TabsContent value="brief-downloads" className="space-y-6">
               <BriefDownloadsManagementSection />
+            </TabsContent>
+          )}
+
+          {/* Jury Management Tab */}
+          {(authenticatedUser?.role === 'ADMIN' || authenticatedUser?.role === 'SUPER_ADMIN') && (
+            <TabsContent value="jury" className="space-y-6">
+              <JuryManagementSection />
             </TabsContent>
           )}
         </Tabs>
