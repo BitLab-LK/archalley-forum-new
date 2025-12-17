@@ -359,6 +359,9 @@ model users {
   // Voting relations
   submissionVotes          SubmissionVote[]     @relation("SubmissionVotes")
   
+  // Jury relations (user can be a jury member)
+  juryMember               JuryMember?          @relation("JuryMemberUser")
+  
   // Performance and security indexes
   @@index([email])
   @@index([role])
@@ -1053,6 +1056,7 @@ model CompetitionSubmission {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   
+  juryScores            JuryScore[]          @relation("JuryScores")
   // Relations (new tables only)
   votes                 SubmissionVote[]
   votingStats           SubmissionVotingStats?
@@ -1186,4 +1190,112 @@ model BriefDownloadRequest {
   @@index([token])
   @@index([userId])
   @@unique([email]) // One token per email (reuse existing token)
+}
+
+// ============================================
+// JURY MANAGEMENT SYSTEM
+// ============================================
+
+// Jury Member Management (linked to existing users)
+model JuryMember {
+  id               String   @id @default(cuid())
+  userId           String   @unique  // Links to existing users table - ONE USER CAN BE ONE JURY
+  
+  // Jury Profile (added by admin)
+  title            String   // e.g., "Principal Architect", "Design Director"
+  
+  // Status
+  isActive         Boolean  @default(true)
+  
+  // Assignment (optional - for multi-competition support)
+  competitionId    String?  // Links to Competition.id (null = all competitions)
+  
+  // Metadata
+  assignedAt       DateTime @default(now())
+  assignedBy       String   // Admin user ID who added them
+  
+  // Timestamps
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  // Relations
+  user             users    @relation("JuryMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  scores           JuryScore[]
+  progress         JuryScoringProgress?
+  
+  @@index([userId])
+  @@index([isActive])
+  @@index([competitionId])
+  @@index([userId, isActive])
+}
+
+// Jury Scoring Records (complete marking scheme as per official criteria)
+model JuryScore {
+  id                   String   @id @default(cuid())
+  
+  // Core References
+  juryMemberId         String
+  registrationNumber   String   // Links to CompetitionSubmission
+  
+  // 1. CONCEPT (10% = 10 marks)
+  conceptScore         Float    // 0-10: Concept strongness & its depth
+  
+  // 2. RELEVANCE TO COMPETITION THEME (15% = 15 marks)
+  relevanceScore       Float    // 0-15: Futuristic approach/concept/look
+  
+  // 3. DESIGN & AESTHETICS (60% = 60 marks)
+  compositionScore     Float    // 0-10: Composition
+  balanceScore         Float    // 0-10: Balance
+  colourScore          Float    // 0-10: Colour/Colours
+  designRelativityScore Float   // 0-10: Design Relativity to their concept
+  aestheticAppealScore Float    // 0-20: Aesthetic appeal
+  
+  // 4. INNOVATIVE USAGE OF MATERIALS (15% = 15 marks)
+  unconventionalMaterialsScore Float  // 0-10: Usage of unconventional materials
+  overallMaterialScore Float   // 0-5: Overall material usage
+  
+  // Calculated Total (sum of all scores)
+  totalScore           Float    // 0-100 maximum (auto-calculated)
+  
+  // Optional Comments
+  comments             String?  @db.Text  // General feedback (optional)
+  
+  // Timestamps
+  createdAt            DateTime @default(now())
+  submittedAt          DateTime @default(now())
+  
+  // Relations
+  juryMember           JuryMember @relation(fields: [juryMemberId], references: [id], onDelete: Cascade)
+  submission           CompetitionSubmission @relation("JuryScores", fields: [registrationNumber], references: [registrationNumber], onDelete: Cascade)
+  
+  @@unique([juryMemberId, registrationNumber]) // One score per jury per submission
+  @@index([juryMemberId])
+  @@index([registrationNumber])
+  @@index([submittedAt])
+  @@index([juryMemberId, submittedAt])
+}
+
+// Scoring Progress Tracking (for admin dashboard monitoring)
+model JuryScoringProgress {
+  id                    String   @id @default(cuid())
+  juryMemberId          String   @unique
+  
+  // Progress Metrics
+  totalAssignedEntries  Int      @default(0)
+  submittedScores       Int      @default(0)
+  completionPercentage  Float    @default(0)
+  
+  // Scoring Statistics
+  averageScoreGiven     Float?   // Average total score this jury gives
+  lastScoredAt          DateTime?
+  
+  // Timestamps
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  // Relations
+  juryMember            JuryMember @relation(fields: [juryMemberId], references: [id], onDelete: Cascade)
+  
+  @@index([completionPercentage])
+  @@index([lastScoredAt])
 }
