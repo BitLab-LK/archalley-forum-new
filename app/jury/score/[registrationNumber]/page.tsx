@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, CheckCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { ArrowLeft, Save, CheckCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { MARKING_SCHEME } from '@/types/jury';
@@ -21,6 +23,14 @@ export default function JuryScoringPage() {
   const [existingScore, setExistingScore] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  // Image lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Input refs for keyboard navigation
+  const inputRefs = React.useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   // Scoring state
   const [scores, setScores] = useState({
@@ -89,6 +99,45 @@ export default function JuryScoringPage() {
     );
   };
 
+  const openLightbox = (images: string[], startIndex: number = 0) => {
+    setLightboxImages(images);
+    setCurrentImageIndex(startIndex);
+    setLightboxOpen(true);
+  };
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % lightboxImages.length);
+  };
+
+  const previousImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length);
+  };
+
+  const handleScoreChange = (field: keyof typeof scores, value: string) => {
+    const numValue = parseFloat(value) || 0;
+    const criterion = MARKING_SCHEME.flatMap(c => c.criteria).find(c => c.field === field);
+    if (criterion) {
+      const clampedValue = Math.min(Math.max(numValue, 0), criterion.maxScore);
+      setScores({ ...scores, [field]: clampedValue });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, currentField: keyof typeof scores) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      // Get all criterion fields in order
+      const allFields = MARKING_SCHEME.flatMap(c => c.criteria.map(cr => cr.field));
+      const currentIndex = allFields.indexOf(currentField);
+      
+      // Move to next field
+      if (currentIndex < allFields.length - 1) {
+        const nextField = allFields[currentIndex + 1];
+        inputRefs.current[nextField]?.focus();
+      }
+    }
+  };
+
   const handleSubmit = async () => {
     const total = calculateTotal();
     if (total === 0) {
@@ -136,6 +185,12 @@ export default function JuryScoringPage() {
 
   const totalScore = calculateTotal();
 
+  // Prepare all images for lightbox
+  const allImages = [
+    submission.keyPhotographUrl,
+    ...(submission.additionalPhotographs || [])
+  ];
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* Header */}
@@ -158,7 +213,7 @@ export default function JuryScoringPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column - Submission Preview */}
         <div className="lg:col-span-1 space-y-4">
           <Card>
@@ -167,13 +222,19 @@ export default function JuryScoringPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Main Image */}
-              <div className="relative aspect-square rounded-lg overflow-hidden">
+              <div 
+                className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border-2 border-blue-200 hover:border-blue-400"
+                onClick={() => openLightbox(allImages, 0)}
+              >
                 <Image
                   src={submission.keyPhotographUrl}
                   alt={submission.title}
                   fill
                   className="object-cover"
                 />
+                <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                  Main Photo - Click to enlarge
+                </div>
               </div>
 
               {/* Info */}
@@ -190,10 +251,14 @@ export default function JuryScoringPage() {
               {/* Additional Photos */}
               {submission.additionalPhotographs?.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium mb-2">Additional Photos</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {submission.additionalPhotographs.slice(0, 4).map((photo: string, idx: number) => (
-                      <div key={idx} className="relative aspect-square rounded-lg overflow-hidden">
+                  <p className="text-sm font-medium mb-3">Additional Photos ({submission.additionalPhotographs.length})</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {submission.additionalPhotographs.map((photo: string, idx: number) => (
+                      <div 
+                        key={idx} 
+                        className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border-2 border-gray-200 hover:border-blue-400"
+                        onClick={() => openLightbox(allImages, idx + 1)}
+                      >
                         <Image src={photo} alt={`Photo ${idx + 1}`} fill className="object-cover" />
                       </div>
                     ))}
@@ -221,7 +286,7 @@ export default function JuryScoringPage() {
         </div>
 
         {/* Right Column - Scoring Form */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-1">
           <Card>
             <CardHeader>
               <CardTitle>Marking Scheme</CardTitle>
@@ -249,25 +314,28 @@ export default function JuryScoringPage() {
                   {category.criteria.map((criterion) => {
                     const currentValue = scores[criterion.field];
                     return (
-                      <div key={criterion.field} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium">{criterion.label}</Label>
-                          <Badge variant="outline">
-                            {currentValue} / {criterion.maxScore}
-                          </Badge>
+                      <div key={criterion.field} className="space-y-1">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <Label className="text-sm font-medium">{criterion.label}</Label>
+                            <p className="text-xs text-muted-foreground mt-1">{criterion.description}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              ref={(el) => { inputRefs.current[criterion.field] = el; }}
+                              type="number"
+                              value={currentValue}
+                              onChange={(e) => handleScoreChange(criterion.field as keyof typeof scores, e.target.value)}
+                              onFocus={(e) => e.target.select()}
+                              onKeyDown={(e) => handleKeyDown(e, criterion.field as keyof typeof scores)}
+                              min={0}
+                              max={criterion.maxScore}
+                              step={0.5}
+                              className="w-24 text-center font-semibold text-base"
+                            />
+                            <span className="text-sm text-muted-foreground font-medium">/ {criterion.maxScore}</span>
+                          </div>
                         </div>
-                        <p className="text-xs text-muted-foreground">{criterion.description}</p>
-                        <input
-                          type="range"
-                          value={currentValue}
-                          onChange={(e) =>
-                            setScores({ ...scores, [criterion.field]: parseFloat(e.target.value) })
-                          }
-                          min={0}
-                          max={criterion.maxScore}
-                          step={0.5}
-                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer my-4 accent-blue-600"
-                        />
                       </div>
                     );
                   })}
@@ -301,6 +369,59 @@ export default function JuryScoringPage() {
           </Card>
         </div>
       </div>
+
+      {/* Image Lightbox Modal */}
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+        <DialogContent className="max-w-7xl h-[90vh] p-0 bg-black/95">
+          <DialogTitle className="sr-only">Submission Images</DialogTitle>
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Close Button */}
+            <button
+              onClick={() => setLightboxOpen(false)}
+              className="absolute top-4 right-4 z-50 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            >
+              <X className="h-6 w-6 text-white" />
+            </button>
+
+            {/* Previous Button */}
+            {lightboxImages.length > 1 && (
+              <button
+                onClick={previousImage}
+                className="absolute left-4 z-50 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <ChevronLeft className="h-8 w-8 text-white" />
+              </button>
+            )}
+
+            {/* Image */}
+            <div className="relative w-full h-full flex items-center justify-center p-4">
+              <Image
+                src={lightboxImages[currentImageIndex]}
+                alt={`Image ${currentImageIndex + 1}`}
+                fill
+                className="object-contain"
+              />
+            </div>
+
+            {/* Next Button */}
+            {lightboxImages.length > 1 && (
+              <button
+                onClick={nextImage}
+                className="absolute right-4 z-50 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <ChevronRight className="h-8 w-8 text-white" />
+              </button>
+            )}
+
+            {/* Image Counter */}
+            {lightboxImages.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-white/10 text-white text-sm">
+                {currentImageIndex + 1} / {lightboxImages.length}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
