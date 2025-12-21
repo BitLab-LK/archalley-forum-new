@@ -1195,7 +1195,7 @@ export default function CompetitionPageClient() {
                 05. Submission
               </h3>
               <ul className="list-disc list-inside ml-4 space-y-2">
-                <li className="text-base leading-[20px]">Kids' Tree Category - From 11th to 21st December 2025</li>
+                <li className="text-base leading-[20px]">Kids' Tree Category - From 11th to 24th December 2025</li>
                 <li className="text-base leading-[20px]">Physical Tree Category & Digital Tree Category - From 11th to 24th December 2025</li>
               </ul>
               </div>

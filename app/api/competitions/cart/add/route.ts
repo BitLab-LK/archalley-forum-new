@@ -309,7 +309,7 @@ export async function POST(
         : new Date('2025-11-11T00:00:00+05:30');
       const kidsEnd = regTimeline.kids?.end 
         ? parseDate(regTimeline.kids.end) 
-        : new Date('2025-12-21T23:59:59+05:30');
+        : new Date('2025-12-24T23:59:59+05:30');
       
       // Determine current registration period
       const period = getRegistrationPeriod(

@@ -51,11 +51,11 @@ export async function canUserSubmit(
   if (!isAdmin) {
     // Check submission period dates
     // Submission starts: 11th December 2025
-    // Kids deadline: 21st December 2025
+    // Kids deadline: 24th December 2025
     // Other categories deadline: 24th December 2025
     const now = new Date();
     const submissionStartDate = new Date('2025-12-11T00:00:00+05:30');
-    const kidsDeadline = new Date('2025-12-21T23:59:59+05:30');
+    const kidsDeadline = new Date('2025-12-24T23:59:59+05:30');
     const otherCategoriesDeadline = new Date('2025-12-24T23:59:59+05:30');
     
     // Check if submission period has started
@@ -72,7 +72,7 @@ export async function canUserSubmit(
     
     if (now > deadline) {
       const categoryName = isKidsCategory ? 'kids' : 'other';
-      const deadlineDate = isKidsCategory ? '21st December 2025' : '24th December 2025';
+      const deadlineDate = isKidsCategory ? '24th December 2025' : '24th December 2025';
       return {
         canSubmit: false,
         reason: `Submission deadline for ${categoryName} category has passed (${deadlineDate})`

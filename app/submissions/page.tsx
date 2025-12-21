@@ -20,7 +20,7 @@ export const metadata = {
  * Returns: 'not_started' | 'active' | 'ended'
  * 
  * Submission starts: 11th December 2025
- * Kids deadline: 21st December 2025
+ * Kids deadline: 24th December 2025
  * Other categories deadline: 24th December 2025
  */
 function getSubmissionPeriodStatus(): 'not_started' | 'active' | 'ended' {
@@ -82,7 +82,7 @@ export default async function SubmissionsPage() {
                         <span className="font-medium">Submission start:</span> 11th December 2025
                       </li>
                       <li>
-                        <span className="font-medium">Submission deadline for kids' category:</span> 21st December 2025
+                        <span className="font-medium">Submission deadline for kids' category:</span> 24th December 2025
                       </li>
                       <li>
                         <span className="font-medium">Submission deadline for other categories:</span> 24th December 2025
@@ -126,7 +126,7 @@ export default async function SubmissionsPage() {
                         <span className="font-medium">Submission start:</span> 11th December 2025
                       </li>
                       <li>
-                        <span className="font-medium">Submission deadline for kids' category:</span> 21st December 2025
+                        <span className="font-medium">Submission deadline for kids' category:</span> 24th December 2025
                       </li>
                       <li>
                         <span className="font-medium">Submission deadline for other categories:</span> 24th December 2025

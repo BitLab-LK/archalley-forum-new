@@ -505,7 +505,7 @@ export function getDaysRemaining(deadline: Date): number {
 
 /**
  * Registration period types
- * Note: KIDS is NOT a period - it's a registration type that's available Nov 21-Dec 21
+ * Note: KIDS is NOT a period - it's a registration type that's available Nov 11-Dec 24
  * During that time, kids use their own pricing, but other types use STANDARD/LATE pricing
  */
 export type RegistrationPeriod = 'EARLY_BIRD' | 'STANDARD' | 'LATE';
@@ -554,7 +554,7 @@ function compareDatesInSriLanka(date1: Date, date2: Date): number {
  * 3. Standard: Nov 21-Dec 20
  * 4. Default: STANDARD (fallback)
  * 
- * Note: Kids category (Nov 21-Dec 21) is a separate registration type, not a period.
+ * Note: Kids category (Nov 11-Dec 24) is a separate registration type, not a period.
  * Kids pricing is always 2000 regardless of period.
  */
 export function getRegistrationPeriod(
@@ -594,7 +594,7 @@ export function getRegistrationPeriod(
  * - Early Bird (Nov 11-20): Single Entry 2,000, Group Entry 4,000
  * - Standard (Nov 21-Dec 20): Student Entry 2,000, Single Entry 3,000, Group Entry 5,000
  * - Late (Dec 21-24): Student Entry 2,000, Single Entry 5,000, Group Entry 8,000
- * - Kids' Tree Category (Nov 11-Dec 21): Single Entry 2,000 (always)
+ * - Kids' Tree Category (Nov 11-Dec 24): Single Entry 2,000 (always)
  */
 export function calculateRegistrationPrice(
   registrationType: 'INDIVIDUAL' | 'TEAM' | 'COMPANY' | 'STUDENT' | 'KIDS',
