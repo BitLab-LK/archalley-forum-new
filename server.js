@@ -2,12 +2,13 @@ const { createServer } = require("http");
 const { parse } = require("url");
 const next = require("next");
 const socketio = require("socket.io");
-const { PrismaClient } = require("@prisma/client");
 
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const handle = app.getRequestHandler();
-const prisma = new PrismaClient();
+
+// Use singleton Prisma Client to avoid connection pool exhaustion
+let prisma;
 
 // Rate limiting for Socket.IO
 const socketRateLimit = new Map();
@@ -30,6 +31,21 @@ function checkSocketRateLimit(socketId) {
 }
 
 app.prepare().then(async () => {
+  // Initialize Prisma singleton first
+  try {
+    const prismaModule = await import('./lib/prisma.js');
+    prisma = prismaModule.prisma;
+    console.log('✅ Prisma singleton initialized in server.js');
+  } catch (error) {
+    console.error('⚠️ Failed to import Prisma singleton, using fallback:', error.message);
+    // Fallback: create a properly configured instance with connection pooling
+    const { PrismaClient } = require("@prisma/client");
+    prisma = new PrismaClient({
+      log: process.env.NODE_ENV === 'development' ? ['error'] : ['error'],
+      errorFormat: 'pretty',
+    });
+  }
+
   // Initialize email service on startup
   try {
     const { initializeEmailService } = require('./lib/email-service');
@@ -80,8 +96,8 @@ app.prepare().then(async () => {
         return next(new Error("Authentication required"));
       }
 
-      // Validate user token
-      const user = await prisma.user.findFirst({
+      // Validate user token (note: schema uses 'users' not 'user')
+      const user = await prisma.users.findFirst({
         where: { id: token },
         select: { id: true, role: true }
       });
