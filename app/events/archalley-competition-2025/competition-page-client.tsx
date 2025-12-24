@@ -21,6 +21,24 @@ export default function CompetitionPageClient() {
   const [briefDownloadOpen, setBriefDownloadOpen] = useState(false)
   const scrollPositionRef = useRef(0)
 
+  // Check if registration and submission deadlines have passed
+  const registrationDeadline = new Date('2025-12-24T23:59:59')
+  const submissionDeadline = new Date('2025-12-24T23:59:59')
+  const votingStartDate = new Date('2025-12-25T00:00:00')
+  const votingEndDate = new Date('2026-01-04T23:59:59')
+  const currentDate = new Date()
+  
+  const isRegistrationClosed = currentDate > registrationDeadline
+  const isSubmissionClosed = currentDate > submissionDeadline
+  const isVotingPeriod = currentDate >= votingStartDate && currentDate <= votingEndDate
+  
+  // Check if user is admin or superadmin
+  const userRole = session?.user?.role as string
+  const isAdminOrSuperAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN'
+  
+  // Show vote button during voting period OR if user is admin/superadmin
+  const isVotingOpen = isVotingPeriod || isAdminOrSuperAdmin
+
   // Handle submit button click
   const handleSubmitClick = () => {
     if (!session?.user) {
@@ -311,26 +329,40 @@ export default function CompetitionPageClient() {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-2.5 items-center justify-center mt-12 md:mt-8 mb-24 md:mb-0">
-              <Button
-                asChild
-                className="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 text-sm md:text-base w-40 md:w-auto rounded-none"
-              >
-                <Link href="/events/archalley-competition-2025/register">
-                  Register Now
-                </Link>
-              </Button>
+              {!isRegistrationClosed && (
+                <Button
+                  asChild
+                  className="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 text-sm md:text-base w-40 md:w-auto rounded-none"
+                >
+                  <Link href="/events/archalley-competition-2025/register">
+                    Register Now
+                  </Link>
+                </Button>
+              )}
               <Button
                 onClick={() => setBriefDownloadOpen(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 text-sm md:text-base w-40 md:w-auto rounded-none"
               >
                 Download Brief
               </Button>
-              <Button
-                onClick={handleSubmitClick}
-                className="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 text-sm md:text-base w-40 md:w-auto rounded-none"
-              >
-                Submit
-              </Button>
+              {!isSubmissionClosed && (
+                <Button
+                  onClick={handleSubmitClick}
+                  className="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 text-sm md:text-base w-40 md:w-auto rounded-none"
+                >
+                  Submit
+                </Button>
+              )}
+              {isVotingOpen && (
+                <Button
+                  asChild
+                  className="bg-purple-500 hover:bg-purple-600 text-white px-5 py-2.5 text-sm md:text-base w-40 md:w-auto rounded-none"
+                >
+                  <Link href="/competitions/archalley-competition-2025/entries">
+                    Vote Now
+                  </Link>
+                </Button>
+              )}
               </div>
             </div>
           </div>
@@ -457,14 +489,16 @@ export default function CompetitionPageClient() {
             
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-              <Button
-                asChild
-                className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
-              >
-                <Link href="/events/archalley-competition-2025/register">
-                  Register Now
-                </Link>
-              </Button>
+              {!isRegistrationClosed && (
+                <Button
+                  asChild
+                  className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+                >
+                  <Link href="/events/archalley-competition-2025/register">
+                    Register Now
+                  </Link>
+                </Button>
+              )}
               <Button
                 onClick={() => setBriefDownloadOpen(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
@@ -744,14 +778,16 @@ export default function CompetitionPageClient() {
             
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-              <Button
-                asChild
-                className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
-              >
-                <Link href="/events/archalley-competition-2025/register">
-                  Register Now
-                </Link>
-              </Button>
+              {!isRegistrationClosed && (
+                <Button
+                  asChild
+                  className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+                >
+                  <Link href="/events/archalley-competition-2025/register">
+                    Register Now
+                  </Link>
+                </Button>
+              )}
               <Button
                 onClick={() => setBriefDownloadOpen(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
@@ -853,14 +889,16 @@ export default function CompetitionPageClient() {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mt-24 md:mt-12">
-            <Button
-              asChild
-              className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
-            >
-              <Link href="/events/archalley-competition-2025/register">
-                Register Now
-              </Link>
-            </Button>
+            {!isRegistrationClosed && (
+              <Button
+                asChild
+                className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+              >
+                <Link href="/events/archalley-competition-2025/register">
+                  Register Now
+                </Link>
+              </Button>
+            )}
             <Button
               asChild
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
@@ -1382,14 +1420,16 @@ export default function CompetitionPageClient() {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-            <Button
-              asChild
-              className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
-            >
-              <Link href="/events/archalley-competition-2025/register">
-                Register Now
-              </Link>
-            </Button>
+            {!isRegistrationClosed && (
+              <Button
+                asChild
+                className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+              >
+                <Link href="/events/archalley-competition-2025/register">
+                  Register Now
+                </Link>
+              </Button>
+            )}
             <Button
               asChild
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
@@ -1401,12 +1441,24 @@ export default function CompetitionPageClient() {
                 Download Brief
               </a>
             </Button>
-            <Button
-              onClick={handleSubmitClick}
-              className="bg-green-500 hover:bg-green-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
-            >
-              Submit
-            </Button>
+            {!isSubmissionClosed && (
+              <Button
+                onClick={handleSubmitClick}
+                className="bg-green-500 hover:bg-green-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+              >
+                Submit
+              </Button>
+            )}
+            {isVotingOpen && (
+              <Button
+                asChild
+                className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+              >
+                <Link href="/competitions/archalley-competition-2025/entries">
+                  Vote Now
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       </footer>
