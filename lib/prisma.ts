@@ -25,18 +25,13 @@ const globalForPrisma = globalThis as unknown as {
 // Enhanced Prisma configuration with better connection handling for production
 // Build-safe options: only pass datasources when URL is defined to avoid constructor validation errors
 
-// Configure connection pool to prevent exhausting database connections
-// For serverless environments, we use a smaller connection pool
-const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
-
 // Prisma connection pool configuration
 // These settings control how many connections Prisma will open to the database
+// Prisma manages connections automatically - no explicit pool configuration needed here
+// For serverless environments, consider using Prisma Accelerate or a connection pooler (see docs above)
 const prismaClientOptions: any = {
   log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
   errorFormat: 'pretty',
-  // Connection pool configuration
-  // In serverless environments, limit connections to prevent exhaustion
-  // Prisma uses a connection pool internally, these settings optimize it
 }
 
 // Add datasource configuration only if DATABASE_URL exists
