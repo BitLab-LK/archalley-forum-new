@@ -18,16 +18,19 @@ export const metadata = {
 /**
  * Get submission period status
  * Returns: 'not_started' | 'active' | 'ended'
+ * 
+ * Submission starts: 11th December 2025
+ * Kids deadline: 24th December 2025
+ * Other categories deadline: 24th December 2025
  */
 function getSubmissionPeriodStatus(): 'not_started' | 'active' | 'ended' {
   const now = new Date();
-  const currentYear = now.getFullYear();
   
-  // Start: December 11, 00:00:00
-  const startDate = new Date(currentYear, 11, 11, 0, 0, 0, 0); // Month is 0-indexed, so 11 = December
+  // Start: December 11, 2025, 00:00:00 (Sri Lanka timezone UTC+5:30)
+  const startDate = new Date('2025-12-11T00:00:00+05:30');
   
-  // End: December 24, 23:59:59
-  const endDate = new Date(currentYear, 11, 24, 23, 59, 59, 999);
+  // End: December 25, 2025, 23:59:59 IST (deadline for all categories)
+  const endDate = new Date('2025-12-25T23:59:59+05:30');
   
   if (now < startDate) {
     return 'not_started';
@@ -76,13 +79,13 @@ export default async function SubmissionsPage() {
                     <p className="font-semibold mb-2">Submission Period Details</p>
                     <ul className="space-y-1.5">
                       <li>
-                        <span className="font-medium">Submission start:</span> 11th December
+                        <span className="font-medium">Submission start:</span> 11th December 2025
                       </li>
                       <li>
-                        <span className="font-medium">Submission deadline for kids' category:</span> 21st December
+                        <span className="font-medium">Submission deadline for kids' category:</span> 24th December 2025
                       </li>
                       <li>
-                        <span className="font-medium">Submission deadline for other categories:</span> 24th December
+                        <span className="font-medium">Submission deadline for other categories:</span> 24th December 2025
                       </li>
                     </ul>
                   </div>
@@ -120,13 +123,13 @@ export default async function SubmissionsPage() {
                     <p className="font-semibold mb-2">Submission Period Details</p>
                     <ul className="space-y-1.5">
                       <li>
-                        <span className="font-medium">Submission start:</span> 11th December
+                        <span className="font-medium">Submission start:</span> 11th December 2025
                       </li>
                       <li>
-                        <span className="font-medium">Submission deadline for kids' category:</span> 21st December
+                        <span className="font-medium">Submission deadline for kids' category:</span> 24th December 2025
                       </li>
                       <li>
-                        <span className="font-medium">Submission deadline for other categories:</span> 24th December
+                        <span className="font-medium">Submission deadline for other categories:</span> 24th December 2025
                       </li>
                     </ul>
                   </div>

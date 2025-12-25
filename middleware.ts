@@ -25,6 +25,16 @@ async function isSessionValidForEdge(request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
+  // Block direct access to the competition brief PDF file
+  if (request.nextUrl.pathname.includes('Christmas Tree Competition 2025 - Brief.pdf') || 
+      request.nextUrl.pathname === '/downloads/Christmas Tree Competition 2025 - Brief.pdf') {
+    console.log('🚫 Blocked direct access to competition brief PDF:', request.nextUrl.pathname)
+    return NextResponse.json(
+      { error: 'File not found. Please request a download link through the competition page.' },
+      { status: 404 }
+    )
+  }
+
   // Redirect /competition to /events/archalley-competition-2025
   if (request.nextUrl.pathname === '/competition' || request.nextUrl.pathname === '/competition/') {
     const targetUrl = new URL('/events/archalley-competition-2025', request.url)
@@ -65,7 +75,9 @@ export async function middleware(request: NextRequest) {
     '/api/contact',
     '/api/academic/submit',
     '/api/projects/submit',
-    '/api/competitions/payment/notify'
+    '/api/competitions/payment/notify',
+    // Brief download flow is public (form submit + token download)
+    '/api/brief-download/'
   ]
 
   // Check if the API route is public
@@ -202,8 +214,8 @@ export async function middleware(request: NextRequest) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com https://www.payhere.lk https://sandbox.payhere.lk",
-      "script-src-elem 'self' 'unsafe-inline' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com https://www.payhere.lk https://sandbox.payhere.lk",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com https://www.payhere.lk https://sandbox.payhere.lk https://www.clarity.ms",
+      "script-src-elem 'self' 'unsafe-inline' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com https://www.payhere.lk https://sandbox.payhere.lk https://www.clarity.ms",
       "style-src 'self' 'unsafe-inline' https://cdn.lineicons.com",
       "img-src 'self' data: https: http:",
       "font-src 'self' data: https://cdn.lineicons.com",

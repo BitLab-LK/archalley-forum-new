@@ -11,7 +11,6 @@ import type {
   WinnerData,
   SubmissionListFilter,
   SubmissionSortBy,
-  JudgeScore,
 } from '@/types/submission';
 import { RegistrationStatus } from '@prisma/client';
 
@@ -21,8 +20,12 @@ import { RegistrationStatus } from '@prisma/client';
 
 export async function canUserSubmit(
   userId: string,
-  registrationId: string
+  registrationId: string,
+  userRole?: string
 ): Promise<EligibilityCheck> {
+  
+  // Check if user is admin or super admin
+  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
   
   // Check existing registration status (READ-ONLY from existing table)
   const registration = await prisma.competitionRegistration.findFirst({
@@ -44,25 +47,43 @@ export async function canUserSubmit(
     };
   }
   
-  // Check if submission deadline passed
-  const now = new Date();
-  if (now > registration.competition.endDate) {
-    return { 
-      canSubmit: false, 
-      reason: 'Submission deadline has passed' 
-    };
-  }
-  
-  // Check if competition accepts submissions
-  if (registration.competition.status !== 'REGISTRATION_OPEN' && 
-      registration.competition.status !== 'IN_PROGRESS') {
-    return { 
-      canSubmit: false, 
-      reason: 'Competition is not accepting submissions' 
-    };
+  // Admins and super admins can bypass submission period restrictions
+  if (!isAdmin) {
+    // Check submission period dates
+    // Submission starts: 11th December 2025
+    // Deadline for all categories: 25th December 2025, 23:59:59 IST
+    const now = new Date();
+    const submissionStartDate = new Date('2025-12-11T00:00:00+05:30');
+    const submissionDeadline = new Date('2025-12-25T23:59:59+05:30');
+    
+    // Check if submission period has started
+    if (now < submissionStartDate) {
+      return {
+        canSubmit: false,
+        reason: 'Submission period has not started yet. Submissions open on 11th December 2025.'
+      };
+    }
+    
+    // Check deadline (same for all categories)
+    if (now > submissionDeadline) {
+      return {
+        canSubmit: false,
+        reason: 'Submission deadline has passed'
+      };
+    }
+    
+    // Check if competition accepts submissions
+    if (registration.competition.status !== 'REGISTRATION_OPEN' && 
+        registration.competition.status !== 'IN_PROGRESS') {
+      return { 
+        canSubmit: false, 
+        reason: 'Competition is not accepting submissions' 
+      };
+    }
   }
   
   // Check if already submitted (from NEW submission table)
+  // Each registration can only be submitted once
   const existingSubmission = await prisma.competitionSubmission.findUnique({
     where: { registrationId: registrationId }
   });
@@ -70,7 +91,7 @@ export async function canUserSubmit(
   if (existingSubmission && existingSubmission.status !== 'DRAFT') {
     return { 
       canSubmit: false, 
-      reason: 'You have already submitted for this competition',
+      reason: 'This entry has already been submitted. Each entry can only be submitted once.',
       existingSubmission 
     };
   }
@@ -208,20 +229,20 @@ export async function getSubmissions(
       orderBy.createdAt = 'asc';
       break;
     case 'most-voted':
-      orderBy.voteCount = 'desc';
+      orderBy.votingStats = { publicVoteCount: 'desc' };
       break;
     case 'highest-score':
-      orderBy.finalScore = 'desc';
+      orderBy.votingStats = { juryScoreAverage: 'desc' };
       break;
     case 'rank':
-      orderBy.rank = 'asc';
+      orderBy.votingStats = { publicRank: 'asc' };
       break;
   }
   
   const [submissions, total] = await Promise.all([
     prisma.competitionSubmission.findMany({
       where,
-      include: { votes: true },
+      include: { votes: true, votingStats: true },
       orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -336,15 +357,30 @@ export async function announceWinner(
     throw new Error('Registration not found');
   }
   
-  // Update submission with award
+  // Update submission status
   await prisma.competitionSubmission.update({
     where: { id: submissionId },
     data: {
-      award,
-      rank,
-      finalScore,
       status: 'PUBLISHED',
       isPublished: true,
+    }
+  });
+  
+  // Update voting stats with award and ranking
+  await prisma.submissionVotingStats.upsert({
+    where: {
+      registrationNumber: registration.registrationNumber,
+    },
+    create: {
+      registrationNumber: registration.registrationNumber,
+      award,
+      publicRank: rank,
+      juryScoreAverage: finalScore,
+    },
+    update: {
+      award,
+      publicRank: rank,
+      juryScoreAverage: finalScore,
     }
   });
   
@@ -378,9 +414,18 @@ export async function getWinners(
   const submissions = await prisma.competitionSubmission.findMany({
     where: {
       competitionId,
-      award: { not: null }
+      votingStats: {
+        award: { not: null }
+      }
     },
-    orderBy: { rank: 'asc' }
+    include: {
+      votingStats: true
+    },
+    orderBy: {
+      votingStats: {
+        publicRank: 'asc'
+      }
+    }
   });
   
   const winners = await Promise.all(
@@ -405,14 +450,14 @@ export async function getWinners(
       }
       
       return {
-        rank: sub.rank || 0,
-        award: sub.award || '',
+        rank: sub.votingStats?.publicRank || 0,
+        award: sub.votingStats?.award || '',
         registrationNumber: registration.registrationNumber,
         participantName,
         submissionTitle: sub.title,
         submissionImage: sub.keyPhotographUrl,
         category: sub.submissionCategory,
-        score: sub.finalScore || undefined,
+        score: sub.votingStats?.juryScoreAverage || undefined,
       };
     })
   );
@@ -440,29 +485,57 @@ export async function addJudgeScore(
     throw new Error('Submission not found');
   }
   
-  const existingScores = (submission.judgeScores as any as JudgeScore[]) || [];
-  
-  const newScore: JudgeScore = {
-    judgeId,
-    judgeName,
-    score,
-    comments,
-    judgedAt: new Date().toISOString(),
-  };
-  
-  const updatedScores = [
-    ...existingScores.filter((s: JudgeScore) => s.judgeId !== judgeId),
-    newScore
-  ];
-  
-  // Calculate final score (average)
-  const finalScore = updatedScores.reduce((sum, s) => sum + s.score, 0) / updatedScores.length;
-  
-  await prisma.competitionSubmission.update({
-    where: { id: submissionId },
-    data: {
-      judgeScores: updatedScores as any,
-      finalScore,
-    }
+  // Use transaction to create/update jury vote and update voting stats
+  await prisma.$transaction(async (tx) => {
+    // Upsert the jury vote (using registrationNumber_userId unique constraint)
+    await tx.submissionVote.upsert({
+      where: {
+        registrationNumber_userId: {
+          registrationNumber: submission.registrationNumber,
+          userId: judgeId
+        }
+      },
+      create: {
+        registrationNumber: submission.registrationNumber,
+        userId: judgeId,
+        voteType: 'JURY',
+        score,
+        comments,
+        scoringCriteria: { judgeName } // Store judge name in criteria
+      },
+      update: {
+        voteType: 'JURY', // Ensure it's marked as JURY vote
+        score,
+        comments,
+        scoringCriteria: { judgeName },
+        updatedAt: new Date()
+      }
+    });
+    
+    // Get all jury votes for this submission to calculate average
+    const juryVotes = await tx.submissionVote.findMany({
+      where: {
+        registrationNumber: submission.registrationNumber,
+        voteType: 'JURY'
+      }
+    });
+    
+    const juryScoreAverage = juryVotes.length > 0
+      ? juryVotes.reduce((sum, v) => sum + (v.score || 0), 0) / juryVotes.length
+      : 0;
+    
+    // Update voting stats
+    await tx.submissionVotingStats.upsert({
+      where: { registrationNumber: submission.registrationNumber },
+      create: {
+        registrationNumber: submission.registrationNumber,
+        juryVoteCount: juryVotes.length,
+        juryScoreAverage
+      },
+      update: {
+        juryVoteCount: juryVotes.length,
+        juryScoreAverage
+      }
+    });
   });
 }

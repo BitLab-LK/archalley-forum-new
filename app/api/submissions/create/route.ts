@@ -17,7 +17,7 @@ import {
   validateMultiplePhotos,
   validateWordCount,
 } from '@/lib/azure-blob-submission-upload';
-import { sendSubmissionPublishedEmail } from '@/lib/competition-email-service';
+import { sendSubmissionCreatedEmail } from '@/lib/competition-email-service';
 import { SubmissionCategory } from '@prisma/client';
 import type { FileMetadata } from '@/types/submission';
 
@@ -34,7 +34,6 @@ export async function POST(request: NextRequest) {
     // Extract form fields
     const registrationId = formData.get('registrationId') as string;
     const category = formData.get('category') as SubmissionCategory;
-    const title = formData.get('title') as string;
     const description = formData.get('description') as string;
     const isDraft = formData.get('isDraft') === 'true';
 
@@ -46,10 +45,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For non-drafts, require all fields
-    if (!isDraft && (!category || !title)) {
+    // For non-drafts, require category
+    if (!isDraft && !category) {
       return NextResponse.json(
-        { error: 'Category and title are required for submission' },
+        { error: 'Category is required for submission' },
         { status: 400 }
       );
     }
@@ -66,14 +65,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check eligibility
-    const eligibility = await canUserSubmit(session.user.id, registrationId);
+    // Check eligibility (pass user role for admin bypass)
+    const userRole = session.user.role as string;
+    const eligibility = await canUserSubmit(session.user.id, registrationId, userRole);
     if (!eligibility.canSubmit) {
       return NextResponse.json({ error: eligibility.reason }, { status: 400 });
     }
 
     // Get registration number for the submission
     const registrationNumber = eligibility.registration!.registrationNumber;
+    
+    // Auto-generate title from registration number
+    const title = `Submission ${registrationNumber}`;
 
     // Validate description word count (skip for drafts)
     if (!isDraft && description) {
@@ -86,11 +89,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get files from form data
+    // Get files or URLs from form data (URLs are preferred - files are uploaded immediately)
     const keyPhotoFile = formData.get('keyPhotograph') as File | null;
+    const keyPhotoUrlFromForm = formData.get('keyPhotographUrl') as string | null;
     const additionalPhotosArray = formData.getAll('additionalPhotographs') as File[];
+    const additionalPhotosUrlsFromForm = formData.getAll('additionalPhotographsUrls') as string[];
     const documentFile = formData.get('documentFile') as File | null;
+    const documentFileUrlFromForm = formData.get('documentFileUrl') as string | null;
     const videoFile = formData.get('videoFile') as File | null;
+    const videoFileUrlFromForm = formData.get('videoFileUrl') as string | null;
 
     let keyPhotoUrl: string | null = null;
     let photoUrls: string[] = [];
@@ -98,10 +105,18 @@ export async function POST(request: NextRequest) {
     let videoUrl: string | null = null;
     let fileMetadata: FileMetadata | null = null;
 
-    // Upload files if provided (for both drafts and final submissions)
+    // Use URLs if provided (files already uploaded), otherwise upload files
+    const hasUrls = keyPhotoUrlFromForm || additionalPhotosUrlsFromForm.length > 0 || documentFileUrlFromForm || videoFileUrlFromForm;
     const hasFiles = keyPhotoFile || additionalPhotosArray.length > 0 || documentFile || videoFile;
     
-    if (hasFiles) {
+    if (hasUrls) {
+      // Files already uploaded - use URLs directly
+      keyPhotoUrl = keyPhotoUrlFromForm;
+      photoUrls = additionalPhotosUrlsFromForm;
+      documentUrl = documentFileUrlFromForm;
+      videoUrl = videoFileUrlFromForm;
+    } else if (hasFiles) {
+      // Legacy: Upload files now (for backward compatibility)
       // For final submissions, validate all required files
       if (!isDraft) {
         // Validate required files
@@ -239,6 +254,23 @@ export async function POST(request: NextRequest) {
       where: { registrationId },
     });
 
+    // Prevent resubmission if already submitted (not a draft)
+    // Each registration can only be submitted once
+    if (existingSubmission && existingSubmission.status !== 'DRAFT') {
+      if (!isDraft) {
+        return NextResponse.json(
+          { error: 'This entry has already been submitted. Each entry can only be submitted once and cannot be modified.' },
+          { status: 400 }
+        );
+      } else {
+        // Even for drafts, if already submitted, don't allow updates
+        return NextResponse.json(
+          { error: 'This entry has already been submitted and cannot be modified.' },
+          { status: 400 }
+        );
+      }
+    }
+
     console.log(existingSubmission ? `📝 Updating existing submission for registration: ${registrationId}` : '✨ Creating new submission');
 
     // Create or update submission record
@@ -251,7 +283,7 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         competitionId: eligibility.registration!.competitionId,
         submissionCategory: category || 'DIGITAL', // Default for drafts
-        title: title || 'Untitled Draft',
+        title: title,
         description: description || '',
         keyPhotographUrl: keyPhotoUrl || '',
         additionalPhotographs: photoUrls,
@@ -268,7 +300,6 @@ export async function POST(request: NextRequest) {
       },
       update: {
         ...(category && { submissionCategory: category }),
-        ...(title && { title }),
         ...(description !== undefined && { description }),
         // Only update file fields if new files were uploaded
         ...(keyPhotoUrl && { keyPhotographUrl: keyPhotoUrl }),
@@ -277,15 +308,44 @@ export async function POST(request: NextRequest) {
         ...(videoUrl !== null && { videoFileUrl: videoUrl }),
         ...(fileMetadata && { fileMetadata: fileMetadata as any }),
         // Auto-validate and auto-publish when changing from DRAFT to final submission
-        status: isDraft ? 'DRAFT' : 'PUBLISHED',
-        submittedAt: isDraft ? null : new Date(),
-        isValidated: isDraft ? false : true,
-        validatedAt: isDraft ? null : new Date(),
-        isPublished: !isDraft,
-        publishedAt: isDraft ? null : new Date(),
+        // Only allow status change if currently a draft
+        ...(existingSubmission?.status === 'DRAFT' && {
+          status: isDraft ? 'DRAFT' : 'PUBLISHED',
+          submittedAt: isDraft ? null : new Date(),
+          isValidated: isDraft ? false : true,
+          validatedAt: isDraft ? null : new Date(),
+          isPublished: !isDraft,
+          publishedAt: isDraft ? null : new Date(),
+        }),
       },
     });
     console.log(`✅ Submission saved: ${registrationNumber} (Status: ${submission.status})`);
+
+    // Update the CompetitionRegistration submissionStatus
+    await prisma.competitionRegistration.update({
+      where: { id: registrationId },
+      data: {
+        submissionStatus: isDraft ? 'DRAFT' : 'SUBMITTED',
+      },
+    });
+    console.log(`✅ Registration submission status updated to: ${isDraft ? 'DRAFT' : 'SUBMITTED'}`);
+
+    // Create voting stats record when submission is published
+    if (!isDraft && submission.status === 'PUBLISHED') {
+      await prisma.submissionVotingStats.upsert({
+        where: { registrationNumber },
+        create: {
+          registrationNumber,
+          publicVoteCount: 0,
+          juryVoteCount: 0,
+          juryScoreTotal: 0,
+          viewCount: 0,
+          shareCount: 0,
+        },
+        update: {}, // Do nothing if already exists
+      });
+      console.log(`📊 Voting stats initialized for ${registrationNumber}`);
+    }
 
     // Send email notifications if submission is not a draft
     if (!isDraft && submission.status === 'PUBLISHED') {
@@ -302,22 +362,19 @@ export async function POST(request: NextRequest) {
         ]);
 
         if (user && competition) {
-          const submissionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/submissions/${submission.id}`;
-          
-          // Send published email (since it's auto-published)
-          await sendSubmissionPublishedEmail({
+          // Send submission completed email
+          await sendSubmissionCreatedEmail({
             submission: {
               registrationNumber: submission.registrationNumber || registrationNumber,
               title: submission.title,
               submissionCategory: submission.submissionCategory,
-              publishedAt: submission.publishedAt,
+              submittedAt: submission.submittedAt,
             },
             competition: competition as any,
             userName: user.name || 'Participant',
             userEmail: user.email,
-            submissionUrl,
           });
-          console.log(`📧 Submission published email sent to ${user.email}`);
+          console.log(`📧 Submission completed email sent to ${user.email}`);
         }
       } catch (emailError) {
         console.error('❌ Failed to send submission published email:', emailError);

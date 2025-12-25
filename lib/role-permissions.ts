@@ -17,6 +17,7 @@ export interface RolePermissions {
   canViewPages: boolean
   canViewAds: boolean
   canViewCompetitions: boolean
+  canViewBriefDownloads: boolean
   
   // User Management
   canEditUsers: boolean
@@ -84,6 +85,7 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canViewAppearance: false,
         canViewPages: false,
         canViewCompetitions: true, // Moderators can view competitions
+        canViewBriefDownloads: true, // Moderators can view brief downloads
         
         // User Management - View only, limited actions
         canEditUsers: false,
@@ -147,6 +149,7 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canViewAppearance: false,
         canViewPages: false,
         canViewCompetitions: true, // Admins have full competition access
+        canViewBriefDownloads: true, // Admins can view brief downloads
         
         // User Management - Full except role changes
         canEditUsers: true,
@@ -210,6 +213,7 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canViewAppearance: false,
         canViewPages: false,
         canViewCompetitions: true, // Super admins have full competition access
+        canViewBriefDownloads: true, // Super admins can view brief downloads
         
         // User Management - Full control
         canEditUsers: true,
@@ -272,6 +276,7 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canViewAppearance: false,
         canViewPages: false,
         canViewCompetitions: false, // Viewers cannot access admin competitions
+        canViewBriefDownloads: false, // Viewers cannot view brief downloads
         canEditUsers: false,
         canChangeUserRoles: false,
         canDeleteUsers: false,
@@ -326,6 +331,7 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canViewAppearance: false,
         canViewPages: false,
         canViewCompetitions: false, // Members cannot access admin competitions
+        canViewBriefDownloads: false, // Members cannot view brief downloads
         canEditUsers: false,
         canChangeUserRoles: false,
         canDeleteUsers: false,
@@ -397,6 +403,7 @@ export function getAvailableTabs(userRole: UserRole): string[] {
   if (permissions.canViewPermissions) tabs.push('permissions')
   if (permissions.canViewAppearance) tabs.push('appearance')
   if (permissions.canViewPages) tabs.push('pages')
+  if (permissions.canViewBriefDownloads) tabs.push('brief-downloads')
   
   return tabs
 }

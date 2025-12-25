@@ -217,7 +217,7 @@ async function handleSuccessfulPayment(
         paymentId: payHereData.payment_id,
         statusCode: payHereData.status_code,
         md5sig: payHereData.md5sig,
-        paymentMethod: payHereData.method,
+        paymentMethod: 'PAYHERE', // Keep as PAYHERE for consistency, card method stored in responseData
         cardHolderName: payHereData.card_holder_name,
         cardNo: payHereData.card_no,
         responseData: payHereData as any,

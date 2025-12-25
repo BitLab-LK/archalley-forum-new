@@ -1,5 +1,5 @@
 /**
- * Description Counter Component
+ * Concept Counter Component
  * Textarea with word count validation (50-200 words)
  */
 
@@ -35,7 +35,7 @@ export function DescriptionCounter({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <label className="block text-sm font-medium text-gray-700">
-          Description {required && <span className="text-red-500">*</span>}
+          Concept {required && <span className="text-red-500">*</span>}
         </label>
         <div className="flex items-center gap-2">
           <span
@@ -111,7 +111,7 @@ export function DescriptionCounter({
         </p>
       ) : isOverMax ? (
         <p className="text-sm text-red-500">
-          Description exceeds maximum word count ({wordCount - maxWords} words over)
+          Concept exceeds maximum word count ({wordCount - maxWords} words over)
         </p>
       ) : isUnderMin && value.length > 0 ? (
         <p className="text-sm text-orange-500">

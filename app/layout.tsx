@@ -53,6 +53,26 @@ export const metadata: Metadata = {
     shortcut: '/favicon.svg',
     apple: '/favicon.svg',
   },
+  openGraph: {
+    title: "Archalley - Architecture & Design Excellence",
+    url: 'https://www.archalley.com',
+    siteName: 'Archalley',
+    images: [
+      {
+        url: 'https://www.archalley.com/archalley-pro-pic.png',
+        width: 801,
+        height: 801,
+        alt: 'Archalley - Architecture & Design Community',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Archalley - Architecture & Design Excellence",
+    images: ['https://www.archalley.com/archalley-pro-pic.png'],
+  },
 }
 
 export default function RootLayout({

@@ -153,6 +153,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Check if this is OAuth user setting first password
+    const isOAuthOnly = !user.password
+
     // Update password and delete reset token in a transaction
     await prisma.$transaction([
       prisma.users.update({
@@ -175,16 +178,23 @@ export async function POST(request: NextRequest) {
       ipAddress: ip,
       userAgent,
       success: true,
-      details: { action: "password_reset" },
+      details: { 
+        action: isOAuthOnly ? "password_set" : "password_reset",
+        isOAuthOnly: isOAuthOnly,
+      },
     })
 
     // Invalidate all existing sessions by updating user's updatedAt
     // (This will cause JWT validation to fail on next request)
     // Note: In production, you might want to implement a session blacklist
 
+    const successMessage = isOAuthOnly
+      ? "Password has been set successfully. You can now log in with your email and password."
+      : "Password has been reset successfully. You can now log in with your new password."
+
     return NextResponse.json({
       success: true,
-      message: "Password has been reset successfully. You can now log in with your new password."
+      message: successMessage
     })
   } catch (error) {
     if (error instanceof z.ZodError) {

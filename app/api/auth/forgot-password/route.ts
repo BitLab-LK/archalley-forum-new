@@ -37,8 +37,11 @@ export async function POST(request: NextRequest) {
       where: { email: email.toLowerCase() },
     })
 
-    // Only send reset email if user exists and has a password (not OAuth-only account)
-    if (user && user.password) {
+    // Send reset email if user exists (including OAuth-only accounts)
+    if (user) {
+      const isOAuthOnly = !user.password
+      console.log(`📧 User found${isOAuthOnly ? ' (OAuth-only, will set first password)' : ''}, generating reset token for: ${user.email}`)
+      
       // Generate reset token
       const resetToken = crypto.randomBytes(32).toString('hex')
       const expires = new Date()
@@ -53,10 +56,13 @@ export async function POST(request: NextRequest) {
           expires,
         },
       })
+      console.log(`✅ Reset token created and stored in database`)
 
       // Send password reset email
       try {
+        console.log(`📤 Attempting to send password reset email to: ${user.email}`)
         await sendPasswordResetEmail(user.email, user.name || 'User', resetToken)
+        console.log(`✅ Password reset email function completed for: ${user.email}`)
         
         // Log password reset request
         const userAgent = request.headers.get('user-agent') || null
@@ -66,12 +72,17 @@ export async function POST(request: NextRequest) {
           ipAddress: ip,
           userAgent,
           success: true,
-          details: { action: "password_reset_request" },
+          details: { 
+            action: "password_reset_request",
+            isOAuthOnly: isOAuthOnly,
+          },
         })
       } catch (emailError) {
-        console.error("Failed to send password reset email:", emailError)
+        console.error("❌ Failed to send password reset email:", emailError)
         // Don't reveal email sending failure to user
       }
+    } else {
+      console.log(`ℹ️ No user found with email: ${email}`)
     }
 
     // Always return success message (to prevent account enumeration)

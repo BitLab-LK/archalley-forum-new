@@ -4,16 +4,34 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect, useRef } from "react"
+import { useSession } from "next-auth/react"
 import { event } from "@/lib/google-analytics"
+import BriefDownloadPopup from "@/components/brief-download-popup"
 
 export default function CompetitionPageClient() {
+  const { data: session } = useSession()
   const [isSticky, setIsSticky] = useState(false)
   const [navHeight, setNavHeight] = useState(0)
   const navRef = useRef<HTMLElement>(null)
   const [timelineProgress, setTimelineProgress] = useState(0)
   const [activePopup, setActivePopup] = useState<string | null>(null)
   const [activeMobileTab, setActiveMobileTab] = useState('challenge')
+  const [briefDownloadOpen, setBriefDownloadOpen] = useState(false)
   const scrollPositionRef = useRef(0)
+
+  // Check if we're in the voting period
+  const votingStartDate = new Date('2025-12-25T00:00:00')
+  const votingEndDate = new Date('2026-01-04T23:59:59')
+  const currentDate = new Date()
+  
+  const isVotingPeriod = currentDate >= votingStartDate && currentDate <= votingEndDate
+  
+  // Check if user is admin or superadmin
+  const userRole = session?.user?.role as string
+  const isAdminOrSuperAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN'
+  
+  // Show vote button during voting period OR if user is admin/superadmin
+  const isVotingOpen = isVotingPeriod || isAdminOrSuperAdmin
 
   // Function to handle tab change and scroll to respective section
   const handleTabChange = (tab: string) => {
@@ -43,7 +61,7 @@ export default function CompetitionPageClient() {
   useEffect(() => {
     const calculateProgress = () => {
       const startDate = new Date('2025-11-11').getTime()
-      const endDate = new Date('2025-12-24').getTime()
+      const endDate = new Date('2026-01-04').getTime()
       const currentDate = new Date().getTime()
       
       const totalDuration = endDate - startDate
@@ -168,9 +186,10 @@ export default function CompetitionPageClient() {
     { href: '#theme', label: 'Theme' },
     { href: '#submission-categories', label: 'Categories' },
     { href: '#awards', label: 'Awards' },
-    { href: '#how-to-join', label: 'How to Join' },
-    { href: '#timeline', label: 'Timeline' },
     { href: '#jury-panel', label: 'Jury' },
+    { href: '#timeline', label: 'Timeline' },
+    { href: '#registration', label: 'Registration' },
+    { href: '#how-to-join', label: 'How to Join' },
   ]
 
   return (
@@ -272,7 +291,7 @@ export default function CompetitionPageClient() {
                       </p>
                     </div>
                     <div className="absolute right-0 text-right">
-                      <p className="text-[10px] md:text-sm text-gray-400">Dec 24</p>
+                      <p className="text-[10px] md:text-sm text-gray-400">Jan 04</p>
                     </div>
                     <div style={{ height: '20px' }}></div>
                   </div>
@@ -292,25 +311,22 @@ export default function CompetitionPageClient() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mt-16 md:mt-8">
-              <Button
-                asChild
-                className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
-              >
-                <Link href="/events/archalley-competition-2025/register">
-                  Register Now
-                </Link>
-              </Button>
-              <Button
-                asChild
-                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
-              >
-                <a 
-                  href="/downloads/Christmas Tree Competition 2025 - Brief.pdf"
-                  download="Christmas Tree Competition 2025 - Brief.pdf"
+              <div className="flex flex-col sm:flex-row gap-2.5 items-center justify-center mt-12 md:mt-8 mb-24 md:mb-0">
+              {isVotingOpen && (
+                <Button
+                  asChild
+                  className="bg-purple-500 hover:bg-purple-600 text-white px-5 py-2.5 text-sm md:text-base w-40 md:w-auto rounded-none"
                 >
-                  Download Brief
-                </a>
+                  <Link href="/competitions/archalley-competition-2025/entries">
+                    Vote Now
+                  </Link>
+                </Button>
+              )}
+              <Button
+                onClick={() => setBriefDownloadOpen(true)}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 text-sm md:text-base w-40 md:w-auto rounded-none"
+              >
+                Download Brief
               </Button>
               </div>
             </div>
@@ -346,7 +362,7 @@ export default function CompetitionPageClient() {
       </div>
 
       {/* Mobile Tabs - Only visible on mobile */}
-      <div className="md:hidden bg-slate-900 sticky top-0 z-40 border-b border-gray-600">
+      <div className="md:hidden bg-slate-900 sticky top-0 z-40 border-b border-gray-600 mt-20">
         <div className="flex">
           <button
             onClick={() => handleTabChange('challenge')}
@@ -438,24 +454,21 @@ export default function CompetitionPageClient() {
             
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
+              {isVotingOpen && (
+                <Button
+                  asChild
+                  className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+                >
+                  <Link href="/competitions/archalley-competition-2025/entries">
+                    Vote Now
+                  </Link>
+                </Button>
+              )}
               <Button
-                asChild
-                className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
-              >
-                <Link href="/events/archalley-competition-2025/register">
-                  Register Now
-                </Link>
-              </Button>
-              <Button
-                asChild
+                onClick={() => setBriefDownloadOpen(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
               >
-                <a 
-                  href="/downloads/Christmas Tree Competition 2025 - Brief.pdf"
-                  download="Christmas Tree Competition 2025 - Brief.pdf"
-                >
-                  Download Brief
-                </a>
+                Download Brief
               </Button>
             </div>
           </div>
@@ -730,24 +743,21 @@ export default function CompetitionPageClient() {
             
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
+              {isVotingOpen && (
+                <Button
+                  asChild
+                  className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+                >
+                  <Link href="/competitions/archalley-competition-2025/entries">
+                    Vote Now
+                  </Link>
+                </Button>
+              )}
               <Button
-                asChild
-                className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
-              >
-                <Link href="/events/archalley-competition-2025/register">
-                  Register Now
-                </Link>
-              </Button>
-              <Button
-                asChild
+                onClick={() => setBriefDownloadOpen(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
               >
-                <a 
-                  href="/downloads/Christmas Tree Competition 2025 - Brief.pdf"
-                  download="Christmas Tree Competition 2025 - Brief.pdf"
-                >
-                  Download Brief
-                </a>
+                Download Brief
               </Button>
             </div>
           </div>
@@ -844,14 +854,16 @@ export default function CompetitionPageClient() {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mt-24 md:mt-12">
-            <Button
-              asChild
-              className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
-            >
-              <Link href="/events/archalley-competition-2025/register">
-                Register Now
-              </Link>
-            </Button>
+            {isVotingOpen && (
+              <Button
+                asChild
+                className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+              >
+                <Link href="/competitions/archalley-competition-2025/entries">
+                  Vote Now
+                </Link>
+              </Button>
+            )}
             <Button
               asChild
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
@@ -1042,6 +1054,97 @@ export default function CompetitionPageClient() {
         </div>
       </section>
 
+      {/* Registration Pricing Section */}
+      <section className="relative py-12 md:py-16 px-4 md:px-6 lg:px-8 z-20">
+        <div className="max-w-4xl mx-auto relative">
+          <h2 id="registration" className="text-3xl md:text-4xl font-bold text-white mb-12 uppercase tracking-wide text-center scroll-mt-20">
+            <a href="#registration">REGISTRATION</a>
+          </h2>
+          
+          <div className="space-y-8 text-white">
+            {/* Early Bird Registration */}
+            <div>
+              <h3 className="text-lg md:text-xl font-bold mb-3">
+                Earlybird Registration - <span className="font-normal">11<sup>th</sup> November-20<sup>th</sup> November</span>
+              </h3>
+              <div className="space-y-2 ml-0">
+                <div className="flex justify-between">
+                  <span>Single Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;2,000</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Group Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;4,000</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Standard Registration */}
+            <div>
+              <h3 className="text-lg md:text-xl font-bold mb-3">
+                Standard Registration - <span className="font-normal">21<sup>st</sup> November-20<sup>th</sup> December</span>
+              </h3>
+              <div className="space-y-2 ml-0">
+                <div className="flex justify-between">
+                  <span>Student Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;2,000</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Single Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;3,000</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Group Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;5,000</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Late Registration */}
+            <div>
+              <h3 className="text-lg md:text-xl font-bold mb-3">
+                Late Registration - <span className="font-normal">21<sup>st</sup> December-24th December</span>
+              </h3>
+              <div className="space-y-2 ml-0">
+                <div className="flex justify-between">
+                  <span>Student Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;2,000</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Single Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;5,000</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Group Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;8,000</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Kids' Tree Category */}
+            <div>
+              <h3 className="text-lg md:text-xl font-bold mb-3">
+                Kids&apos; Tree Category Registration - <span className="font-normal">11<sup>th</sup> November to 21<sup>st</sup> December</span>
+              </h3>
+              <div className="space-y-2 ml-0">
+                <div className="flex justify-between">
+                  <span>Single Entry</span>
+                  <span className="whitespace-nowrap">-&nbsp;&nbsp;2,000</span>
+                </div>
+                <p className="text-sm italic pt-1">*Only single entries are allowed in kids&apos; category.</p>
+              </div>
+            </div>
+
+            {/* Foreign Participants Note */}
+            <div className="pt-4">
+              <p className="text-sm md:text-base italic">
+                * Registration fee for foreign participants will be converted to USD according to current Central Bank exchange rate.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* How to Join the Challenge */}
       <section className="relative pt-12 md:pt-12 pb-12 md:pb-12 px-4 md:px-6 lg:px-8 bg-slate-800/50 z-20">
         <div className="max-w-7xl mx-auto relative">
@@ -1095,7 +1198,7 @@ export default function CompetitionPageClient() {
                 05. Submission
               </h3>
               <ul className="list-disc list-inside ml-4 space-y-2">
-                <li className="text-base leading-[20px]">Kids' Tree Category - From 11th to 21st December 2025</li>
+                <li className="text-base leading-[20px]">Kids' Tree Category - From 11th to 24th December 2025</li>
                 <li className="text-base leading-[20px]">Physical Tree Category & Digital Tree Category - From 11th to 24th December 2025</li>
               </ul>
               </div>
@@ -1282,14 +1385,16 @@ export default function CompetitionPageClient() {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-            <Button
-              asChild
-              className="bg-red-500 hover:bg-red-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
-            >
-              <Link href="/events/archalley-competition-2025/register">
-                Register Now
-              </Link>
-            </Button>
+            {isVotingOpen && (
+              <Button
+                asChild
+                className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
+              >
+                <Link href="/competitions/archalley-competition-2025/entries">
+                  Vote Now
+                </Link>
+              </Button>
+            )}
             <Button
               asChild
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
@@ -1307,6 +1412,9 @@ export default function CompetitionPageClient() {
           </div>
         </div>
       </div>
+
+      {/* Brief Download Popup */}
+      <BriefDownloadPopup open={briefDownloadOpen} onOpenChange={setBriefDownloadOpen} />
     </div>
   )
 }

@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Users, MessageSquare, TrendingUp, Eye, EyeOff, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal, RefreshCw, Clock, BarChart, MailCheck, MailX } from "lucide-react"
+import { Users, MessageSquare, TrendingUp, Eye, EyeOff, Edit, Trash2, Save, Tag, Flag, Pin, Lock, Search, Filter, MoreHorizontal, RefreshCw, Clock, BarChart, MailCheck, MailX, Download } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useSocket } from "@/lib/socket-context"
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog"
@@ -24,6 +24,8 @@ import { getRolePermissions, getAvailableTabs, getDefaultTab, getRoleInfo, type 
 import AdsManagementSection from "@/components/ads-management-section"
 import CompetitionsManagementSection from "@/components/competitions-management-section"
 import SubmissionsManagementSection from "@/components/submissions-management-section"
+import BriefDownloadsManagementSection from "@/components/brief-downloads-management-section"
+import JuryManagementSection from "@/components/jury-management-section"
 
 interface DashboardStats {
   totalUsers: number
@@ -184,6 +186,7 @@ function AdminDashboardContent() {
   const [isSaving, setIsSaving] = useState(false)
   const [loadingUsers, setLoadingUsers] = useState<Set<string>>(new Set())
   const [statsRefreshing, setStatsRefreshing] = useState(false)
+  const [exportingUsers, setExportingUsers] = useState(false)
   
   // Post moderation states
   const [moderatingPosts, setModeratingPosts] = useState<Set<string>>(new Set())
@@ -919,6 +922,54 @@ function AdminDashboardContent() {
     }
   }
 
+  const handleExportUsers = async () => {
+    if (exportingUsers) {
+      return
+    }
+
+    setExportingUsers(true)
+
+    try {
+      const response = await fetch("/api/admin/users/export")
+      
+      if (!response.ok) {
+        const errorData = await response.text()
+        throw new Error(`Failed to export users: ${response.status} ${errorData}`)
+      }
+
+      // Get the CSV content
+      const csvContent = await response.text()
+      
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get("Content-Disposition")
+      let filename = `users-export-${new Date().toISOString().split("T")[0]}.csv`
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/)
+        if (filenameMatch) {
+          filename = filenameMatch[1]
+        }
+      }
+
+      // Create a blob and download it
+      const blob = new Blob([csvContent], { type: "text/csv" })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      toast.success("Users exported successfully")
+    } catch (error) {
+      console.error("Error exporting users:", error)
+      toast.error(error instanceof Error ? error.message : "Failed to export users")
+    } finally {
+      setExportingUsers(false)
+    }
+  }
+
   // Category management handlers
   const handleCategoryCreate = () => {
     setEditingCategory(null)
@@ -1423,6 +1474,12 @@ function AdminDashboardContent() {
             {availableTabs.includes('pages') && (
               <TabsTrigger value="pages" className="text-sm font-medium">Pages</TabsTrigger>
             )}
+            {availableTabs.includes('brief-downloads') && (
+              <TabsTrigger value="brief-downloads" className="text-sm font-medium">Brief Downloads</TabsTrigger>
+            )}
+            {(authenticatedUser?.role === 'ADMIN' || authenticatedUser?.role === 'SUPER_ADMIN') && (
+              <TabsTrigger value="jury" className="text-sm font-medium">Jury Management</TabsTrigger>
+            )}
           </TabsList>
 
           {/* Statistics Tab */}
@@ -1742,13 +1799,31 @@ function AdminDashboardContent() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center gap-4">
                     <Input 
                       placeholder="Search users by name, email, or role..." 
                       className="max-w-sm" 
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
+                    <Button
+                      onClick={handleExportUsers}
+                      disabled={exportingUsers}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      {exportingUsers ? (
+                        <>
+                          <div className="w-4 h-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"></div>
+                          Exporting...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4" />
+                          Export CSV
+                        </>
+                      )}
+                    </Button>
                     {searchTerm && (
                       <div className="text-sm text-gray-500">
                         {filteredUsers.length} result{filteredUsers.length !== 1 ? 's' : ''} on this page
@@ -2778,6 +2853,20 @@ function AdminDashboardContent() {
           {permissions.canViewAds && (
             <TabsContent value="ads" className="space-y-6">
               <AdsManagementSection userPermissions={permissions} />
+            </TabsContent>
+          )}
+
+          {/* Brief Downloads Tab */}
+          {permissions.canViewBriefDownloads && (
+            <TabsContent value="brief-downloads" className="space-y-6">
+              <BriefDownloadsManagementSection />
+            </TabsContent>
+          )}
+
+          {/* Jury Management Tab */}
+          {(authenticatedUser?.role === 'ADMIN' || authenticatedUser?.role === 'SUPER_ADMIN') && (
+            <TabsContent value="jury" className="space-y-6">
+              <JuryManagementSection />
             </TabsContent>
           )}
         </Tabs>

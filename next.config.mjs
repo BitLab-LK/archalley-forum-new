@@ -18,8 +18,8 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com https://vercel.live https://www.payhere.lk https://sandbox.payhere.lk",
-              "script-src-elem 'self' 'unsafe-inline' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com https://vercel.live https://www.payhere.lk https://sandbox.payhere.lk",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com https://vercel.live https://www.payhere.lk https://sandbox.payhere.lk https://www.clarity.ms",
+              "script-src-elem 'self' 'unsafe-inline' https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com https://vercel.live https://www.payhere.lk https://sandbox.payhere.lk https://www.clarity.ms",
               "style-src 'self' 'unsafe-inline' https://cdn.lineicons.com",
               "img-src 'self' data: https: https://sandbox.payhere.lk",
               "font-src 'self' data: https://cdn.lineicons.com",
@@ -110,6 +110,12 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'placehold.co',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'archalley.blob.core.windows.net',
         port: '',
         pathname: '/**',
       }

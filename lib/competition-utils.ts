@@ -505,10 +505,44 @@ export function getDaysRemaining(deadline: Date): number {
 
 /**
  * Registration period types
- * Note: KIDS is NOT a period - it's a registration type that's available Nov 21-Dec 21
+ * Note: KIDS is NOT a period - it's a registration type that's available Nov 11-Dec 24
  * During that time, kids use their own pricing, but other types use STANDARD/LATE pricing
  */
 export type RegistrationPeriod = 'EARLY_BIRD' | 'STANDARD' | 'LATE';
+
+/**
+ * Get date components in Sri Lanka timezone (Asia/Colombo)
+ * Returns year, month, day as they appear in Sri Lanka timezone
+ */
+function getDateComponentsInSriLanka(date: Date): { year: number; month: number; day: number } {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Colombo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  
+  const parts = formatter.formatToParts(date);
+  const year = parseInt(parts.find(p => p.type === 'year')?.value || '0', 10);
+  const month = parseInt(parts.find(p => p.type === 'month')?.value || '0', 10);
+  const day = parseInt(parts.find(p => p.type === 'day')?.value || '0', 10);
+  
+  return { year, month, day };
+}
+
+/**
+ * Compare two dates by their date components in Sri Lanka timezone
+ * Returns: -1 if date1 < date2, 0 if equal, 1 if date1 > date2
+ */
+function compareDatesInSriLanka(date1: Date, date2: Date): number {
+  const d1 = getDateComponentsInSriLanka(date1);
+  const d2 = getDateComponentsInSriLanka(date2);
+  
+  if (d1.year !== d2.year) return d1.year < d2.year ? -1 : 1;
+  if (d1.month !== d2.month) return d1.month < d2.month ? -1 : 1;
+  if (d1.day !== d2.day) return d1.day < d2.day ? -1 : 1;
+  return 0;
+}
 
 /**
  * Determine the current registration period based on dates
@@ -520,7 +554,7 @@ export type RegistrationPeriod = 'EARLY_BIRD' | 'STANDARD' | 'LATE';
  * 3. Standard: Nov 21-Dec 20
  * 4. Default: STANDARD (fallback)
  * 
- * Note: Kids category (Nov 21-Dec 21) is a separate registration type, not a period.
+ * Note: Kids category (Nov 11-Dec 24) is a separate registration type, not a period.
  * Kids pricing is always 2000 regardless of period.
  */
 export function getRegistrationPeriod(
@@ -534,36 +568,19 @@ export function getRegistrationPeriod(
   _kidsEnd: Date    // Kept for backward compatibility but not used
 ): RegistrationPeriod {
   const now = getCurrentDateInSriLanka();
-  const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
-  // Helper to compare dates (only year, month, day)
-  const compareDate = (date: Date): Date => {
-    const d = new Date(date);
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  };
-  
-  const earlyBirdStartDate = compareDate(earlyBirdStart);
-  const earlyBirdEndDate = compareDate(earlyBirdEnd);
-  const standardStartDate = compareDate(standardStart);
-  const standardEndDate = compareDate(standardEnd);
-  const lateStartDate = compareDate(lateStart);
-  const lateEndDate = compareDate(lateEnd);
-  // Kids dates are tracked but don't define a period
-  // const kidsStartDate = compareDate(kidsStart);
-  // const kidsEndDate = compareDate(kidsEnd);
   
   // Check if we're in early bird period (Nov 11-20)
-  if (currentDate >= earlyBirdStartDate && currentDate <= earlyBirdEndDate) {
+  if (compareDatesInSriLanka(now, earlyBirdStart) >= 0 && compareDatesInSriLanka(now, earlyBirdEnd) <= 0) {
     return 'EARLY_BIRD';
   }
   
   // Check if we're in late period (Dec 21-24)
-  if (currentDate >= lateStartDate && currentDate <= lateEndDate) {
+  if (compareDatesInSriLanka(now, lateStart) >= 0 && compareDatesInSriLanka(now, lateEnd) <= 0) {
     return 'LATE';
   }
   
   // Check if we're in standard period (Nov 21-Dec 20)
-  if (currentDate >= standardStartDate && currentDate <= standardEndDate) {
+  if (compareDatesInSriLanka(now, standardStart) >= 0 && compareDatesInSriLanka(now, standardEnd) <= 0) {
     return 'STANDARD';
   }
   
@@ -577,7 +594,7 @@ export function getRegistrationPeriod(
  * - Early Bird (Nov 11-20): Single Entry 2,000, Group Entry 4,000
  * - Standard (Nov 21-Dec 20): Student Entry 2,000, Single Entry 3,000, Group Entry 5,000
  * - Late (Dec 21-24): Student Entry 2,000, Single Entry 5,000, Group Entry 8,000
- * - Kids' Tree Category (Nov 11-Dec 21): Single Entry 2,000 (always)
+ * - Kids' Tree Category (Nov 11-Dec 24): Single Entry 2,000 (always)
  */
 export function calculateRegistrationPrice(
   registrationType: 'INDIVIDUAL' | 'TEAM' | 'COMPANY' | 'STUDENT' | 'KIDS',

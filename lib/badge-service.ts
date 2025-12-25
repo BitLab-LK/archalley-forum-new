@@ -1,6 +1,5 @@
-import { PrismaClient, BadgeType, BadgeLevel } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { BadgeType, BadgeLevel } from '@prisma/client'
+import { prisma } from './prisma'
 
 export interface BadgeEligibilityStats {
   postsCount: number

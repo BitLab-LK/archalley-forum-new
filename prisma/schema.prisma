@@ -353,6 +353,15 @@ model users {
   competitionRegistrations CompetitionRegistration[]
   competitionPayments      CompetitionPayment[]
   
+  // Brief download relations
+  briefDownloadRequests    BriefDownloadRequest[]
+  
+  // Voting relations
+  submissionVotes          SubmissionVote[]     @relation("SubmissionVotes")
+  
+  // Jury relations (user can be a jury member)
+  juryMember               JuryMember?          @relation("JuryMemberUser")
+  
   // Performance and security indexes
   @@index([email])
   @@index([role])
@@ -1007,7 +1016,7 @@ model CompetitionSubmission {
   
   // References to existing data (READ-ONLY, no Prisma relations to avoid constraints)
   registrationId        String   // Links to CompetitionRegistration.id
-  registrationNumber    String?  // Denormalized for easy lookup (e.g., "QZ8T4L") - Optional for backward compatibility
+  registrationNumber    String   @unique // Public identifier (e.g., "QZ8T4L") - Used in URLs and voting
   userId                String   // Links to users.id
   competitionId         String   // Links to Competition.id
   
@@ -1042,24 +1051,15 @@ model CompetitionSubmission {
   // Public Display
   isPublished           Boolean  @default(false)
   publishedAt           DateTime?
-  viewCount             Int      @default(0)
-  
-  // Voting
-  voteCount             Int      @default(0)
-  
-  // Judging & Awards
-  judgeScores           Json?    // Array of {judgeId, score, comments}
-  finalScore            Float?
-  rank                  Int?
-  award                 String?  // "FIRST_PRIZE", "SECOND_PRIZE", etc.
-  certificateUrl        String?
   
   // Timestamps
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   
+  juryScores            JuryScore[]          @relation("JuryScores")
   // Relations (new tables only)
   votes                 SubmissionVote[]
+  votingStats           SubmissionVotingStats?
   
   @@index([registrationId])
   @@index([registrationNumber])
@@ -1086,22 +1086,216 @@ enum CompetitionSubmissionStatus {
   WITHDRAWN          // User withdrew
 }
 
-// Voting System
+// Unified Voting System (Public Votes + Jury Scores)
 model SubmissionVote {
-  id                String   @id @default(cuid())
-  submissionId      String
-  submission        CompetitionSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  id                 String   @id @default(cuid())
+  registrationNumber String
+  userId             String
   
-  userId            String?  // Null for guest votes
-  ipAddress         String   // Track IP for duplicate prevention
-  userAgent         String?
-  sessionId         String?  // For guest vote tracking
+  // Vote Type
+  voteType           SubmissionVoteType @default(PUBLIC) // PUBLIC or JURY
   
-  createdAt         DateTime @default(now())
+  // Jury Scoring (only for JURY votes)
+  score              Float?   // Jury score (e.g., 1-10)
+  comments           String?  @db.Text
+  scoringCriteria    Json?    // Detailed breakdown {creativity: 8, technical: 9, etc.}
   
-  @@unique([submissionId, userId])
-  @@unique([submissionId, ipAddress])
-  @@index([submissionId])
+  // Timestamps
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt @default(now())
+  
+  // Relations
+  submission         CompetitionSubmission @relation(fields: [registrationNumber], references: [registrationNumber], onDelete: Cascade)
+  user               users    @relation("SubmissionVotes", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([registrationNumber, userId]) // One vote per user per entry (public OR jury)
+  @@index([registrationNumber])
   @@index([userId])
-  @@index([ipAddress])
+  @@index([voteType])
+  @@index([registrationNumber, voteType])
+  @@index([createdAt])
+}
+
+// Voting Statistics (Cached Aggregates)
+model SubmissionVotingStats {
+  id                 String   @id @default(cuid())
+  registrationNumber String   @unique
+  
+  // Public Voting Metrics
+  publicVoteCount    Int      @default(0)
+  
+  // Jury Scoring Metrics
+  juryVoteCount      Int      @default(0)
+  juryScoreTotal     Float    @default(0)
+  juryScoreAverage   Float?   // Calculated average
+  
+  // Engagement Metrics
+  viewCount          Int      @default(0)
+  shareCount         Int      @default(0)
+  
+  // Rankings (Computed Periodically)
+  publicRank         Int?     // Based on public votes
+  juryRank           Int?     // Based on jury average score
+  overallRank        Int?     // Combined ranking
+  categoryRank       Int?     // Rank within category
+  
+  // Awards
+  award              String?  // "FIRST_PRIZE", "SECOND_PRIZE", etc.
+  certificateUrl     String?
+  
+  // Tracking
+  firstVoteAt        DateTime?
+  lastVotedAt        DateTime?
+  
+  // Timestamps
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  
+  // Relations
+  submission         CompetitionSubmission @relation(fields: [registrationNumber], references: [registrationNumber], onDelete: Cascade)
+  
+  @@index([publicVoteCount])
+  @@index([juryScoreAverage])
+  @@index([overallRank])
+  @@index([registrationNumber, publicVoteCount])
+}
+
+enum SubmissionVoteType {
+  PUBLIC  // Regular user vote
+  JURY    // Judge/Jury score
+}
+
+// ============================================
+// BRIEF DOWNLOAD SYSTEM
+// ============================================
+
+model BriefDownloadRequest {
+  id              String   @id @default(cuid())
+  email           String
+  token           String   @unique // Unique token for download link
+  userId          String?  // Optional: linked user ID if logged in
+  user            users?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  // Tracking
+  accessCount     Int      @default(0) // Number of times link was accessed
+  downloadCount   Int      @default(0) // Number of times file was downloaded
+  lastAccessedAt  DateTime?
+  firstRequestedAt DateTime @default(now())
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([email])
+  @@index([token])
+  @@index([userId])
+  @@unique([email]) // One token per email (reuse existing token)
+}
+
+// ============================================
+// JURY MANAGEMENT SYSTEM
+// ============================================
+
+// Jury Member Management (linked to existing users)
+model JuryMember {
+  id               String   @id @default(cuid())
+  userId           String   @unique  // Links to existing users table - ONE USER CAN BE ONE JURY
+  
+  // Jury Profile (added by admin)
+  title            String   // e.g., "Principal Architect", "Design Director"
+  
+  // Status
+  isActive         Boolean  @default(true)
+  
+  // Assignment (optional - for multi-competition support)
+  competitionId    String?  // Links to Competition.id (null = all competitions)
+  
+  // Metadata
+  assignedAt       DateTime @default(now())
+  assignedBy       String   // Admin user ID who added them
+  
+  // Timestamps
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  // Relations
+  user             users    @relation("JuryMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  scores           JuryScore[]
+  progress         JuryScoringProgress?
+  
+  @@index([userId])
+  @@index([isActive])
+  @@index([competitionId])
+  @@index([userId, isActive])
+}
+
+// Jury Scoring Records (complete marking scheme as per official criteria)
+model JuryScore {
+  id                   String   @id @default(cuid())
+  
+  // Core References
+  juryMemberId         String
+  registrationNumber   String   // Links to CompetitionSubmission
+  
+  // 1. CONCEPT (10% = 10 marks)
+  conceptScore         Float    // 0-10: Concept strongness & its depth
+  
+  // 2. RELEVANCE TO COMPETITION THEME (15% = 15 marks)
+  relevanceScore       Float    // 0-15: Futuristic approach/concept/look
+  
+  // 3. DESIGN & AESTHETICS (60% = 60 marks)
+  compositionScore     Float    // 0-10: Composition
+  balanceScore         Float    // 0-10: Balance
+  colourScore          Float    // 0-10: Colour/Colours
+  designRelativityScore Float   // 0-10: Design Relativity to their concept
+  aestheticAppealScore Float    // 0-20: Aesthetic appeal
+  
+  // 4. INNOVATIVE USAGE OF MATERIALS (15% = 15 marks)
+  unconventionalMaterialsScore Float  // 0-10: Usage of unconventional materials
+  overallMaterialScore Float   // 0-5: Overall material usage
+  
+  // Calculated Total (sum of all scores)
+  totalScore           Float    // 0-100 maximum (auto-calculated)
+  
+  // Optional Comments
+  comments             String?  @db.Text  // General feedback (optional)
+  
+  // Timestamps
+  createdAt            DateTime @default(now())
+  submittedAt          DateTime @default(now())
+  
+  // Relations
+  juryMember           JuryMember @relation(fields: [juryMemberId], references: [id], onDelete: Cascade)
+  submission           CompetitionSubmission @relation("JuryScores", fields: [registrationNumber], references: [registrationNumber], onDelete: Cascade)
+  
+  @@unique([juryMemberId, registrationNumber]) // One score per jury per submission
+  @@index([juryMemberId])
+  @@index([registrationNumber])
+  @@index([submittedAt])
+  @@index([juryMemberId, submittedAt])
+}
+
+// Scoring Progress Tracking (for admin dashboard monitoring)
+model JuryScoringProgress {
+  id                    String   @id @default(cuid())
+  juryMemberId          String   @unique
+  
+  // Progress Metrics
+  totalAssignedEntries  Int      @default(0)
+  submittedScores       Int      @default(0)
+  completionPercentage  Float    @default(0)
+  
+  // Scoring Statistics
+  averageScoreGiven     Float?   // Average total score this jury gives
+  lastScoredAt          DateTime?
+  
+  // Timestamps
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  // Relations
+  juryMember            JuryMember @relation(fields: [juryMemberId], references: [id], onDelete: Cascade)
+  
+  @@index([completionPercentage])
+  @@index([lastScoredAt])
 }

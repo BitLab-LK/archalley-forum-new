@@ -77,19 +77,25 @@ export default async function RegistrationPage({ params }: PageProps) {
   const startDateStr = getUTCDateString(startDate);
   const deadlineDateStr = getUTCDateString(deadline);
   
+  // Check if user is admin or superadmin
+  const userRole = session.user.role as string;
+  const isAdminOrSuperAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+  
   // Compare date strings (registration starts at the beginning of the start date)
   const hasStarted = nowDateStr >= startDateStr;
   // Registration ends at the end of the deadline date, so we check if now is after the deadline
   const hasEnded = nowDateStr > deadlineDateStr;
   
   // Registration is open if: status is REGISTRATION_OPEN, has started, and hasn't ended
+  // OR if user is admin/superadmin (they can always access)
   const isOpen = 
-    competition.status === 'REGISTRATION_OPEN' &&
+    isAdminOrSuperAdmin ||
+    (competition.status === 'REGISTRATION_OPEN' &&
     hasStarted &&
-    !hasEnded;
+    !hasEnded);
   
-  // Registration hasn't started if current time is before start date
-  const hasNotStarted = !hasStarted;
+  // Registration hasn't started if current time is before start date (unless admin)
+  const hasNotStarted = !isAdminOrSuperAdmin && !hasStarted;
 
   // Fetch user profile data for auto-filling registration form
   const userProfile = await prisma.users.findUnique({
