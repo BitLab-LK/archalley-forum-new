@@ -262,8 +262,8 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
     try {
       setUploading(true);
 
-      if (fileType === 'photo' && files.length > 1) {
-        // Multiple photos - check if adding new files would exceed max
+      if (fileType === 'photo') {
+        // Additional photos - can be single or multiple, check if adding new files would exceed max
         const currentCount = existingUrls?.length || 0;
         const maxAllowed = maxFiles || 4;
         const availableSlots = maxAllowed - currentCount;
