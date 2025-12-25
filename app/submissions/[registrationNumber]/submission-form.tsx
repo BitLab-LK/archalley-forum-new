@@ -339,7 +339,7 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
         }
       } else {
         // Single file - check if one already exists
-        if (existingUrl && fileType !== 'photo') {
+        if (existingUrl) {
           // For single file types (key-photo, document, video), replace existing
           await deleteFile(existingUrl);
         }
