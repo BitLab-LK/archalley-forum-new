@@ -29,8 +29,8 @@ function getSubmissionPeriodStatus(): 'not_started' | 'active' | 'ended' {
   // Start: December 11, 2025, 00:00:00 (Sri Lanka timezone UTC+5:30)
   const startDate = new Date('2025-12-11T00:00:00+05:30');
   
-  // End: December 24, 2025, 23:59:59 (latest deadline for non-kids categories)
-  const endDate = new Date('2025-12-24T23:59:59+05:30');
+  // End: December 25, 2025, 23:59:59 IST (deadline for all categories)
+  const endDate = new Date('2025-12-25T23:59:59+05:30');
   
   if (now < startDate) {
     return 'not_started';

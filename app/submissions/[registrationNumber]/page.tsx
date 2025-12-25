@@ -54,12 +54,17 @@ export default async function CreateSubmissionPage({
     },
   });
 
-  // Check if registration exists and belongs to the user
+  // Check if registration exists
   if (!registration) {
     redirect('/submissions?error=registration_not_found');
   }
 
-  if (registration.userId !== session.user.id) {
+  // Check if user is admin or superadmin
+  const userRole = session.user.role as string;
+  const isAdminOrSuperAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+
+  // Check if registration belongs to the user (unless admin)
+  if (!isAdminOrSuperAdmin && registration.userId !== session.user.id) {
     redirect('/submissions?error=unauthorized');
   }
 

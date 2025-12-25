@@ -51,12 +51,10 @@ export async function canUserSubmit(
   if (!isAdmin) {
     // Check submission period dates
     // Submission starts: 11th December 2025
-    // Kids deadline: 24th December 2025
-    // Other categories deadline: 24th December 2025
+    // Deadline for all categories: 25th December 2025, 23:59:59 IST
     const now = new Date();
     const submissionStartDate = new Date('2025-12-11T00:00:00+05:30');
-    const kidsDeadline = new Date('2025-12-24T23:59:59+05:30');
-    const otherCategoriesDeadline = new Date('2025-12-24T23:59:59+05:30');
+    const submissionDeadline = new Date('2025-12-25T23:59:59+05:30');
     
     // Check if submission period has started
     if (now < submissionStartDate) {
@@ -66,16 +64,11 @@ export async function canUserSubmit(
       };
     }
     
-    // Check category-specific deadline
-    const isKidsCategory = registration.registrationType?.type === 'KIDS';
-    const deadline = isKidsCategory ? kidsDeadline : otherCategoriesDeadline;
-    
-    if (now > deadline) {
-      const categoryName = isKidsCategory ? 'kids' : 'other';
-      const deadlineDate = isKidsCategory ? '24th December 2025' : '24th December 2025';
+    // Check deadline (same for all categories)
+    if (now > submissionDeadline) {
       return {
         canSubmit: false,
-        reason: `Submission deadline for ${categoryName} category has passed (${deadlineDate})`
+        reason: 'Submission deadline has passed'
       };
     }
     
