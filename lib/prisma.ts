@@ -143,3 +143,58 @@ export async function checkDbHealth() {
 
 // Cache the client globally so it persists across hot reloads and lambda invocations.
 globalForPrisma.prisma = prisma
+
+/**
+ * Retry wrapper for Prisma queries to handle connection pool exhaustion
+ * Automatically retries queries that fail due to connection errors (P2037)
+ * 
+ * @param queryFn - Function that returns a Prisma query promise
+ * @param maxRetries - Maximum number of retry attempts (default: 2)
+ * @param retryDelay - Base delay between retries in milliseconds (default: 1000)
+ * @returns The result of the query
+ */
+export async function withRetry<T>(
+  queryFn: () => Promise<T>,
+  maxRetries: number = 2,
+  retryDelay: number = 1000
+): Promise<T> {
+  let lastError: any;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await queryFn();
+    } catch (error: any) {
+      lastError = error;
+      
+      // Check if it's a connection pool exhaustion error
+      // Prisma errors can have the code in different places depending on error type
+      const errorCode = error?.code || error?.errorCode || error?.meta?.code;
+      const errorMessage = error?.message || '';
+      
+      const isConnectionError = 
+        errorCode === 'P2037' ||
+        errorMessage.includes('too many connections') ||
+        errorMessage.includes('connection slots') ||
+        errorMessage.includes('remaining connection slots') ||
+        errorMessage.includes('Too many database connections opened');
+      
+      // Only retry on connection errors and if we have retries left
+      if (isConnectionError && attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s...
+        const delay = retryDelay * Math.pow(2, attempt);
+        console.warn(`⚠️ Connection pool exhausted (attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${delay}ms...`, {
+          errorCode,
+          errorMessage: errorMessage.substring(0, 200), // Truncate long messages
+        });
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      // If it's not a connection error or we're out of retries, throw
+      throw error;
+    }
+  }
+  
+  // Should never reach here, but TypeScript needs it
+  throw lastError;
+}
