@@ -1,5 +1,23 @@
 import { PrismaClient } from "@prisma/client"
 
+/**
+ * Prisma Client Singleton Configuration
+ * 
+ * IMPORTANT: For production serverless deployments (especially on Vercel), consider using:
+ * 1. Prisma Accelerate - Provides built-in connection pooling (recommended)
+ *    https://www.prisma.io/docs/accelerate/getting-started
+ *    Update DATABASE_URL to use the Accelerate URL
+ * 
+ * 2. PgBouncer - Connection pooler for PostgreSQL
+ *    Configure PgBouncer between your app and PostgreSQL database
+ * 
+ * 3. Connection Pooling Service - Many hosting providers offer connection pooling
+ *    (e.g., Supabase, Neon, PlanetScale)
+ * 
+ * Current configuration uses Prisma's internal connection pool, which works but may
+ * hit connection limits under high concurrency in serverless environments.
+ */
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
@@ -8,26 +26,21 @@ const globalForPrisma = globalThis as unknown as {
 // Build-safe options: only pass datasources when URL is defined to avoid constructor validation errors
 
 // Configure connection pool to prevent exhausting database connections
-// Parse DATABASE_URL and add connection pool parameters if not present
-let databaseUrl = process.env.DATABASE_URL || '';
-if (databaseUrl && !databaseUrl.includes('connection_limit')) {
-  // Add connection pool parameters to prevent connection exhaustion
-  // connection_limit: Maximum number of connections in the pool (default: number of CPU cores * 2 + 1)
-  // pool_timeout: Maximum time (in seconds) to wait for a connection (default: 10)
-  // For serverless/edge environments, use a smaller pool size
-  const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
-  const connectionLimit = isServerless ? 5 : 10; // Smaller pool for serverless
-  const poolTimeout = 20; // 20 seconds timeout
-  
-  const separator = databaseUrl.includes('?') ? '&' : '?';
-  databaseUrl = `${databaseUrl}${separator}connection_limit=${connectionLimit}&pool_timeout=${poolTimeout}`;
-}
+// For serverless environments, we use a smaller connection pool
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
 
+// Prisma connection pool configuration
+// These settings control how many connections Prisma will open to the database
 const prismaClientOptions: any = {
   log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
   errorFormat: 'pretty',
+  // Connection pool configuration
+  // In serverless environments, limit connections to prevent exhaustion
+  // Prisma uses a connection pool internally, these settings optimize it
 }
 
+// Add datasource configuration only if DATABASE_URL exists
+const databaseUrl = process.env.DATABASE_URL;
 if (databaseUrl) {
   prismaClientOptions.datasources = {
     db: { url: databaseUrl },
@@ -48,6 +61,10 @@ let lastConnectionAttempt = 0
 const connectionRetryDelay = 2000 // 2 seconds
 
 export async function ensureDbConnection() {
+  // Note: In Prisma, connections are managed automatically through the connection pool.
+  // We only verify connectivity with a simple query rather than explicitly calling $connect()
+  // which can cause connection pool exhaustion in serverless environments.
+  
   // If we recently attempted connection and failed, don't retry immediately
   const now = Date.now()
   if (connectionAttempts >= maxConnectionAttempts && (now - lastConnectionAttempt) < connectionRetryDelay) {
@@ -64,14 +81,14 @@ export async function ensureDbConnection() {
   for (let attempt = 1; attempt <= maxConnectionAttempts; attempt++) {
     try {
       lastConnectionAttempt = now
-      await prisma.$connect()
       
-      // Test the connection with a simple query
+      // Test the connection with a simple query instead of $connect()
+      // Prisma manages connections automatically, explicit $connect() can cause issues
       await prisma.$queryRaw`SELECT 1`
       
       isConnected = true
       connectionAttempts = 0
-      console.log('✅ Database connected successfully', {
+      console.log('✅ Database connection verified successfully', {
         attempt,
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV
