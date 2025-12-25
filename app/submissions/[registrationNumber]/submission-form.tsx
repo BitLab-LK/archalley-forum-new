@@ -57,6 +57,9 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
   const [documentFileUrl, setDocumentFileUrl] = useState<string | null>(null);
   const [videoFileUrl, setVideoFileUrl] = useState<string | null>(null);
   
+  // Track selected files (before upload) for additional photos
+  const [selectedAdditionalPhotos, setSelectedAdditionalPhotos] = useState<File[]>([]);
+  
   // Track uploading state for each file type
   const [uploadingKeyPhoto, setUploadingKeyPhoto] = useState(false);
   const [uploadingAdditionalPhotos, setUploadingAdditionalPhotos] = useState<boolean[]>([]);
@@ -631,9 +634,14 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
                 multiple
                 maxFiles={4}
                 maxSize={5 * 1024 * 1024}
-                files={[]}
+                files={selectedAdditionalPhotos}
                 onFilesChange={async (files) => {
+                  // Update selected files state immediately to show preview
+                  setSelectedAdditionalPhotos(files);
+                  
                   if (files.length > 0) {
+                    // Upload all files that are selected (they're all new, not yet uploaded)
+                    // Files that are already uploaded are shown separately in existingFileUrls
                     const newUploadingStates = files.map(() => true);
                     setUploadingAdditionalPhotos(newUploadingStates);
                     try {
@@ -647,9 +655,18 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
                         additionalPhotosUrls,
                         4 // maxFiles for additional photos
                       );
+                      // Clear selected files after successful upload
+                      // The uploaded files will now appear in existingFileUrls
+                      setSelectedAdditionalPhotos([]);
+                    } catch (error) {
+                      console.error('Error uploading additional photos:', error);
+                      // Keep files in state if upload failed so user can retry
                     } finally {
                       setUploadingAdditionalPhotos([]);
                     }
+                  } else {
+                    // Clear selected files if array is empty
+                    setSelectedAdditionalPhotos([]);
                   }
                 }}
                 existingFileUrls={additionalPhotosUrls}
