@@ -364,6 +364,7 @@ export default function SubmissionsManagementSection() {
                   <TableHead>User</TableHead>
                   <TableHead>Competition</TableHead>
                   <TableHead>Category</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Submitted</TableHead>
                   <TableHead>Actions</TableHead>
@@ -372,14 +373,14 @@ export default function SubmissionsManagementSection() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
+                    <TableCell colSpan={8} className="text-center py-8">
                       <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
                       Loading submissions...
                     </TableCell>
                   </TableRow>
                 ) : filteredSubmissions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                       No submissions found
                     </TableCell>
                   </TableRow>
@@ -408,6 +409,11 @@ export default function SubmissionsManagementSection() {
                         {submission.registration?.competition.title || 'N/A'}
                       </TableCell>
                       <TableCell>{getCategoryBadge(submission.submissionCategory)}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {submission.registration?.registrationType?.name || 'N/A'}
+                        </Badge>
+                      </TableCell>
                       <TableCell>{getStatusBadge(submission.status)}</TableCell>
                       <TableCell className="text-sm text-gray-600">
                         {submission.submittedAt

@@ -5,13 +5,11 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import { event } from "@/lib/google-analytics"
 import BriefDownloadPopup from "@/components/brief-download-popup"
 
 export default function CompetitionPageClient() {
   const { data: session } = useSession()
-  const router = useRouter()
   const [isSticky, setIsSticky] = useState(false)
   const [navHeight, setNavHeight] = useState(0)
   const navRef = useRef<HTMLElement>(null)
@@ -21,12 +19,15 @@ export default function CompetitionPageClient() {
   const [briefDownloadOpen, setBriefDownloadOpen] = useState(false)
   const scrollPositionRef = useRef(0)
 
-  // Check if submission deadline has passed
-  const submissionDeadline = new Date('2025-12-24T23:59:59')
+  // Check if registration and submission deadlines have passed
+  // IST (UTC+5:30): 2025-12-25T23:59:59 IST = 2025-12-25T18:29:59 UTC
+  const registrationDeadline = new Date('2025-12-25T18:29:59Z') // 2025-12-25T23:59:59 IST
+  const submissionDeadline = new Date('2025-12-25T23:59:59')
   const votingStartDate = new Date('2025-12-25T00:00:00')
   const votingEndDate = new Date('2026-01-04T23:59:59')
   const currentDate = new Date()
   
+  const isRegistrationClosed = currentDate > registrationDeadline
   const isSubmissionClosed = currentDate > submissionDeadline
   const isVotingPeriod = currentDate >= votingStartDate && currentDate <= votingEndDate
   
@@ -36,17 +37,6 @@ export default function CompetitionPageClient() {
   
   // Show vote button during voting period OR if user is admin/superadmin
   const isVotingOpen = isVotingPeriod || isAdminOrSuperAdmin
-
-  // Handle submit button click
-  const handleSubmitClick = () => {
-    if (!session?.user) {
-      // Redirect to login with callback to submissions page
-      router.push('/auth/login?callbackUrl=' + encodeURIComponent('/submissions'))
-    } else {
-      // Redirect to submissions page
-      router.push('/submissions')
-    }
-  }
 
   // Function to handle tab change and scroll to respective section
   const handleTabChange = (tab: string) => {
@@ -76,7 +66,7 @@ export default function CompetitionPageClient() {
   useEffect(() => {
     const calculateProgress = () => {
       const startDate = new Date('2025-11-11').getTime()
-      const endDate = new Date('2025-12-24').getTime()
+      const endDate = new Date('2026-01-04').getTime()
       const currentDate = new Date().getTime()
       
       const totalDuration = endDate - startDate
@@ -306,7 +296,7 @@ export default function CompetitionPageClient() {
                       </p>
                     </div>
                     <div className="absolute right-0 text-right">
-                      <p className="text-[10px] md:text-sm text-gray-400">Dec 24</p>
+                      <p className="text-[10px] md:text-sm text-gray-400">Jan 04</p>
                     </div>
                     <div style={{ height: '20px' }}></div>
                   </div>
@@ -343,14 +333,6 @@ export default function CompetitionPageClient() {
               >
                 Download Brief
               </Button>
-              {!isSubmissionClosed && (
-                <Button
-                  onClick={handleSubmitClick}
-                  className="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 text-sm md:text-base w-40 md:w-auto rounded-none"
-                >
-                  Submit
-                </Button>
-              )}
               </div>
             </div>
           </div>
@@ -1429,14 +1411,6 @@ export default function CompetitionPageClient() {
                 Download Brief
               </a>
             </Button>
-            {!isSubmissionClosed && (
-              <Button
-                onClick={handleSubmitClick}
-                className="bg-green-500 hover:bg-green-600 text-white px-6 py-4 text-sm md:text-base w-40 md:w-auto rounded-none"
-              >
-                Submit
-              </Button>
-            )}
           </div>
         </div>
       </footer>
