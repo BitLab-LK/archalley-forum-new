@@ -19,16 +19,11 @@ export default function CompetitionPageClient() {
   const [briefDownloadOpen, setBriefDownloadOpen] = useState(false)
   const scrollPositionRef = useRef(0)
 
-  // Check if registration and submission deadlines have passed
-  // IST (UTC+5:30): 2025-12-25T23:59:59 IST = 2025-12-25T18:29:59 UTC
-  const registrationDeadline = new Date('2025-12-25T18:29:59Z') // 2025-12-25T23:59:59 IST
-  const submissionDeadline = new Date('2025-12-25T23:59:59')
+  // Check if we're in the voting period
   const votingStartDate = new Date('2025-12-25T00:00:00')
   const votingEndDate = new Date('2026-01-04T23:59:59')
   const currentDate = new Date()
   
-  const isRegistrationClosed = currentDate > registrationDeadline
-  const isSubmissionClosed = currentDate > submissionDeadline
   const isVotingPeriod = currentDate >= votingStartDate && currentDate <= votingEndDate
   
   // Check if user is admin or superadmin
