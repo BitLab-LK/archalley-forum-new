@@ -14,6 +14,7 @@ import { SessionMonitor } from "@/hooks/use-session-monitor"
 import GTMHead from "@/components/gtm-head"
 import GTMBody from "@/components/gtm-body"
 import GoogleAnalytics from "@/components/google-analytics"
+import GoogleOneTap from "@/components/google-one-tap"
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["300", "400", "500", "700"] })
 
@@ -126,6 +127,7 @@ export default function RootLayout({
                 </div>
                 <BadgeNotificationHandler />
                 <Toaster />
+                <GoogleOneTap />
               </div>
             </SessionMonitor>
           </ConfirmDialogProvider>
