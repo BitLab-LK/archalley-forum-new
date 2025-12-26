@@ -172,20 +172,22 @@ export default function GoogleOneTap() {
   }, [session, handleCredentialResponse]);
 
   useEffect(() => {
-    if (isGoogleScriptLoaded && !session && !isInitializedRef.current) {
-      // Add a small delay to ensure the script is fully loaded
-      const timeoutId = setTimeout(() => {
-        initializeGoogleOneTap();
-      }, 100);
-
-      return () => {
-        clearTimeout(timeoutId);
-        if (retryTimeoutRef.current) {
-          clearTimeout(retryTimeoutRef.current);
-          retryTimeoutRef.current = null;
-        }
-      };
+    if (!isGoogleScriptLoaded || session || isInitializedRef.current) {
+      return;
     }
+
+    // Add a small delay to ensure the script is fully loaded
+    const timeoutId = setTimeout(() => {
+      initializeGoogleOneTap();
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+    };
   }, [isGoogleScriptLoaded, session, initializeGoogleOneTap]);
 
   useEffect(() => {
