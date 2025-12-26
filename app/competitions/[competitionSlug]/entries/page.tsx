@@ -48,7 +48,8 @@ export default async function EntriesPage({ params, searchParams }: PageProps) {
   }
 
   const selectedCategory = category === 'DIGITAL' || category === 'PHYSICAL' ? category : undefined;
-  const sortBy = sort === 'newest' ? 'newest' : 'votes';
+  // Default to 'random' on initial page load (when no sort param is provided)
+  const sortBy = sort === 'newest' ? 'newest' : sort === 'votes' ? 'votes' : 'random';
 
   const result = await getPublishedSubmissions(selectedCategory, sortBy, competition.id);
 
@@ -113,6 +114,16 @@ export default async function EntriesPage({ params, searchParams }: PageProps) {
                 <Link
                   href={`/competitions/${competitionSlug}/entries${category ? `?category=${category}` : ''}`}
                   className={`px-4 py-1.5 text-sm font-medium transition-all ${
+                    sortBy === 'random'
+                      ? 'text-gray-900 border-b-2 border-gray-900'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                >
+                  Random
+                </Link>
+                <Link
+                  href={`/competitions/${competitionSlug}/entries?sort=votes${category ? `&category=${category}` : ''}`}
+                  className={`px-4 py-1.5 text-sm font-medium transition-all ${
                     sortBy === 'votes'
                       ? 'text-gray-900 border-b-2 border-gray-900'
                       : 'text-gray-500 hover:text-gray-900'
@@ -153,20 +164,21 @@ export default async function EntriesPage({ params, searchParams }: PageProps) {
           </p>
         </div>
 
-        {/* Entries Grid */}
+        {/* Entries Masonry Gallery */}
         <Suspense fallback={<LoadingGrid />}>
           {result.success && result.submissions && result.submissions.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+            <div className="columns-1 sm:columns-2 lg:columns-3 gap-8 mb-16 [column-gap:2rem]">
               {result.submissions.map((submission) => (
-                <EntryCard
-                  key={submission.registrationNumber}
-                  registrationNumber={submission.registrationNumber}
-                  category={submission.submissionCategory}
-                  imageUrl={submission.keyPhotographUrl}
-                  voteCount={submission.voteCount}
-                  hasVoted={submission.hasVoted}
-                  isAuthenticated={result.isAuthenticated || false}
-                />
+                <div key={submission.registrationNumber} className="break-inside-avoid mb-8">
+                  <EntryCard
+                    registrationNumber={submission.registrationNumber}
+                    category={submission.submissionCategory}
+                    imageUrl={submission.keyPhotographUrl}
+                    voteCount={submission.voteCount}
+                    hasVoted={submission.hasVoted}
+                    isAuthenticated={result.isAuthenticated || false}
+                  />
+                </div>
               ))}
             </div>
           ) : (
@@ -184,10 +196,10 @@ export default async function EntriesPage({ params, searchParams }: PageProps) {
 
 function LoadingGrid() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div className="columns-1 sm:columns-2 lg:columns-3 gap-8 space-y-8">
       {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div key={i} className="bg-gray-50 overflow-hidden animate-pulse">
-          <div className="aspect-square bg-gray-200" />
+        <div key={i} className="break-inside-avoid mb-8 bg-gray-50 overflow-hidden animate-pulse">
+          <div className="h-64 bg-gray-200" />
           <div className="p-4">
             <div className="h-5 bg-gray-200 rounded w-3/4 mx-auto" />
           </div>

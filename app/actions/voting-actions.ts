@@ -296,7 +296,7 @@ export async function getSubmissionWithVotes(registrationNumber: string) {
  */
 export async function getPublishedSubmissions(
   category?: 'DIGITAL' | 'PHYSICAL',
-  sortBy: 'votes' | 'newest' = 'votes',
+  sortBy: 'votes' | 'newest' | 'random' = 'votes',
   competitionId?: string
 ) {
   try {
@@ -344,7 +344,7 @@ export async function getPublishedSubmissions(
       userVotes = new Set(votes.map((v) => v.registrationNumber));
     }
 
-    const submissionsWithVoteStatus = submissions
+    let submissionsWithVoteStatus = submissions
       .map((submission) => ({
         id: submission.id,
         registrationNumber: submission.registrationNumber,
@@ -354,14 +354,20 @@ export async function getPublishedSubmissions(
         publishedAt: submission.publishedAt,
         voteCount: submission.votingStats?.publicVoteCount || 0,
         hasVoted: userVotes.has(submission.registrationNumber),
-      }))
-      .sort((a, b) => {
-        if (sortBy === 'votes') {
-          return b.voteCount - a.voteCount;
-        } else {
-          return new Date(b.publishedAt!).getTime() - new Date(a.publishedAt!).getTime();
-        }
-      });
+      }));
+
+    // Apply sorting
+    if (sortBy === 'random') {
+      // Fisher-Yates shuffle for random sorting
+      for (let i = submissionsWithVoteStatus.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [submissionsWithVoteStatus[i], submissionsWithVoteStatus[j]] = [submissionsWithVoteStatus[j], submissionsWithVoteStatus[i]];
+      }
+    } else if (sortBy === 'votes') {
+      submissionsWithVoteStatus.sort((a, b) => b.voteCount - a.voteCount);
+    } else {
+      submissionsWithVoteStatus.sort((a, b) => new Date(b.publishedAt!).getTime() - new Date(a.publishedAt!).getTime());
+    }
 
     return {
       success: true,

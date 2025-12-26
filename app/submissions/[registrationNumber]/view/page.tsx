@@ -158,6 +158,10 @@ export default async function ViewSubmissionPage({
       }
     }
 
+    // Check if user is admin or superadmin
+    const userRole = session?.user?.role as string;
+    const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+
     return (
       <ViewSubmissionForm
         registration={{
@@ -173,6 +177,7 @@ export default async function ViewSubmissionPage({
         voteCount={voteCount}
         hasVoted={hasVoted}
         isAuthenticated={!!session?.user?.id}
+        isAdmin={isAdmin}
       />
     );
   } catch (error: any) {

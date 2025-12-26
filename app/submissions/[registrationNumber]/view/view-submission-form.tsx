@@ -51,6 +51,7 @@ interface ViewSubmissionFormProps {
   voteCount?: number;
   hasVoted?: boolean;
   isAuthenticated?: boolean;
+  isAdmin?: boolean;
 }
 
 export function ViewSubmissionForm({ 
@@ -59,6 +60,7 @@ export function ViewSubmissionForm({
   voteCount = 0,
   hasVoted = false,
   isAuthenticated = false,
+  isAdmin = false,
 }: ViewSubmissionFormProps) {
   const router = useRouter();
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -182,26 +184,28 @@ export function ViewSubmissionForm({
 
 
           <div className="space-y-8">
-            {/* Submission Status */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Submission Status</h3>
-                  <p className="text-sm text-gray-600">
-                    {submission.submittedAt && `Submitted on ${new Date(submission.submittedAt).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}`}
-                  </p>
+            {/* Submission Status - Only visible to admins and superadmins */}
+            {isAdmin && (
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Submission Status</h3>
+                    <p className="text-sm text-gray-600">
+                      {submission.submittedAt && `Submitted on ${new Date(submission.submittedAt).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}`}
+                    </p>
+                  </div>
+                  <span className={`px-4 py-2 text-sm font-medium rounded-full ${getStatusColor(submission.status)}`}>
+                    {submission.status}
+                  </span>
                 </div>
-                <span className={`px-4 py-2 text-sm font-medium rounded-full ${getStatusColor(submission.status)}`}>
-                  {submission.status}
-                </span>
               </div>
-            </div>
+            )}
 
             {/* Category */}
             <div>
@@ -226,19 +230,19 @@ export function ViewSubmissionForm({
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Key Photograph</h3>
                 <div 
-                  className="relative w-full aspect-video rounded-lg overflow-hidden border border-gray-200 bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                  className="relative w-full rounded-lg overflow-hidden border border-gray-200 bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center"
                   onClick={() => openLightbox(0)}
                 >
                   <img
                     src={submission.keyPhotographUrl}
                     alt="Key photograph"
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto max-h-[80vh] object-contain"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
                     }}
                   />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all flex items-center justify-center pointer-events-none">
                     <svg className="w-12 h-12 text-white opacity-0 hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                     </svg>
@@ -259,19 +263,19 @@ export function ViewSubmissionForm({
                     return (
                       <div 
                         key={index} 
-                        className="relative w-full aspect-video rounded-lg overflow-hidden border border-gray-200 bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                        className="relative w-full rounded-lg overflow-hidden border border-gray-200 bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center"
                         onClick={() => openLightbox(lightboxIdx)}
                       >
                         <img
                           src={url}
                           alt={`Additional photograph ${index + 1}`}
-                          className="w-full h-full object-cover"
+                          className="w-full h-auto max-h-[60vh] object-contain"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';
                           }}
                         />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all flex items-center justify-center pointer-events-none">
                           <svg className="w-12 h-12 text-white opacity-0 hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                           </svg>
@@ -325,31 +329,33 @@ export function ViewSubmissionForm({
               </div>
             )}
 
-            {/* Submission Metadata */}
-            <div className="pt-6 border-t">
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Created:</span>
-                  <span className="text-gray-900 font-medium">
-                    {new Date(submission.createdAt).toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Last Updated:</span>
-                  <span className="text-gray-900 font-medium">
-                    {new Date(submission.updatedAt).toLocaleString()}
-                  </span>
-                </div>
-                {submission.submittedAt && (
+            {/* Submission Metadata - Only visible to admins and superadmins */}
+            {isAdmin && (
+              <div className="pt-6 border-t">
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Submitted:</span>
+                    <span className="text-gray-600">Created:</span>
                     <span className="text-gray-900 font-medium">
-                      {new Date(submission.submittedAt).toLocaleString()}
+                      {new Date(submission.createdAt).toLocaleString()}
                     </span>
                   </div>
-                )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Last Updated:</span>
+                    <span className="text-gray-900 font-medium">
+                      {new Date(submission.updatedAt).toLocaleString()}
+                    </span>
+                  </div>
+                  {submission.submittedAt && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Submitted:</span>
+                      <span className="text-gray-900 font-medium">
+                        {new Date(submission.submittedAt).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
