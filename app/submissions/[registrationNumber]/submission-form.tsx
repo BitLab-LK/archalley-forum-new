@@ -57,6 +57,9 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
   const [documentFileUrl, setDocumentFileUrl] = useState<string | null>(null);
   const [videoFileUrl, setVideoFileUrl] = useState<string | null>(null);
   
+  // Track selected files (before upload) for additional photos
+  const [selectedAdditionalPhotos, setSelectedAdditionalPhotos] = useState<File[]>([]);
+  
   // Track uploading state for each file type
   const [uploadingKeyPhoto, setUploadingKeyPhoto] = useState(false);
   const [uploadingAdditionalPhotos, setUploadingAdditionalPhotos] = useState<boolean[]>([]);
@@ -262,8 +265,8 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
     try {
       setUploading(true);
 
-      if (fileType === 'photo' && files.length > 1) {
-        // Multiple photos - check if adding new files would exceed max
+      if (fileType === 'photo') {
+        // Additional photos - can be single or multiple, check if adding new files would exceed max
         const currentCount = existingUrls?.length || 0;
         const maxAllowed = maxFiles || 4;
         const availableSlots = maxAllowed - currentCount;
@@ -339,7 +342,7 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
         }
       } else {
         // Single file - check if one already exists
-        if (existingUrl && fileType !== 'photo') {
+        if (existingUrl) {
           // For single file types (key-photo, document, video), replace existing
           await deleteFile(existingUrl);
         }
@@ -631,9 +634,14 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
                 multiple
                 maxFiles={4}
                 maxSize={5 * 1024 * 1024}
-                files={[]}
+                files={selectedAdditionalPhotos}
                 onFilesChange={async (files) => {
+                  // Update selected files state immediately to show preview
+                  setSelectedAdditionalPhotos(files);
+                  
                   if (files.length > 0) {
+                    // Upload all files that are selected (they're all new, not yet uploaded)
+                    // Files that are already uploaded are shown separately in existingFileUrls
                     const newUploadingStates = files.map(() => true);
                     setUploadingAdditionalPhotos(newUploadingStates);
                     try {
@@ -647,9 +655,18 @@ export function SubmissionForm({ registration }: SubmissionFormProps) {
                         additionalPhotosUrls,
                         4 // maxFiles for additional photos
                       );
+                      // Clear selected files after successful upload
+                      // The uploaded files will now appear in existingFileUrls
+                      setSelectedAdditionalPhotos([]);
+                    } catch (error) {
+                      console.error('Error uploading additional photos:', error);
+                      // Keep files in state if upload failed so user can retry
                     } finally {
                       setUploadingAdditionalPhotos([]);
                     }
+                  } else {
+                    // Clear selected files if array is empty
+                    setSelectedAdditionalPhotos([]);
                   }
                 }}
                 existingFileUrls={additionalPhotosUrls}

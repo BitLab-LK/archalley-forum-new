@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     // Extract form fields
     const registrationId = formData.get('registrationId') as string;
     const category = formData.get('category') as SubmissionCategory;
-    const description = formData.get('description') as string;
+    const description = (formData.get('description') as string) || '';
     const isDraft = formData.get('isDraft') === 'true';
 
     // Basic validation
@@ -300,7 +300,7 @@ export async function POST(request: NextRequest) {
       },
       update: {
         ...(category && { submissionCategory: category }),
-        ...(description !== undefined && { description }),
+        description: description || '',
         // Only update file fields if new files were uploaded
         ...(keyPhotoUrl && { keyPhotographUrl: keyPhotoUrl }),
         ...(photoUrls.length > 0 && { additionalPhotographs: photoUrls }),

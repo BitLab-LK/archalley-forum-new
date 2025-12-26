@@ -3,7 +3,7 @@
 import { useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
-function LoginRedirectContent() {
+function SignInRedirectContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -32,7 +32,7 @@ function LoginRedirectContent() {
   )
 }
 
-export default function LoginRedirect() {
+export default function SignInRedirect() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center animate-fade-in">
@@ -42,7 +42,8 @@ export default function LoginRedirect() {
         </div>
       </div>
     }>
-      <LoginRedirectContent />
+      <SignInRedirectContent />
     </Suspense>
   )
 }
+

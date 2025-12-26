@@ -1,5 +1,23 @@
 import { PrismaClient } from "@prisma/client"
 
+/**
+ * Prisma Client Singleton Configuration
+ * 
+ * IMPORTANT: For production serverless deployments (especially on Vercel), consider using:
+ * 1. Prisma Accelerate - Provides built-in connection pooling (recommended)
+ *    https://www.prisma.io/docs/accelerate/getting-started
+ *    Update DATABASE_URL to use the Accelerate URL
+ * 
+ * 2. PgBouncer - Connection pooler for PostgreSQL
+ *    Configure PgBouncer between your app and PostgreSQL database
+ * 
+ * 3. Connection Pooling Service - Many hosting providers offer connection pooling
+ *    (e.g., Supabase, Neon, PlanetScale)
+ * 
+ * Current configuration uses Prisma's internal connection pool, which works but may
+ * hit connection limits under high concurrency in serverless environments.
+ */
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
@@ -7,27 +25,17 @@ const globalForPrisma = globalThis as unknown as {
 // Enhanced Prisma configuration with better connection handling for production
 // Build-safe options: only pass datasources when URL is defined to avoid constructor validation errors
 
-// Configure connection pool to prevent exhausting database connections
-// Parse DATABASE_URL and add connection pool parameters if not present
-let databaseUrl = process.env.DATABASE_URL || '';
-if (databaseUrl && !databaseUrl.includes('connection_limit')) {
-  // Add connection pool parameters to prevent connection exhaustion
-  // connection_limit: Maximum number of connections in the pool (default: number of CPU cores * 2 + 1)
-  // pool_timeout: Maximum time (in seconds) to wait for a connection (default: 10)
-  // For serverless/edge environments, use a smaller pool size
-  const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
-  const connectionLimit = isServerless ? 5 : 10; // Smaller pool for serverless
-  const poolTimeout = 20; // 20 seconds timeout
-  
-  const separator = databaseUrl.includes('?') ? '&' : '?';
-  databaseUrl = `${databaseUrl}${separator}connection_limit=${connectionLimit}&pool_timeout=${poolTimeout}`;
-}
-
+// Prisma connection pool configuration
+// These settings control how many connections Prisma will open to the database
+// Prisma manages connections automatically - no explicit pool configuration needed here
+// For serverless environments, consider using Prisma Accelerate or a connection pooler (see docs above)
 const prismaClientOptions: any = {
   log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
   errorFormat: 'pretty',
 }
 
+// Add datasource configuration only if DATABASE_URL exists
+const databaseUrl = process.env.DATABASE_URL;
 if (databaseUrl) {
   prismaClientOptions.datasources = {
     db: { url: databaseUrl },
@@ -48,6 +56,10 @@ let lastConnectionAttempt = 0
 const connectionRetryDelay = 2000 // 2 seconds
 
 export async function ensureDbConnection() {
+  // Note: In Prisma, connections are managed automatically through the connection pool.
+  // We only verify connectivity with a simple query rather than explicitly calling $connect()
+  // which can cause connection pool exhaustion in serverless environments.
+  
   // If we recently attempted connection and failed, don't retry immediately
   const now = Date.now()
   if (connectionAttempts >= maxConnectionAttempts && (now - lastConnectionAttempt) < connectionRetryDelay) {
@@ -64,14 +76,14 @@ export async function ensureDbConnection() {
   for (let attempt = 1; attempt <= maxConnectionAttempts; attempt++) {
     try {
       lastConnectionAttempt = now
-      await prisma.$connect()
       
-      // Test the connection with a simple query
+      // Test the connection with a simple query instead of $connect()
+      // Prisma manages connections automatically, explicit $connect() can cause issues
       await prisma.$queryRaw`SELECT 1`
       
       isConnected = true
       connectionAttempts = 0
-      console.log('✅ Database connected successfully', {
+      console.log('✅ Database connection verified successfully', {
         attempt,
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV
@@ -131,3 +143,58 @@ export async function checkDbHealth() {
 
 // Cache the client globally so it persists across hot reloads and lambda invocations.
 globalForPrisma.prisma = prisma
+
+/**
+ * Retry wrapper for Prisma queries to handle connection pool exhaustion
+ * Automatically retries queries that fail due to connection errors (P2037)
+ * 
+ * @param queryFn - Function that returns a Prisma query promise
+ * @param maxRetries - Maximum number of retry attempts (default: 2)
+ * @param retryDelay - Base delay between retries in milliseconds (default: 1000)
+ * @returns The result of the query
+ */
+export async function withRetry<T>(
+  queryFn: () => Promise<T>,
+  maxRetries: number = 2,
+  retryDelay: number = 1000
+): Promise<T> {
+  let lastError: any;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await queryFn();
+    } catch (error: any) {
+      lastError = error;
+      
+      // Check if it's a connection pool exhaustion error
+      // Prisma errors can have the code in different places depending on error type
+      const errorCode = error?.code || error?.errorCode || error?.meta?.code;
+      const errorMessage = error?.message || '';
+      
+      const isConnectionError = 
+        errorCode === 'P2037' ||
+        errorMessage.includes('too many connections') ||
+        errorMessage.includes('connection slots') ||
+        errorMessage.includes('remaining connection slots') ||
+        errorMessage.includes('Too many database connections opened');
+      
+      // Only retry on connection errors and if we have retries left
+      if (isConnectionError && attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s...
+        const delay = retryDelay * Math.pow(2, attempt);
+        console.warn(`⚠️ Connection pool exhausted (attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${delay}ms...`, {
+          errorCode,
+          errorMessage: errorMessage.substring(0, 200), // Truncate long messages
+        });
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      // If it's not a connection error or we're out of retries, throw
+      throw error;
+    }
+  }
+  
+  // Should never reach here, but TypeScript needs it
+  throw lastError;
+}

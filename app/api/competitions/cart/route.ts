@@ -180,8 +180,149 @@ export async function GET(
         }
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching cart:', error);
+    
+    // Handle connection pool exhaustion specifically
+    if (error?.code === 'P2037' || error?.message?.includes('too many connections') || error?.message?.includes('connection slots')) {
+      console.error('⚠️ Database connection pool exhausted. Retrying after delay...');
+      
+      // Get session again for retry (might have failed during initial fetch)
+      try {
+        const session = await getServerSession(authOptions);
+        
+        if (!session?.user?.id) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'Unauthorized. Please sign in to continue.',
+            },
+            { status: 401 }
+          );
+        }
+        
+        // Retry once after a short delay to allow connections to free up
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Retry the query with a simpler query first (just get the cart, no extra queries)
+        const cart = await prisma.registrationCart.findFirst({
+          where: {
+            userId: session.user.id,
+            status: 'ACTIVE',
+          },
+          include: {
+            items: {
+              include: {
+                competition: true,
+                registrationType: true,
+              },
+            },
+          },
+        });
+        
+        if (cart) {
+          if (isCartExpired(cart.expiresAt)) {
+            await prisma.registrationCart.update({
+              where: { id: cart.id },
+              data: { status: 'EXPIRED' },
+            });
+            // Return empty cart after marking as expired
+            return NextResponse.json(
+              {
+                success: true,
+                data: {
+                  cart: null,
+                  summary: {
+                    itemCount: 0,
+                    subtotal: 0,
+                    discount: 0,
+                    total: 0,
+                    items: [],
+                  },
+                },
+              },
+              {
+                headers: {
+                  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                  'Pragma': 'no-cache',
+                  'Expires': '0',
+                },
+              }
+            );
+          }
+          
+          const subtotal = cart.items.reduce((sum, item) => sum + item.subtotal, 0);
+          const summary: CartSummary = {
+            itemCount: cart.items.length,
+            subtotal,
+            discount: 0,
+            total: subtotal,
+            items: cart.items.map((item) => ({
+              id: item.id,
+              competitionTitle: item.competition.title,
+              registrationType: item.registrationType.name,
+              country: item.country,
+              memberCount: Array.isArray(item.members) ? (item.members as any[]).length : 0,
+              unitPrice: item.unitPrice,
+              subtotal: item.subtotal,
+            })),
+          };
+          
+          return NextResponse.json(
+            {
+              success: true,
+              data: { cart, summary },
+            },
+            {
+              headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+              },
+            }
+          );
+        }
+        
+        // Return empty cart if retry succeeded but no cart found
+        return NextResponse.json(
+          {
+            success: true,
+            data: {
+              cart: null,
+              summary: {
+                itemCount: 0,
+                subtotal: 0,
+                discount: 0,
+                total: 0,
+                items: [],
+              },
+            },
+          },
+          {
+            headers: {
+              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+            },
+          }
+        );
+      } catch (retryError) {
+        console.error('❌ Retry also failed:', retryError);
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Database temporarily unavailable. Please try again in a moment.',
+          },
+          { 
+            status: 503,
+            headers: {
+              'Retry-After': '5',
+            },
+          }
+        );
+      }
+    }
+    
     return NextResponse.json(
       {
         success: false,

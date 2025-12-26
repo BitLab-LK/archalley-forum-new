@@ -275,14 +275,24 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === "google" || account?.provider === "facebook" || account?.provider === "linkedin") {
         try {
+          // Validate required fields
+          if (!user.email) {
+            console.error(`OAuth sign-in failed: Missing email for ${account.provider}`)
+            return false
+          }
+
           // Check if user exists
           const existingUser = await prisma.users.findUnique({
-            where: { email: user.email! },
+            where: { email: user.email },
             select: {
               id: true,
               email: true,
               name: true,
               image: true,
+              isVerified: true,
+              emailVerified: true,
+              isSuspended: true,
+              isBanned: true,
               twoFactorEnabled: true,
               twoFactorSecret: true,
             }
@@ -293,9 +303,59 @@ export const authOptions: NextAuthOptions = {
             // Preserve callbackUrl from the signIn call if available
             console.log(`New user detected for ${account.provider}, redirecting to complete profile`)
             // Note: callbackUrl is handled by NextAuth's redirect callback, we'll preserve it in URL params
-            const redirectUrl = `/auth/register?provider=${account.provider}&email=${encodeURIComponent(user.email!)}&name=${encodeURIComponent(user.name || '')}&image=${encodeURIComponent(user.image || '')}&providerAccountId=${encodeURIComponent(account.providerAccountId)}&message=${encodeURIComponent('Complete your profile to join our community!')}`
+            const redirectUrl = `/auth/register?provider=${account.provider}&email=${encodeURIComponent(user.email)}&name=${encodeURIComponent(user.name || '')}&image=${encodeURIComponent(user.image || '')}&providerAccountId=${encodeURIComponent(account.providerAccountId)}&message=${encodeURIComponent('Complete your profile to join our community!')}`
             return redirectUrl
           } else {
+            // Check if user account is suspended or banned
+            if (existingUser.isBanned) {
+              console.error(`OAuth sign-in blocked: User ${existingUser.email} is banned`)
+              await logAuthEvent("LOGIN_FAILED", {
+                userId: existingUser.id,
+                email: existingUser.email,
+                success: false,
+                details: { action: "login", provider: account.provider, reason: "account_banned" },
+                errorMessage: "Account is banned",
+              })
+              return false
+            }
+
+            if (existingUser.isSuspended) {
+              console.error(`OAuth sign-in blocked: User ${existingUser.email} is suspended`)
+              await logAuthEvent("LOGIN_FAILED", {
+                userId: existingUser.id,
+                email: existingUser.email,
+                success: false,
+                details: { action: "login", provider: account.provider, reason: "account_suspended" },
+                errorMessage: "Account is suspended",
+              })
+              return false
+            }
+
+            // Check if email is verified (enforce email verification for OAuth users too)
+            // Note: OAuth providers verify emails, but we still check our database flag
+            // For OAuth users registered through our system, they should be auto-verified
+            // But for legacy users or edge cases, we check the flag
+            if (!existingUser.isVerified || !existingUser.emailVerified) {
+              console.error(`OAuth sign-in blocked: User ${existingUser.email} email not verified`)
+              await logAuthEvent("LOGIN_FAILED", {
+                userId: existingUser.id,
+                email: existingUser.email,
+                success: false,
+                details: { action: "login", provider: account.provider, reason: "email_not_verified" },
+                errorMessage: "Email not verified",
+              })
+              // For OAuth users, auto-verify their email since OAuth providers verify emails
+              // This handles edge cases where the flag wasn't set properly
+              await prisma.users.update({
+                where: { id: existingUser.id },
+                data: {
+                  isVerified: true,
+                  emailVerified: existingUser.emailVerified || new Date(),
+                }
+              })
+              console.log(`Auto-verified email for OAuth user ${existingUser.email}`)
+            }
+            
             // Note: OAuth 2FA check would go here, but NextAuth's OAuth flow
             // completes before we can check 2FA. For now, OAuth logins bypass 2FA.
             // TODO: Implement OAuth + 2FA flow (requires storing temporary OAuth session)
@@ -357,7 +417,25 @@ export const authOptions: NextAuthOptions = {
           console.error("=== SIGNIN ERROR ===")
           console.error("Error during social sign in:", error)
           console.error("Error details:", error instanceof Error ? error.message : error)
+          console.error("Stack trace:", error instanceof Error ? error.stack : 'No stack trace')
+          console.error("User email:", user.email)
+          console.error("Provider:", account?.provider)
           console.error("==================")
+          
+          // Log the error for audit purposes
+          if (user.email) {
+            try {
+              await logAuthEvent("LOGIN_FAILED", {
+                email: user.email,
+                success: false,
+                details: { action: "login", provider: account?.provider, reason: "oauth_error" },
+                errorMessage: error instanceof Error ? error.message : "Unknown OAuth error",
+              })
+            } catch (logError) {
+              console.error("Failed to log auth event:", logError)
+            }
+          }
+          
           return false
         }
       }
